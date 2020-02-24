@@ -1,0 +1,11 @@
+.vscode
+.VSCodeCounter
+*/build
+/sdcard
+*.elf
+*.nro
+*.nacp
+*.psd
+*.nsp
+*.nso
+*.npdm

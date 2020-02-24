@@ -1,0 +1,6 @@
+[submodule "Application/Aether"]
+	path = Application/Aether
+	url = https://github.com/tallbl0nde/Aether.git
+[submodule "Overlay/libTesla"]
+	path = Overlay/libTesla
+	url = https://github.com/WerWolv/libTesla
