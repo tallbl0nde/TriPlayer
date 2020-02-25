@@ -1,7 +1,7 @@
 #ifndef APPLICATION_HPP
 #define APPLICATION_HPP
 
-#include "Aether.hpp"
+#include "Theme.hpp"
 
 #include "MainScreen.hpp"
 #include "Splash.hpp"
@@ -30,6 +30,9 @@ namespace Main {
             Screen::MainScreen * scMain;
             Screen::Splash * scSplash;
 
+            // Theme object
+            Theme * theme_;
+
         public:
             // Constructor inits Aether, screens + other objects
             Application();
@@ -47,6 +50,9 @@ namespace Main {
             void pushScreen();
             // Pop screen from stack
             void popScreen();
+
+            // Returns theme pointer
+            Theme * theme();
 
             // Handles display loop
             void run();

@@ -2,11 +2,15 @@
 
 namespace Main {
     Application::Application() {
+        // Prepare theme
+        this->theme_ = new Theme();
+
         // Create Aether instance
         this->display = new Aether::Display();
-        this->display->setBackgroundColour(20, 20, 35);
+        Aether::Colour c = this->theme_->BG();
+        this->display->setBackgroundColour(c.r, c.g, c.b);
         this->display->setFont("romfs:/Quicksand.ttf");
-        this->display->setHighlightColours(Aether::Colour{255, 255, 255, 0}, Aether::Theme::Dark.selected);
+        this->display->setHighlightColours(Aether::Colour{255, 255, 255, 0}, this->theme_->selected());
         this->display->setHighlightAnimation(Aether::Theme::Dark.highlightFunc);
         this->display->setShowFPS(true);
 
@@ -45,6 +49,9 @@ namespace Main {
         this->display->popScreen();
     }
 
+    Theme * Application::theme() {
+        return this->theme_;
+    }
 
     void Application::run() {
         // Do main loop

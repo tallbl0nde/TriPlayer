@@ -18,8 +18,8 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	TriPlayer
 BUILD		:=	build
-SOURCES		:=	source source/ui/screen source/ui/element
-INCLUDES	:=	include include/ui/screen include/ui/element
+SOURCES		:=	source source/ui source/ui/screen source/ui/element
+INCLUDES	:=	include include/ui include/ui/screen include/ui/element
 ROMFS		:=	romfs
 
 #---------------------------------------------------------------------------------

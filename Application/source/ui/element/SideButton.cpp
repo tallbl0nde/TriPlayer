@@ -2,7 +2,7 @@
 
 namespace CustomElm {
     SideButton::SideButton(int x, int y, int w) : Element(x, y, w, 60) {
-        this->rect = new Aether::Rectangle(this->x() + 5, this->y() + 8, 7, 44, 2);
+        this->rect = new Aether::Rectangle(this->x() + 5, this->y() + 8, 5, 44);
         this->addElement(this->rect);
         this->rect->setHidden(true);
         this->icon = nullptr;
