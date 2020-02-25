@@ -5,7 +5,8 @@ namespace Main {
         // Create Aether instance
         this->display = new Aether::Display();
         this->display->setBackgroundColour(20, 20, 35);
-        this->display->setHighlightColours(Aether::Theme::Dark.highlightBG, Aether::Theme::Dark.selected);
+        this->display->setFont("romfs:/Quicksand.ttf");
+        this->display->setHighlightColours(Aether::Colour{255, 255, 255, 0}, Aether::Theme::Dark.selected);
         this->display->setHighlightAnimation(Aether::Theme::Dark.highlightFunc);
         this->display->setShowFPS(true);
 

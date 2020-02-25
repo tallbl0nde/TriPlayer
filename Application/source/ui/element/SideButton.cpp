@@ -1,12 +1,12 @@
 #include "SideButton.hpp"
 
 namespace CustomElm {
-    SideButton::SideButton(int x, int y, int w) : Element(x, y, w, 50) {
-        this->rect = new Aether::Rectangle(this->x() + 5, this->y() + 5, 5, 40, 2);
+    SideButton::SideButton(int x, int y, int w) : Element(x, y, w, 60) {
+        this->rect = new Aether::Rectangle(this->x() + 5, this->y() + 8, 7, 44, 2);
         this->addElement(this->rect);
         this->rect->setHidden(true);
         this->icon = nullptr;
-        this->text = new Aether::Text(this->x() + 60, this->y() + this->h()/2, "", 24);
+        this->text = new Aether::Text(this->x() + 60, this->y() + this->h()/2, "", 26);
         this->addElement(this->text);
         this->isActive = false;
     }
@@ -37,8 +37,8 @@ namespace CustomElm {
             this->removeElement(this->icon);
         }
         this->icon = i;
-        this->icon->setXY(this->x() + 10, this->y() + 15);
-        this->icon->setWH(20, 20);
+        this->icon->setWH(26, 26);
+        this->icon->setXY(this->x() + 20, this->y() + (this->h() - this->icon->h())/2);
         this->addElement(this->icon);
     }
 
@@ -57,13 +57,13 @@ namespace CustomElm {
                 this->icon->setColour(this->active);
             }
             this->text->setColour(this->active);
-            this->rect->setHidden(true);
+            this->rect->setHidden(false);
         } else {
             if (this->icon != nullptr) {
                 this->icon->setColour(this->inactive);
             }
             this->text->setColour(this->inactive);
-            this->rect->setHidden(false);
+            this->rect->setHidden(true);
         }
     }
 };

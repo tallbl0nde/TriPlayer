@@ -37,6 +37,9 @@ namespace Screen {
 
             // BOTTOM
 
+            // Deselect all side items
+            void deselectSideItems();
+
         public:
             MainScreen(Main::Application *);
 
