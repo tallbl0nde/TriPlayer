@@ -2,6 +2,7 @@
 #define SCREEN_MAINSCREEN_HPP
 
 #include "Application.hpp"
+#include "SearchBox.hpp"
 #include "SideButton.hpp"
 
 namespace Main {
@@ -29,7 +30,7 @@ namespace Screen {
             // Heading
             Aether::Text * heading;
             // Search bar
-            // CustomElm::SearchBox * search;
+            CustomElm::SearchBox * search;
             // Column headings
 
             // List
@@ -39,6 +40,10 @@ namespace Screen {
 
             // Deselect all side items
             void deselectSideItems();
+
+            // Functions to setup screen based on chosen item
+            void setupSongs();
+            // and so on...
 
         public:
             MainScreen(Main::Application *);

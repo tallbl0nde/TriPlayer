@@ -18,6 +18,12 @@ namespace Screen {
         this->menuSettings->setActivated(false);
     }
 
+    void MainScreen::setupSongs() {
+        this->deselectSideItems();
+        this->menuSongs->setActivated(true);
+        this->heading->setString("Songs");
+    }
+
     void MainScreen::onLoad() {
         // Create side menu
         this->menuRP = new CustomElm::SideButton(20, 150, 310);
@@ -26,8 +32,6 @@ namespace Screen {
         this->menuRP->setActiveColour(this->app->theme()->accent());
         this->menuRP->setInactiveColour(this->app->theme()->text());
         this->menuRP->setCallback([this](){
-            this->deselectSideItems();
-            this->menuRP->setActivated(true);
 
         });
         this->addElement(this->menuRP);
@@ -37,8 +41,7 @@ namespace Screen {
         this->menuSongs->setActiveColour(this->app->theme()->accent());
         this->menuSongs->setInactiveColour(this->app->theme()->text());
         this->menuSongs->setCallback([this](){
-            this->deselectSideItems();
-            this->menuSongs->setActivated(true);
+            this->setupSongs();
         });
         this->addElement(this->menuSongs);
         this->menuArtists = new CustomElm::SideButton(20, 270, 310);
@@ -47,8 +50,7 @@ namespace Screen {
         this->menuArtists->setActiveColour(this->app->theme()->accent());
         this->menuArtists->setInactiveColour(this->app->theme()->text());
         this->menuArtists->setCallback([this](){
-            this->deselectSideItems();
-            this->menuArtists->setActivated(true);
+
         });
         this->addElement(this->menuArtists);
         this->menuAlbums = new CustomElm::SideButton(20, 330, 310);
@@ -57,8 +59,7 @@ namespace Screen {
         this->menuAlbums->setActiveColour(this->app->theme()->accent());
         this->menuAlbums->setInactiveColour(this->app->theme()->text());
         this->menuAlbums->setCallback([this](){
-            this->deselectSideItems();
-            this->menuAlbums->setActivated(true);
+
         });
         this->addElement(this->menuAlbums);
 
@@ -72,8 +73,7 @@ namespace Screen {
         this->menuQueue->setActiveColour(this->app->theme()->accent());
         this->menuQueue->setInactiveColour(this->app->theme()->text());
         this->menuQueue->setCallback([this](){
-            this->deselectSideItems();
-            this->menuQueue->setActivated(true);
+
         });
         this->addElement(this->menuQueue);
 
@@ -87,13 +87,22 @@ namespace Screen {
         this->menuSettings->setActiveColour(this->app->theme()->accent());
         this->menuSettings->setInactiveColour(this->app->theme()->text());
         this->menuSettings->setCallback([this](){
-            this->deselectSideItems();
-            this->menuSettings->setActivated(true);
+
         });
         this->addElement(this->menuSettings);
 
+        // Add heading and search box
+        this->heading = new Aether::Text(420, 40, "", 60);
+        this->heading->setColour(this->app->theme()->heading());
+        this->addElement(this->heading);
+
+        this->search = new CustomElm::SearchBox(910, 60, 300, 40);
+        this->search->setColour(this->app->theme()->heading());
+        this->addElement(this->search);
+
+        // Set songs active
         this->setFocussed(this->menuSongs);
-        this->menuSongs->setActivated(true);
+        this->setupSongs();
     }
 
     void MainScreen::onUnload() {
@@ -103,6 +112,8 @@ namespace Screen {
         this->removeElement(this->menuAlbums);
         this->removeElement(this->menuQueue);
         this->removeElement(this->menuSettings);
+        this->removeElement(this->heading);
+        this->removeElement(this->search);
     }
 
     void MainScreen::render() {
