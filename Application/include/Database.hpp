@@ -1,21 +1,10 @@
 #ifndef DATABASE_HPP
 #define DATABASE_HPP
 
+#include "sqlite3.h"
 #include <string>
-#include <sqlite3.h>
+#include "Types.hpp"
 #include <vector>
-
-// A songID is an int!
-typedef int SongID;
-
-// Struct storing information about song
-struct SongInfo {
-    SongID ID;              // unique ID
-    std::string title;      // title
-    std::string artist;     // artist name
-    std::string album;      // album name
-    unsigned int duration;  // in seconds
-};
 
 class Database {
     private:
@@ -27,6 +16,13 @@ class Database {
 
         // Creates database with empty tables
         void createTables();
+
+        // Log given string alond with extended code (to stdout)
+        // Format: "[SQLITE] string: status (code)"
+        void logMessage(std::string);
+
+        // Log memory usage
+        void logMemory();
 
     public:
         // Constructor opens (or creates) database

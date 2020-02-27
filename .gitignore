@@ -1,6 +1,7 @@
 .vscode
 .VSCodeCounter
-*/build
+*build/
+*lib/
 /sdcard
 *.elf
 *.nro

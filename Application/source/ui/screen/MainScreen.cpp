@@ -103,6 +103,11 @@ namespace Screen {
         // Set songs active
         this->setFocussed(this->menuSongs);
         this->setupSongs();
+
+        this->list = new Aether::List(420, 130, 700, 450);
+        this->list->setScrollBarColour(this->app->theme()->mutedLine());
+        this->list->setShowScrollBar(true);
+        this->addElement(this->list);
     }
 
     void MainScreen::onUnload() {
@@ -114,6 +119,7 @@ namespace Screen {
         this->removeElement(this->menuSettings);
         this->removeElement(this->heading);
         this->removeElement(this->search);
+        this->removeElement(this->list);
     }
 
     void MainScreen::render() {

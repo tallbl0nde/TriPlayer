@@ -1,6 +1,7 @@
 #ifndef APPLICATION_HPP
 #define APPLICATION_HPP
 
+#include "Database.hpp"
 #include "Theme.hpp"
 
 #include "MainScreen.hpp"
@@ -30,6 +31,9 @@ namespace Main {
             Screen::MainScreen * scMain;
             Screen::Splash * scSplash;
 
+            // Database object
+            Database * database_;
+
             // Theme object
             Theme * theme_;
 
@@ -51,6 +55,8 @@ namespace Main {
             // Pop screen from stack
             void popScreen();
 
+            // Returns database pointer
+            Database * database();
             // Returns theme pointer
             Theme * theme();
 

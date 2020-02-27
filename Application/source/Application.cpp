@@ -5,6 +5,9 @@ namespace Main {
         // Prepare theme
         this->theme_ = new Theme();
 
+        // Open database
+        this->database_ = new Database();
+
         // Create Aether instance
         this->display = new Aether::Display();
         Aether::Colour c = this->theme_->BG();
@@ -49,6 +52,10 @@ namespace Main {
         this->display->popScreen();
     }
 
+    Database * Application::database() {
+        return this->database_;
+    }
+
     Theme * Application::theme() {
         return this->theme_;
     }
@@ -71,5 +78,8 @@ namespace Main {
 
         // Cleanup Aether
         delete this->display;
+
+        // Close/save database
+        delete this->database_;
     }
 };

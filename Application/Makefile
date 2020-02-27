@@ -47,7 +47,10 @@ LIBS	:=  -lAether -lnx -lSQLite `sdl2-config --libs` -lSDL2_ttf `freetype-config
 ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 
 CFLAGS	:=	-g -Wall -O2 -ffunction-sections $(ARCH) $(DEFINES) $(INCLUDE) -D__SWITCH__ \
-			-DVER_MAJOR=$(VER_MAJOR) -DVER_MINOR=$(VER_MINOR) -DVER_MICRO=$(VER_MICRO) -DVER_STRING=\"$(VER_MAJOR).$(VER_MINOR).$(VER_MICRO)\" -D_NXLINK_
+			-DVER_MAJOR=$(VER_MAJOR) -DVER_MINOR=$(VER_MINOR) -DVER_MICRO=$(VER_MICRO) -DVER_STRING=\"$(VER_MAJOR).$(VER_MINOR).$(VER_MICRO)\"
+ifdef NXLINK
+CFLAGS	+= -D_NXLINK_
+endif
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=c++17
 
@@ -120,7 +123,7 @@ clean:
 	@$(MAKE) -C $(CURDIR)/libs/SQLite -f $(CURDIR)/libs/SQLite/Makefile clean
 #---------------------------------------------------------------------------------
 else
-.PHONY:	all
+.PHONY:	all all-nxlink clean
 
 DEPENDS	:=	$(OFILES:.o=.d)
 
