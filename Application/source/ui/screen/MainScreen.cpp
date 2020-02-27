@@ -1,4 +1,6 @@
+#include "ListSong.hpp"
 #include "MainScreen.hpp"
+#include "Types.hpp"
 
 namespace Screen {
     MainScreen::MainScreen(Main::Application * a) : Screen() {
@@ -104,10 +106,46 @@ namespace Screen {
         this->setFocussed(this->menuSongs);
         this->setupSongs();
 
-        this->list = new Aether::List(420, 130, 700, 450);
+        // Add list headings
+        this->titleH = new Aether::Text(415, 160, "Title", 20);
+        this->titleH->setColour(this->app->theme()->mutedText());
+        this->addElement(this->titleH);
+        this->artistH = new Aether::Text(773, 160, "Artist", 20);
+        this->artistH->setColour(this->app->theme()->mutedText());
+        this->addElement(this->artistH);
+        this->albumH = new Aether::Text(965, 160, "Album", 20);
+        this->albumH->setColour(this->app->theme()->mutedText());
+        this->addElement(this->albumH);
+        this->lengthH = new Aether::Text(1215, 160, "Length", 20);
+        this->lengthH->setX(this->lengthH->x() - this->lengthH->w());
+        this->lengthH->setColour(this->app->theme()->mutedText());
+        this->addElement(this->lengthH);
+
+        // Create list
+        this->list = new Aether::List(350, 190, 930, 400);
         this->list->setScrollBarColour(this->app->theme()->mutedLine());
         this->list->setShowScrollBar(true);
         this->addElement(this->list);
+
+        // Create items for each songs
+        std::vector<SongInfo> si = this->app->database()->getAllSongInfo();
+        for (size_t i = 0; i < si.size(); i++) {
+            CustomElm::ListSong * l = new CustomElm::ListSong();
+            l->setTitleString(si[i].title);
+            l->setArtistString(si[i].artist);
+            l->setAlbumString(si[i].album);
+            l->setLengthString("0:00");
+            l->setLineColour(this->app->theme()->mutedLine());
+            l->setTextColour(this->app->theme()->text());
+            l->setCallback([](){
+                // something using si[i].id here
+            });
+            this->list->addElement(l);
+
+            if (i == 0) {
+                l->setY(this->list->y() + 20);
+            }
+        }
     }
 
     void MainScreen::onUnload() {

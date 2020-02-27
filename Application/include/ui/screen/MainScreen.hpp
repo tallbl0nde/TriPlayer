@@ -32,6 +32,10 @@ namespace Screen {
             // Search bar
             CustomElm::SearchBox * search;
             // Column headings
+            Aether::Text * titleH;
+            Aether::Text * artistH;
+            Aether::Text * albumH;
+            Aether::Text * lengthH;
 
             // List
             Aether::List * list;
