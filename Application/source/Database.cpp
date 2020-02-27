@@ -1,25 +1,27 @@
 #include "Database.hpp"
 #include <filesystem>
 #include <fstream>
-#include <iostream>
+#include "Utils.hpp"
 
 void Database::logMessage(std::string s) {
-#ifndef _NXLINK_
-    return; // Don't log if nxlink isn't enabled
-#endif
-    std::cout << "[SQLITE] " << s << ": " << sqlite3_errmsg(this->db) << " (" << std::to_string(sqlite3_extended_errcode(this->db)) << ")" << std::endl;
+    #ifndef _NXLINK_
+        return; // Don't log if nxlink isn't enabled
+    #endif
+
+    Utils::writeStdout("[SQLITE] " + s + ": " + std::string(sqlite3_errmsg(this->db)) + " (" + std::to_string(sqlite3_extended_errcode(this->db)) + ")");
 }
 
 void Database::logMemory() {
-#ifndef _NXLINK_
-    return; // Don't log if nxlink isn't enabled
-#endif
+    #ifndef _NXLINK_
+        return; // Don't log if nxlink isn't enabled
+    #endif
+
     int mem;
     int himem;
     if (sqlite3_status(SQLITE_STATUS_MEMORY_USED, &mem, &himem, false) == SQLITE_OK) {
-        std::cout << "[SQLITE] Current memory usage: " << std::to_string(mem/1024) << "kB" << " - Max usage: " << std::to_string(himem/1024) << "kB" << std::endl;
+        Utils::writeStdout("[SQLITE] Current memory usage: " + std::to_string(mem/1024) + "kB - Max usage: " + std::to_string(himem/1024) + "kB");
     } else {
-        std::cout << "[SQLITE] Unable to query memory usage!" << std::endl;
+        Utils::writeStdout("[SQLITE] Unable to query memory usage!");
     }
 }
 

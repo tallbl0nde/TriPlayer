@@ -1,8 +1,12 @@
 #ifndef TYPES_HPP
 #define TYPES_HPP
 
+#include <string>
+
 // A songID is an int!
 typedef int SongID;
+// A socket is also an int - this is for easier reading
+typedef int SockFD;
 
 // Struct storing information about song
 struct SongInfo {

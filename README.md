@@ -54,6 +54,8 @@ TriPlayer consists of three 'modules'/components. These are:
 
 I'd like to thank:
 
+* Exelix11 for [SysDVR](https://github.com/exelix11/SysDVR)
+  * Used as a reference for implementing sockets/communication between app/overlay and sysmodule!
 * KranKRival for [sys-audioplayer](https://github.com/KranKRival/sys-audioplayer)
   * Used as a reference for implementing mpg123 functionality
 * Anyone else involved with the development of homebrew tools and reverse engineering of the Switch!
