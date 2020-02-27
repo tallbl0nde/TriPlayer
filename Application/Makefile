@@ -42,12 +42,12 @@ ICON 		:= 	icon.jpg
 # LIBS: Libraries to link against
 # (I dunno what the rest is)
 #---------------------------------------------------------------------------------
-LIBS	:=  -lAether -lnx `sdl2-config --libs` -lSDL2_ttf `freetype-config --libs` -lSDL2_gfx -lSDL2_image -lpng -ljpeg -lwebp
+LIBS	:=  -lAether -lnx -lSQLite `sdl2-config --libs` -lSDL2_ttf `freetype-config --libs` -lSDL2_gfx -lSDL2_image -lpng -ljpeg -lwebp
 
 ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 
 CFLAGS	:=	-g -Wall -O2 -ffunction-sections $(ARCH) $(DEFINES) $(INCLUDE) -D__SWITCH__ \
-			-DVER_MAJOR=$(VER_MAJOR) -DVER_MINOR=$(VER_MINOR) -DVER_MICRO=$(VER_MICRO) -DVER_STRING=\"$(VER_MAJOR).$(VER_MINOR).$(VER_MICRO)\"
+			-DVER_MAJOR=$(VER_MAJOR) -DVER_MINOR=$(VER_MINOR) -DVER_MICRO=$(VER_MICRO) -DVER_STRING=\"$(VER_MAJOR).$(VER_MINOR).$(VER_MICRO)\" -D_NXLINK_
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=c++17
 
@@ -58,7 +58,7 @@ LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(CURDIR)/Aether
+LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(CURDIR)/libs/Aether $(CURDIR)/libs/SQLite
 
 #---------------------------------------------------------------------------------
 # This is all wizardry to me also
@@ -102,11 +102,12 @@ export NROFLAGS += --icon=$(APP_ICON) --nacp=$(CURDIR)/$(TARGET).nacp --romfsdir
 all: $(BUILD)
 
 $(BUILD):
-ifeq ($(wildcard $(CURDIR)/Aether/LICENSE),)
+ifeq ($(wildcard $(CURDIR)/libs/Aether/LICENSE),)
 	@$(error "Please run 'git submodule update --init' before running 'make'")
 endif
 	@[ -d $@ ] || mkdir -p $@
-	@$(MAKE) -C $(CURDIR)/Aether -f $(CURDIR)/Aether/Makefile
+	@$(MAKE) -C $(CURDIR)/libs/Aether -f $(CURDIR)/libs/Aether/Makefile
+	@$(MAKE) -C $(CURDIR)/libs/SQLite -f $(CURDIR)/libs/SQLite/Makefile
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
@@ -115,7 +116,8 @@ endif
 clean:
 	@echo Cleaning ALL Application + Aether build files...
 	@rm -rf $(BUILD) $(TARGET).nro $(TARGET).nacp $(TARGET).elf
-	@$(MAKE) -C $(CURDIR)/Aether -f $(CURDIR)/Aether/Makefile clean
+	@$(MAKE) -C $(CURDIR)/libs/Aether -f $(CURDIR)/libs/Aether/Makefile clean
+	@$(MAKE) -C $(CURDIR)/libs/SQLite -f $(CURDIR)/libs/SQLite/Makefile clean
 #---------------------------------------------------------------------------------
 else
 .PHONY:	all
