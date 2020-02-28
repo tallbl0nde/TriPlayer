@@ -55,12 +55,14 @@ namespace Utils::Socket {
         // Attempt to read
         if (read(tmpfd, buf, BUFFER) < 0) {
             Utils::writeStdout("[SOCKET] [readFromSocket()] Error occurred reading from socket");
+            closeSocket(tmpfd);
             return "";
         }
 
         // Return read chars
         std::string str(buf);
         Utils::writeStdout("[SOCKET] [readFromSocket()] Read data '" + str + "'");
+        closeSocket(tmpfd);
         return str;
     }
 
