@@ -1,21 +1,18 @@
-// Include the most common headers from the C standard library
-#include <stdio.h>
+#include "Log.h"
+#include <pthread.h>
+#include "Socket.h"
 #include <stdlib.h>
 #include <string.h>
-
-// Include the main libnx system header, for Switch development
 #include <switch.h>
 
-// Sysmodules should not use applet*.
-u32 __nx_applet_type = AppletType_None;
+// Heap size... 3MB for sockets
+#define INNER_HEAP_SIZE 3 * 1024 * 1024
 
-// Adjust size as needed.
-#define INNER_HEAP_SIZE 0x80000
+// Stuff that I probably shouldn't change
+u32 __nx_applet_type = AppletType_None;
 size_t nx_inner_heap_size = INNER_HEAP_SIZE;
 char   nx_inner_heap[INNER_HEAP_SIZE];
-
-void __libnx_initheap(void)
-{
+void __libnx_initheap(void) {
 	void*  addr = nx_inner_heap;
 	size_t size = nx_inner_heap_size;
 
@@ -26,56 +23,95 @@ void __libnx_initheap(void)
 	fake_heap_start = (char*)addr;
 	fake_heap_end   = (char*)addr + size;
 }
+// End stuff
 
-// Init/exit services, update as needed.
-void __attribute__((weak)) __appInit(void)
-{
-    Result rc;
-
-    // Initialize default services.
-    rc = smInitialize();
-    if (R_FAILED(rc))
+// Init services on start
+void __attribute__((weak)) __appInit(void) {
+    if (R_FAILED(smInitialize())) {
         fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
+    }
 
-    // Enable this if you want to use HID.
-    /*rc = hidInitialize();
-    if (R_FAILED(rc))
-        fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_HID));*/
-
-    //Enable this if you want to use time.
-    /*rc = timeInitialize();
-    if (R_FAILED(rc))
-        fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_Time));
-
-    __libnx_init_time();*/
-
-    rc = fsInitialize();
-    if (R_FAILED(rc))
+    if (R_FAILED(fsInitialize())) {
         fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
+    }
 
     fsdevMountSdmc();
+
+    if (R_FAILED(socketInitializeDefault())) {
+        // I dunno
+    }
 }
 
-void __attribute__((weak)) userAppExit(void);
-
-void __attribute__((weak)) __appExit(void)
-{
-    // Cleanup default services.
+// Close services on quit
+void __attribute__((weak)) __appExit(void) {
+    // In reverse order
+    socketExit();
     fsdevUnmountAll();
     fsExit();
-    //timeExit();//Enable this if you want to use time.
-    //hidExit();// Enable this if you want to use HID.
     smExit();
 }
 
-// Main program entrypoint
-int main(int argc, char* argv[])
-{
-    // Initialization code can go here.
+// Function used in one thread for handling sockets + commands
+void * socketThread(void * args) {
+    int * exit = (int *)args;
 
-    // Your code / main loop goes here.
-    // If you need threads, you can use threadCreate etc.
+    // Start logging
+    logOpenFile();
+    // Create 'control' socket
+    createListeningSocket();
 
-    // Deinitialization and resources clean up code can go here.
+    // Loop until 'exit' signal received
+    while (*exit != 0) {
+        // Try connecting if there is no active connection
+        if (haveConnection() != 0) {
+            // This has a timeout so will block the thread for short amount of time
+            acceptConnection();
+        } else {
+            // Read also has a time out so it blocks too
+            // Also closes connection on error
+            const char * data = readData();
+            if (data != NULL) {
+                // Data received... do something!
+                logSuccess("Received some data in main!");
+                // char * p = data;
+                // while (*p) {
+                //     logSuccess(p);
+                //     p = strchr(p, '\0');
+                //     p++;
+                // }
+
+                free((void *)data);
+            }
+        }
+    }
+
+    // I don't think this will ever be required but it's here just in case
+    closeConnection();
+
+    // Stop logging
+    logCloseFile();
+    // Close socket
+    closeListeningSocket();
+
+    return NULL;
+}
+
+int main(int argc, char * argv[]) {
+    int exitThreads = -1;
+
+    // Start socket thread (passed bool which is set 0 when to stop listening and exit thread)
+    pthread_t pthreadSocket;
+    pthread_create(&pthreadSocket, NULL, &socketThread, (void *) &exitThreads);
+
+    // Music player (mpg123) stuff will go here (probs a thread)
+    // loop indefinitely
+    while (0 == 0) {
+        svcSleepThread(1E+9);
+    }
+
+    // Join all threads
+    exitThreads = 0;
+    pthread_join(pthreadSocket, NULL);
+
     return 0;
 }
