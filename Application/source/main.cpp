@@ -13,8 +13,6 @@ int main(void) {
     romfsInit();
 
     Sysmodule * sm = new Sysmodule();
-    sm->resumePlayback();
-    sm->playSong(200);
 
     // Start actual 'app' execution
     Main::Application * app = new Main::Application();

@@ -1,11 +1,14 @@
 #include <arpa/inet.h>
+#include <cstring>
 #include <netinet/in.h>
 #include "Socket.hpp"
 #include <sys/socket.h>
 #include "Utils.hpp"
 
-// Maximum number of characters to read/write
+// Maximum number of characters to read
 #define BUFFER 255
+// Character used to signal end of 'message'
+static const char ENDMSG = '\x1c';
 
 namespace Utils::Socket {
     SockFD createSocket(int port) {
@@ -35,34 +38,39 @@ namespace Utils::Socket {
     }
 
     bool writeToSocket(SockFD sock, std::string str) {
-        // Write data
+        // Create message
         const char * tmp = str.c_str();
-        if (write(sock, tmp, str.length()) != (int)str.length()) {
+        int len = strlen(tmp);
+        len += 2; // Add room for \0 end of message char
+        char * cstr = (char *)malloc(len * sizeof(char));
+        memcpy(cstr, tmp, len - 1);
+        memset(cstr + (len - 1), ENDMSG, 1);
+
+        // Write data
+        if (write(sock, cstr, len) != len) {
             Utils::writeStdout("[SOCKET] [writeToSocket()] Error writing data!");
+            free(cstr);
             return false;
         }
 
         Utils::writeStdout("[SOCKET] [writeToSocket()] Wrote data '" + str + "'");
+        free(cstr);
         return true;
     }
 
     std::string readFromSocket(SockFD sock) {
         // Accept a connection (will block!!)
-        char buf[BUFFER] = {0};
-        socklen_t sz = sizeof(struct sockaddr_in);
-        int tmpfd = accept(sock, (struct sockaddr *) &buf, &sz);
+        char buf[BUFFER + 1] = {0};
 
         // Attempt to read
-        if (read(tmpfd, buf, BUFFER) < 0) {
+        if (read(sock, buf, BUFFER) < 0) {
             Utils::writeStdout("[SOCKET] [readFromSocket()] Error occurred reading from socket");
-            closeSocket(tmpfd);
             return "";
         }
 
         // Return read chars
         std::string str(buf);
         Utils::writeStdout("[SOCKET] [readFromSocket()] Read data '" + str + "'");
-        closeSocket(tmpfd);
         return str;
     }
 

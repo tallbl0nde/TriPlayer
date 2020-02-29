@@ -43,11 +43,8 @@ Database::Database() {
         destF.close();
     }
 
-    // Don't lock the file as it doesn't work!
-    sqlite3_vfs_register(sqlite3_vfs_find("unix-none"), 1);
-
     // Open connection to database
-    sqlite3_open("/switch/TriPlayer/music.db", &this->db);
+    sqlite3_open_v2("/switch/TriPlayer/music.db", &this->db, SQLITE_OPEN_READWRITE, "unix-none");
     this->logMessage("Open database");
 
     // Store journal in memory (otherwise file is unwritable)
