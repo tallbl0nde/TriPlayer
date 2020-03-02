@@ -47,11 +47,11 @@ namespace Utils {
                 while (file.tellg() < size) {
                     // Get frame info
                     char ID[4];
-                    char sizeBytes[4];
+                    unsigned char sizeBytes[4];
                     unsigned int fSize = 0;
                     char flags[2];
                     file.read(&ID[0], 4);
-                    file.read(&sizeBytes[0], 4);
+                    file.read((char *) &sizeBytes[0], 4);
                     fSize = (sizeBytes[0] << 24) | (sizeBytes[1] << 16) | (sizeBytes[2] << 8) | sizeBytes[3];
                     file.read(&flags[0], 2);
 
@@ -61,14 +61,14 @@ namespace Utils {
                     }
 
                     // Read data
-                    char data[fSize];
-                    file.read(&data[0], fSize);
+                    char * data = new char[fSize];
+                    file.read(data, fSize);
 
-                    if (fSize > 0) {
+                    if (fSize >= 0) {
                         // Determine text encoding type
                         // Only handles 0xFFFE unicode
                         bool isUnicode = true;
-                        if (data[0] == 0) {
+                        if (*(data) == 0) {
                             isUnicode = false;
                         }
 
@@ -82,21 +82,21 @@ namespace Utils {
                                 unsigned int chars = (fSize - 3)/2;
                                 char tmp[chars];
                                 for (size_t i = 0; i < chars * 2; i += 2) {
-                                    tmp[i/2] = data[i+3];
+                                    tmp[i/2] = *(data + i + 3);
                                 }
                                 while (tmp[chars - 1] == '\0') {
                                     chars--;
                                 }
                                 si.title = std::string(&tmp[0], chars);
                             } else {
-                                while (data[fSize - 1] == '\0') {
+                                while (*(data + fSize - 1) == '\0') {
                                     fSize--;
                                     if (fSize <= 0) {
                                         break;
                                     }
                                 }
                                 if (fSize > 0) {
-                                    si.title = std::string(&data[1], fSize - 1);
+                                    si.title = std::string(data + 1, fSize - 1);
                                 }
                             }
 
@@ -105,16 +105,25 @@ namespace Utils {
                             found |= 0x010;
                             si.ID = -1;
                             if (isUnicode) {
-
+                                // Grab every second char (this is sooo wrong but eh)
+                                unsigned int chars = (fSize - 3)/2;
+                                char tmp[chars];
+                                for (size_t i = 0; i < chars * 2; i += 2) {
+                                    tmp[i/2] = *(data + i + 3);
+                                }
+                                while (tmp[chars - 1] == '\0') {
+                                    chars--;
+                                }
+                                si.artist = std::string(&tmp[0], chars);
                             } else {
-                                while (data[fSize - 1] == '\0') {
+                                while (*(data + fSize - 1) == '\0') {
                                     fSize--;
                                     if (fSize <= 0) {
                                         break;
                                     }
                                 }
                                 if (fSize > 0) {
-                                    si.artist = std::string(&data[1], fSize - 1);
+                                    si.artist = std::string(data + 1, fSize - 1);
                                 }
                             }
 
@@ -123,24 +132,35 @@ namespace Utils {
                             found |= 0x001;
                             si.ID = -1;
                             if (isUnicode) {
-
+                                // Grab every second char (this is sooo wrong but eh)
+                                unsigned int chars = (fSize - 3)/2;
+                                char tmp[chars];
+                                for (size_t i = 0; i < chars * 2; i += 2) {
+                                    tmp[i/2] = *(data + i + 3);
+                                }
+                                while (tmp[chars - 1] == '\0') {
+                                    chars--;
+                                }
+                                si.album = std::string(&tmp[0], chars);
                             } else {
-                                while (data[fSize - 1] == '\0') {
+                                while (*(data + fSize - 1) == '\0') {
                                     fSize--;
                                     if (fSize <= 0) {
                                         break;
                                     }
                                 }
                                 if (fSize > 0) {
-                                    si.album = std::string(&data[1], fSize - 1);
+                                    si.album = std::string(data + 1, fSize - 1);
                                 }
                             }
                         }
+                    }
 
-                        // Stop looking if all have been found
-                        if (found == 0x111) {
-                            break;
-                        }
+                    delete[] data;
+
+                    // Stop looking if all have been found
+                    if (found == 0x111) {
+                        break;
                     }
                 }
 
