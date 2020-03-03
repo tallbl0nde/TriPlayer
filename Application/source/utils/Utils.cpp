@@ -90,6 +90,11 @@ namespace Utils {
         return si;
     }
 
+    // Parses ID3v2.2.0 tags
+    static SongInfo parseID3v2_2(SongInfo si, std::ifstream file) {
+        return si;
+    }
+
     // Parses ID3v2.3.0 tags
     static SongInfo parseID3v2_3(SongInfo si, std::ifstream file) {
         // Get size
@@ -97,6 +102,11 @@ namespace Utils {
         file.read((char *) &buf[0], 10);
         unsigned int size = 0;
         size = ((buf[6] & 127) << 21) | ((buf[7] & 127) << 14) | ((buf[8] & 127) << 7) | ((buf[9] & 127));
+
+        // Don't bother with synchronised files
+        if (buf[5] & 0b10000000) {
+            return si;
+        }
 
         // Check for extended header and skip if it exists
         if (buf[5] & 0b01000000) {
@@ -219,6 +229,138 @@ namespace Utils {
 
     // Parses ID3v2.4.0 tags
     static SongInfo parseID3v2_4(SongInfo si, std::ifstream file) {
+        // Get size
+        unsigned char buf[10];
+        file.read((char *) &buf[0], 10);
+        unsigned int size = 0;
+        size = ((buf[6] & 127) << 21) | ((buf[7] & 127) << 14) | ((buf[8] & 127) << 7) | ((buf[9] & 127));
+
+        // Don't bother with synchronised files
+        if (buf[5] & 0b10000000) {
+            return si;
+        }
+
+        // Check for extended header and skip if it exists
+        if (buf[5] & 0b01000000) {
+            file.read((char *) &buf[0], 10);
+            unsigned int exSize = 0;
+            exSize = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
+            file.seekg(exSize + ((buf[4] & 0b10000000) ? 4 : 0), std::ios::cur);
+        }
+
+        // Iterate over frames looking for title, artist + album
+        char found = 0x0;
+        while (file.tellg() < size) {
+            // Get frame info
+            char ID[4];
+            unsigned char sizeBytes[4];
+            unsigned int fSize = 0;
+            char flags[2];
+            file.read(&ID[0], 4);
+            file.read((char *) &sizeBytes[0], 4);
+            fSize = ((sizeBytes[0] & 127) << 21) | ((sizeBytes[1] & 127) << 14) | ((sizeBytes[2] & 127) << 7) | ((sizeBytes[3] & 127));
+            file.read(&flags[0], 2);
+
+            // Skip ahead if group flag set
+            bool skip = false;
+            if (flags[1] & 0b01000000) {
+                file.seekg(4, std::ios::cur);
+                skip = true;
+            }
+            // Skip ahead if compressed
+            if (flags[1] & 0b00001000) {
+                file.seekg(1, std::ios::cur);
+                skip = true;
+            }
+            // Skip ahead if encrypted
+            if (flags[1] & 0b00000100) {
+                file.seekg(1, std::ios::cur);
+                skip = true;
+            }
+
+            // Read data
+            char * data = new char[fSize];
+            file.read(data, fSize);
+
+            if (fSize >= 0 && !skip) {
+                // Check if UTF-16 encoded
+                bool isUnicode = ((*(data) == 0 || *(data) == 3) ? false : true);
+
+                // Now actually check frame type etc
+                if (ID[0] == 'T' && ID[1] == 'I' && ID[2] == 'T' && ID[3] == '2') {
+                    // Title found
+                    found |= 0x100;
+                    si.ID = -1;
+                    if (isUnicode) {
+                        si.title = unicodeToASCII(data + 1, fSize - 1);
+                    } else {
+                        while (*(data + fSize - 1) == '\0') {
+                            fSize--;
+                            if (fSize <= 0) {
+                                break;
+                            }
+                        }
+                        if (fSize > 0) {
+                            si.title = std::string(data + 1, fSize - 1);
+                        }
+                    }
+
+                } else if (ID[0] == 'T' && ID[1] == 'P' && ID[2] == 'E' && ID[3] == '1') {
+                    // Artist found
+                    found |= 0x010;
+                    si.ID = -1;
+                    if (isUnicode) {
+                        si.artist = unicodeToASCII(data + 1, fSize - 1);
+                    } else {
+                        while (*(data + fSize - 1) == '\0') {
+                            fSize--;
+                            if (fSize <= 0) {
+                                break;
+                            }
+                        }
+                        if (fSize > 0) {
+                            si.artist = std::string(data + 1, fSize - 1);
+                        }
+                    }
+
+                } else if (ID[0] == 'T' && ID[1] == 'A' && ID[2] == 'L' && ID[3] == 'B') {
+                    // Album found
+                    found |= 0x001;
+                    si.ID = -1;
+                    if (isUnicode) {
+                        si.album = unicodeToASCII(data + 1, fSize - 1);
+                    } else {
+                        while (*(data + fSize - 1) == '\0') {
+                            fSize--;
+                            if (fSize <= 0) {
+                                break;
+                            }
+                        }
+                        if (fSize > 0) {
+                            si.album = std::string(data + 1, fSize - 1);
+                        }
+                    }
+                }
+            }
+
+            // Move ahead 4 bytes if 'data length indicator' exists
+            if (flags[1] & 0b00000001) {
+                file.seekg(4, std::ios::cur);
+            }
+
+            delete[] data;
+
+            // Stop looking if all have been found
+            if (found == 0x111) {
+                break;
+            }
+        }
+
+        // If there were no errors set the ID accordingly
+        if (found == 0x0) {
+            si.ID = -2;
+        }
+
         return si;
     }
 
@@ -241,14 +383,19 @@ namespace Utils {
             file.read(&buf[0], 4);
             if (buf[0] == 'I' && buf[1] == 'D' && buf[2] == '3') {
                 switch (buf[3]) {
+                    // ID3v2.2.0
+                    case 2:
+                        tagType = 2;
+                        break;
+
                     // ID3v2.3.0
                     case 3:
-                        tagType = 1;
+                        tagType = 3;
                         break;
 
                     // ID3v2.4.0
                     case 4:
-                        tagType = 2;
+                        tagType = 4;
                         break;
                 }
             }
@@ -258,7 +405,7 @@ namespace Utils {
                 file.seekg(-128, file.end);
                 file.read(&buf[0], 3);
                 if (buf[0] == 'T' && buf[1] == 'A' && buf[2] == 'G') {
-                    tagType = 0;
+                    tagType = 1;
                 }
             }
         }
@@ -266,15 +413,19 @@ namespace Utils {
 
         // Call right function
         switch (tagType) {
-            case 0:
+            case 1:
                 si = parseID3v1(si, std::move(file));
                 break;
 
-            case 1:
+            case 2:
+                si = parseID3v2_2(si, std::move(file));
+                break;
+
+            case 3:
                 si = parseID3v2_3(si, std::move(file));
                 break;
 
-            case 2:
+            case 4:
                 si = parseID3v2_4(si, std::move(file));
                 break;
         }

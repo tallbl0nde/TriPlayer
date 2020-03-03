@@ -15,7 +15,7 @@ int main(void) {
 
     Sysmodule * sm = new Sysmodule();
 
-    std::vector<std::string> aa = Utils::getFilesWithExt("/music", ".mp3");
+    std::vector<std::string> aa = Utils::getFilesWithExt("/music/Bangas", ".mp3");
     for (size_t i = 0; i < aa.size(); i++) {
         Utils::writeStdout("==============================================");
         Utils::writeStdout("Parsing tags in " + aa[i] + "...");
