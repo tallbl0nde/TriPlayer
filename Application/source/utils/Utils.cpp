@@ -92,6 +92,110 @@ namespace Utils {
 
     // Parses ID3v2.2.0 tags
     static SongInfo parseID3v2_2(SongInfo si, std::ifstream file) {
+        // Get size
+        unsigned char buf[10];
+        file.read((char *) &buf[0], 10);
+        unsigned int size = 0;
+        size = ((buf[6] & 127) << 21) | ((buf[7] & 127) << 14) | ((buf[8] & 127) << 7) | ((buf[9] & 127));
+
+        // Don't bother with synchronised files
+        if (buf[5] & 0b10000000) {
+            return si;
+        }
+        // Don't bother with compression
+        if (buf[5] & 0b01000000) {
+            return si;
+        }
+
+        // Iterate over frames looking for title, artist + album
+        char found = 0x0;
+        while (file.tellg() < size) {
+            // Get frame info
+            char ID[3];
+            unsigned char sizeBytes[3];
+            unsigned int fSize = 0;
+            file.read(&ID[0], 3);
+            file.read((char *) &sizeBytes[0], 3);
+            fSize = (sizeBytes[0] << 16) | (sizeBytes[1] << 8) | sizeBytes[2];
+
+            // Read data
+            char * data = new char[fSize];
+            file.read(data, fSize);
+
+            if (fSize >= 0) {
+                // Check if UTF-16 encoded
+                bool isUnicode = ((*(data) == 0) ? false : true);
+
+                // Now actually check frame type etc
+                if (ID[0] == 'T' && ID[1] == 'T' && ID[2] == '2') {
+                    // Title found
+                    found |= 0x100;
+                    si.ID = -1;
+                    if (isUnicode) {
+                        si.title = unicodeToASCII(data + 1, fSize - 1);
+                    } else {
+                        while (*(data + fSize - 1) == '\0') {
+                            fSize--;
+                            if (fSize <= 0) {
+                                break;
+                            }
+                        }
+                        if (fSize > 0) {
+                            si.title = std::string(data + 1, fSize - 1);
+                        }
+                    }
+
+                } else if (ID[0] == 'T' && ID[1] == 'P' && ID[2] == '1') {
+                    // Artist found
+                    found |= 0x010;
+                    si.ID = -1;
+                    if (isUnicode) {
+                        si.artist = unicodeToASCII(data + 1, fSize - 1);
+                    } else {
+                        while (*(data + fSize - 1) == '\0') {
+                            fSize--;
+                            if (fSize <= 0) {
+                                break;
+                            }
+                        }
+                        if (fSize > 0) {
+                            si.artist = std::string(data + 1, fSize - 1);
+                        }
+                    }
+
+                } else if (ID[0] == 'T' && ID[1] == 'A' && ID[2] == 'L') {
+                    // Album found
+                    found |= 0x001;
+                    si.ID = -1;
+                    if (isUnicode) {
+                        si.album = unicodeToASCII(data + 1, fSize - 1);
+                    } else {
+                        while (*(data + fSize - 1) == '\0') {
+                            fSize--;
+                            if (fSize <= 0) {
+                                break;
+                            }
+                        }
+                        if (fSize > 0) {
+                            si.album = std::string(data + 1, fSize - 1);
+                        }
+                    }
+                }
+            }
+
+            delete[] data;
+
+            // Stop looking if all have been found
+            if (found == 0x111) {
+                break;
+            }
+        }
+
+        // If there were no errors set the ID accordingly
+        if (found == 0x0) {
+            si.ID = -2;
+        }
+
         return si;
     }
 

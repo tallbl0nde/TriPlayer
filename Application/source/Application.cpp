@@ -15,13 +15,14 @@ namespace Main {
         this->display->setFont("romfs:/Quicksand.ttf");
         this->display->setHighlightColours(Aether::Colour{255, 255, 255, 0}, this->theme_->selected());
         this->display->setHighlightAnimation(Aether::Theme::Dark.highlightFunc);
+        this->display->setFadeIn();
         this->display->setShowFPS(true);
 
         // Setup screens
         this->scSplash = new Screen::Splash(this);
         this->scMain = new Screen::MainScreen(this);
 
-        this->setScreen(ScreenID::Main);
+        this->setScreen(ScreenID::Splash);
     }
 
     void Application::setHoldDelay(int i) {

@@ -14,10 +14,13 @@ namespace Screen {
             Main::Application * app;
 
             // Elements
-            Aether::Text * name;
+            Aether::Image * bg;
             Aether::Text * status;
+            Aether::Text * statusNum;
             Aether::RoundProgressBar * pbar;
-            Aether::Text * pbartext;
+            Aether::Text * percent;
+            Aether::Animation * anim;
+            Aether::Text * hint;
 
         public:
             Splash(Main::Application *);
