@@ -7,10 +7,15 @@ namespace Utils {
     // 'Converts' UTF-16 to ASCII by dropping the other byte
     // Takes pointer to first char (should be BOM), number of bytes to read
     static std::string unicodeToASCII(char * utf, unsigned int len) {
-        unsigned int chars = len/2;
+        if (len <= 1) {
+            return "";
+        }
+
+        bool isLE = ((*(utf) == 0xFF && *(utf + 1) == 0xFE) ? true : false);
+        unsigned int chars = (len - 2)/2;
         char * tmp = new char[chars];
-        for (size_t i = 0; i < len; i += 2) {
-            tmp[i/2] = *(utf + i);
+        for (size_t i = (isLE ? 2 : 3); i < len; i += 2) {
+            tmp[(i - 2)/2] = *(utf + i);
         }
         while (tmp[chars - 1] == '\0') {
             chars--;
@@ -36,6 +41,52 @@ namespace Utils {
     // === BEGIN ID3 PARSING FUNCTIONS ===
     // Parses ID3v1/1.1 tags
     static SongInfo parseID3v1(SongInfo si, std::ifstream file) {
+        si.ID = -2;
+
+        // Read relevant info into buffer
+        char buf[90];
+        file.seekg(-125, file.end);
+        file.read(&buf[0], 90);
+        char chars = 30;
+
+        // Title
+        while (buf[chars - 1] == '\0') {
+            chars--;
+            if (chars <= 0) {
+                break;
+            }
+        }
+        if (chars != 0) {
+            si.title = std::string(&buf[0], chars);
+            si.ID = -1;
+        }
+
+        // Artist
+        chars = 30;
+        while (buf[30 + chars - 1] == '\0') {
+            chars--;
+            if (chars <= 0) {
+                break;
+            }
+        }
+        if (chars != 0) {
+            si.artist = std::string(&buf[30], chars);
+            si.ID = -1;
+        }
+
+        // Album
+        chars = 30;
+        while (buf[60 + chars - 1] == '\0') {
+            chars--;
+            if (chars <= 0) {
+                break;
+            }
+        }
+        if (chars != 0) {
+            si.album = std::string(&buf[60], chars);
+            si.ID = -1;
+        }
+
         return si;
     }
 
@@ -99,7 +150,7 @@ namespace Utils {
                     found |= 0x100;
                     si.ID = -1;
                     if (isUnicode) {
-                        si.title = unicodeToASCII(data + 3, fSize - 3);
+                        si.title = unicodeToASCII(data + 1, fSize - 1);
                     } else {
                         while (*(data + fSize - 1) == '\0') {
                             fSize--;
@@ -117,7 +168,7 @@ namespace Utils {
                     found |= 0x010;
                     si.ID = -1;
                     if (isUnicode) {
-                        si.artist = unicodeToASCII(data + 3, fSize - 3);
+                        si.artist = unicodeToASCII(data + 1, fSize - 1);
                     } else {
                         while (*(data + fSize - 1) == '\0') {
                             fSize--;
@@ -135,7 +186,7 @@ namespace Utils {
                     found |= 0x001;
                     si.ID = -1;
                     if (isUnicode) {
-                        si.album = unicodeToASCII(data + 3, fSize - 3);
+                        si.album = unicodeToASCII(data + 1, fSize - 1);
                     } else {
                         while (*(data + fSize - 1) == '\0') {
                             fSize--;
@@ -176,14 +227,14 @@ namespace Utils {
         // Default info to return
         SongInfo si;
         si.ID = -3;
-        si.title = std::filesystem::path(path).filename();    // Title defaults to file name
+        si.title = std::filesystem::path(path).stem();      // Title defaults to file name
         si.artist = "Unknown Artist";                       // Artist defaults to unknown
         si.album = "Unknown Album";                         // Same for album
 
         // Determine tag type
         std::ifstream file;
         file.open(path, std::ios::binary | std::ios::in);
-        char tagType = -1;
+        short tagType = -1;
         if (file) {
             // Check for "ID3" in first 3 bytes (ID3v2.x)
             char buf[4];
