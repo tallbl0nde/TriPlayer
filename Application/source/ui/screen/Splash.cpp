@@ -1,3 +1,4 @@
+#include "MP3.hpp"
 #include "Splash.hpp"
 #include "Utils.hpp"
 
@@ -21,7 +22,7 @@ namespace Screen {
         // Start processing (info discarded for now)
         for (size_t i = 0; i < files.size(); i++) {
             this->currentFile = i+1;
-            Utils::getInfoFromID3(files[i]);
+            SongInfo si = Utils::MP3::getInfoFromID3(files[i]);
         }
 
         // Increment index to signal it's finished
@@ -59,6 +60,7 @@ namespace Screen {
 
             // Update progress bar + text
             this->statusNum->setString("File " + std::to_string(curr) + " of " + std::to_string(this->totalFiles));
+            this->statusNum->setX(640 - this->statusNum->w()/2);
             this->pbar->setValue(100 * (float)this->currentFile/this->totalFiles);
             this->percent->setString(Utils::truncateToDecimalPlace(std::to_string(this->pbar->value()), 1) + "%");
 
