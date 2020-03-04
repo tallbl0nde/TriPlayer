@@ -15,6 +15,13 @@ namespace Utils {
     // Pass path of file
     SongInfo getInfoFromID3(std::string);
 
+    // Round the given double to the specified number of decimal places
+    float roundToDecimalPlace(float, unsigned int);
+
+    // Truncate string to given decimal places (don't use on strings without a decimal!)
+    // Does nothing if outside of range or no decimal place
+    std::string truncateToDecimalPlace(std::string, unsigned int);
+
     // Write to stdout if nxlink is enabled
     void writeStdout(std::string);
 };

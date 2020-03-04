@@ -1,13 +1,69 @@
 #include "Splash.hpp"
+#include "Utils.hpp"
 
 namespace Screen {
     Splash::Splash(Main::Application * a) : Screen() {
         this->app = a;
 
-        // Aloow to exit for now
+        // Allow to exit for now
         this->onButtonPress(Aether::Button::B, [this](){
             this->app->exit();
         });
+    }
+
+    void Splash::processFiles() {
+        this->currentFile = 0;
+
+        // Get list of file paths
+        std::vector<std::string> files = Utils::getFilesWithExt("/music", ".mp3");
+        this->totalFiles = files.size();
+
+        // Start processing (info discarded for now)
+        for (size_t i = 0; i < files.size(); i++) {
+            this->currentFile = i+1;
+            Utils::getInfoFromID3(files[i]);
+        }
+
+        // Increment index to signal it's finished
+        this->currentFile++;
+    }
+
+    void Splash::update(uint32_t dt) {
+        Screen::update(dt);
+
+        // Read into copy in case value changes
+        int curr = this->currentFile;
+
+        // Hide loading elements when done
+        if (curr > this->totalFiles) {
+            this->status->setHidden(true);
+            this->statusNum->setHidden(true);
+            this->pbar->setHidden(true);
+            this->percent->setHidden(true);
+            this->anim->setHidden(true);
+            this->hint->setHidden(true);
+        }
+
+        // Check status and update screen
+        if (curr != this->lastFile) {
+            // Unhide other elements
+            if (this->lastFile == 0) {
+                this->status->setString("Scanning your library...");
+                this->status->setX(640 - this->status->w()/2);
+                this->statusNum->setHidden(false);
+                this->pbar->setHidden(false);
+                this->percent->setHidden(false);
+                this->anim->setHidden(false);
+                this->hint->setHidden(false);
+            }
+
+            // Update progress bar + text
+            this->statusNum->setString("File " + std::to_string(curr) + " of " + std::to_string(this->totalFiles));
+            this->pbar->setValue(100 * (float)this->currentFile/this->totalFiles);
+            this->percent->setString(Utils::truncateToDecimalPlace(std::to_string(this->pbar->value()), 1) + "%");
+
+            this->lastFile = this->currentFile;
+        }
     }
 
     void Splash::onLoad() {
@@ -20,7 +76,7 @@ namespace Screen {
         t->setColour(Aether::Colour{255, 255, 255, 255});
         this->addElement(t);
 
-        this->status = new Aether::Text(640, 520, "Scanning your library...", 26);
+        this->status = new Aether::Text(640, 520, "Searching for new files...", 26);
         this->status->setX(640 - this->status->w()/2);
         this->status->setColour(Aether::Colour{255, 255, 255, 255});
         this->addElement(this->status);
@@ -56,7 +112,15 @@ namespace Screen {
         this->addElement(this->hint);
 
         // Most stuff is hidden until a list of files is found
+        this->statusNum->setHidden(true);
+        this->pbar->setHidden(true);
+        this->percent->setHidden(true);
+        this->anim->setHidden(true);
+        this->hint->setHidden(true);
 
+        // Start searching for files
+        this->lastFile = 0;
+        this->future = std::async(std::launch::async, &Splash::processFiles, this);
     }
 
     void Splash::onUnload() {
@@ -66,5 +130,6 @@ namespace Screen {
         this->removeElement(this->pbar);
         this->removeElement(this->percent);
         this->removeElement(this->anim);
+        this->removeElement(this->hint);
     }
 };
