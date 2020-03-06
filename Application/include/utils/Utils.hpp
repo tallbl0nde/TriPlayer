@@ -1,11 +1,16 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+#include <ctime>
 #include <string>
 #include <vector>
 
 // General helper functions
 namespace Utils {
+    // Returns the date/time (as time_t) the given file was modified
+    // (returns 0 on an error)
+    time_t getModifiedTimestamp(std::string);
+
     // Recursively scan given directory for files with given extension
     // Returns vector of paths: give directory, path
     std::vector<std::string> getFilesWithExt(std::string, std::string);

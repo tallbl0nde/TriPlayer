@@ -21,10 +21,23 @@ namespace Screen {
 
         // Start processing files one-by-one
         for (size_t i = 0; i < files.size(); i++) {
+            // Check if modified since added to database
+            unsigned int dataMTime = this->app->database()->getModifiedTimeForPath(files[i]);
+            unsigned int diskMTime = Utils::getModifiedTimestamp(files[i]);
+
+            // If modified time is 0 it likely hasn't been added
+            if (dataMTime == 0) {
+                SongInfo si = Utils::MP3::getInfoFromID3(files[i]);
+                this->app->database()->addSong(si, files[i], diskMTime);
+
+            // If it is greater then it's been updated!
+            } else if (diskMTime > dataMTime) {
+                this->app->database()->removeSong(this->app->database()->getSongIDForPath(files[i]));
+                SongInfo si = Utils::MP3::getInfoFromID3(files[i]);
+                this->app->database()->addSong(si, files[i], diskMTime);
+            }
+
             this->currentFile = i+1;
-            SongInfo si = Utils::MP3::getInfoFromID3(files[i]);
-            // Add to database
-            this->app->database()->addSong(si, files[i]);
         }
 
         // Increment index to signal it's finished

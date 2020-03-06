@@ -29,10 +29,17 @@ class Database {
         Database();
 
         // Add song into database (handles artists, etc...)
-        void addSong(SongInfo, std::string);
+        // Takes SongInfo, path and modified timestamp
+        void addSong(SongInfo, std::string, unsigned int);
+        // Remove song from database with ID
+        void removeSong(SongID);
 
         // Returns SongInfo for all stored songs
         std::vector<SongInfo> getAllSongInfo();
+        // Returns modified time for song matching path (0 on error/not found!)
+        unsigned int getModifiedTimeForPath(std::string);
+        // Return ID of song with given path (-1 if not found)
+        SongID getSongIDForPath(std::string);
         // Returns SongInfo for given ID (id will be -1 if not found!)
         SongInfo getSongInfoForID(SongID);
 

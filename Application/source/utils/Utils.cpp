@@ -1,9 +1,18 @@
 #include <cmath>
 #include <filesystem>
 #include <iostream>
+#include <sys/stat.h>
 #include "Utils.hpp"
 
 namespace Utils {
+    time_t getModifiedTimestamp(std::string path) {
+        struct stat st;
+        if (stat(path.c_str(), &st) == 0) {
+            return st.st_mtime;
+        }
+        return 0;
+    }
+
     std::vector<std::string> getFilesWithExt(std::string dir, std::string ext) {
         std::vector<std::string> paths;
 
@@ -61,11 +70,13 @@ namespace Utils {
         return str;
     }
 
-    void writeStdout(std::string str) {
-        #ifndef _NXLINK_
-            return;
-        #endif
+    #ifndef _NXLINK_
+        void writeStdout(std::string str) {
+            std::cout << str << std::endl;
+        }
+    #else
+        void writeStdout(std::string str){
 
-        std::cout << str << std::endl;
-    }
+        }
+    #endif
 };

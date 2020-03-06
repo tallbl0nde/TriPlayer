@@ -95,7 +95,7 @@ void Database::createTables() {
     sqlite3_finalize(this->cmd);
 
     // Create Songs table
-    sqlite3_prepare_v2(this->db, "CREATE TABLE Songs (id INTEGER NOT NULL PRIMARY KEY, path TEXT UNIQUE NOT NULL, modified DATETIME NOT NULL, lastplayed DATETIME, album_id INT NOT NULL, title TEXT NOT NULL, duration INT NOT NULL, plays INT NOT NULL DEFAULT 0, favourite BOOLEAN NOT NULL DEFAULT 0, FOREIGN KEY (album_id) REFERENCES Albums (id) );", -1, &this->cmd, nullptr);
+    sqlite3_prepare_v2(this->db, "CREATE TABLE Songs (id INTEGER NOT NULL PRIMARY KEY, path TEXT UNIQUE NOT NULL, modified DATETIME NOT NULL, lastplayed DATETIME NOT NULL DEFAULT 0, album_id INT NOT NULL, title TEXT NOT NULL, duration INT NOT NULL, plays INT NOT NULL DEFAULT 0, favourite BOOLEAN NOT NULL DEFAULT 0, FOREIGN KEY (album_id) REFERENCES Albums (id) );", -1, &this->cmd, nullptr);
     this->logMessage("Prepare 'create songs' statement");
     if (this->cmd != nullptr) {
         sqlite3_step(this->cmd);
@@ -122,10 +122,9 @@ void Database::createTables() {
     sqlite3_finalize(this->cmd);
 }
 
-void Database::addSong(SongInfo si, std::string path) {
+void Database::addSong(SongInfo si, std::string path, unsigned int mtime) {
     // Add artist first (will do nothing if they already exist)
-    std::string str = "INSERT INTO Artists (name) VALUES (?);";
-    sqlite3_prepare_v2(this->db, str.c_str(), -1, &this->cmd, nullptr);
+    sqlite3_prepare_v2(this->db, "INSERT INTO Artists (name) VALUES (?);", -1, &this->cmd, nullptr);
     sqlite3_bind_text(this->cmd, 1, si.artist.c_str(), -1, SQLITE_STATIC);
     this->logMessage("[addSong()] Prepare 'add artist' statement");
     if (this->cmd != nullptr) {
@@ -135,8 +134,7 @@ void Database::addSong(SongInfo si, std::string path) {
     sqlite3_finalize(this->cmd);
 
     // Add album next
-    str = "INSERT INTO Albums (name, artist_id) VALUES (?, (SELECT id FROM Artists WHERE name = ?));";
-    sqlite3_prepare_v2(this->db, str.c_str(), -1, &this->cmd, nullptr);
+    sqlite3_prepare_v2(this->db, "INSERT INTO Albums (name, artist_id) VALUES (?, (SELECT id FROM Artists WHERE name = ?));", -1, &this->cmd, nullptr);
     sqlite3_bind_text(this->cmd, 1, si.album.c_str(), -1, SQLITE_STATIC);
     sqlite3_bind_text(this->cmd, 2, si.artist.c_str(), -1, SQLITE_STATIC);
     this->logMessage("[addSong()] Prepare 'add album' statement");
@@ -147,17 +145,29 @@ void Database::addSong(SongInfo si, std::string path) {
     sqlite3_finalize(this->cmd);
 
     // Finally add song
-    str = "INSERT INTO Songs (path, modified, album_id, title, duration) VALUES (?, 0, (SELECT id FROM Albums WHERE name = ?), ?, ?);";
-    sqlite3_prepare_v2(this->db, str.c_str(), -1, &this->cmd, nullptr);
+    sqlite3_prepare_v2(this->db, "INSERT INTO Songs (path, modified, album_id, title, duration) VALUES (?, ?, (SELECT id FROM Albums WHERE name = ?), ?, ?);", -1, &this->cmd, nullptr);
     sqlite3_bind_text(this->cmd, 1, path.c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(this->cmd, 2, si.album.c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(this->cmd, 3, si.title.c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_int(this->cmd, 4, si.duration);
+    sqlite3_bind_int(this->cmd, 2, mtime);
+    sqlite3_bind_text(this->cmd, 3, si.album.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(this->cmd, 4, si.title.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_int(this->cmd, 5, si.duration);
     this->logMessage("[addSong()] Prepare 'add song' statement");
     if (this->cmd != nullptr) {
         sqlite3_step(this->cmd);
         this->logMessage("[addSong()] Add song");
     }
+    sqlite3_finalize(this->cmd);
+}
+
+void Database::removeSong(SongID id) {
+    sqlite3_prepare_v2(this->db, "DELETE FROM Songs WHERE id = ?;", -1, &this->cmd, nullptr);
+    sqlite3_bind_int(this->cmd, 1, id);
+    this->logMessage("[removeSong()] Prepare 'remove song' statement");
+    if (this->cmd != nullptr) {
+        sqlite3_step(this->cmd);
+        this->logMessage("[removeSong()] Remove song");
+    }
+    sqlite3_finalize(this->cmd);
 }
 
 std::vector<SongInfo> Database::getAllSongInfo() {
@@ -199,6 +209,39 @@ std::vector<SongInfo> Database::getAllSongInfo() {
     sqlite3_finalize(this->cmd);
 
     return v;
+}
+
+unsigned int Database::getModifiedTimeForPath(std::string path) {
+    unsigned int ret = 0;
+
+    sqlite3_prepare_v2(this->db, "SELECT modified FROM Songs WHERE path = ?;", -1, &this->cmd, nullptr);
+    sqlite3_bind_text(this->cmd, 1, path.c_str(), -1, SQLITE_STATIC);
+    this->logMessage("[getModifiedTimeForPath()] Prepare statement");
+    if (this->cmd != nullptr) {
+        if (sqlite3_step(this->cmd) == SQLITE_ROW) {
+            ret = sqlite3_column_int(this->cmd, 0);
+        }
+        this->logMessage("[getModifiedTimeForPath()] Result");
+    }
+    sqlite3_finalize(this->cmd);
+
+    return ret;
+}
+
+SongID Database::getSongIDForPath(std::string path) {
+    SongID ret = -1;
+    sqlite3_prepare_v2(this->db, "SELECT id FROM Songs WHERE path = ?;", -1, &this->cmd, nullptr);
+    sqlite3_bind_text(this->cmd, 1, path.c_str(), -1, SQLITE_STATIC);
+    this->logMessage("[getSongIDForPath()] Prepare statement");
+    if (this->cmd != nullptr) {
+        if (sqlite3_step(this->cmd) == SQLITE_ROW) {
+            ret = sqlite3_column_int(this->cmd, 0);
+        }
+        this->logMessage("[getSongIDForPath()] Result");
+    }
+    sqlite3_finalize(this->cmd);
+
+    return ret;
 }
 
 SongInfo Database::getSongInfoForID(SongID id) {
