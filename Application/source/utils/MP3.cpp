@@ -3,6 +3,7 @@
 #include <fstream>
 #include "MP3.hpp"
 #include "Utils.hpp"
+#include <iostream>
 
 // Bitrates matching value of bitrate bits
 static const int bitVer1[16] = {0, 32000, 40000, 48000, 56000, 64000, 80000, 96000, 112000, 128000, 160000, 192000, 224000, 256000, 320000, 0};
@@ -19,36 +20,38 @@ namespace Utils::MP3 {
     // Calculates duration of MP3 file
     // Returns number of seconds (0 if error occurred)
     static unsigned int parseDuration(std::ifstream &file) {
-        unsigned char buf[4];
-        file.read((char *) &buf[0], 3);
+        // Read file into RAM
+        file.seekg(0, file.end);
+        size_t size = file.tellg();
+        file.seekg(0, file.beg);
+        unsigned char * buf;
+        try {
+            buf = new unsigned char[size];
+        } catch (const std::bad_alloc& e) {
+            // For now just skip files that are too large
+            return 0;
+        }
+        file.read((char *) buf, size);
+        size_t pos = 0;
 
         // If an ID3 tag is present skip it
         if (buf[0] == 'I' && buf[1] == 'D' && buf[2] == '3') {
             unsigned int tagSize = 0;
-            file.seekg(3, std::ios::cur);
-            file.read((char *) &buf[0], 4);
-            tagSize = ((buf[0] & 127) << 21) | ((buf[1] & 127) << 14) | ((buf[2] & 127) << 7) | ((buf[3] & 127));
-            file.seekg(tagSize, std::ios::cur);
+            tagSize = ((buf[6] & 127) << 21) | ((buf[7] & 127) << 14) | ((buf[8] & 127) << 7) | ((buf[9] & 127));
+            pos += 10 + tagSize;
         }
 
         // Loop over each frame and calculate stuff
         double seconds = 0;
-        while (true) {
-            // An error occurred
-            if (file.tellg() < 0) {
-                seconds = 0;
-                break;
-            }
-
+        while (pos < size) {
             // Read frame header
-            file.read((char *) &buf[0], 4);
-            if (file.eof() || !(buf[0] == 0xFF && (buf[1] & 0b11100000) == 0b11100000)) {
+            if (!(buf[pos] == 0xFF && (buf[pos + 1] & 0b11100000) == 0b11100000)) {
                 break;
             }
 
             // Get mpeg version (layer is always 3!)
             MPEGVer ver = MPEGVer::One;
-            switch (buf[1] & 0b00011000) {
+            switch (buf[pos + 1] & 0b00011000) {
                 case 0b00011000:
                     ver = MPEGVer::One;
                     break;
@@ -63,23 +66,23 @@ namespace Utils::MP3 {
             }
 
             // Check for padding (which is 1 byte)
-            bool padding = ((buf[2] & 0b10) == 0b10);
+            bool padding = ((buf[pos + 2] & 0b10) == 0b10);
 
             // Get bitrate and sample rate
             int bitrate;
             switch (ver) {
                 case MPEGVer::One:
-                    bitrate = bitVer1[(buf[2] & 0b11110000) >> 4];
+                    bitrate = bitVer1[(buf[pos + 2] & 0b11110000) >> 4];
                     break;
 
                 case MPEGVer::Two:
                 case MPEGVer::TwoFive:
-                    bitrate = bitVer2[(buf[2] & 0b11110000) >> 4];
+                    bitrate = bitVer2[(buf[pos + 2] & 0b11110000) >> 4];
                     break;
             }
 
             int samplerate = 1;
-            switch (buf[2] & 0b1100) {
+            switch (buf[pos + 2] & 0b1100) {
                 case 0b0000:
                     samplerate = 44100;
                     break;
@@ -100,11 +103,14 @@ namespace Utils::MP3 {
 
             // Calculate size and jump to end (next frame header)
             unsigned int size = ((144 * bitrate) / samplerate) + (padding ? 1 : 0) - 4;
-            file.seekg(size, std::ios::cur);
+            pos += 4 + size;
 
             // Duration in seconds is (samples per frame / sample rate)
             seconds += (1152 / (long double)samplerate);
         }
+
+        // Delete RAM copy
+        delete[] buf;
 
         return (unsigned int)std::round(seconds);
     }
