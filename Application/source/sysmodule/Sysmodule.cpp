@@ -1,5 +1,6 @@
 #include "Commands.hpp"
 #include "Sysmodule.hpp"
+#include "Utils.hpp"
 
 #define PORT 3333
 #define VOL_AMT 10
@@ -8,6 +9,27 @@ Sysmodule::Sysmodule() {
     // Get socket
     this->socket = -1;
     this->reconnect();
+}
+
+bool Sysmodule::isReady() {
+    // Check versions match
+    if (!Utils::Socket::writeToSocket(this->socket, std::to_string(VERSION))) {
+        // Error writing
+        return false;
+    }
+
+    std::string str = Utils::Socket::readFromSocket(this->socket);
+    if (str == "") {
+        // Error reading
+        return false;
+    }
+
+    if (std::stoi(str) != SM_PROTOCOL_VERSION) {
+        Utils::writeStdout("[SYSMODULE] [isReady()] Sysmodule version does not match!");
+        return false;
+    }
+
+    return true;
 }
 
 void Sysmodule::reconnect() {

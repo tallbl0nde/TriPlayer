@@ -8,6 +8,9 @@ namespace Main {
         // Open database
         this->database_ = new Database();
 
+        // Create sysmodule object (will attempt connection)
+        this->sysmodule_ = new Sysmodule();
+
         // Create Aether instance
         this->display = new Aether::Display();
         Aether::Colour c = this->theme_->BG();
@@ -57,6 +60,10 @@ namespace Main {
         return this->database_;
     }
 
+    Sysmodule * Application::sysmodule() {
+        return this->sysmodule_;
+    }
+
     Theme * Application::theme() {
         return this->theme_;
     }
@@ -80,6 +87,8 @@ namespace Main {
         // Cleanup Aether
         delete this->display;
 
+        // Disconnect from sysmodule
+        delete this->sysmodule_;
         // Close/save database
         delete this->database_;
     }

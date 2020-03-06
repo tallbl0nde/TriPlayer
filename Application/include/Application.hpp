@@ -2,6 +2,7 @@
 #define APPLICATION_HPP
 
 #include "Database.hpp"
+#include "Sysmodule.hpp"
 #include "Theme.hpp"
 
 #include "MainScreen.hpp"
@@ -34,6 +35,9 @@ namespace Main {
             // Database object
             Database * database_;
 
+            // Sysmodule object which allows communication
+            Sysmodule * sysmodule_;
+
             // Theme object
             Theme * theme_;
 
@@ -57,6 +61,8 @@ namespace Main {
 
             // Returns database pointer
             Database * database();
+            // Returns sysmodule pointer
+            Sysmodule * sysmodule();
             // Returns theme pointer
             Theme * theme();
 

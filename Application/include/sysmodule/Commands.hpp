@@ -11,6 +11,7 @@ const int SM_PROTOCOL_VERSION = 1;
 
 // Commands
 enum SM_Command {
+    VERSION,        // Version command will always have first byte set to 0x0
     RESUME,
     PAUSE,
     PREVIOUS,

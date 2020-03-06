@@ -15,8 +15,11 @@ class Sysmodule {
     public:
         // Constructor creates a socket and attempts connection to sysmodule
         Sysmodule();
+        // Returns whether versions match (will return false if the connection failed as well)
+        bool isReady();
 
         // (Drops) current socket and reconnects
+        // Note that it will return false if the versions do not match!
         void reconnect();
 
         // Sends relevant command to sysmodule, returning true if the sysmodule received the command

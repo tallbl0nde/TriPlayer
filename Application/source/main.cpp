@@ -1,9 +1,7 @@
 #include "Application.hpp"
 #include "Utils.hpp"
-#include "Sysmodule.hpp"
 
 int main(void) {
-
     // Start services
     romfsInit();
     socketInitializeDefault();

@@ -36,13 +36,22 @@ namespace Screen {
         int curr = this->currentFile;
 
         // Hide loading elements when done
-        if (curr > this->totalFiles) {
-            this->status->setHidden(true);
-            this->statusNum->setHidden(true);
+        if (curr > this->totalFiles && !this->pbar->hidden()) {
             this->pbar->setHidden(true);
             this->percent->setHidden(true);
             this->anim->setHidden(true);
             this->hint->setHidden(true);
+
+            // Check if connected to sysmodule
+            if (this->app->sysmodule()->isReady()) {
+                this->status->setHidden(true);
+                this->statusNum->setHidden(true);
+            } else {
+                this->status->setString("Unable to connect to Sysmodule!");
+                this->status->setX(640 - this->status->w()/2);
+                this->statusNum->setString("Check that it is enabled and up to date");
+                this->statusNum->setX(640 - this->statusNum->w()/2);
+            }
         }
 
         // Check status and update screen
