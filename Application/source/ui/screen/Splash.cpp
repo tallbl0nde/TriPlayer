@@ -19,10 +19,12 @@ namespace Screen {
         std::vector<std::string> files = Utils::getFilesWithExt("/music", ".mp3");
         this->totalFiles = files.size();
 
-        // Start processing (info discarded for now)
+        // Start processing files one-by-one
         for (size_t i = 0; i < files.size(); i++) {
             this->currentFile = i+1;
             SongInfo si = Utils::MP3::getInfoFromID3(files[i]);
+            // Add to database
+            this->app->database()->addSong(si, files[i]);
         }
 
         // Increment index to signal it's finished
@@ -36,21 +38,25 @@ namespace Screen {
         int curr = this->currentFile;
 
         // Hide loading elements when done
-        if (curr > this->totalFiles && !this->pbar->hidden()) {
-            this->pbar->setHidden(true);
-            this->percent->setHidden(true);
-            this->anim->setHidden(true);
-            this->hint->setHidden(true);
+        if (curr > this->totalFiles) {
+            if (!this->pbar->hidden()) {
+                this->pbar->setHidden(true);
+                this->percent->setHidden(true);
+                this->anim->setHidden(true);
+                this->hint->setHidden(true);
 
-            // Check if connected to sysmodule
-            if (this->app->sysmodule()->isReady()) {
-                this->status->setHidden(true);
-                this->statusNum->setHidden(true);
+                // Check if connected to sysmodule
+                if (this->app->sysmodule()->isReady()) {
+                    this->status->setHidden(true);
+                    this->statusNum->setHidden(true);
+                } else {
+                    this->status->setString("Unable to connect to Sysmodule!");
+                    this->status->setX(640 - this->status->w()/2);
+                    this->statusNum->setString("Check that it is enabled and up to date");
+                    this->statusNum->setX(640 - this->statusNum->w()/2);
+                }
             } else {
-                this->status->setString("Unable to connect to Sysmodule!");
-                this->status->setX(640 - this->status->w()/2);
-                this->statusNum->setString("Check that it is enabled and up to date");
-                this->statusNum->setX(640 - this->statusNum->w()/2);
+                return;
             }
         }
 
@@ -70,7 +76,7 @@ namespace Screen {
             // Update progress bar + text
             this->statusNum->setString("File " + std::to_string(curr) + " of " + std::to_string(this->totalFiles));
             this->statusNum->setX(640 - this->statusNum->w()/2);
-            this->pbar->setValue(100 * (float)this->currentFile/this->totalFiles);
+            this->pbar->setValue(100 * (float)this->currentFile/(this->totalFiles + 1));
             this->percent->setString(Utils::truncateToDecimalPlace(std::to_string(this->pbar->value()), 1) + "%");
 
             this->lastFile = this->currentFile;

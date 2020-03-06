@@ -28,10 +28,17 @@ class Database {
         // Constructor opens (or creates) database
         Database();
 
+        // Add song into database (handles artists, etc...)
+        void addSong(SongInfo, std::string);
+
         // Returns SongInfo for all stored songs
         std::vector<SongInfo> getAllSongInfo();
         // Returns SongInfo for given ID (id will be -1 if not found!)
         SongInfo getSongInfoForID(SongID);
+
+        // Cleans up database by:
+        // Removing 'empty' artists/albums
+        void cleanup();
 
         // Destructor closes handle
         ~Database();
