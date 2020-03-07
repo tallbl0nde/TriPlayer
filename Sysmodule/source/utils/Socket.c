@@ -87,6 +87,7 @@ void acceptConnection() {
                 // Set read timeout
                 setsockopt(tSocket, SOL_SOCKET, SO_RCVTIMEO, (const char *)& time, sizeof(time));
             }
+            logError("[SOCKET] ERRNO:", errno);
             logSuccess("[SOCKET] Transfer socket connected!");
             break;
         }

@@ -1,12 +1,13 @@
 #include "Log.h"
+#include "MP3.h"
 #include <pthread.h>
 #include "Socket.h"
 #include <stdlib.h>
 #include <string.h>
 #include <switch.h>
 
-// Heap size... 3MB for sockets
-#define INNER_HEAP_SIZE 3 * 1024 * 1024
+// Heap size... 3MB for sockets + 3MB for audio (atm)
+#define INNER_HEAP_SIZE 6 * 1024 * 1024
 
 // Stuff that I probably shouldn't change
 u32 __nx_applet_type = AppletType_None;
@@ -40,15 +41,41 @@ void __attribute__((weak)) __appInit(void) {
     if (R_FAILED(socketInitializeDefault())) {
         // I dunno
     }
+
+    if (R_FAILED(audoutInitialize())) {
+        // I dunno Part 2
+    }
+    audoutStartAudioOut();
 }
 
 // Close services on quit
 void __attribute__((weak)) __appExit(void) {
     // In reverse order
+    audoutStopAudioOut();
+    audoutExit();
     socketExit();
     fsdevUnmountAll();
     fsExit();
     smExit();
+}
+
+// Function used in one thread for handling music
+void * musicThread(void * args) {
+    int * exit = (int *)args;
+
+logOpenFile();
+    mp3Init();
+
+    mp3Play("/music/3nd of an 3ra.mp3");
+
+    while (true) {
+        mp3Loop();
+    }
+
+    mp3Exit();
+    logCloseFile();
+
+    return NULL;
 }
 
 // Function used in one thread for handling sockets + commands
@@ -56,7 +83,7 @@ void * socketThread(void * args) {
     int * exit = (int *)args;
 
     // Start logging
-    logOpenFile();
+
     // Create 'control' socket
     createListeningSocket();
 
@@ -73,12 +100,7 @@ void * socketThread(void * args) {
             if (data != NULL) {
                 // Data received... do something!
                 logSuccess("Received some data in main!");
-                // char * p = data;
-                // while (*p) {
-                //     logSuccess(p);
-                //     p = strchr(p, '\0');
-                //     p++;
-                // }
+
 
                 free((void *)data);
             }
@@ -89,7 +111,7 @@ void * socketThread(void * args) {
     closeConnection();
 
     // Stop logging
-    logCloseFile();
+
     // Close socket
     closeListeningSocket();
 
@@ -100,18 +122,22 @@ int main(int argc, char * argv[]) {
     int exitThreads = -1;
 
     // Start socket thread (passed bool which is set 0 when to stop listening and exit thread)
-    pthread_t pthreadSocket;
-    pthread_create(&pthreadSocket, NULL, &socketThread, (void *) &exitThreads);
+    // pthread_t pthreadSocket;
+    // pthread_create(&pthreadSocket, NULL, &socketThread, (void *) &exitThreads);
 
-    // Music player (mpg123) stuff will go here (probs a thread)
+    // Music player (mpg123) thread
+    pthread_t pthreadMusic;
+    pthread_create(&pthreadMusic, NULL, &musicThread, (void *) &exitThreads);
+
     // loop indefinitely
-    while (0 == 0) {
+    while (appletMainLoop()) {
         svcSleepThread(1E+9);
     }
 
     // Join all threads
     exitThreads = 0;
-    pthread_join(pthreadSocket, NULL);
+    pthread_join(pthreadMusic, NULL);
+    // pthread_join(pthreadSocket, NULL);
 
     return 0;
 }
