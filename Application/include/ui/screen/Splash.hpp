@@ -24,17 +24,32 @@ namespace Screen {
             Aether::Animation * anim;
             Aether::Text * hint;
 
-            // Future for thread
-            std::future<void> future;
+            // Stages of loading process (used to update UI)
+            enum LoadingStage {
+                Search,     // Search music folder for paths
+                Parse,      // Parse each file's metadata
+                Update,     // Update/clean database
+                Done
+            };
+
             // Function which runs alongside UI to load stuff
             void processFiles();
-            // Variable which signals how many files have been read
-            // (set to 0 until files have been found)
+
+            // === The following variables are used to communicate between threads === //
+            // Future for thread
+            std::future<void> future;
+            // Stage of 'loading'
+            std::atomic<LoadingStage> currentStage;
+            // Value of last lStage
+            LoadingStage lastStage;
+
+            // == Stage 1: Reading file metadata ==
+            // Variable which signals how many files have been read (set to 0 until files have been found)
             std::atomic<int> currentFile;
-            // UI thread uses this variable to detect change
-            int lastFile;
             // Total number of files found
             std::atomic<int> totalFiles;
+            // Used to detect change
+            int lastFile;
 
         public:
             Splash(Main::Application *);

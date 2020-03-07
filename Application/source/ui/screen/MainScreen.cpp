@@ -134,7 +134,7 @@ namespace Screen {
             l->setTitleString(si[i].title);
             l->setArtistString(si[i].artist);
             l->setAlbumString(si[i].album);
-            l->setLengthString("0:00");
+            l->setLengthString(std::to_string(si[i].duration/60) + ":" + std::to_string(si[i].duration%60));
             l->setLineColour(this->app->theme()->mutedLine());
             l->setTextColour(this->app->theme()->text());
             l->setCallback([](){

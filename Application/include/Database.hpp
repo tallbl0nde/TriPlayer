@@ -17,6 +17,9 @@ class Database {
         // Creates database with empty tables
         void createTables();
 
+        // Call all necessary pragma statements
+        void setup();
+
         // Log given string alond with extended code (to stdout)
         // Format: "[SQLITE] string: status (code)"
         void logMessage(std::string);
@@ -28,6 +31,14 @@ class Database {
         // Constructor opens (or creates) database
         Database();
 
+        // Lock the database for writing (will block until writable)
+        // Closes read-only connection and opens r/w
+        void lock();
+
+        // Unlock the database
+        // Closes r/w connection and opens read-only
+        void unlock();
+
         // Add song into database (handles artists, etc...)
         // Takes SongInfo, path and modified timestamp
         void addSong(SongInfo, std::string, unsigned int);
@@ -36,6 +47,8 @@ class Database {
 
         // Returns SongInfo for all stored songs
         std::vector<SongInfo> getAllSongInfo();
+        // Returns vector of paths for all stored songs
+        std::vector<std::string> getAllSongPaths();
         // Returns modified time for song matching path (0 on error/not found!)
         unsigned int getModifiedTimeForPath(std::string);
         // Return ID of song with given path (-1 if not found)

@@ -13,86 +13,137 @@ namespace Screen {
     }
 
     void Splash::processFiles() {
+        // Search for files in folder
+        this->currentStage = Search;
         this->currentFile = 0;
-
-        // Get list of file paths
         std::vector<std::string> files = Utils::getFilesWithExt("/music", ".mp3");
         this->totalFiles = files.size();
 
-        // Start processing files one-by-one
+        // Find songs that need to be removed
+        std::vector<SongID> remove;
         for (size_t i = 0; i < files.size(); i++) {
             // Check if modified since added to database
             unsigned int dataMTime = this->app->database()->getModifiedTimeForPath(files[i]);
             unsigned int diskMTime = Utils::getModifiedTimestamp(files[i]);
 
-            // If modified time is 0 it likely hasn't been added
-            if (dataMTime == 0) {
-                SongInfo si = Utils::MP3::getInfoFromID3(files[i]);
-                this->app->database()->addSong(si, files[i], diskMTime);
-
-            // If it is greater then it's been updated!
-            } else if (diskMTime > dataMTime) {
-                this->app->database()->removeSong(this->app->database()->getSongIDForPath(files[i]));
-                SongInfo si = Utils::MP3::getInfoFromID3(files[i]);
-                this->app->database()->addSong(si, files[i], diskMTime);
+            // If so remove previous entry and then add later
+            if (diskMTime > dataMTime) {
+                remove.push_back(this->app->database()->getSongIDForPath(files[i]));
             }
-
-            this->currentFile = i+1;
         }
 
-        // Increment index to signal it's finished
+        std::vector<std::string> paths = this->app->database()->getAllSongPaths();
+        for (size_t i = 0; i < paths.size(); i++) {
+            // If file is no longer present remove it
+            if (std::find(files.begin(), files.end(), paths[i]) == files.end()) {
+                remove.push_back(this->app->database()->getSongIDForPath(paths[i]));
+            }
+        }
+
+        // Find songs that need to be added
+        std::vector< std::pair<std::string, unsigned int> > add;
+        for (size_t i = 0; i < files.size(); i++) {
+            // Check if modified since added to database
+            unsigned int dataMTime = this->app->database()->getModifiedTimeForPath(files[i]);
+            unsigned int diskMTime = Utils::getModifiedTimestamp(files[i]);
+
+            // Add part of 'update entry'
+            if (dataMTime == 0 || diskMTime > dataMTime) {
+                add.push_back(std::pair<std::string, unsigned int>(files[i], diskMTime));
+            }
+        }
+
+        // Don't do anything if no changes
+        if (remove.size() == 0 && add.size() == 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(600));
+            this->currentStage = Done;
+            return;
+        }
+
+        // Proceed to parsing new songs
+        this->currentStage = Parse;
+        std::vector<SongInfo> infos;
+        for (size_t i = 0; i < add.size(); i++) {
+            infos.push_back(Utils::MP3::getInfoFromID3(add[i].first));
+            this->currentFile = i+1;
+        }
         this->currentFile++;
+
+        // Now commit all changes to DB!
+        this->currentStage = Update;
+        // Reset the sysmodule to stop playback, clear queue and ensure DB won't be accessed
+        this->app->sysmodule()->reset();
+        // Lock the database for writing
+        this->app->database()->lock();
+
+        // First remove entries
+        for (size_t i = 0; i < remove.size(); i++) {
+            this->app->database()->removeSong(remove[i]);
+        }
+        // Next add entries (infos and add have same size)
+        for (size_t i = 0; i < add.size(); i++) {
+            this->app->database()->addSong(infos[i], add[i].first, add[i].second);
+        }
+
+        // Clean 'empty' artists/albums from DB
+        this->app->database()->cleanup();
+
+        // Unlock database now that everything is done
+        this->app->database()->unlock();
+        this->currentStage = Done;
     }
 
     void Splash::update(uint32_t dt) {
         Screen::update(dt);
 
         // Read into copy in case value changes
-        int curr = this->currentFile;
+        LoadingStage curr = this->currentStage;
+        if (curr != this->lastStage) {
+            switch (curr) {
+                case Search:
+                    // Never called
+                    break;
 
-        // Hide loading elements when done
-        if (curr > this->totalFiles) {
-            if (!this->pbar->hidden()) {
-                this->pbar->setHidden(true);
-                this->percent->setHidden(true);
-                this->anim->setHidden(true);
-                this->hint->setHidden(true);
-
-                // Check if connected to sysmodule
-                if (this->app->sysmodule()->isReady()) {
-                    this->status->setHidden(true);
-                    this->statusNum->setHidden(true);
-                } else {
-                    this->status->setString("Unable to connect to Sysmodule!");
+                case Parse:
+                    this->status->setString("Scanning new songs...");
                     this->status->setX(640 - this->status->w()/2);
-                    this->statusNum->setString("Check that it is enabled and up to date");
-                    this->statusNum->setX(640 - this->statusNum->w()/2);
-                }
-            } else {
-                return;
+                    this->statusNum->setHidden(false);
+                    this->anim->setX(this->pbar->x() - 60);
+                    this->pbar->setHidden(false);
+                    this->percent->setHidden(false);
+                    this->anim->setHidden(false);
+                    this->hint->setHidden(false);
+                    break;
+
+                case Update:
+                    this->status->setString("Updating database...");
+                    this->statusNum->setHidden(true);
+                    this->anim->setX(620);
+                    this->pbar->setHidden(true);
+                    this->percent->setHidden(true);
+                    break;
+
+                case Done:
+                    this->anim->setHidden(true);
+                    this->hint->setHidden(true);
+                    this->status->setHidden(true);
+                    this->app->setScreen(Main::ScreenID::Main);
+                    break;
             }
+            this->lastStage = curr;
         }
 
-        // Check status and update screen
-        if (curr != this->lastFile) {
-            // Unhide other elements
-            if (this->lastFile == 0) {
-                this->status->setString("Scanning your library...");
-                this->status->setX(640 - this->status->w()/2);
-                this->statusNum->setHidden(false);
-                this->pbar->setHidden(false);
-                this->percent->setHidden(false);
-                this->anim->setHidden(false);
-                this->hint->setHidden(false);
+        if (curr == Parse) {
+            // Read into copy in case value changes
+            int currF = this->currentFile;
+            if (currF != this->lastFile) {
+                // Update progress bar + text
+                this->statusNum->setString("File " + std::to_string(currF) + " of " + std::to_string(this->totalFiles));
+                this->statusNum->setX(640 - this->statusNum->w()/2);
+                this->pbar->setValue(100 * (float)this->currentFile/(this->totalFiles + 1));
+                this->percent->setString(Utils::truncateToDecimalPlace(std::to_string(this->pbar->value()), 1) + "%");
+                this->lastFile = currF;
             }
-
-            // Update progress bar + text
-            this->statusNum->setString("File " + std::to_string(curr) + " of " + std::to_string(this->totalFiles));
-            this->statusNum->setX(640 - this->statusNum->w()/2);
-            this->pbar->setValue(100 * (float)this->currentFile/(this->totalFiles + 1));
-            this->percent->setString(Utils::truncateToDecimalPlace(std::to_string(this->pbar->value()), 1) + "%");
-
-            this->lastFile = this->currentFile;
         }
     }
 
@@ -126,7 +177,7 @@ namespace Screen {
         this->percent->setY(610 - this->percent->h()/2);
         this->addElement(this->percent);
 
-        this->anim = new Aether::Animation(this->pbar->x() - 60, 600, 40, 20);
+        this->anim = new Aether::Animation(620, 600, 40, 20);
         for (size_t i = 1; i <= 50; i++) {
             Aether::Image * im = new Aether::Image(this->anim->x(), this->anim->y(), "romfs:/anim/infload/" + std::to_string(i) + ".png");
             im->setWH(40, 20);
@@ -145,12 +196,25 @@ namespace Screen {
         this->statusNum->setHidden(true);
         this->pbar->setHidden(true);
         this->percent->setHidden(true);
-        this->anim->setHidden(true);
         this->hint->setHidden(true);
 
-        // Start searching for files
+        this->currentFile = 0;
         this->lastFile = 0;
-        this->future = std::async(std::launch::async, &Splash::processFiles, this);
+        this->currentStage = Search;
+        this->lastStage = Search;
+
+        // Check if connected to sysmodule
+        if (this->app->sysmodule()->isReady()) {
+            // Start searching for files
+            this->future = std::async(std::launch::async, &Splash::processFiles, this);
+        } else {
+            this->status->setString("Unable to connect to Sysmodule!");
+            this->status->setX(640 - this->status->w()/2);
+            this->statusNum->setString("Check that it is enabled and up to date");
+            this->statusNum->setX(640 - this->statusNum->w()/2);
+            this->statusNum->setHidden(false);
+            this->anim->setHidden(true);
+        }
     }
 
     void Splash::onUnload() {

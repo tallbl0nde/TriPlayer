@@ -43,10 +43,18 @@ Database::Database() {
         destF.close();
     }
 
-    // Open connection to database
-    sqlite3_open_v2("/switch/TriPlayer/music.db", &this->db, SQLITE_OPEN_READWRITE, "unix-none");
-    this->logMessage("Open database");
+    // Create database tables if database file was just copied
+    if (!exists) {
+        this->lock();
+        this->createTables();
+    }
 
+    // Open read-only
+    this->unlock();
+    this->logMemory();
+}
+
+void Database::setup() {
     // Store journal in memory (otherwise file is unwritable)
     sqlite3_prepare_v2(this->db, "PRAGMA journal_mode=MEMORY;", -1, &this->cmd, nullptr);
     if (this->cmd != nullptr) {
@@ -66,13 +74,20 @@ Database::Database() {
         this->logMessage("Unable to enable foreign keys");
     }
     sqlite3_finalize(this->cmd);
+}
 
-    // Create database tables if database file was just copied
-    if (!exists) {
-        this->createTables();
-    }
+void Database::lock() {
+    sqlite3_close(this->db);
+    sqlite3_open_v2("/switch/TriPlayer/music.db", &this->db, SQLITE_OPEN_READWRITE, "unix-none");
+    this->logMessage("Open database read-write (lock)");
+    this->setup();
+}
 
-    this->logMemory();
+void Database::unlock() {
+    sqlite3_close(this->db);
+    sqlite3_open_v2("/switch/TriPlayer/music.db", &this->db, SQLITE_OPEN_READONLY, "unix-none");
+    this->logMessage("Open database read-only (unlock)");
+    this->setup();
 }
 
 void Database::createTables() {
@@ -86,7 +101,7 @@ void Database::createTables() {
     sqlite3_finalize(this->cmd);
 
     // Create Albums table
-    sqlite3_prepare_v2(this->db, "CREATE TABLE Albums (id INTEGER NOT NULL PRIMARY KEY, name TEXT UNIQUE NOT NULL, artist_id INTEGER NOT NULL, FOREIGN KEY (artist_id) REFERENCES Artists (id));", -1, &this->cmd, nullptr);
+    sqlite3_prepare_v2(this->db, "CREATE TABLE Albums (id INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL, artist_id INTEGER NOT NULL, FOREIGN KEY (artist_id) REFERENCES Artists (id));", -1, &this->cmd, nullptr);
     this->logMessage("Prepare 'create albums' statement");
     if (this->cmd != nullptr) {
         sqlite3_step(this->cmd);
@@ -205,6 +220,39 @@ std::vector<SongInfo> Database::getAllSongInfo() {
             pos++;
         }
         this->logMessage("[getAllSongInfo()] Finish iterating over rows");
+    }
+    sqlite3_finalize(this->cmd);
+
+    return v;
+}
+
+std::vector<std::string> Database::getAllSongPaths() {
+    std::vector<std::string> v;
+
+    // Set size of vector based on number of songs
+    sqlite3_prepare_v2(this->db, "SELECT COUNT(*) FROM Songs;", -1, &this->cmd, nullptr);
+    this->logMessage("[getAllSongPaths()] Prepare 'song count' statement");
+    if (this->cmd != nullptr) {
+        int rows = -1;
+        if (sqlite3_step(this->cmd) == SQLITE_ROW) {
+            rows = sqlite3_column_int(this->cmd, 0);
+            v.resize(rows);
+        }
+        this->logMessage("[getAllSongPaths()] Got count (" + std::to_string(rows) + ")");
+    }
+    sqlite3_finalize(this->cmd);
+
+    // Get each path and insert in vector
+    sqlite3_prepare_v2(this->db, "SELECT path FROM Songs;", -1, &this->cmd, nullptr);
+    this->logMessage("[getAllSongPaths()] Prepare 'select all song paths' statement");
+    if (this->cmd != nullptr) {
+        unsigned int pos = 0;
+        while (sqlite3_step(this->cmd) == SQLITE_ROW) {
+            const unsigned char * str = sqlite3_column_text(this->cmd, 0);
+            v[pos] = std::string((const char *)str);
+            pos++;
+        }
+        this->logMessage("[getAllSongPaths()] Finish iterating over rows");
     }
     sqlite3_finalize(this->cmd);
 

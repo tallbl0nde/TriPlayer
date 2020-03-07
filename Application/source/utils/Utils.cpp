@@ -70,7 +70,7 @@ namespace Utils {
         return str;
     }
 
-    #ifndef _NXLINK_
+    #ifdef _NXLINK_
         void writeStdout(std::string str) {
             std::cout << str << std::endl;
         }
