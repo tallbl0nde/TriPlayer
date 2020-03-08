@@ -8,8 +8,8 @@
 // Shoutout to KranKRival's sys-audioplayer, which I essentially
 // referenced in order for this to actually work! ty <3
 
-// Index of 'active' buffer
-static uint8_t activeBuf;
+// Set zero if buffer is being played
+static int bufPlaying[2];
 // Buffers for AudioOut
 static AudioOutBuffer audoutBuf[2];
 // Buffers for decoded data
@@ -31,6 +31,8 @@ void allocateBuffer() {
     bufferSize = mpg123_outblock(mpg) * 16;
     decodedBuf[0] = memalign(0x1000, bufferSize);
     decodedBuf[1] = memalign(0x1000, bufferSize);
+    bufPlaying[0] = 1;
+    bufPlaying[1] = 1;
 }
 
 void freeBuffer() {
@@ -42,31 +44,31 @@ void freeBuffer() {
         free(decodedBuf[1]);
         decodedBuf[1] = NULL;
     }
+    bufPlaying[0] = 1;
+    bufPlaying[1] = 1;
 }
 
 // Decode the next frame(s) of the mp3 into buffer
 // Returns bytes decoded (so zero if nothing!)
-int decode() {
-    memset(decodedBuf[activeBuf], 0, bufferSize);
+int decode(int num) {
+    memset(decodedBuf[num], 0, bufferSize);
     size_t decoded = 0;
-    mpg123_read(mpg, decodedBuf[activeBuf], bufferSize, &decoded);
+    mpg123_read(mpg, decodedBuf[num], bufferSize, &decoded);
     if (decoded == 0) {
         // Should probably have error handling here
         return 0;
     }
 
     // Fill audoutBuffer with decoded data
-    audoutBuf[activeBuf].next = 0;
-    audoutBuf[activeBuf].buffer = decodedBuf[activeBuf];
-    audoutBuf[activeBuf].buffer_size = bufferSize;
-    audoutBuf[activeBuf].data_size = bufferSize;
-    audoutBuf[activeBuf].data_offset = 0;
+    audoutBuf[num].next = 0;
+    audoutBuf[num].buffer = decodedBuf[num];
+    audoutBuf[num].buffer_size = bufferSize;
+    audoutBuf[num].data_size = bufferSize;
+    audoutBuf[num].data_offset = 0;
 
     // Append to audout service
-    audoutAppendAudioOutBuffer(&audoutBuf[activeBuf]);
+    audoutAppendAudioOutBuffer(&audoutBuf[num]);
 
-    // Indicate other buffer should be used next
-    activeBuf = (activeBuf == 0 ? 1 : 0);
     return (int)decoded;
 }
 
@@ -90,7 +92,6 @@ int mp3Init() {
 
     // Allocate buffers
     allocateBuffer();
-    activeBuf = 0;
 
     status = Stopped;
     logSuccess("[MP3] mpg123 initialized successfully!");
@@ -106,23 +107,29 @@ void mp3Exit() {
 
 void mp3Loop() {
     if (status == Playing) {
-        // Set to zero when finished playing
-        int done = 1;
+        AudioOutBuffer * out;
+        u32 outCount;
 
-        // Decode next buffers
-        done = decode();
-        if (done != 0) {
-            done = decode();
+        // Enqueue another buffer
+        if (bufPlaying[0] == 0) {
+            audoutWaitPlayFinish(&out, &outCount, 1E+9);
+            bufPlaying[0] = 1;
+        }
+        if (decode(0) == 0) {
+            status = Stopped;
+        } else {
+            bufPlaying[0] = 0;
         }
 
-        if (done != 0) {
-            // Wait for buffers to finish playing
-            AudioOutBuffer * out;
-            u32 outCount;
+        // Enqueue yet another buffer (to play while exiting loop/preparing buffer 0)
+        if (bufPlaying[1] == 0) {
             audoutWaitPlayFinish(&out, &outCount, 1E+9);
-            audoutWaitPlayFinish(&out, &outCount, 1E+9);
-        } else {
+            bufPlaying[1] = 1;
+        }
+        if (decode(1) == 0) {
             status = Stopped;
+        } else {
+            bufPlaying[1] = 0;
         }
     } else {
         svcSleepThread(5E+9);

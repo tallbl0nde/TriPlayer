@@ -66,7 +66,7 @@ void * musicThread(void * args) {
 logOpenFile();
     mp3Init();
 
-    mp3Play("/music/3nd of an 3ra.mp3");
+    mp3Play("/music/Xenoblade Chronicles Main Theme.mp3");
 
     while (true) {
         mp3Loop();

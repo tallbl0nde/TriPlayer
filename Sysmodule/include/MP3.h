@@ -18,5 +18,7 @@ void mp3Play(const char *);
 void mp3Resume();
 // Pause current song
 void mp3Pause();
+// Stop playing the current song
+void mp3Stop();
 
 #endif
