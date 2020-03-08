@@ -1,4 +1,5 @@
 #include <arpa/inet.h>
+#include <Commands.h>
 #include <errno.h>
 #include "Log.h"
 #include "Socket.h"
@@ -24,11 +25,16 @@ static int lSocket = -1;
 // Current transfer socket
 static int tSocket = -1;
 
+// File to log to (thread-safe/won't be overwritten as these functions are only called in one thread)
+FILE * logFile;
+
 int createListeningSocket() {
+    logFile = logOpenFile();
+
     // Get socket
     lSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (lSocket < 0) {
-        logError("[SOCKET] Unable to create listening socket", errno);
+        logError(logFile, "[SOCKET] Unable to create listening socket", errno);
         return -1;
     }
 
@@ -39,16 +45,16 @@ int createListeningSocket() {
     const int optVal = 1;
     setsockopt(lSocket, SOL_SOCKET, SO_REUSEADDR, (void*)&optVal, sizeof(optVal));
     if (bind(lSocket, (struct sockaddr*) &addr, sizeof(addr)) != 0) {
-        logError("[SOCKET] Error binding to address/port", errno);
+        logError(logFile, "[SOCKET] Error binding to address/port", errno);
         return -2;
     }
     if (listen(lSocket, CONN_QUEUE) != 0) {
-        logError("[SOCKET] Error listening", errno);
+        logError(logFile, "[SOCKET] Error listening", errno);
         return -3;
     }
 
     // Succeeded
-    logSuccess("[SOCKET] Listening socket created successfully!");
+    logSuccess(logFile, "[SOCKET] Listening socket created successfully!");
     return 0;
 }
 
@@ -57,6 +63,8 @@ void closeListeningSocket() {
         close(lSocket);
         lSocket = -1;
     }
+
+    logCloseFile(logFile);
 }
 
 void acceptConnection() {
@@ -71,7 +79,7 @@ void acceptConnection() {
     FD_SET(lSocket, &readfds);
     switch (select(lSocket + 1, &readfds, NULL, NULL, &time)) {
         case -1:
-            logError("[SOCKET] Error occurred calling select()", errno);
+            logError(logFile, "[SOCKET] Error occurred calling select()", errno);
             // Sleep thread if select didn't pause
             svcSleepThread(TIMEOUTE);
             break;
@@ -87,8 +95,8 @@ void acceptConnection() {
                 // Set read timeout
                 setsockopt(tSocket, SOL_SOCKET, SO_RCVTIMEO, (const char *)& time, sizeof(time));
             }
-            logError("[SOCKET] ERRNO:", errno);
-            logSuccess("[SOCKET] Transfer socket connected!");
+            logError(logFile, "[SOCKET] ERRNO:", errno);
+            logSuccess(logFile, "[SOCKET] Transfer socket connected!");
             break;
         }
     }
@@ -129,7 +137,7 @@ char * readData() {
     // Handle errors
     if (rd == 0) {
         closeConnection();
-        logError("[SOCKET] Lost connection on read - closed tSocket", errno);
+        logError(logFile, "[SOCKET] Lost connection on read - closed tSocket", errno);
         free(buf);
         return NULL;
     } else if (rd < 0) {
@@ -138,11 +146,23 @@ char * readData() {
         return NULL;
     }
 
-    // No errors!
-    logSuccess("Total data string:");
-    for (int i = 0; i < rd; i++) {
-        logChar(buf[i]);
-    }
-    logChar('\n');
     return buf;
+}
+
+void writeData(const char * data) {
+    // Append end of message character to data
+    int len = strlen(data);
+    len += 2;
+    char * str = (char *) malloc(len * sizeof(char));
+    memcpy(str, data, len - 1);
+    memset(str + (len - 1), SM_ENDMSG, 1);
+
+    // Write
+    if (write(tSocket, str, len) != len) {
+        logError(logFile, "[SOCKET] Error writing data", -1);
+    } else {
+        logSuccess(logFile, "[SOCKET] Wrote data");
+    }
+
+    free((void *) str);
 }

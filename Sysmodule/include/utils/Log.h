@@ -1,18 +1,20 @@
 #ifndef LOG_H
 #define LOG_H
 
+#include <stdio.h>
+
 // Handles all logging activities
 
 // Open file for writing
-void logOpenFile();
+FILE * logOpenFile();
 // Close file
-void logCloseFile();
+void logCloseFile(FILE *);
 
 // Log message with [ERROR]
-void logError(const char *, int);
+void logError(FILE *, const char *, int);
 // Log message with [SUCCESS]
-void logSuccess(const char *);
+void logSuccess(FILE *, const char *);
 
-void logChar(const char);
+void logChar(FILE *, const char);
 
 #endif

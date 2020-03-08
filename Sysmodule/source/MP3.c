@@ -26,6 +26,9 @@ enum PlaybackStatus {
 };
 static enum PlaybackStatus status;
 
+// File to log to (thread-safe/won't be overwritten as these functions are only called in one thread)
+FILE * logFile;
+
 // Wrappers for allocating/freeing buffer
 void allocateBuffer() {
     bufferSize = mpg123_outblock(mpg) * 16;
@@ -73,10 +76,12 @@ int decode(int num) {
 }
 
 int mp3Init() {
+    logFile = NULL;
+
     // Init mpg123
     int status = mpg123_init();
     if (status != MPG123_OK) {
-        logError("[MP3] Error initializing mpg123", status);
+        logError(logFile, "[MP3] Error initializing mpg123", status);
         return -1;
     }
 
@@ -86,7 +91,7 @@ int mp3Init() {
     mpg123_par(params, MPG123_FORCE_STEREO, 1, 0);
     mpg = mpg123_parnew(params, NULL, &status);
     if (mpg == NULL) {
-        logError("[MP3] Error creating mpg123 instance", status);
+        logError(logFile, "[MP3] Error creating mpg123 instance", status);
         return -2;
     }
 
@@ -94,13 +99,14 @@ int mp3Init() {
     allocateBuffer();
 
     status = Stopped;
-    logSuccess("[MP3] mpg123 initialized successfully!");
+    logSuccess(logFile, "[MP3] mpg123 initialized successfully!");
     return 0;
 }
 
 void mp3Exit() {
+    logCloseFile(logFile);
+    mp3Stop();
     freeBuffer();
-    mpg123_close(mpg);
     mpg123_delete(mpg);
     mpg123_exit();
 }
@@ -116,7 +122,7 @@ void mp3Loop() {
             bufPlaying[0] = 1;
         }
         if (decode(0) == 0) {
-            status = Stopped;
+            mp3Stop();
         } else {
             bufPlaying[0] = 0;
         }
@@ -127,7 +133,7 @@ void mp3Loop() {
             bufPlaying[1] = 1;
         }
         if (decode(1) == 0) {
-            status = Stopped;
+            mp3Stop();
         } else {
             bufPlaying[1] = 0;
         }
@@ -143,7 +149,7 @@ void mp3Play(const char * path) {
     long rate;
     if (mpg123_open(mpg, path) == MPG123_OK) {
         if (mpg123_getformat(mpg, &rate, &channels, &encoding) != MPG123_OK) {
-            logError(mpg123_plain_strerror(mpg123_errcode(mpg)), mpg123_errcode(mpg));
+            logError(logFile, mpg123_plain_strerror(mpg123_errcode(mpg)), mpg123_errcode(mpg));
             return;
         }
         mpg123_format_none(mpg);
@@ -152,9 +158,9 @@ void mp3Play(const char * path) {
         allocateBuffer();
 
         status = Playing;
-        logSuccess("Playing song");
+        logSuccess(logFile, "Playing song");
     } else {
-        logError("[MP3] Failed to open file", mpg123_errcode(mpg));
+        logError(logFile, "[MP3] Failed to open file", mpg123_errcode(mpg));
     }
 }
 
@@ -164,4 +170,11 @@ void mp3Resume() {
 
 void mp3Pause() {
     status = Paused;
+}
+
+void mp3Stop() {
+    if (status == Playing) {
+        mpg123_close(mpg);
+    }
+    status = Stopped;
 }

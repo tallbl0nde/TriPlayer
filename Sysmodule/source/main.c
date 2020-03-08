@@ -1,7 +1,8 @@
-#include "Log.h"
+#include "Commands.h"
 #include "MP3.h"
 #include <pthread.h>
 #include "Socket.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <switch.h>
@@ -59,30 +60,9 @@ void __attribute__((weak)) __appExit(void) {
     smExit();
 }
 
-// Function used in one thread for handling music
-void * musicThread(void * args) {
-    int * exit = (int *)args;
-
-logOpenFile();
-    mp3Init();
-
-    mp3Play("/music/Xenoblade Chronicles Main Theme.mp3");
-
-    while (true) {
-        mp3Loop();
-    }
-
-    mp3Exit();
-    logCloseFile();
-
-    return NULL;
-}
-
 // Function used in one thread for handling sockets + commands
 void * socketThread(void * args) {
     int * exit = (int *)args;
-
-    // Start logging
 
     // Create 'control' socket
     createListeningSocket();
@@ -98,19 +78,30 @@ void * socketThread(void * args) {
             // Also closes connection on error
             const char * data = readData();
             if (data != NULL) {
-                // Data received... do something!
-                logSuccess("Received some data in main!");
+                // Data received... parse command to determine what to do!
+                char * reply = NULL;
+                switch ((enum SM_Command) (data[0] - '0')) {
+                    // Reply with version of protocol (sysmodule version is irrelevant)
+                    case VERSION:
+                        reply = (char *) malloc(2 * sizeof(char));
+                        sprintf(reply, "%i", SM_PROTOCOL_VERSION);
+                        break;
+                }
 
+                // Send reply if necessary
+                if (reply != NULL) {
+                    writeData(reply);
+                    free((void *) reply);
+                }
 
-                free((void *)data);
+                // Delete received data
+                free((void *) data);
             }
         }
     }
 
     // I don't think this will ever be required but it's here just in case
     closeConnection();
-
-    // Stop logging
 
     // Close socket
     closeListeningSocket();
@@ -122,22 +113,22 @@ int main(int argc, char * argv[]) {
     int exitThreads = -1;
 
     // Start socket thread (passed bool which is set 0 when to stop listening and exit thread)
-    // pthread_t pthreadSocket;
-    // pthread_create(&pthreadSocket, NULL, &socketThread, (void *) &exitThreads);
-
-    // Music player (mpg123) thread
-    pthread_t pthreadMusic;
-    pthread_create(&pthreadMusic, NULL, &musicThread, (void *) &exitThreads);
+    pthread_t pthreadSocket;
+    pthread_create(&pthreadSocket, NULL, &socketThread, (void *) &exitThreads);
 
     // loop indefinitely
+    mp3Init();
+    mp3Play("/music/Xenoblade Chronicles Main Theme.mp3");
     while (appletMainLoop()) {
-        svcSleepThread(1E+9);
+        // Outputs next 'section' of audio
+        // Blocks this thread shortly
+        mp3Loop();
     }
+    mp3Exit();
 
     // Join all threads
     exitThreads = 0;
-    pthread_join(pthreadMusic, NULL);
-    // pthread_join(pthreadSocket, NULL);
+    pthread_join(pthreadSocket, NULL);
 
     return 0;
 }

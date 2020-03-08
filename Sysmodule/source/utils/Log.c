@@ -1,5 +1,4 @@
 #include "Log.h"
-#include <stdio.h>
 #include <unistd.h>
 
 // Path to log file
@@ -9,56 +8,57 @@
 
 // Is logging enabled/available? (0 for true)
 static int logEnabled = -1;
-// File pointer
-static FILE * logFile;
 
-void logOpenFile() {
+FILE * logOpenFile() {
     // Check if flag is present
     if (access(LOG_FLAG, F_OK) != -1) {
         logEnabled = 0;
     } else {
         logEnabled = -2;
-        return;
+        return NULL;
     }
 
     // Open log file if flag exists
-    logFile = fopen(LOG_FILE, "w");
+    FILE * logFile = fopen(LOG_FILE, "w");
     if (logFile == NULL) {
         logEnabled = -3;
+        return NULL;
     }
+
+    return logFile;
 }
 
-void logCloseFile() {
-    if (logEnabled != 0) {
+void logCloseFile(FILE * f) {
+    if (logEnabled != 0 || f == NULL) {
         return;
     }
 
-    fclose(logFile);
+    fclose(f);
 }
 
-void logError(const char * msg, int err) {
-    if (logEnabled != 0) {
+void logError(FILE * f, const char * msg, int err) {
+    if (logEnabled != 0 || f == NULL) {
         return;
     }
 
-    fprintf(logFile, "[ERROR] %s: (%i)\n", msg, err);
-    fflush(logFile);
+    fprintf(f, "[ERROR] %s: (%i)\n", msg, err);
+    fflush(f);
 }
 
-void logSuccess(const char * msg) {
-    if (logEnabled != 0) {
+void logSuccess(FILE * f, const char * msg) {
+    if (logEnabled != 0 || f == NULL) {
         return;
     }
 
-    fprintf(logFile, "[SUCCESS] %s\n", msg);
-    fflush(logFile);
+    fprintf(f, "[SUCCESS] %s\n", msg);
+    fflush(f);
 }
 
-void logChar(const char c) {
-    if (logEnabled != 0) {
+void logChar(FILE * f, const char c) {
+    if (logEnabled != 0 || f == NULL) {
         return;
     }
 
-    fprintf(logFile, "%c", c);
-    fflush(logFile);
+    fprintf(f, "%c", c);
+    fflush(f);
 }

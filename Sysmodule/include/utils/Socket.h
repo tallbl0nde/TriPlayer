@@ -19,4 +19,7 @@ void closeConnection();
 // Returns NULL if timedout
 char * readData();
 
+// Write data to the socket (doesn't free string!)
+void writeData(const char *);
+
 #endif
