@@ -1,4 +1,5 @@
 #include "Log.h"
+#include <pthread.h>
 #include <unistd.h>
 
 // Path to log file

@@ -31,11 +31,9 @@ FILE * logFile;
 
 // Wrappers for allocating/freeing buffer
 void allocateBuffer() {
-    bufferSize = mpg123_outblock(mpg) * 16;
+    bufferSize = mpg123_outblock(mpg) * 4;
     decodedBuf[0] = memalign(0x1000, bufferSize);
     decodedBuf[1] = memalign(0x1000, bufferSize);
-    bufPlaying[0] = 1;
-    bufPlaying[1] = 1;
 }
 
 void freeBuffer() {
@@ -47,8 +45,6 @@ void freeBuffer() {
         free(decodedBuf[1]);
         decodedBuf[1] = NULL;
     }
-    bufPlaying[0] = 1;
-    bufPlaying[1] = 1;
 }
 
 // Decode the next frame(s) of the mp3 into buffer
@@ -97,6 +93,8 @@ int mp3Init() {
 
     // Allocate buffers
     allocateBuffer();
+    bufPlaying[0] = 1;
+    bufPlaying[1] = 1;
 
     status = Stopped;
     logSuccess(logFile, "[MP3] mpg123 initialized successfully!");
@@ -112,33 +110,53 @@ void mp3Exit() {
 }
 
 void mp3Loop() {
-    if (status == Playing) {
-        AudioOutBuffer * out;
-        u32 outCount;
+    switch (status) {
+        case Playing: {
+            AudioOutBuffer * out;
+            u32 outCount;
 
-        // Enqueue another buffer
-        if (bufPlaying[0] == 0) {
-            audoutWaitPlayFinish(&out, &outCount, 1E+9);
-            bufPlaying[0] = 1;
-        }
-        if (decode(0) == 0) {
-            mp3Stop();
-        } else {
-            bufPlaying[0] = 0;
+            // Enqueue another buffer
+            if (bufPlaying[0] == 0) {
+                audoutWaitPlayFinish(&out, &outCount, 3E+8);
+                bufPlaying[0] = 1;
+            }
+            if (decode(0) == 0) {
+                mp3Stop();
+            } else {
+                bufPlaying[0] = 0;
+            }
+
+            // Enqueue yet another buffer (to play while exiting loop/preparing buffer 0)
+            if (bufPlaying[1] == 0) {
+                audoutWaitPlayFinish(&out, &outCount, 3E+8);
+                bufPlaying[1] = 1;
+            }
+            if (decode(1) == 0) {
+                mp3Stop();
+            } else {
+                bufPlaying[1] = 0;
+            }
+        break;
         }
 
-        // Enqueue yet another buffer (to play while exiting loop/preparing buffer 0)
-        if (bufPlaying[1] == 0) {
-            audoutWaitPlayFinish(&out, &outCount, 1E+9);
-            bufPlaying[1] = 1;
+        case Paused: {
+            AudioOutBuffer * out;
+            u32 outCount;
+
+            if (bufPlaying[0] == 0) {
+                audoutWaitPlayFinish(&out, &outCount, 3E+8);
+                bufPlaying[0] = 1;
+            }
+            if (bufPlaying[1] == 0) {
+                audoutWaitPlayFinish(&out, &outCount, 3E+8);
+                bufPlaying[1] = 1;
+            }
         }
-        if (decode(1) == 0) {
-            mp3Stop();
-        } else {
-            bufPlaying[1] = 0;
-        }
-    } else {
-        svcSleepThread(5E+9);
+
+        case Stopped:
+            // If not playing block for half a second
+            svcSleepThread(5E+8);
+            break;
     }
 }
 

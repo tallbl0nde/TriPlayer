@@ -137,8 +137,9 @@ namespace Screen {
             l->setLengthString(std::to_string(si[i].duration/60) + ":" + std::to_string(si[i].duration%60));
             l->setLineColour(this->app->theme()->mutedLine());
             l->setTextColour(this->app->theme()->text());
-            l->setCallback([](){
-                // something using si[i].id here
+            SongID id = si[i].ID;
+            l->setCallback([this, id](){
+                this->app->sysmodule()->playSong(id);
             });
             this->list->addElement(l);
 
@@ -146,6 +147,18 @@ namespace Screen {
                 l->setY(this->list->y() + 20);
             }
         }
+
+        // Temporary play/pause buttons
+        Aether::Text * t = new Aether::Text(100, 600, "Play", 20);
+        t->setCallback([this](){
+            this->app->sysmodule()->resumePlayback();
+        });
+        this->addElement(t);
+        t = new Aether::Text(200, 600, "Pause", 20);
+        t->setCallback([this](){
+            this->app->sysmodule()->pausePlayback();
+        });
+        this->addElement(t);
     }
 
     void MainScreen::onUnload() {

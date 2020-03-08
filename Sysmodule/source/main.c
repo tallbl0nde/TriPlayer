@@ -60,6 +60,9 @@ void __attribute__((weak)) __appExit(void) {
     smExit();
 }
 
+// Mutex for accessing mp3* functions (as they are not thread safe!)
+static pthread_mutex_t mp3Mutex;
+
 // Function used in one thread for handling sockets + commands
 void * socketThread(void * args) {
     int * exit = (int *)args;
@@ -85,6 +88,25 @@ void * socketThread(void * args) {
                     case VERSION:
                         reply = (char *) malloc(2 * sizeof(char));
                         sprintf(reply, "%i", SM_PROTOCOL_VERSION);
+                        break;
+
+                    case PLAY:
+                        pthread_mutex_lock(&mp3Mutex);
+                        mp3Stop();
+                        mp3Play("/music/Through The Years (feat. Zero 2).mp3");
+                        pthread_mutex_unlock(&mp3Mutex);
+                        break;
+
+                    case RESUME:
+                        pthread_mutex_lock(&mp3Mutex);
+                        mp3Resume();
+                        pthread_mutex_unlock(&mp3Mutex);
+                        break;
+
+                    case PAUSE:
+                        pthread_mutex_lock(&mp3Mutex);
+                        mp3Pause();
+                        pthread_mutex_unlock(&mp3Mutex);
                         break;
                 }
 
@@ -112,23 +134,35 @@ void * socketThread(void * args) {
 int main(int argc, char * argv[]) {
     int exitThreads = -1;
 
+    // Exit if unable to create a mutex
+    if (pthread_mutex_init(&mp3Mutex, NULL) != 0) {
+        return -1;
+    }
+
+    // Prepare mp3 stuff
+    mp3Init();
+
     // Start socket thread (passed bool which is set 0 when to stop listening and exit thread)
     pthread_t pthreadSocket;
     pthread_create(&pthreadSocket, NULL, &socketThread, (void *) &exitThreads);
 
     // loop indefinitely
-    mp3Init();
-    mp3Play("/music/Xenoblade Chronicles Main Theme.mp3");
     while (appletMainLoop()) {
         // Outputs next 'section' of audio
-        // Blocks this thread shortly
+        // Blocks this thread shortly (whether queuing audio or not)
+        pthread_mutex_lock(&mp3Mutex);
         mp3Loop();
+        pthread_mutex_unlock(&mp3Mutex);
     }
-    mp3Exit();
 
     // Join all threads
     exitThreads = 0;
     pthread_join(pthreadSocket, NULL);
+
+    // Cleanup mp3 stuff
+    mp3Exit();
+
+    pthread_mutex_destroy(&mp3Mutex);
 
     return 0;
 }
