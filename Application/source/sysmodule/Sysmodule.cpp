@@ -1,4 +1,4 @@
-#include "Commands.hpp"
+#include "Commands.h"
 #include "Sysmodule.hpp"
 #include "Utils.hpp"
 
@@ -18,16 +18,16 @@ bool Sysmodule::isReady() {
         return false;
     }
 
-    // std::string str = Utils::Socket::readFromSocket(this->socket);
-    // if (str == "") {
-    //     // Error reading
-    //     return false;
-    // }
+    std::string str = Utils::Socket::readFromSocket(this->socket);
+    if (str == "") {
+        // Error reading
+        return false;
+    }
 
-    // if (std::stoi(str) != SM_PROTOCOL_VERSION) {
-    //     Utils::writeStdout("[SYSMODULE] [isReady()] Sysmodule version does not match!");
-    //     return false;
-    // }
+    if (std::stoi(str) != SM_PROTOCOL_VERSION) {
+        Utils::writeStdout("[SYSMODULE] [isReady()] Sysmodule version does not match!");
+        return false;
+    }
 
     return true;
 }

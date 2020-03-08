@@ -1,4 +1,5 @@
 #include <arpa/inet.h>
+#include "Commands.h"
 #include <cstring>
 #include <netinet/in.h>
 #include "Socket.hpp"
@@ -7,8 +8,6 @@
 
 // Maximum number of characters to read
 #define BUFFER 255
-// Character used to signal end of 'message'
-static const char ENDMSG = '\x1c';
 
 namespace Utils::Socket {
     SockFD createSocket(int port) {
@@ -41,10 +40,10 @@ namespace Utils::Socket {
         // Create message
         const char * tmp = str.c_str();
         int len = strlen(tmp);
-        len += 2; // Add room for \0 end of message char
+        len += 2; // Add room for end of message char
         char * cstr = (char *)malloc(len * sizeof(char));
         memcpy(cstr, tmp, len - 1);
-        memset(cstr + (len - 1), ENDMSG, 1);
+        memset(cstr + (len - 1), SM_ENDMSG, 1);
 
         // Write data
         if (write(sock, cstr, len) != len) {

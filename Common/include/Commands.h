@@ -1,13 +1,11 @@
-#ifndef SYSMODULE_COMMANDS_HPP
-#define SYSMODULE_COMMANDS_HPP
-
-#include <string>
+#ifndef SYSMODULE_COMMANDS_H
+#define SYSMODULE_COMMANDS_H
 
 // This file stores the code for each command sent/received due to communication
 // with the sysmodule.
 
 // Protocol version
-const int SM_PROTOCOL_VERSION = 1;
+extern const int SM_PROTOCOL_VERSION;
 
 // Commands
 enum SM_Command {
@@ -32,6 +30,8 @@ enum SM_Command {
 };
 
 // Character used to separate strings (record separator)
-const char SM_DELIMITER = '\x1e';
+extern const char SM_DELIMITER;
+// Character used to signal end of transmission
+extern const char SM_ENDMSG;
 
 #endif
