@@ -7,8 +7,16 @@
 #include <string.h>
 #include <switch.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <malloc.h>
+#include <inttypes.h>
+#include <switch.h>
+#include <mpg123.h>
+
 // Heap size... 3MB for sockets + 3MB for audio (atm)
-#define INNER_HEAP_SIZE 6 * 1024 * 1024
+#define INNER_HEAP_SIZE (3 + 3) * 1024 * 1024
 
 // Stuff that I probably shouldn't change
 u32 __nx_applet_type = AppletType_None;
@@ -93,7 +101,7 @@ void * socketThread(void * args) {
                     case PLAY:
                         pthread_mutex_lock(&mp3Mutex);
                         mp3Stop();
-                        mp3Play("/music/Through The Years (feat. Zero 2).mp3");
+                        mp3Play("/music/DCX - Flying High (DJ Splash Speed Up Remix).mp3");
                         pthread_mutex_unlock(&mp3Mutex);
                         break;
 
