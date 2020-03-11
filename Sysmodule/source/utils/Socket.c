@@ -29,7 +29,8 @@ static int tSocket = -1;
 FILE * logFile;
 
 int createListeningSocket() {
-    logFile = logOpenFile();
+    // logFile = logOpenFile();
+    logFile = NULL;
 
     // Get socket
     lSocket = socket(AF_INET, SOCK_STREAM, 0);

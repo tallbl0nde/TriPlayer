@@ -1,6 +1,7 @@
 .PHONY: all all-nxlink clean
 
 all:
+	@$(MAKE) -C Common/libs/SQLite
 	@$(MAKE) -C Application/
 	@$(MAKE) -C Overlay/
 	@$(MAKE) -C Sysmodule/
@@ -19,6 +20,7 @@ all:
 	@echo "Done!\nCopy the contents of ./sdcard to your sdcard :)"
 
 all-nxlink:
+	@$(MAKE) -C Common/libs/SQLite NXLINK=1
 	@$(MAKE) -C Application/ NXLINK=1
 	@$(MAKE) -C Overlay/ NXLINK=1
 	@$(MAKE) -C Sysmodule/ NXLINK=1
@@ -38,6 +40,7 @@ all-nxlink:
 	@echo "NXlink enabled!"
 
 clean:
+	@$(MAKE) -C Common/libs/SQLite clean
 	@$(MAKE) -C Application/ clean
 	@$(MAKE) -C Overlay/ clean
 	@$(MAKE) -C Sysmodule/ clean
