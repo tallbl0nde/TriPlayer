@@ -7,7 +7,7 @@ namespace CustomElm {
     class SearchBox : public Aether::Element {
         private:
             // Round rect
-            Aether::Box * rect;
+            Aether::Rectangle * rect;
 
             // Search icon
             Aether::Image * icon;
@@ -16,17 +16,17 @@ namespace CustomElm {
             Aether::Text * text;
 
         public:
-            // x, y, w, h
-            SearchBox(int, int, int, int);
+            // x, y, w
+            SearchBox(int, int, int);
 
-            // Set colour of everything
-            void setColour(Aether::Colour);
+            // Set colours
+            void setBoxColour(Aether::Colour);
+            void setIconColour(Aether::Colour);
 
             // Returns string
             std::string string();
 
             // Custom highlight/select graphics
-            void render();
             void renderHighlighted();
             void renderSelected();
     };

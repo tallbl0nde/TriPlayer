@@ -13,8 +13,7 @@ namespace Main {
 
         // Create Aether instance
         this->display = new Aether::Display();
-        Aether::Colour c = this->theme_->BG();
-        this->display->setBackgroundColour(c.r, c.g, c.b);
+        this->display->setBackgroundColour(0, 0, 0);
         this->display->setFont("romfs:/Quicksand.ttf");
         this->display->setHighlightColours(Aether::Colour{255, 255, 255, 0}, this->theme_->selected());
         this->display->setHighlightAnimation(Aether::Theme::Dark.highlightFunc);
