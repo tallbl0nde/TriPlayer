@@ -61,7 +61,7 @@ LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(CURDIR)/libs/Aether $(CURDIR)/libs/SQLite
+LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(CURDIR)/libs/Aether $(CURDIR)/../Common/libs/SQLite
 
 #---------------------------------------------------------------------------------
 # This is all wizardry to me also
@@ -110,7 +110,6 @@ ifeq ($(wildcard $(CURDIR)/libs/Aether/LICENSE),)
 endif
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) -C $(CURDIR)/libs/Aether -f $(CURDIR)/libs/Aether/Makefile
-	@$(MAKE) -C $(CURDIR)/libs/SQLite -f $(CURDIR)/libs/SQLite/Makefile
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
@@ -120,7 +119,6 @@ clean:
 	@echo Cleaning ALL Application + Aether build files...
 	@rm -rf $(BUILD) $(TARGET).nro $(TARGET).nacp $(TARGET).elf
 	@$(MAKE) -C $(CURDIR)/libs/Aether -f $(CURDIR)/libs/Aether/Makefile clean
-	@$(MAKE) -C $(CURDIR)/libs/SQLite -f $(CURDIR)/libs/SQLite/Makefile clean
 #---------------------------------------------------------------------------------
 else
 .PHONY:	all all-nxlink clean
