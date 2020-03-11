@@ -7,15 +7,13 @@ namespace Main {
     // Stores colours for the current theme
     class Theme {
         private:
-            Aether::Colour BG_;
-            Aether::Colour sideBG_;
             Aether::Colour bottomBG_;
+            Aether::Colour sideBG_;
 
-            Aether::Colour text_;
-            Aether::Colour heading_;
-            Aether::Colour mutedText_;
+            Aether::Colour muted_;
+            Aether::Colour muted2_;
 
-            Aether::Colour mutedLine_;
+            Aether::Colour FG_;
 
             Aether::Colour accent_;
 
@@ -26,10 +24,11 @@ namespace Main {
             Theme();
 
             // Returns private members
-            Aether::Colour BG();
-            Aether::Colour sideBG();
             Aether::Colour bottomBG();
-            Aether::Colour text();
+            Aether::Colour sideBG();
+            Aether::Colour muted();
+            Aether::Colour muted2();
+            Aether::Colour FG();
             Aether::Colour heading();
             Aether::Colour mutedText();
             Aether::Colour mutedLine();

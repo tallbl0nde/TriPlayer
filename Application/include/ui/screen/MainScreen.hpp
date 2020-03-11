@@ -15,32 +15,50 @@ namespace Screen {
         private:
             Main::Application * app;
 
-            // LHS
-            // Icon
-            // Aether::Image * icon;
-            // Side list items
-            CustomElm::SideButton * menuRP;
-            CustomElm::SideButton * menuSongs;
-            CustomElm::SideButton * menuArtists;
-            CustomElm::SideButton * menuAlbums;
-            CustomElm::SideButton * menuQueue;
-            CustomElm::SideButton * menuSettings;
+            // Misc
+            Aether::Image * bg;
+            Aether::Image * sidegrad;
 
-            // RHS
-            // Heading
-            Aether::Text * heading;
-            // Search bar
+            // Sidebar
+            Aether::Rectangle * sideBg;
+            Aether::Rectangle * userBg;
+            Aether::Image * userIcon;
+            Aether::Text * userText;
+            Aether::Rectangle * settingsBg;
+            Aether::Image * settingsIcon;
             CustomElm::SearchBox * search;
-            // Column headings
+            CustomElm::SideButton * sideRP;
+            CustomElm::SideButton * sideSongs;
+            CustomElm::SideButton * sideArtists;
+            CustomElm::SideButton * sideAlbums;
+            Aether::Rectangle * sideSeparator;
+            CustomElm::SideButton * sideQueue;
+
+            // Player
+            Aether::Rectangle * playerBg;
+            Aether::Image * albumCover;
+            Aether::Text * trackName;
+            Aether::Text * trackArtist;
+            Aether::Image * shuffle;
+            Aether::Image * previous;
+            Aether::Image * play;
+            Aether::Image * pause;
+            Aether::Image * next;
+            Aether::Image * repeat;
+            Aether::Text * position;
+            Aether::RoundProgressBar * seekBar;
+            Aether::Text * duration;
+            Aether::Image * volumeIcon;
+            Aether::RoundProgressBar * volume;
+            Aether::Image * fullscreen;
+
+            // Main 'section'
+            Aether::Text * heading;
             Aether::Text * titleH;
             Aether::Text * artistH;
             Aether::Text * albumH;
             Aether::Text * lengthH;
-
-            // List
             Aether::List * list;
-
-            // BOTTOM
 
             // Deselect all side items
             void deselectSideItems();
@@ -57,9 +75,6 @@ namespace Screen {
 
             // onUnload deletes all elements
             void onUnload();
-
-            // Redraw rectangles every frame to save some memory
-            void render();
     };
 };
 
