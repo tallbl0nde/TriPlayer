@@ -1,4 +1,5 @@
 #include "Commands.h"
+#include "Database.h"
 #include "MP3.h"
 #include <pthread.h>
 #include "Socket.h"
@@ -6,14 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <switch.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <malloc.h>
-#include <inttypes.h>
-#include <switch.h>
-#include <mpg123.h>
 
 // Heap size... 3MB for sockets + 3MB for audio (atm)
 #define INNER_HEAP_SIZE (3 + 3) * 1024 * 1024
@@ -98,12 +91,30 @@ void * socketThread(void * args) {
                         sprintf(reply, "%i", SM_PROTOCOL_VERSION);
                         break;
 
-                    case PLAY:
-                        pthread_mutex_lock(&mp3Mutex);
-                        mp3Stop();
-                        mp3Play("/music/DCX - Flying High (DJ Splash Speed Up Remix).mp3");
-                        pthread_mutex_unlock(&mp3Mutex);
+                    case PLAY: {
+                        int len = strlen(data);
+
+                        // Get path to song
+                        if (len > 2) {
+                            dbOpenReadOnly();
+                            char id[(sizeof(int) * 8) + 1];
+                            len = strlen(&data[2]);
+                            strcpy(id, &data[2]);
+                            const char * path = dbGetPath(strtol(id, &id, 10));
+                            dbClose();
+
+                            // Play song
+                            if (strlen(path) > 0) {
+                                pthread_mutex_lock(&mp3Mutex);
+                                mp3Stop();
+                                mp3Play(path);
+                                pthread_mutex_unlock(&mp3Mutex);
+                            }
+
+                            free(path);
+                        }
                         break;
+                    }
 
                     case RESUME:
                         pthread_mutex_lock(&mp3Mutex);
