@@ -96,11 +96,11 @@ void * socketThread(void * args) {
 
                         // Get path to song
                         if (len > 2) {
-                            dbOpenReadOnly();
                             char id[(sizeof(int) * 8) + 1];
                             len = strlen(&data[2]);
                             strcpy(id, &data[2]);
-                            const char * path = dbGetPath(strtol(id, &id, 10));
+                            dbOpenReadOnly();
+                            const char * path = dbGetPath(strtol(id, NULL, 10));
                             dbClose();
 
                             // Play song
@@ -111,10 +111,17 @@ void * socketThread(void * args) {
                                 pthread_mutex_unlock(&mp3Mutex);
                             }
 
-                            free(path);
+                            free((void *) path);
                         }
                         break;
                     }
+
+                    // Temp test
+                    case NEXT:
+                        pthread_mutex_lock(&mp3Mutex);
+                        mp3Stop();
+                        pthread_mutex_unlock(&mp3Mutex);
+                        break;
 
                     case RESUME:
                         pthread_mutex_lock(&mp3Mutex);

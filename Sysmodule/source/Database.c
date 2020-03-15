@@ -45,13 +45,13 @@ const char * dbGetPath(SongID id) {
 
     if (db != NULL) {
         sqlite3_prepare_v2(db, "SELECT path FROM Songs WHERE id = ?;", -1, &cmd, NULL);
-        sqlite3_bind_int(cmd, 1, id);
         if (cmd != NULL) {
+            sqlite3_bind_int(cmd, 1, id);
             if (sqlite3_step(cmd) == SQLITE_ROW) {
                 const char * ptr = (const char *) sqlite3_column_text(cmd, 0);
                 const int len = sqlite3_column_bytes(cmd, 0);
-                free(str);
-                str = (char *) malloc(len * sizeof(char));
+                free((void *) str);
+                str = (char *) malloc((len + 1) * sizeof(char));
                 strcpy(str, ptr);
             }
         }

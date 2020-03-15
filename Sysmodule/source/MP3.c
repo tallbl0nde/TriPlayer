@@ -82,6 +82,7 @@ bool allocateBuffer() {
     audrvMemPoolAttach(&audio, memPool[0]);
     memPool[1] = audrvMemPoolAdd(&audio, decodedBuf[1], bufferSize);
     audrvMemPoolAttach(&audio, memPool[1]);
+    audrvUpdate(&audio);
 
     return true;
 }
@@ -99,6 +100,7 @@ void freeBuffer() {
         free(decodedBuf[1]);
         decodedBuf[1] = NULL;
     }
+    audrvUpdate(&audio);
 }
 
 // Initialize 'voice'
@@ -117,6 +119,7 @@ void voiceInit() {
         audrvVoiceSetMixFactor(&audio, voiceID, 1.0f, 1, 1);
     }
     audrvVoiceStart(&audio, voiceID);
+    audrvUpdate(&audio);
     voiceAdded = 0;
 }
 
@@ -128,6 +131,7 @@ void voiceDrop() {
 
     audrvVoiceStop(&audio, voiceID);
     audrvVoiceDrop(&audio, voiceID);
+    audrvUpdate(&audio);
 }
 
 // Decode the next frame(s) of the mp3 into buffer
@@ -151,7 +155,8 @@ int decodeInto(int num) {
 }
 
 int mp3Init() {
-    logFile = logOpenFile();
+    // logFile = logOpenFile();
+    logFile = NULL;
 
     // Init mpg123
     int status = mpg123_init();
@@ -265,19 +270,19 @@ void mp3Play(const char * path) {
 }
 
 void mp3Resume() {
+    audrvVoiceSetPaused(&audio, voiceID, false);
+    audrvUpdate(&audio);
     status = Playing;
 }
 
 void mp3Pause() {
+    audrvVoiceSetPaused(&audio, voiceID, true);
+    audrvUpdate(&audio);
     status = Paused;
-    // ispaused thing
 }
 
 void mp3Stop() {
-    if (status == Playing) {
-        mpg123_close(mpg);
-    }
-
+    mpg123_close(mpg);
     voiceDrop();
     freeBuffer();
 
