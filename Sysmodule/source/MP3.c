@@ -11,9 +11,6 @@
 static int sink;
 static const u8 sinkChannels[2] = {0, 1};
 
-// Number of 'mpg123 outblocks' in each buffer
-// Works out to ~250kB per buffer
-#define OUTBLOCK_MULT 50
 // WaveBuf structs
 static AudioDriverWaveBuf waveBuf[2];
 // Size of a buffer (not necessarily bytes decoded!)
@@ -40,7 +37,7 @@ bool audrvOK;
 // These values work so I'm not touching them!
 static const AudioRendererConfig audConf = {
     .output_rate     = AudioRendererOutputRate_48kHz,
-    .num_voices      = 2,
+    .num_voices      = 24,
     .num_effects     = 0,
     .num_sinks       = 1,
     .num_mix_objs    = 1,
@@ -63,8 +60,9 @@ static enum PlaybackStatus status;
 FILE * logFile;
 
 // Wrappers for allocating/freeing buffers
+// Allocate ~250kB per buffer
 bool allocateBuffer() {
-    bufferSize = ((mpg123_outblock(mpg) * OUTBLOCK_MULT) + 0xFFF) &~ 0xFFF;
+    bufferSize = ((250000) + 0xFFF) &~ 0xFFF;
     for (size_t i = 0; i < 2; i++) {
         decodedBuf[i] = memalign(0x1000, bufferSize);
         memset(decodedBuf[i], 0, bufferSize);
@@ -91,16 +89,17 @@ void freeBuffer() {
     if (decodedBuf[0] != NULL) {
         audrvMemPoolDetach(&audio, memPool[0]);
         audrvMemPoolRemove(&audio, memPool[0]);
+        audrvUpdate(&audio);
         free(decodedBuf[0]);
         decodedBuf[0] = NULL;
     }
     if (decodedBuf[1] != NULL) {
         audrvMemPoolDetach(&audio, memPool[1]);
         audrvMemPoolRemove(&audio, memPool[1]);
+        audrvUpdate(&audio);
         free(decodedBuf[1]);
         decodedBuf[1] = NULL;
     }
-    audrvUpdate(&audio);
 }
 
 // Initialize 'voice'
@@ -130,6 +129,7 @@ void voiceDrop() {
     }
 
     audrvVoiceStop(&audio, voiceID);
+    audrvUpdate(&audio);
     audrvVoiceDrop(&audio, voiceID);
     audrvUpdate(&audio);
 }
@@ -155,7 +155,6 @@ int decodeInto(int num) {
 }
 
 int mp3Init() {
-    // logFile = logOpenFile();
     logFile = NULL;
 
     // Init mpg123
@@ -195,6 +194,12 @@ int mp3Init() {
     }
     audrvOK = true;
 
+    // Allocate buffers
+    if (!allocateBuffer()) {
+        logError(logFile, "[MP3] Unable to allocate buffers", -1);
+        return -6;
+    }
+
     // Add output/sink
     sink = audrvDeviceSinkAdd(&audio, AUDREN_DEFAULT_DEVICE_NAME, OUTPUT_CHANNELS, sinkChannels);
     audrvUpdate(&audio);
@@ -207,6 +212,7 @@ int mp3Init() {
 
 void mp3Exit() {
     mp3Stop();
+    freeBuffer();
     mpg123_delete(mpg);
     if (audrenOK) {
         audrenExit();
@@ -230,32 +236,22 @@ void mp3Loop() {
             }
             nextBuf = ((nextBuf + 1) % 2);
         } else {
+            // If not done pause for a bit
             svcSleepThread(1E+8);
         }
 
     } else {
         // If not playing block for 0.1 of a second
-        logSuccess(logFile, "wrong loop");
         svcSleepThread(1E+8);
     }
 }
 
 void mp3Play(const char * path) {
-    logSuccess(logFile, "[MP3] Called");
     // Get playback data
     int encoding;
     if (mpg123_open(mpg, path) == MPG123_OK) {
-        logSuccess(logFile, "[MP3] Opened");
         if (mpg123_getformat(mpg, &rate, &channels, &encoding) != MPG123_OK) {
             logError(logFile, mpg123_plain_strerror(mpg123_errcode(mpg)), mpg123_errcode(mpg));
-            return;
-        }
-        mpg123_format_none(mpg);
-        mpg123_format(mpg, rate, channels, MPG123_ENC_SIGNED_16);
-
-        // Allocate buffers
-        if (!allocateBuffer()) {
-            logError(logFile, "[MP3] Unable to allocate buffers", -1);
             return;
         }
 
@@ -263,28 +259,34 @@ void mp3Play(const char * path) {
         voiceInit();
 
         status = Playing;
-        logSuccess(logFile, "[MP3] Playing song");
     } else {
         logError(logFile, "[MP3] Failed to open file", mpg123_errcode(mpg));
     }
 }
 
 void mp3Resume() {
-    audrvVoiceSetPaused(&audio, voiceID, false);
-    audrvUpdate(&audio);
+    if (voiceAdded == 0) {
+        audrvVoiceSetPaused(&audio, voiceID, false);
+        audrvUpdate(&audio);
+    }
     status = Playing;
 }
 
 void mp3Pause() {
-    audrvVoiceSetPaused(&audio, voiceID, true);
-    audrvUpdate(&audio);
+    if (voiceAdded == 0) {
+        audrvVoiceSetPaused(&audio, voiceID, true);
+        audrvUpdate(&audio);
+    }
     status = Paused;
 }
 
 void mp3Stop() {
+    if (logFile == NULL) {
+        logFile = logOpenFile();
+    }
+
     mpg123_close(mpg);
     voiceDrop();
-    freeBuffer();
 
     status = Stopped;
 }

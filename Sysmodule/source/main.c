@@ -43,18 +43,11 @@ void __attribute__((weak)) __appInit(void) {
     if (R_FAILED(socketInitializeDefault())) {
         // I dunno
     }
-
-    if (R_FAILED(audoutInitialize())) {
-        // I dunno Part 2
-    }
-    audoutStartAudioOut();
 }
 
 // Close services on quit
 void __attribute__((weak)) __appExit(void) {
     // In reverse order
-    audoutStopAudioOut();
-    audoutExit();
     socketExit();
     fsdevUnmountAll();
     fsExit();
