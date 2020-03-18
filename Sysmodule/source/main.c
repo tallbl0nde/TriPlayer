@@ -1,5 +1,6 @@
 #include "Commands.h"
 #include "Database.h"
+#include "Log.h"
 #include "MP3.h"
 #include <pthread.h>
 #include "Socket.h"
@@ -28,6 +29,10 @@ void __libnx_initheap(void) {
 }
 // End stuff
 
+// Service statuses
+int logOK;
+int mp3OK;
+
 // Init services on start
 void __attribute__((weak)) __appInit(void) {
     if (R_FAILED(smInitialize())) {
@@ -40,15 +45,25 @@ void __attribute__((weak)) __appInit(void) {
 
     fsdevMountSdmc();
 
+    logOK = logOpenFile();
+
     if (R_FAILED(socketInitializeDefault())) {
-        // I dunno
+        logMessage("[SOCKET] Failed to initialize sockets!");
     }
+
+    mp3OK = mp3Init();
 }
 
 // Close services on quit
 void __attribute__((weak)) __appExit(void) {
     // In reverse order
+    if (mp3OK == 0) {
+        mp3Exit();
+    }
     socketExit();
+    if (logOK == 0) {
+        logCloseFile();
+    }
     fsdevUnmountAll();
     fsExit();
     smExit();
@@ -158,9 +173,6 @@ int main(int argc, char * argv[]) {
         return -1;
     }
 
-    // Prepare mp3 stuff
-    mp3Init();
-
     // Start socket thread (passed bool which is set 0 when to stop listening and exit thread)
     pthread_t pthreadSocket;
     pthread_create(&pthreadSocket, NULL, &socketThread, (void *) &exitThreads);
@@ -170,17 +182,20 @@ int main(int argc, char * argv[]) {
         // Outputs next 'section' of audio
         // Blocks this thread shortly (whether queuing audio or not)
         pthread_mutex_lock(&mp3Mutex);
-        mp3Loop();
+        if (mp3OK == 0) {
+            mp3Loop();
+        }
         pthread_mutex_unlock(&mp3Mutex);
+
+        // Flush log buffers to disk
+        if (logOK == 0) {
+            logProcess();
+        }
     }
 
     // Join all threads
     exitThreads = 0;
     pthread_join(pthreadSocket, NULL);
-
-    // Cleanup mp3 stuff
-    mp3Exit();
-
     pthread_mutex_destroy(&mp3Mutex);
 
     return 0;

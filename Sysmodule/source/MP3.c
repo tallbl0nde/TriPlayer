@@ -56,9 +56,6 @@ enum PlaybackStatus {
 };
 static enum PlaybackStatus status;
 
-// File to log to (thread-safe/won't be overwritten as these functions are only called in one thread)
-FILE * logFile;
-
 // Wrappers for allocating/freeing buffers
 // Allocate ~250kB per buffer
 bool allocateBuffer() {
@@ -141,7 +138,7 @@ int decodeInto(int num) {
     size_t decoded = 0;
     mpg123_read(mpg, decodedBuf[num], bufferSize, &decoded);
     if (decoded == 0) {
-        logError(logFile, mpg123_plain_strerror(mpg123_errcode(mpg)), mpg123_errcode(mpg));
+        logMessage("[MP3] Error reading/decoding from file!");
         return 0;
     }
 
@@ -155,31 +152,29 @@ int decodeInto(int num) {
 }
 
 int mp3Init() {
-    logFile = NULL;
-
     // Init mpg123
-    int status = mpg123_init();
-    if (status != MPG123_OK) {
-        logError(logFile, "[MP3] Error initializing mpg123", status);
+    int result = mpg123_init();
+    if (result != MPG123_OK) {
+        logMessage("[MP3] Error initializing mpg123");
         return -1;
     }
 
     // Set params + create instance
-    mpg = mpg123_new(NULL, &status);
+    mpg = mpg123_new(NULL, &result);
     if (mpg == NULL) {
-        logError(logFile, "[MP3] Error creating mpg123 instance", status);
+        logMessage("[MP3] Error creating mpg123 instance");
         return -2;
     }
-    status = mpg123_param(mpg, MPG123_FLAGS, MPG123_GAPLESS, 0.0);
-    if (status != MPG123_OK) {
-        logError(logFile, "[MP3] Error enabling gapless decoding", status);
+    result = mpg123_param(mpg, MPG123_FLAGS, MPG123_GAPLESS, 0.0);
+    if (result != MPG123_OK) {
+        logMessage("[MP3] Error enabling gapless decoding");
         return -3;
     }
 
     // Start audio service
     Result rc = audrenInitialize(&audConf);
     if (R_FAILED(rc)) {
-        logError(logFile, "[MP3] Error initializing audren", rc);
+        logMessage("[MP3] Error initializing audren");
         audrenOK = false;
         return -4;
     }
@@ -188,7 +183,7 @@ int mp3Init() {
     // Create audio device
     rc = audrvCreate(&audio, &audConf, OUTPUT_CHANNELS);
     if (R_FAILED(rc)) {
-        logError(logFile, "[MP3] Error creating audio device", rc);
+        logMessage("[MP3] Error creating audio device");
         audrvOK = false;
         return -5;
     }
@@ -196,7 +191,7 @@ int mp3Init() {
 
     // Allocate buffers
     if (!allocateBuffer()) {
-        logError(logFile, "[MP3] Unable to allocate buffers", -1);
+        logMessage("[MP3] Unable to allocate buffers");
         return -6;
     }
 
@@ -205,7 +200,7 @@ int mp3Init() {
     audrvUpdate(&audio);
     audrenStartAudioRenderer();
 
-    logSuccess(logFile, "[MP3] mpg123 initialized successfully!");
+    logMessage("[MP3] mpg123 initialized successfully!");
     status = Stopped;
     return 0;
 }
@@ -220,7 +215,6 @@ void mp3Exit() {
     if (audrvOK) {
         audrvClose(&audio);
     }
-    logCloseFile(logFile);
 }
 
 void mp3Loop() {
@@ -251,7 +245,8 @@ void mp3Play(const char * path) {
     int encoding;
     if (mpg123_open(mpg, path) == MPG123_OK) {
         if (mpg123_getformat(mpg, &rate, &channels, &encoding) != MPG123_OK) {
-            logError(logFile, mpg123_plain_strerror(mpg123_errcode(mpg)), mpg123_errcode(mpg));
+            logMessage("[MP3] Error getting format of mp3 file:");
+            logMessage((char *) path);
             return;
         }
 
@@ -260,7 +255,8 @@ void mp3Play(const char * path) {
 
         status = Playing;
     } else {
-        logError(logFile, "[MP3] Failed to open file", mpg123_errcode(mpg));
+        logMessage("[MP3] Failed to open file:");
+        logMessage((char *) path);
     }
 }
 
@@ -281,10 +277,6 @@ void mp3Pause() {
 }
 
 void mp3Stop() {
-    if (logFile == NULL) {
-        logFile = logOpenFile();
-    }
-
     mpg123_close(mpg);
     voiceDrop();
 
