@@ -99,6 +99,36 @@ void * socketThread(void * args) {
                         sprintf(reply, "%i", SM_PROTOCOL_VERSION);
                         break;
 
+                    case RESUME:
+                        pthread_mutex_lock(&mp3Mutex);
+                        mp3Resume();
+                        pthread_mutex_unlock(&mp3Mutex);
+                        break;
+
+                    case PAUSE:
+                        pthread_mutex_lock(&mp3Mutex);
+                        mp3Pause();
+                        pthread_mutex_unlock(&mp3Mutex);
+                        break;
+
+                    case PREVIOUS:
+                        // 
+                        break;
+
+                    case NEXT:
+                        //
+                        break;
+
+                    case GETVOLUME:
+                        // Set precision to 3 digits (therefore max of 7 chars + \0)
+                        reply = (char *) malloc(8 * sizeof(char));
+                        sprintf(reply, "%.3lf", mp3Volume()*100);
+                        break;
+
+                    case SETVOLUME:
+                        mp3SetVolume(strtod(data + 2, NULL)/100.0);
+                        break;
+
                     case PLAY: {
                         int len = strlen(data);
 
@@ -123,25 +153,6 @@ void * socketThread(void * args) {
                         }
                         break;
                     }
-
-                    // Temp test
-                    case NEXT:
-                        pthread_mutex_lock(&mp3Mutex);
-                        mp3Stop();
-                        pthread_mutex_unlock(&mp3Mutex);
-                        break;
-
-                    case RESUME:
-                        pthread_mutex_lock(&mp3Mutex);
-                        mp3Resume();
-                        pthread_mutex_unlock(&mp3Mutex);
-                        break;
-
-                    case PAUSE:
-                        pthread_mutex_lock(&mp3Mutex);
-                        mp3Pause();
-                        pthread_mutex_unlock(&mp3Mutex);
-                        break;
                 }
 
                 // Send reply if necessary

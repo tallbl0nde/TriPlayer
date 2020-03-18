@@ -21,4 +21,9 @@ void mp3Pause();
 // Stop playing the current song
 void mp3Stop();
 
+// Returns the volume
+double mp3Volume();
+// Sets the volume
+void mp3SetVolume(double);
+
 #endif

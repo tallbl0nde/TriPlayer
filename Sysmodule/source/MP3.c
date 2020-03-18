@@ -48,6 +48,9 @@ static const AudioRendererConfig audConf = {
 static int channels;
 static long rate;
 
+// Volume of mix
+double volume = 1.0;
+
 // Status of playback
 enum PlaybackStatus {
     Playing,
@@ -281,4 +284,14 @@ void mp3Stop() {
     voiceDrop();
 
     status = Stopped;
+}
+#include <stdio.h>
+
+double mp3Volume() {
+    return volume;
+}
+
+void mp3SetVolume(double d) {
+    volume = d;
+    audrvMixSetVolume(&audio, sink, (float) volume);
 }
