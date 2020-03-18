@@ -9,6 +9,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <stdio.h>
+
 // Buffer size (in bytes)
 #define BUFFER_SIZE 255
 // Queue size
@@ -70,6 +72,7 @@ void acceptConnection() {
     fd_set readfds;
     FD_ZERO(&readfds);
     FD_SET(lSocket, &readfds);
+    int error = 0;
     switch (select(lSocket + 1, &readfds, NULL, NULL, &time)) {
         case -1:
             logMessage("[SOCKET] Error occurred calling select()");
@@ -83,14 +86,32 @@ void acceptConnection() {
 
         default: {
             socklen_t sz = sizeof(addr);
-            tSocket = accept(lSocket, (struct sockaddr *) &addr, &sz);
-            if (tSocket >= 0) {
+            int tmp = accept(lSocket, (struct sockaddr *) &addr, &sz);
+            if (tmp >= 0) {
+                tSocket = tmp;
+
                 // Set read timeout
                 setsockopt(tSocket, SOL_SOCKET, SO_RCVTIMEO, (const char *)& time, sizeof(time));
                 logMessage("[SOCKET] Transfer socket connected!");
+            } else {
+                error = errno;
             }
             break;
         }
+    }
+
+    // Check error to determine if we just woke from sleep
+    if (error == 113) {
+        // This runs twice and I don't know why /shrug
+        logMessage("[SOCKET] No route to host - normal behaviour after waking from sleep");
+        logMessage("[SOCKET] Reinitializing all sockets");
+
+        // Reinit sockets
+        closeConnection();
+        closeListeningSocket();
+        socketExit();
+        socketInitializeDefault();
+        createListeningSocket();
     }
 }
 
