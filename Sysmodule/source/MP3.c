@@ -44,20 +44,20 @@ static const AudioRendererConfig audConf = {
     .num_mix_buffers = 2,
 };
 
-// Variables for currently playing song
-static int channels;
-static long rate;
-
 // Volume of mix
 double volume = 1.0;
+// Playback status
+static enum MP3Status status;
 
-// Status of playback
-enum PlaybackStatus {
-    Playing,
-    Paused,
-    Stopped
-};
-static enum PlaybackStatus status;
+/// === SONG DATA ===
+// Number of channels in song
+static int channels;
+// Sample rate
+static long rate;
+// Samples read (so position in song)
+static int readSamples = 0;
+// Length of song in samples
+static int totalSamples = 0;
 
 // Wrappers for allocating/freeing buffers
 // Allocate ~250kB per buffer
@@ -140,6 +140,7 @@ int decodeInto(int num) {
     memset(decodedBuf[num], 0, bufferSize);
     size_t decoded = 0;
     mpg123_read(mpg, decodedBuf[num], bufferSize, &decoded);
+    readSamples += (decoded / (sizeof(s16) * channels));
     if (decoded == 0) {
         logMessage("[MP3] Error reading/decoding from file!");
         return 0;
@@ -253,6 +254,10 @@ void mp3Play(const char * path) {
             return;
         }
 
+        // Clear previous song data
+        readSamples = 0;
+        totalSamples = mpg123_length(mpg);
+
         // Prepare 'voice'
         voiceInit();
 
@@ -285,7 +290,18 @@ void mp3Stop() {
 
     status = Stopped;
 }
-#include <stdio.h>
+
+enum MP3Status mp3Status() {
+    return status;
+}
+
+double mp3Position() {
+    if (totalSamples == 0 || status == Stopped) {
+        return 0.0;
+    }
+
+    return 100 * ((double)readSamples/totalSamples);
+}
 
 double mp3Volume() {
     return volume;

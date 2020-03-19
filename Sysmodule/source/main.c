@@ -9,8 +9,12 @@
 #include <string.h>
 #include <switch.h>
 
-// Heap size... 3MB for sockets + 3MB for audio (atm)
-#define INNER_HEAP_SIZE (3 + 3) * 1024 * 1024
+// Heap size:
+// Sockets: ~3MB
+// MP3: ~2.5MB
+// DB: ~0.5MB
+// Queue: 0.1MB
+#define INNER_HEAP_SIZE 6 * 1024 * 1024
 
 // Stuff that I probably shouldn't change
 u32 __nx_applet_type = AppletType_None;
@@ -92,7 +96,10 @@ void * socketThread(void * args) {
             if (data != NULL) {
                 // Data received... parse command to determine what to do!
                 char * reply = NULL;
-                switch ((enum SM_Command) (data[0] - '0')) {
+                char * args;
+                int cmd = strtol(data, &args, 10);
+                args++;
+                switch ((enum SM_Command) cmd) {
                     // Reply with version of protocol (sysmodule version is irrelevant)
                     case VERSION:
                         reply = (char *) malloc(2 * sizeof(char));
@@ -126,7 +133,7 @@ void * socketThread(void * args) {
                         break;
 
                     case SETVOLUME:
-                        mp3SetVolume(strtod(data + 2, NULL)/100.0);
+                        mp3SetVolume(strtod(args, NULL)/100.0);
                         break;
 
                     case PLAY: {
@@ -134,11 +141,8 @@ void * socketThread(void * args) {
 
                         // Get path to song
                         if (len > 2) {
-                            char id[(sizeof(int) * 8) + 1];
-                            len = strlen(&data[2]);
-                            strcpy(id, &data[2]);
                             dbOpenReadOnly();
-                            const char * path = dbGetPath(strtol(id, NULL, 10));
+                            const char * path = dbGetPath(strtol(args, NULL, 10));
                             dbClose();
 
                             // Play song
@@ -153,6 +157,76 @@ void * socketThread(void * args) {
                         }
                         break;
                     }
+
+                    case ADDTOQUEUE:
+
+                        break;
+
+                    case REMOVEFROMQUEUE:
+
+                        break;
+
+                    case GETQUEUE:
+
+                        break;
+
+                    case SETQUEUE:
+
+                        break;
+
+                    case SHUFFLE:
+
+                        break;
+
+                    case SETREPEAT:
+
+                        break;
+
+                    case GETSONG:
+
+                        break;
+
+                    case GETSTATUS:
+                        // One byte for status + \0
+                        reply = (char * ) malloc(2 * sizeof(char));
+                        enum SM_Status s = ERROR;
+                        pthread_mutex_lock(&mp3Mutex);
+                        switch (mp3Status()) {
+                            case Playing:
+                                s = PLAYING;
+                                break;
+
+                            case Paused:
+                                s = PAUSED;
+                                break;
+
+                            case Stopped:
+                                s = STOPPED;
+                                break;
+                        }
+                        pthread_mutex_unlock(&mp3Mutex);
+                        sprintf(reply, "%i", s);
+                        break;
+
+                    case GETPOSITION:
+                        // Set precision to 5 digits (therefore max of 9 chars) + \0
+                        reply = (char *) malloc(10 * sizeof(char));
+                        pthread_mutex_lock(&mp3Mutex);
+                        sprintf(reply, "%.5lf", mp3Position());
+                        pthread_mutex_unlock(&mp3Mutex);
+                        break;
+
+                    case GETSHUFFLE:
+
+                        break;
+
+                    case GETREPEAT:
+
+                        break;
+
+                    case RESET:
+
+                        break;
                 }
 
                 // Send reply if necessary

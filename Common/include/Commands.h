@@ -18,7 +18,7 @@ enum SM_Command {
     SETVOLUME,          // Set the volume level (double between 0 and 100)
     PLAY,               // Play the song with given ID
     ADDTOQUEUE,         // Add the ID to queue
-    REMOVEFROMQUEUE,    // Remove the ID from the queue
+    REMOVEFROMQUEUE,    // Remove song from queue with position
     GETQUEUE,           // Get a list of IDs in the queue
     SETQUEUE,           // Set a list of IDs as the queue
     SHUFFLE,            // Toggles shuffle

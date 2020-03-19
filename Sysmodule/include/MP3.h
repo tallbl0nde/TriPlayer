@@ -2,7 +2,13 @@
 #define MP3_H
 
 // Essentially an MP3 'class' which is based on libmpg123
-// Must all be called within one thread! (except for those functions which are marked)
+
+// Status of playback
+enum MP3Status {
+    Playing,    // Audio is being played
+    Paused,     // Song is in middle of playback but is paused
+    Stopped     // No song is playing/paused
+};
 
 // Setup mpg123 (returns 0 on success)
 int mp3Init();
@@ -20,6 +26,11 @@ void mp3Resume();
 void mp3Pause();
 // Stop playing the current song
 void mp3Stop();
+
+// Return status of playback
+enum MP3Status mp3Status();
+// Return percentage of song played (between 0 and 100)
+double mp3Position();
 
 // Returns the volume
 double mp3Volume();
