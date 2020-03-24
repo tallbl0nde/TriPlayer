@@ -204,7 +204,7 @@ namespace Screen {
         this->lastStage = Search;
 
         // Check if connected to sysmodule
-        if (this->app->sysmodule()->isReady()) {
+        if (this->app->sysmodule()->isConnected()) {
             // Start searching for files
             this->future = std::async(std::launch::async, &Splash::processFiles, this);
         } else {

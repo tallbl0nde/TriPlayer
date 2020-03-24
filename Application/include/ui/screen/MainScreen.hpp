@@ -70,6 +70,8 @@ namespace Screen {
         public:
             MainScreen(Main::Application *);
 
+            void update(uint32_t);
+
             // onLoad creates all elements
             void onLoad();
 

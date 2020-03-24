@@ -2,6 +2,7 @@
 #define APPLICATION_HPP
 
 #include "Database.hpp"
+#include <future>
 #include "Sysmodule.hpp"
 #include "Theme.hpp"
 
@@ -40,6 +41,9 @@ namespace Main {
 
             // Theme object
             Theme * theme_;
+
+            // Thread which handles sysmodule communication
+            std::future<void> sysThread;
 
         public:
             // Constructor inits Aether, screens + other objects

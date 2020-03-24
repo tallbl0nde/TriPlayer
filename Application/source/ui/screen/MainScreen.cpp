@@ -11,6 +11,41 @@ namespace Screen {
         });
     }
 
+    void MainScreen::update(uint32_t dt) {
+        // Update player element values
+        PlaybackStatus ps = this->app->sysmodule()->status();
+        if (ps == Playing) {
+            this->pause->setHidden(false);
+            this->play->setHidden(true);
+            if (this->play->focussed()) {
+                this->setFocussed(this->pause);
+            }
+
+        } else if (ps == Paused) {
+            this->pause->setHidden(true);
+            this->play->setHidden(false);
+            if (this->pause->focussed()) {
+                this->setFocussed(this->play);
+            }
+        
+        } else if (ps == Stopped) {
+            this->pause->setHidden(true);
+            this->play->setHidden(false);
+            if (this->pause->focussed()) {
+                this->setFocussed(this->play);
+            }
+
+        } else {
+            // Throw error overlay or something
+        }
+
+        // Update playback position
+        this->seekBar->setValue(this->app->sysmodule()->position());
+
+        // Now update elements
+        Screen::update(dt);
+    }
+
     void MainScreen::deselectSideItems() {
         this->sideRP->setActivated(false);
         this->sideSongs->setActivated(false);
@@ -144,9 +179,6 @@ namespace Screen {
         this->play->setColour(this->app->theme()->FG());
         this->play->setCallback([this]() {
             this->app->sysmodule()->resumePlayback();
-            this->pause->setHidden(false);
-            this->play->setHidden(true);
-            this->setFocussed(this->pause);
         });
         this->play->setHidden(true);
         this->addElement(this->play);
@@ -154,9 +186,6 @@ namespace Screen {
         this->pause->setColour(this->app->theme()->FG());
         this->pause->setCallback([this]() {
             this->app->sysmodule()->pausePlayback();
-            this->pause->setHidden(true);
-            this->play->setHidden(false);
-            this->setFocussed(this->play);
         });
         this->addElement(this->pause);
         this->next = new Aether::Image(705, 628, "romfs:/icons/next.png");

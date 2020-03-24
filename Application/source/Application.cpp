@@ -10,6 +10,8 @@ namespace Main {
 
         // Create sysmodule object (will attempt connection)
         this->sysmodule_ = new Sysmodule();
+        // Continue in another thread
+        this->sysThread = std::async(std::launch::async, &Sysmodule::updateState, this->sysmodule_);
 
         // Create Aether instance
         this->display = new Aether::Display();
@@ -87,6 +89,8 @@ namespace Main {
         delete this->display;
 
         // Disconnect from sysmodule
+        this->sysmodule_->finish();
+        this->sysThread.get();
         delete this->sysmodule_;
         // Close/save database
         delete this->database_;

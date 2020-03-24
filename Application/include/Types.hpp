@@ -17,12 +17,12 @@ struct SongInfo {
     unsigned int duration;  // in seconds
 };
 
-// SysmoduleStatuses
-enum SysmoduleStatus {
-    ERROR,      // Error occurred getting status
-    PLAYING,    // Playing song
-    PAUSED,     // Song(s) queued but paused
-    STOPPED     // No songs queued
+// Status of sysmodule playback
+enum PlaybackStatus {
+    Error,      // An error occurred getting status
+    Playing,    // Audio is being played
+    Paused,     // Song is in middle of playback but is paused
+    Stopped     // No song is playing/paused
 };
 
 #endif
