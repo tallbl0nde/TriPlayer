@@ -1,10 +1,13 @@
 #include "ListSong.hpp"
 #include "MainScreen.hpp"
 #include "Types.hpp"
+#include "Utils.hpp"
 
 namespace Screen {
     MainScreen::MainScreen(Main::Application * a) : Screen() {
         this->app = a;
+        this->playingID = -1;
+        this->playingDuration = 0;
 
         this->onButtonPress(Aether::Button::B, [this](){
             this->app->exit();
@@ -27,7 +30,7 @@ namespace Screen {
             if (this->pause->focussed()) {
                 this->setFocussed(this->play);
             }
-        
+
         } else if (ps == Stopped) {
             this->pause->setHidden(true);
             this->play->setHidden(false);
@@ -40,7 +43,22 @@ namespace Screen {
         }
 
         // Update playback position
-        this->seekBar->setValue(this->app->sysmodule()->position());
+        double per = this->app->sysmodule()->position();
+        this->position->setString(Utils::secondsToHMS(this->playingDuration * (per / 100.0)));
+        this->seekBar->setValue(per);
+
+        // Update song info
+        SongID id = this->app->sysmodule()->playingID();
+        if (id != this->playingID) {
+            this->playingID = id;
+            SongInfo si = this->app->database()->getSongInfoForID(id);
+            if (si.ID != -1) {
+                this->trackName->setString(si.title);
+                this->trackArtist->setString(si.artist);
+                this->duration->setString(Utils::secondsToHMS(si.duration));
+                this->playingDuration = si.duration;
+            }
+        }
 
         // Now update elements
         Screen::update(dt);
@@ -269,7 +287,7 @@ namespace Screen {
             l->setTitleString(si[i].title);
             l->setArtistString(si[i].artist);
             l->setAlbumString(si[i].album);
-            l->setLengthString(std::to_string(si[i].duration/60) + ":" + std::to_string(si[i].duration%60));
+            l->setLengthString(Utils::secondsToHMS(si[i].duration));
             l->setLineColour(this->app->theme()->muted2());
             l->setTextColour(this->app->theme()->FG());
             SongID id = si[i].ID;

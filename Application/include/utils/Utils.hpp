@@ -18,6 +18,9 @@ namespace Utils {
     // Round the given double to the specified number of decimal places
     float roundToDecimalPlace(float, unsigned int);
 
+    // Format seconds in HH:MM:SS
+    std::string secondsToHMS(unsigned int);
+
     // Truncate string to given decimal places (don't use on strings without a decimal!)
     // Does nothing if outside of range or no decimal place
     std::string truncateToDecimalPlace(std::string, unsigned int);

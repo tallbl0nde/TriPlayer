@@ -60,6 +60,11 @@ namespace Screen {
             Aether::Text * lengthH;
             Aether::List * list;
 
+            // Cached playing song ID (update player text on change)
+            SongID playingID;
+            // Duration of playing song in seconds
+            unsigned int playingDuration;
+
             // Deselect all side items
             void deselectSideItems();
 

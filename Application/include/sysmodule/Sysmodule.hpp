@@ -32,7 +32,7 @@ class Sysmodule {
 
         // Functions which actually update status vars
         bool getPosition_();
-        bool getSongID();
+        bool getSongID_();
         bool getStatus_();
 
     public:

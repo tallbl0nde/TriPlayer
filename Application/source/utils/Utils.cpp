@@ -37,6 +37,32 @@ namespace Utils {
         return val;
     }
 
+    std::string secondsToHMS(unsigned int sec) {
+        std::string str = "";
+        // Hours
+        int h = sec/3600;
+        if (h > 0) {
+            str += std::to_string(h) + ":";
+        }
+
+        // Minutes
+        int m = ((sec/60)%60);
+        if (str.length() > 0 && m < 10) {
+            str += "0";
+        }
+        str += std::to_string(m);
+
+        // Seconds
+        str += ":";
+        int s = sec%60;
+        if (s < 10) {
+            str += "0";
+        }
+        str += std::to_string(s);
+
+        return str;
+    }
+
     std::string truncateToDecimalPlace(std::string str, unsigned int p) {
         size_t dec = str.find(".");
         if (dec == std::string::npos || p >= str.length() - dec) {

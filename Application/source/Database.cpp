@@ -296,7 +296,7 @@ SongInfo Database::getSongInfoForID(SongID id) {
     SongInfo i;
     i.ID = -1;
 
-    std::string s = "SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.duration FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Albums.artist_id WHERE id = " + std::to_string(id) + ";";
+    std::string s = "SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.duration FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Albums.artist_id WHERE Songs.ID = " + std::to_string(id) + ";";
     sqlite3_prepare_v2(this->db, s.c_str(), -1, &this->cmd, nullptr);
     this->logMessage("[getSongInfoForID()] Prepare statement");
     if (this->cmd != nullptr) {

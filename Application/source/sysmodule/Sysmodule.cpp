@@ -65,7 +65,7 @@ void Sysmodule::updateState() {
 
         // Update variables
         if (loop) {
-            // loop = this->getSongID();
+            loop = this->getSongID_();
         }
         if (loop) {
             loop = this->getPosition_();
@@ -88,7 +88,7 @@ void Sysmodule::updateState() {
     }
 }
 
-bool Sysmodule::getSongID() {
+bool Sysmodule::getSongID_() {
     // Request song ID
     if (!Utils::Socket::writeToSocket(this->socket, std::to_string(GETSONG))) {
         return false;
@@ -110,7 +110,7 @@ bool Sysmodule::getStatus_() {
         this->status_ = Error;
         return false;
     }
-    
+
     // Read status
     std::string str = Utils::Socket::readFromSocket(this->socket);
     if (str == "") {
