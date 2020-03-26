@@ -4,10 +4,13 @@
 #include <netinet/in.h>
 #include "Socket.hpp"
 #include <sys/socket.h>
+#include <sys/time.h>
 #include "Utils.hpp"
 
-// Maximum number of characters to read
-#define BUFFER 255
+// Read buffer grow size (in bytes)
+#define BUFFER_SIZE 1000
+// Timeout for read operations (in seconds)
+#define TIMEOUT 5
 
 namespace Utils::Socket {
     SockFD createSocket(int port) {
@@ -31,6 +34,12 @@ namespace Utils::Socket {
             return -2;
         }
 
+        // Set read timeout
+        struct timeval time;
+        time.tv_sec = TIMEOUT;
+        time.tv_usec = 0;
+        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char *)& time, sizeof(time));
+
         // No errors! :)
         Utils::writeStdout("[SOCKET] [createSocket()] Connected successfully");
         return sock;
@@ -39,30 +48,23 @@ namespace Utils::Socket {
     bool writeToSocket(SockFD sock, std::string str) {
         // Create message
         const char * tmp = str.c_str();
-        int len = strlen(tmp);
-        len += 2; // Add room for end of message char
-        char * cstr = (char *)malloc(len * sizeof(char));
-        memcpy(cstr, tmp, len - 1);
-        memset(cstr + (len - 1), SM_ENDMSG, 1);
+        int len = strlen(tmp) + 1;
 
         // Write data
-        if (write(sock, cstr, len) != len) {
+        if (write(sock, tmp, len) != len) {
             Utils::writeStdout("[SOCKET] [writeToSocket()] Error writing data!");
-            free(cstr);
             return false;
         }
 
         Utils::writeStdout("[SOCKET] [writeToSocket()] Wrote data '" + str + "'");
-        free(cstr);
         return true;
     }
 
     std::string readFromSocket(SockFD sock) {
-        // Accept a connection (will block!!)
-        char buf[BUFFER + 1] = {0};
+        char buf[BUFFER_SIZE] = {0};
 
         // Attempt to read
-        if (read(sock, buf, BUFFER) < 0) {
+        if (read(sock, buf, BUFFER_SIZE) <= 0) {
             Utils::writeStdout("[SOCKET] [readFromSocket()] Error occurred reading from socket");
             return "";
         }

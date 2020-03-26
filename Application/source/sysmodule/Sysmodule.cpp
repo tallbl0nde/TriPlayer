@@ -6,7 +6,7 @@
 #define VOL_AMT 10
 
 // Query/update variables this often
-#define QUERY_MS 1000
+#define QUERY_MS 100
 
 Sysmodule::Sysmodule() {
     // Get socket
@@ -15,7 +15,7 @@ Sysmodule::Sysmodule() {
 }
 
 bool Sysmodule::isConnected() {
-    return (version >= 0 ? true : false);
+    return (version == SM_PROTOCOL_VERSION);
 }
 
 void Sysmodule::reconnect() {
@@ -70,13 +70,17 @@ void Sysmodule::updateState() {
         if (loop) {
             loop = this->getPosition_();
         }
+        auto time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        Utils::writeStdout("Get pos took: " + std::to_string(time - start) + " milliseconds");
         if (loop) {
             loop = this->getStatus_();
         }
+        time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        Utils::writeStdout("Get status took: " + std::to_string(time - start) + " milliseconds");
 
         // Determine how long to sleep (in ms)
         auto end = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        // Utils::writeStdout("Sysmodule loop took: " + std::to_string(end - start) + " milliseconds");
+        Utils::writeStdout("Sysmodule loop took: " + std::to_string(end - start) + " milliseconds");
         int sleep = QUERY_MS - (end - start);
         if (sleep > 0) {
             std::this_thread::sleep_for(std::chrono::milliseconds(sleep));

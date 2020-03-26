@@ -119,7 +119,7 @@ void * socketThread(void * args) {
                         break;
 
                     case PREVIOUS:
-                        // 
+                        //
                         break;
 
                     case NEXT:
@@ -193,6 +193,7 @@ void * socketThread(void * args) {
                         pthread_mutex_lock(&mp3Mutex);
                         switch (mp3Status()) {
                             case Playing:
+                            case Waiting:
                                 s = PLAYING;
                                 break;
 

@@ -7,7 +7,8 @@
 enum MP3Status {
     Playing,    // Audio is being played
     Paused,     // Song is in middle of playback but is paused
-    Stopped     // No song is playing/paused
+    Stopped,    // No song is playing/paused
+    Waiting     // Song finished decoding but waiting for buffers to finish
 };
 
 // Setup mpg123 (returns 0 on success)

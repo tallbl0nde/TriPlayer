@@ -9,10 +9,10 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include <stdio.h>
-
-// Buffer size (in bytes)
-#define BUFFER_SIZE 255
+// Read buffer grow size (in bytes)
+#define BUFFER_SIZE 1000
+// Message cache size (num of messages)
+#define CACHE_SIZE 10
 // Queue size
 #define CONN_QUEUE 0
 // Port to listen on
@@ -26,6 +26,10 @@ static struct sockaddr_in addr;
 static int lSocket = -1;
 // Current transfer socket
 static int tSocket = -1;
+
+// Cache of received messages
+// If this is full other messages will be lost
+static char * msgCache[CACHE_SIZE] = {0};
 
 int createListeningSocket() {
     // Get socket
@@ -131,49 +135,88 @@ void closeConnection() {
 }
 
 char * readData() {
-    char * buf = calloc(BUFFER_SIZE + 1, sizeof(char));
-    int rd;
-    int pos = 0;
-    // Read until end of 'message'
-    // do {
-        rd = read(tSocket, buf + pos, BUFFER_SIZE - pos);
-    //     logSuccess("Received some data!");
-    //     char * p = buf + pos;
-    //     while (*p) {
-    //         logSuccess(p);
-    //         p = strchr(p, '\0');
-    //         p++;
-    //     }
-    //     pos += rd;
-    // } while (rd > 0 && buf[rd] != '\x1c');
+    // If there are no 'cached' messages read from socket
+    if (msgCache[0] == NULL) {
+        char * buf = NULL;  // Buffer to read into (will grow)
+        int pos = 0;        // Position buffer finishes at
+        int rd = 0;         // Number of bytes read in iteration
 
-    // Handle errors
-    if (rd == 0) {
-        closeConnection();
-        logMessage("[SOCKET] Lost connection on read - closed tSocket");
+        // Read until at least one whole message is received
+        // Even if there is another message waiting in socket buffer it will be handled on next call
+        do {
+            // (Create) Increase buffer size each time
+            char * tmp = (char *) realloc((void *) buf, pos + BUFFER_SIZE);
+            if (tmp == NULL) {
+                // Error occurred increasing buffer size
+                logMessage("[SOCKET] Unable to increase read buffer - out of memory?");
+                free(buf);
+                return NULL;
+            }
+            buf = tmp;
+            rd = read(tSocket, buf + pos, BUFFER_SIZE);
+            if (rd == 0) {
+                // Lost connection while attempting to read
+                closeConnection();
+                logMessage("[SOCKET] Lost connection on read - closed tSocket");
+                free(buf);
+                return NULL;
+
+            } else if (rd < 0) {
+                // Timed out waiting to read
+                free(buf);
+                return NULL;
+            }
+            pos += rd;
+        } while (buf[pos - 1] != '\0');
+
+        // Split messages up (in case multiple messages are sent together)
+        char * msg = buf;
+        while ((msg - buf) < pos) {
+            // Copy into own memory
+            char * tmp = (char *) malloc((strlen(msg) + 1) * sizeof(char));
+            strcpy(tmp, msg);
+
+            // Insert into buffer (if full messages will be lost)
+            short i = 0;
+            while (i < CACHE_SIZE) {
+                if (msgCache[i] == NULL) {
+                    msgCache[i] = tmp;
+                    break;
+                }
+                i++;
+            }
+            if (i == CACHE_SIZE) {
+                logMessage("[SOCKET] Message cache size insuffient - lost some messages");
+                free(tmp);
+                break;
+            }
+
+            // Get next message
+            msg = strchr(msg, '\0');
+            msg++;
+        }
+
         free(buf);
-        return NULL;
-    } else if (rd < 0) {
-        // Timed out
-        free(buf);
-        return NULL;
     }
 
-    return buf;
+    // Return message and shift other messages down the queue
+    if (msgCache[0] != NULL) {
+        char * msg = msgCache[0];
+        for (int i = 0; i < CACHE_SIZE - 1; i++) {
+            msgCache[i] = msgCache[i + 1];
+        }
+        msgCache[CACHE_SIZE - 1] = NULL;
+        return msg;
+    }
+
+    // This shouldn't ever be reached unless some unknown error occurs
+    logMessage("[SOCKET] Unknown error occurred reading from socket");
+    return NULL;
 }
 
 void writeData(const char * data) {
-    // Append end of message character to data
-    int len = strlen(data);
-    len += 2;
-    char * str = (char *) malloc(len * sizeof(char));
-    memcpy(str, data, len - 1);
-    memset(str + (len - 1), SM_ENDMSG, 1);
-
-    // Write
-    if (write(tSocket, str, len) != len) {
+    int len = strlen(data) + 1;
+    if (write(tSocket, data, len) != len) {
         logMessage("[SOCKET] Error writing data");
     }
-
-    free((void *) str);
 }

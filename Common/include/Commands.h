@@ -48,7 +48,5 @@ enum SM_Status {
 
 // Character used to separate strings (record separator)
 extern const char SM_DELIMITER;
-// Character used to signal end of transmission
-extern const char SM_ENDMSG;
 
 #endif

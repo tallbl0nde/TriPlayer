@@ -54,8 +54,6 @@ static enum MP3Status status;
 static int channels;
 // Sample rate
 static long rate;
-// Samples read (so position in song)
-static int readSamples = 0;
 // Length of song in samples
 static int totalSamples = 0;
 
@@ -140,7 +138,6 @@ int decodeInto(int num) {
     memset(decodedBuf[num], 0, bufferSize);
     size_t decoded = 0;
     mpg123_read(mpg, decodedBuf[num], bufferSize, &decoded);
-    readSamples += (decoded / (sizeof(s16) * channels));
     if (decoded == 0) {
         logMessage("[MP3] Error reading/decoding from file!");
         return 0;
@@ -230,11 +227,20 @@ void mp3Loop() {
             if (decodeInto(nextBuf) != 0) {
                 audrvVoiceAddWaveBuf(&audio, voiceID, &waveBuf[nextBuf]);
             } else {
-                status = Stopped;
+                status = Waiting;
             }
             nextBuf = ((nextBuf + 1) % 2);
         } else {
             // If not done pause for a bit
+            svcSleepThread(1E+8);
+        }
+
+    } else if (status == Waiting) {
+        audrvUpdate(&audio);
+
+        if (waveBuf[0].state == AudioDriverWaveBufState_Done && waveBuf[1].state == AudioDriverWaveBufState_Done) {
+            status = Stopped;
+        } else {
             svcSleepThread(1E+8);
         }
 
@@ -255,7 +261,6 @@ void mp3Play(const char * path) {
         }
 
         // Clear previous song data
-        readSamples = 0;
         totalSamples = mpg123_length(mpg);
 
         // Prepare 'voice'
@@ -296,11 +301,11 @@ enum MP3Status mp3Status() {
 }
 
 double mp3Position() {
-    if (totalSamples == 0 || status == Stopped) {
+    if (totalSamples == 0 || status == Stopped || voiceAdded != 0) {
         return 0.0;
     }
 
-    return 100 * ((double)readSamples/totalSamples);
+    return 100 * ((double)audrvVoiceGetPlayedSampleCount(&audio, voiceID)/totalSamples);
 }
 
 double mp3Volume() {
