@@ -1,7 +1,11 @@
 #include "ListSong.hpp"
 
+// Font size of all text
 #define FONT_SIZE 22
+// Height of item
 #define HEIGHT 60
+// Amount either side of list to keep textures (in pixels)
+#define TEX_THRESHOLD 2000
 
 namespace CustomElm {
     SDL_Texture * ListSong::lineTexture = nullptr;
@@ -19,6 +23,7 @@ namespace CustomElm {
         this->length = new Aether::Exp::ThreadedText(tq, this->x(), this->y(), "", FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
         this->length->setHidden(true);
         this->addElement(this->length);
+        this->isRendering = Waiting;
 
         // Create line texture if it doesn't exist
         if (this->lineTexture == nullptr) {
@@ -30,21 +35,46 @@ namespace CustomElm {
     void ListSong::update(uint32_t dt) {
         Element::update(dt);
 
-        // Once all are rendered position and show!
-        if (this->title->hidden()) {
-            if (this->title->textureReady() && this->artist->textureReady() && this->album->textureReady() && this->length->textureReady()) {
-                this->positionItems();
-                this->title->setHidden(false);
-                this->artist->setHidden(false);
-                this->album->setHidden(false);
-                this->length->setHidden(false);
-            }
+        switch (this->isRendering) {
+            case Waiting:
+                // Waiting to render - check position and start if within threshold
+                if (this->y() >= this->parent->y() - TEX_THRESHOLD && this->y() <= this->parent->y() + this->parent->h() + TEX_THRESHOLD) {
+                    this->title->startRendering();
+                    this->artist->startRendering();
+                    this->album->startRendering();
+                    this->length->startRendering();
+                    this->isRendering = InProgress;
+                }
+                break;
+
+            case InProgress:
+                // Check if all are ready and if so move show and change to done
+                if (this->title->textureReady() && this->artist->textureReady() && this->album->textureReady() && this->length->textureReady()) {
+                    this->positionItems();
+                    this->title->setHidden(false);
+                    this->artist->setHidden(false);
+                    this->album->setHidden(false);
+                    this->length->setHidden(false);
+                    this->isRendering = Done;
+                }
+                break;
+
+            case Done:
+                // Check if move outside of threshold and if so remove texture to save memory
+                if (this->y() < this->parent->y() - TEX_THRESHOLD || this->y() > this->parent->y() + this->parent->h() + TEX_THRESHOLD) {
+                    this->title->deleteTexture();
+                    this->artist->deleteTexture();
+                    this->album->deleteTexture();
+                    this->length->deleteTexture();
+                    this->isRendering = Waiting;
+                }
+                break;
         }
     }
 
     void ListSong::render() {
         Element::render();
-        if (!this->title->hidden()) {
+        if (this->isRendering == Done && this->isVisible()) {
             SDLHelper::drawTexture(this->lineTexture, this->lineColour, this->x(), this->y());
             SDLHelper::drawTexture(this->lineTexture, this->lineColour, this->x(), this->y() + this->h());
         }
@@ -52,22 +82,18 @@ namespace CustomElm {
 
     void ListSong::setTitleString(std::string s) {
         this->title->setString(s);
-        this->title->startRendering();
     }
 
     void ListSong::setArtistString(std::string s) {
         this->artist->setString(s);
-        this->artist->startRendering();
     }
 
     void ListSong::setAlbumString(std::string s) {
         this->album->setString(s);
-        this->album->startRendering();
     }
 
     void ListSong::setLengthString(std::string s) {
         this->length->setString(s);
-        this->length->startRendering();
     }
 
     void ListSong::setLineColour(Aether::Colour c) {

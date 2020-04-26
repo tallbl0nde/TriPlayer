@@ -5,6 +5,12 @@
 
 namespace CustomElm {
     class ListSong : public Aether::Element {
+        enum RenderingStatus {
+            Waiting,        // Not rendering and no textures
+            InProgress,     // Rendering but no textures
+            Done            // Rendered and textures done
+        };
+
         private:
             // Static texture for top/bottom lines
             // This works as all ListSong's will only be in the same list
@@ -16,6 +22,9 @@ namespace CustomElm {
             Aether::Exp::ThreadedText * artist;
             Aether::Exp::ThreadedText * album;
             Aether::Exp::ThreadedText * length;
+
+            // Status of threaded elements
+            RenderingStatus isRendering;
 
             // Position items on x axis
             void positionItems();

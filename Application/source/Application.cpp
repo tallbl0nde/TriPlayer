@@ -27,8 +27,8 @@ namespace Main {
         this->scMain = new Screen::MainScreen(this);
         this->setScreen(ScreenID::Splash);
 
-        // Use four threads for rendering (it's fast enough!)
-        this->threadQueue_ = new Aether::ThreadQueue(4);
+        // Use eight threads for rendering (it's fast enough!)
+        this->threadQueue_ = new Aether::ThreadQueue(8);
     }
 
     void Application::setHoldDelay(int i) {
