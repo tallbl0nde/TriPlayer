@@ -3,7 +3,6 @@
 #include <fstream>
 #include "MP3.hpp"
 #include "Utils.hpp"
-#include <iostream>
 
 // Bitrates matching value of bitrate bits
 static const int bitVer1[16] = {0, 32000, 40000, 48000, 56000, 64000, 80000, 96000, 112000, 128000, 160000, 192000, 224000, 256000, 320000, 0};

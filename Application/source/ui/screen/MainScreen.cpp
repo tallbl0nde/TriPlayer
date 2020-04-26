@@ -283,7 +283,7 @@ namespace Screen {
         // Create items for each songs
         std::vector<SongInfo> si = this->app->database()->getAllSongInfo();
         for (size_t i = 0; i < si.size(); i++) {
-            CustomElm::ListSong * l = new CustomElm::ListSong();
+            CustomElm::ListSong * l = new CustomElm::ListSong(this->app->threadQueue());
             l->setTitleString(si[i].title);
             l->setArtistString(si[i].artist);
             l->setAlbumString(si[i].album);

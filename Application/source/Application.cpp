@@ -25,8 +25,10 @@ namespace Main {
         // Setup screens
         this->scSplash = new Screen::Splash(this);
         this->scMain = new Screen::MainScreen(this);
-
         this->setScreen(ScreenID::Splash);
+
+        // Use four threads for rendering (it's fast enough!)
+        this->threadQueue_ = new Aether::ThreadQueue(4);
     }
 
     void Application::setHoldDelay(int i) {
@@ -57,6 +59,10 @@ namespace Main {
         this->display->popScreen();
     }
 
+    Aether::ThreadQueue * Application::threadQueue() {
+        return this->threadQueue_;
+    }
+
     Database * Application::database() {
         return this->database_;
     }
@@ -72,7 +78,7 @@ namespace Main {
     void Application::run() {
         // Do main loop
         while (this->display->loop()) {
-
+            this->threadQueue_->processQueue();
         }
     }
 
@@ -81,6 +87,9 @@ namespace Main {
     }
 
     Application::~Application() {
+        // Delete first to ensure all threads are terminated before deleting elements!
+        delete this->threadQueue_;
+
         // Delete screens
         delete this->scMain;
         delete this->scSplash;

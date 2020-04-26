@@ -6,22 +6,29 @@
 namespace CustomElm {
     class ListSong : public Aether::Element {
         private:
-            // Texts
-            Aether::Text * title;
-            Aether::Text * artist;
-            Aether::Text * album;
-            Aether::Text * length;
+            // Static texture for top/bottom lines
+            // This works as all ListSong's will only be in the same list
+            static SDL_Texture * lineTexture;
+            Aether::Colour lineColour;
 
-            // Top/bottom lines
-            Aether::Rectangle * top;
-            Aether::Rectangle * bottom;
+            // Texts
+            Aether::Exp::ThreadedText * title;
+            Aether::Exp::ThreadedText * artist;
+            Aether::Exp::ThreadedText * album;
+            Aether::Exp::ThreadedText * length;
 
             // Position items on x axis
             void positionItems();
 
         public:
-            // Constructor sets up elements
-            ListSong();
+            // Constructor sets up elements (takes pointer to ThreadQueue which is passed to strings)
+            ListSong(Aether::ThreadQueue *);
+
+            // Position text once rendered
+            void update(uint32_t);
+
+            // Render lineTexture as well as normal rendering
+            void render();
 
             // Set strings
             void setTitleString(std::string);

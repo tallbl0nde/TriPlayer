@@ -76,6 +76,9 @@ void __attribute__((weak)) __appExit(void) {
 // Mutex for accessing mp3* functions (as they are not thread safe!)
 static pthread_mutex_t mp3Mutex;
 
+// TEMPORARY (used for testing atm)
+static int songID = -1;
+
 // Function used in one thread for handling sockets + commands
 void * socketThread(void * args) {
     int * exit = (int *)args;
@@ -142,7 +145,8 @@ void * socketThread(void * args) {
                         // Get path to song
                         if (len > 2) {
                             dbOpenReadOnly();
-                            const char * path = dbGetPath(strtol(args, NULL, 10));
+                            songID = strtol(args, NULL, 10);
+                            const char * path = dbGetPath(songID);
                             dbClose();
 
                             // Play song
@@ -183,7 +187,9 @@ void * socketThread(void * args) {
                         break;
 
                     case GETSONG:
-
+                        // 10 for int and 1 for \0
+                        reply = (char *) malloc(11 * sizeof(char));
+                        sprintf(reply, "%i", songID);
                         break;
 
                     case GETSTATUS:
