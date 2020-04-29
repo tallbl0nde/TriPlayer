@@ -1,8 +1,8 @@
 #include <arpa/inet.h>
 #include <Commands.h>
 #include <errno.h>
-#include "Log.h"
-#include "Socket.h"
+#include "Log.hpp"
+#include "Socket.hpp"
 #include <stdlib.h>
 #include <string.h>
 #include <switch.h>
@@ -35,7 +35,7 @@ int createListeningSocket() {
     // Get socket
     lSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (lSocket < 0) {
-        logMessage("[SOCKET] Unable to create listening socket");
+        Log::writeError("[SOCKET] Unable to create listening socket");
         return -1;
     }
 
@@ -46,16 +46,16 @@ int createListeningSocket() {
     const int optVal = 1;
     setsockopt(lSocket, SOL_SOCKET, SO_REUSEADDR, (void*)&optVal, sizeof(optVal));
     if (bind(lSocket, (struct sockaddr*) &addr, sizeof(addr)) != 0) {
-        logMessage("[SOCKET] Error binding to address/port");
+        Log::writeError("[SOCKET] Error binding to address/port");
         return -2;
     }
     if (listen(lSocket, CONN_QUEUE) != 0) {
-        logMessage("[SOCKET] Error listening");
+        Log::writeError("[SOCKET] Error listening");
         return -3;
     }
 
     // Succeeded
-    logMessage("[SOCKET] Listening socket created successfully!");
+    Log::writeSuccess("[SOCKET] Listening socket created successfully!");
     return 0;
 }
 
@@ -79,7 +79,7 @@ void acceptConnection() {
     int error = 0;
     switch (select(lSocket + 1, &readfds, NULL, NULL, &time)) {
         case -1:
-            logMessage("[SOCKET] Error occurred calling select()");
+            Log::writeError("[SOCKET] Error occurred calling select()");
             // Sleep thread if select didn't pause
             svcSleepThread(TIMEOUTE);
             break;
@@ -96,7 +96,7 @@ void acceptConnection() {
 
                 // Set read timeout
                 setsockopt(tSocket, SOL_SOCKET, SO_RCVTIMEO, (const char *)& time, sizeof(time));
-                logMessage("[SOCKET] Transfer socket connected!");
+                Log::writeSuccess("[SOCKET] Transfer socket connected!");
             } else {
                 error = errno;
             }
@@ -107,8 +107,8 @@ void acceptConnection() {
     // Check error to determine if we just woke from sleep
     if (error == 113) {
         // This runs twice and I don't know why /shrug
-        logMessage("[SOCKET] No route to host - normal behaviour after waking from sleep");
-        logMessage("[SOCKET] Reinitializing all sockets");
+        Log::writeWarning("[SOCKET] No route to host - normal behaviour after waking from sleep");
+        Log::writeWarning("[SOCKET] Reinitializing all sockets");
 
         // Reinit sockets
         closeConnection();
@@ -148,7 +148,7 @@ char * readData() {
             char * tmp = (char *) realloc((void *) buf, pos + BUFFER_SIZE);
             if (tmp == NULL) {
                 // Error occurred increasing buffer size
-                logMessage("[SOCKET] Unable to increase read buffer - out of memory?");
+                Log::writeError("[SOCKET] Unable to increase read buffer - out of memory?");
                 free(buf);
                 return NULL;
             }
@@ -157,7 +157,7 @@ char * readData() {
             if (rd == 0) {
                 // Lost connection while attempting to read
                 closeConnection();
-                logMessage("[SOCKET] Lost connection on read - closed tSocket");
+                Log::writeWarning("[SOCKET] Lost connection on read - closed tSocket");
                 free(buf);
                 return NULL;
 
@@ -186,7 +186,7 @@ char * readData() {
                 i++;
             }
             if (i == CACHE_SIZE) {
-                logMessage("[SOCKET] Message cache size insuffient - lost some messages");
+                Log::writeError("[SOCKET] Message cache size insuffient - lost some messages");
                 free(tmp);
                 break;
             }
@@ -210,13 +210,13 @@ char * readData() {
     }
 
     // This shouldn't ever be reached unless some unknown error occurs
-    logMessage("[SOCKET] Unknown error occurred reading from socket");
+    Log::writeError("[SOCKET] Unknown error occurred reading from socket");
     return NULL;
 }
 
 void writeData(const char * data) {
     int len = strlen(data) + 1;
     if (write(tSocket, data, len) != len) {
-        logMessage("[SOCKET] Error writing data");
+        Log::writeError("[SOCKET] Error writing data");
     }
 }

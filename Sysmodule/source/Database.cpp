@@ -1,4 +1,4 @@
-#include "Database.h"
+#include "Database.hpp"
 #include "sqlite3.h"
 #include <stdlib.h>
 #include <string.h>
