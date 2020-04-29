@@ -1,24 +1,28 @@
-#ifndef DATABASE_H
-#define DATABASE_H
+#ifndef DATABASE_HPP
+#define DATABASE_HPP
 
+#include "sqlite3.h"
+#include <string>
 #include "Types.hpp"
 
-// Methods for interacting with database
+// Integrates with sqlite3 database to get required info for playback
+class Database {
+    private:
+        // DB handle
+        sqlite3 * db;
 
-// Open read-only connection to database
-int dbOpenReadOnly();
+        // Statement object
+        sqlite3_stmt * cmd;
 
-// Open read-write connection to database
-int dbOpenReadWrite();
+    public:
+        // Opens read-only
+        Database();
 
-// Get path for given id (returns empty string if not found)
-// Returned string must be freed!
-const char * dbGetPath(SongID);
+        // Return a path matching given ID (or blank if not found)
+        std::string getPathForID(SongID);
 
-// Increment play counter for given id
-int dbIncrementPlays(SongID);
-
-// Close connection to database
-void dbClose();
+        // Closes connection
+        ~Database();
+};
 
 #endif

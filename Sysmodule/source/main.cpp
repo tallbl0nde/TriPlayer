@@ -1,7 +1,7 @@
 #include "Audio.hpp"
 // #include "Commands.h"
 // #include <cstring>
-// #include "Database.hpp"
+#include "Database.hpp"
 #include <future>
 #include "Log.hpp"
 #include "MP3.hpp"
@@ -9,10 +9,9 @@
 
 // Heap size:
 // Sockets: ~3MB
-// MP3: ~2.5MB
+// MP3: ~0.5MB
 // DB: ~0.5MB
-// Queue: 0.1MB
-#define INNER_HEAP_SIZE 6 * 1024 * 1024
+#define INNER_HEAP_SIZE 4 * 1024 * 1024
 
 // It hangs if I don't use C... I wish I knew why!
 extern "C" {
@@ -258,7 +257,10 @@ void __appExit(void) {
 MP3 * source;
 
 void decodeThread(int * exit) {
-    source = new MP3("/music/S3RL/Through The Years (feat. Zero 2).mp3");
+    Database * db = new Database();
+    std::string path = db->getPathForID(2);
+    delete db;
+    source = new MP3(path);
     audio->newSong(source->sampleRate(), source->channels());
     while (source->valid()) {
         u8 * buf = new u8[audio->bufferSize()];
@@ -284,8 +286,6 @@ int main(int argc, char * argv[]) {
 
     // loop indefinitely
     audio->process();
-
-    svcSleepThread(2E+9);
 
     // Join all threads
     exitThreads = 0;
