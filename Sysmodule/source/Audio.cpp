@@ -201,6 +201,15 @@ AudioStatus Audio::status() {
     return this->status_;
 }
 
+int Audio::samplesPlayed() {
+    if (this->voice < 0) {
+        return 0;
+    }
+
+    std::unique_lock<std::mutex> mtx(this->mutex);
+    return audrvVoiceGetPlayedSampleCount(&this->drv, this->voice);
+}
+
 double Audio::volume() {
     return this->vol;
 }

@@ -141,16 +141,18 @@ void MainService::process() {
                         break;
                     }
 
-                    case GETPOSITION:
+                    case GETPOSITION: {
                         if (this->source == nullptr) {
                             reply = std::to_string(0.0);
                             break;
                         }
 
                         // Return position to 5 digits
-                        reply = std::to_string(this->source->position() + 0.00005);
+                        double pos = 100 * (this->audio->samplesPlayed()/(double)this->source->totalSamples());
+                        reply = std::to_string(pos + 0.00005);
                         reply = reply.substr(0, reply.find(".") + 5);
                         break;
+                    }
 
                     case GETSHUFFLE:
                         //

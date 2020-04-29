@@ -47,7 +47,7 @@ void __appInit(void) {
     }
     fsdevMountSdmc();
 
-    Log::openFile(Log::Level::Info);
+    Log::openFile(Log::Level::Success);
 
     if (R_FAILED(socketInitializeDefault())) {
         Log::writeError("[SOCKET] Failed to initialize sockets!");

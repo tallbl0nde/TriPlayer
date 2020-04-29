@@ -9,7 +9,7 @@
 // Config for audren
 const AudioRendererConfig audrenCfg = {
     .output_rate     = AudioRendererOutputRate_48kHz,
-    .num_voices      = 24,
+    .num_voices      = 4,
     .num_effects     = 0,
     .num_sinks       = 1,
     .num_mix_objs    = 1,
@@ -21,6 +21,7 @@ const AudioRendererConfig audrenCfg = {
 // Singleton as we only ever want one instance
 class Audio {
     private:
+        // = Class things =
         // Single instance
         static Audio * instance;
         // Initialize audio output
@@ -28,11 +29,16 @@ class Audio {
         // Mutex as this will be accessed across threads
         std::mutex mutex;
 
-        // Buffers?
-        AudioDriverWaveBuf * waveBuf;
-        int nextBuf;
+        // = Variables for current song =
         // Channel number
         int channels;
+        // ID for voice (set to -1 if not created)
+        int voice;
+
+        // = Driver variables =
+        // Buffer stuff
+        AudioDriverWaveBuf * waveBuf;
+        int nextBuf;
         // Driver object
         AudioDriver drv;
         // True when object should stop looping
@@ -43,8 +49,6 @@ class Audio {
         int sink;
         // Bool indicating if initialized/created successfully
         std::atomic<bool> success;
-        // ID for voice (set to -1 if not created)
-        int voice;
 
         // Playback status
         std::atomic<AudioStatus> status_;
@@ -79,6 +83,9 @@ class Audio {
         void pause();               // Pause if playing
         void stop();                // Stop playback (discards buffers)
         AudioStatus status();       // Return state of playback
+
+        // Returns number of samples played
+        int samplesPlayed();
 
         // Volume (0 - 100.0)
         double volume();

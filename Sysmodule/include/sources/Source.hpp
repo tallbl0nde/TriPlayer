@@ -35,6 +35,8 @@ class Source {
         int channels();
         // Returns sample rate
         long sampleRate();
+        // Returns total number of samples
+        int totalSamples();
 
         virtual ~Source();
 };

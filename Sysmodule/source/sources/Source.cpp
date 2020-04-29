@@ -24,6 +24,10 @@ long Source::sampleRate() {
     return this->sampleRate_;
 }
 
+int Source::totalSamples() {
+    return this->totalSamples_;
+}
+
 double Source::position() {
     return (this->decodedSamples_/(double)this->totalSamples_);
 }

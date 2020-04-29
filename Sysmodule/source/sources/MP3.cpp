@@ -79,6 +79,7 @@ size_t MP3::decode(unsigned char * buf, size_t sz) {
         Log::writeInfo("[MP3] Decoded " + std::to_string(decoded) + " bytes");
     }
 
+    this->decodedSamples_ += decoded;
     return decoded;
 }
 
