@@ -18,6 +18,9 @@ class Database {
         // Opens read-only
         Database();
 
+        // Returns true if opened successfully
+        bool ready();
+
         // Return a path matching given ID (or blank if not found)
         std::string getPathForID(SongID);
 

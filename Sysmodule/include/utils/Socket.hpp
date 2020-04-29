@@ -1,25 +1,26 @@
-#ifndef SOCKET_H
-#define SOCKET_H
+#ifndef SOCKET_HPP
+#define SOCKET_HPP
 
-// Essentially a socket 'class'
+// Helper functions for Socket related communication
+// I should probably redo this but I'll likely move to IPC eventually
+namespace Socket {
+    // Create listening socket
+    bool createListeningSocket();
+    // Closes listening socket
+    void closeListeningSocket();
 
-// Create listening socket (returns 0 on success)
-int createListeningSocket();
-// Closes listening socket
-void closeListeningSocket();
+    // Wait for a connection before timing out
+    void acceptConnection();
+    // Returns if the transfer socket is connected
+    bool haveConnection();
+    // Close accepted connection
+    void closeConnection();
 
-// Wait for a connection before timing out
-void acceptConnection();
-// Returns 0 if the transfer socket is connected
-int haveConnection();
-// Close accepted connection
-void closeConnection();
+    // Attempt to read data before timing out (blank on timeout)
+    std::string readData();
 
-// Attempt to read data before timing out (returns pointer to malloc'd data - so free!!)
-// Returns NULL if timedout
-char * readData();
-
-// Write data to the socket (doesn't free string!)
-void writeData(const char *);
+    // Write data to the socket
+    void writeData(const std::string &);
+};
 
 #endif

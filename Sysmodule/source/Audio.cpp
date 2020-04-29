@@ -37,10 +37,6 @@ Audio::Audio() {
         delete[] this->waveBuf;
         this->success = false;
         Log::writeError("[AUDIO] Unable to allocate memory for buffers!");
-    } else {
-        for (int i = 0; i < BUFFER_COUNT; i++) {
-            this->waveBuf[i].state = AudioDriverWaveBufState_Done;
-        }
     }
 
     // Allocate memory pool and align
@@ -97,15 +93,13 @@ void Audio::exit() {
 }
 
 void Audio::newSong(long rate, int channels) {
-    if (this->voice >= 0) {
-        this->stop();
-    }
+    this->stop();
 
     std::lock_guard<std::mutex> mtx(this->mutex);
     // Drop previous voice
     if (this->voice >= 0) {
         audrvVoiceDrop(&this->drv, this->voice);
-        // update?
+        audrvUpdate(&this->drv);
         this->voice = -1;
     }
 
@@ -130,9 +124,6 @@ void Audio::newSong(long rate, int channels) {
             audrvVoiceSetMixFactor(&this->drv, this->voice, 0.0f, 1, 0);
             audrvVoiceSetMixFactor(&this->drv, this->voice, 1.0f, 1, 1);
         }
-
-        // Start output
-        audrvVoiceStart(&this->drv, this->voice);
         Log::writeSuccess("[AUDIO] Created a new voice");
     }
     Log::writeInfo("[AUDIO] Rate: " + std::to_string(rate) +  ", Channels: " + std::to_string(channels));
@@ -146,7 +137,7 @@ void Audio::addBuffer(u8 * buf, size_t sz) {
 
     std::lock_guard<std::mutex> mtx(this->mutex);
     // Copy contents into mempool
-    std::memset(this->memPool[this->nextBuf], 0, REAL_SIZE);
+    armDCacheFlush(this->memPool[this->nextBuf], sz);
     std::memcpy(this->memPool[this->nextBuf], buf, sz);
 
     // Fill relevant waveBuf
@@ -161,6 +152,7 @@ void Audio::addBuffer(u8 * buf, size_t sz) {
 
     // Indicate playing
     if (this->status_ == AudioStatus::Stopped) {
+        audrvVoiceStart(&this->drv, this->voice);
         this->status_ = AudioStatus::Playing;
     }
 }
@@ -191,8 +183,11 @@ void Audio::pause() {
 }
 
 void Audio::stop() {
-    std::lock_guard<std::mutex> mtx(this->mutex);
-    audrvVoiceStop(&this->drv, this->voice);
+    if (this->voice >= 0) {
+        std::lock_guard<std::mutex> mtx(this->mutex);
+        audrvVoiceStop(&this->drv, this->voice);
+        audrvUpdate(&this->drv);
+    }
 
     // Indicate buffers are 'empty'
     for (int i = 0; i < BUFFER_COUNT; i++) {

@@ -28,6 +28,10 @@ Database::Database() {
     }
 }
 
+bool Database::ready() {
+    return !(this->db == nullptr);
+}
+
 std::string Database::getPathForID(SongID id) {
     std::string str = "";
 
