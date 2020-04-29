@@ -25,8 +25,8 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	sys-triplayer
 BUILD		:=	build
-SOURCES		:=	source ../Common/source source/utils
-INCLUDES	:=	include ../Common/include include/utils
+SOURCES		:=	source ../Common/source source/utils source/sources
+INCLUDES	:=	include ../Common/include include/utils include/sources
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -37,7 +37,7 @@ CFLAGS	:=	-g -Wall -O2 -ffunction-sections $(ARCH) $(DEFINES)
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
+CXXFLAGS	:= $(CFLAGS) -std=gnu++17 -fno-rtti -fno-exceptions
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
