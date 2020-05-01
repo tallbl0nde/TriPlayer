@@ -54,6 +54,7 @@ std::string Database::getPathForID(SongID id) {
         Log::writeInfo("[DB] Found path: " + str + " for ID: " + std::to_string(id));
     }
 
+    str.shrink_to_fit();
     return str;
 }
 

@@ -6,6 +6,7 @@
 #include "Database.hpp"
 #include "MP3.hpp"
 #include <mutex>
+#include "Socket.hpp"
 
 // Class which manages all actions taken when receiving a command
 // Essentially encapsulates everything
@@ -19,6 +20,9 @@ class MainService {
 
         // Whether to stop loop and exit
         std::atomic<bool> exit_;
+
+        // Socket object for communication
+        Socket * socket;
 
         // TEMP (will be removed when queue implemented)
         SongID currentID;

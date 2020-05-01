@@ -3,10 +3,10 @@
 #include "Service.hpp"
 
 // Heap size:
-// Sockets: ~3MB
+// Sockets: ~0.1MB
 // MP3: ~0.5MB
 // DB: ~0.5MB
-#define INNER_HEAP_SIZE 4 * 1024 * 1024
+#define INNER_HEAP_SIZE 1 * 1024 * 1024
 
 // It hangs if I don't use C... I wish I knew why!
 extern "C" {
@@ -32,9 +32,6 @@ void __libnx_initheap(void) {
     fake_heap_end   = (char*)addr + size;
 }
 
-// Audio object
-Audio * audio;
-
 // Init services on start
 void __appInit(void) {
     if (R_FAILED(smInitialize())) {
@@ -47,15 +44,29 @@ void __appInit(void) {
     }
     fsdevMountSdmc();
 
-    Log::openFile(Log::Level::Success);
+    Log::openFile(Log::Level::Warning);
 
-    if (R_FAILED(socketInitializeDefault())) {
+    // Sockets use small buffers
+    constexpr SocketInitConfig sockCfg = {
+        .bsdsockets_version = 1,
+
+        .tcp_tx_buf_size = 0x1000,
+        .tcp_rx_buf_size = 0x1000,
+        .tcp_tx_buf_max_size = 0x3000,
+        .tcp_rx_buf_max_size = 0x3000,
+
+        .udp_tx_buf_size = 0x0,
+        .udp_rx_buf_size = 0x0,
+
+        .sb_efficiency = 1,
+    };
+    if (R_FAILED(socketInitialize(&sockCfg))) {
         Log::writeError("[SOCKET] Failed to initialize sockets!");
     }
 
     // Audio
     audrenInitialize(&audrenCfg);
-    audio = Audio::getInstance();
+    Audio::getInstance();
     audrenStartAudioRenderer();
     MP3::initLib();
 }
@@ -66,7 +77,7 @@ void __appExit(void) {
 
     // Audio
     audrenStopAudioRenderer();
-    delete audio;
+    delete Audio::getInstance();
     audrenExit();
 
     // Socket
@@ -88,7 +99,7 @@ int main(int argc, char * argv[]) {
     std::future<void> decodeThread = std::async(std::launch::async, &MainService::decodeSource, s);
 
     // This thread is responsible for managing audio output + buffers
-    audio->process();
+    Audio::getInstance()->process();
 
     // Join threads (only run after audio is done)
     s->exit();

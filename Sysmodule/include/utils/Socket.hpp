@@ -1,26 +1,47 @@
 #ifndef SOCKET_HPP
 #define SOCKET_HPP
 
-// Helper functions for Socket related communication
-// I should probably redo this but I'll likely move to IPC eventually
-namespace Socket {
-    // Create listening socket
-    bool createListeningSocket();
-    // Closes listening socket
-    void closeListeningSocket();
+#include <arpa/inet.h>
+#include <queue>
+#include <string>
 
-    // Wait for a connection before timing out
-    void acceptConnection();
-    // Returns if the transfer socket is connected
-    bool haveConnection();
-    // Close accepted connection
-    void closeConnection();
+class Socket {
+    private:
+        // Each object has it's own struct
+        struct sockaddr_in addr;
+        // Port to listen on
+        int port;
 
-    // Attempt to read data before timing out (blank on timeout)
-    std::string readData();
+        // Socket to listen for connections
+        int lSocket;
+        // Socket to transfer data on
+        int tSocket;
 
-    // Write data to the socket
-    void writeData(const std::string &);
+        // Initialize/close sockets
+        void createLSocket();
+        void closeLSocket();
+        void createTSocket();
+        void closeTSocket();
+
+        // Buffer of messages
+        std::queue<std::string> msgBuffer;
+
+    public:
+        // Constructor sets up listening socket (accepts port to listen on)
+        Socket(int);
+
+        // Call to check if initialized successfully
+        bool ready();
+
+        // Returns a message (this will block until a message is received!)
+        // Also manages transfer socket behind the scenes
+        std::string readMessage();
+
+        // Send a message (returns true if successful)
+        bool writeMessage(const std::string &);
+
+        // Closes any open sockets
+        ~Socket();
 };
 
 #endif

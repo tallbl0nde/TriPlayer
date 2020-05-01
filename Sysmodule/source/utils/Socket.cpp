@@ -1,222 +1,169 @@
-#include <arpa/inet.h>
-#include <Commands.h>
+#include <cstring>
 #include <errno.h>
 #include "Log.hpp"
 #include "Socket.hpp"
-#include <stdlib.h>
-#include <string.h>
 #include <switch.h>
 #include <sys/socket.h>
-#include <unistd.h>
 
-// Read buffer grow size (in bytes)
-#define BUFFER_SIZE 1000
-// Message cache size (num of messages)
-#define CACHE_SIZE 10
-// Queue size
-#define CONN_QUEUE 0
-// Port to listen on
-#define LISTEN_PORT 3333
-// Timeout (sec) for accepts and reads
-#define TIMEOUT 3
-#define TIMEOUTE 1E+9
+// Number of bytes to read on one call to read()
+#define READ_BYTES 200
+// Connection queue size
+#define QUEUE_SIZE 1
 
-static struct sockaddr_in addr;
-// Listening socket
-static int lSocket = -1;
-// Current transfer socket
-static int tSocket = -1;
+Socket::Socket(int p) {
+    this->lSocket = -1;
+    this->tSocket = -1;
+    this->port = p;
+    this->createLSocket();
+}
 
-// Cache of received messages
-// If this is full other messages will be lost
-static char * msgCache[CACHE_SIZE] = {0};
-
-namespace Socket {
-    bool createListeningSocket() {
-        // Get socket
-        lSocket = socket(AF_INET, SOCK_STREAM, 0);
-        if (lSocket < 0) {
-            Log::writeError("[SOCKET] Unable to create listening socket");
-            return false;
-        }
-
-        // Bind and listen
-        addr.sin_family = AF_INET;
-        addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-        addr.sin_port = htons(LISTEN_PORT);
-        const int optVal = 1;
-        setsockopt(lSocket, SOL_SOCKET, SO_REUSEADDR, (void*)&optVal, sizeof(optVal));
-        if (bind(lSocket, (struct sockaddr*) &addr, sizeof(addr)) != 0) {
-            Log::writeError("[SOCKET] Error binding to address/port");
-            return false;
-        }
-        if (listen(lSocket, CONN_QUEUE) != 0) {
-            Log::writeError("[SOCKET] Error listening");
-            return false;
-        }
-
-        // Succeeded
-        Log::writeSuccess("[SOCKET] Listening socket created successfully!");
-        return true;
+void Socket::createLSocket() {
+    // Get socket
+    this->lSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (this->lSocket < 0) {
+        Log::writeError("[SOCKET] Unable to create listening socket: " + std::to_string(errno));
+        return;
     }
 
-    void closeListeningSocket() {
-        if (lSocket >= 0) {
-            close(lSocket);
-            lSocket = -1;
-        }
+    // Bind and listen
+    this->addr.sin_family = AF_INET;
+    this->addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    this->addr.sin_port = htons(this->port);
+    const int optVal = 1;
+    setsockopt(this->lSocket, SOL_SOCKET, SO_REUSEADDR, (void*)&optVal, sizeof(optVal));
+    if (bind(this->lSocket, (struct sockaddr *) &this->addr, sizeof(this->addr)) != 0) {
+        Log::writeError("[SOCKET] Error binding to address/port:" + std::to_string(errno));
+        this->closeLSocket();
+        return;
+    }
+    if (listen(this->lSocket, QUEUE_SIZE) != 0) {
+        Log::writeError("[SOCKET] Error listening:" + std::to_string(errno));
+        this->closeLSocket();
+        return;
     }
 
-    void acceptConnection() {
-        // Set timeout
-        struct timeval time;
-        time.tv_sec = TIMEOUT;
-        time.tv_usec = 0;
+    // Succeeded
+    Log::writeSuccess("[SOCKET] Listening socket created successfully!");
+}
 
-        // Check for a ready connection
-        fd_set readfds;
-        FD_ZERO(&readfds);
-        FD_SET(lSocket, &readfds);
-        int error = 0;
-        switch (select(lSocket + 1, &readfds, NULL, NULL, &time)) {
-            case -1:
-                Log::writeError("[SOCKET] Error occurred calling select()");
-                // Sleep thread if select didn't pause
-                svcSleepThread(TIMEOUTE);
+void Socket::closeLSocket() {
+    if (this->lSocket >= 0) {
+        close(this->lSocket);
+        this->lSocket = -1;
+    }
+}
+
+void Socket::createTSocket() {
+    // Wait for a client to connect
+    Log::writeInfo("[SOCKET] Waiting for a connection...");
+    socklen_t sz = sizeof(this->addr);
+    this->tSocket = accept(this->lSocket, (struct sockaddr *) &this->addr, (socklen_t *) &sz);
+    if (this->tSocket < 0) {
+        switch (errno) {
+            default:
+                Log::writeError("[SOCKET] Error occurred accepting a connection: " + std::to_string(errno));
+
+            // Errno is set to 113 when waking from sleep
+            case 113:
+                Log::writeWarning("[SOCKET] No route to host - normal behaviour after waking from sleep");
+                this->closeLSocket();
+                this->createLSocket();
+                this->createTSocket();
                 break;
+        };
+    } else {
+        Log::writeSuccess("[SOCKET] Transfer socket connected!");
+    }
+}
 
-            case 0:
-                // Timed out
-                break;
+void Socket::closeTSocket() {
+    if (this->tSocket >= 0) {
+        close(this->tSocket);
+        this->tSocket = -1;
+    }
+}
 
-            default: {
-                socklen_t sz = sizeof(addr);
-                int tmp = accept(lSocket, (struct sockaddr *) &addr, &sz);
-                if (tmp >= 0) {
-                    tSocket = tmp;
+bool Socket::ready() {
+    return (this->lSocket >= 0);
+}
 
-                    // Set read timeout
-                    setsockopt(tSocket, SOL_SOCKET, SO_RCVTIMEO, (const char *)& time, sizeof(time));
-                    Log::writeSuccess("[SOCKET] Transfer socket connected!");
-                } else {
-                    error = errno;
-                }
-                break;
+std::string Socket::readMessage() {
+    // Simply return buffered message if there is one
+    if (!this->msgBuffer.empty()) {
+        std::string str = this->msgBuffer.front();
+        str.shrink_to_fit();
+        this->msgBuffer.pop();
+        return str;
+    }
+
+    // Ensure we have a socket
+    if (this->tSocket < 0) {
+        this->createTSocket();
+    }
+
+    // Read until entire message found
+    std::vector<char> buffer;
+    do {
+        char buf[READ_BYTES];
+        int rd = read(this->tSocket, buf, READ_BYTES);
+        if (rd < 0) {
+            Log::writeError("[SOCKET] Error occurred reading from socket: " + std::to_string(errno));
+            buffer.clear();
+
+        // Reconnect on connection loss
+        } else if (rd == 0) {
+            Log::writeWarning("[SOCKET] Lost connection while waiting to read");
+            this->closeTSocket();
+            this->createTSocket();
+            buffer.clear();
+
+        } else {
+            for (int i = 0; i < rd; i++) {
+                buffer.push_back(buf[i]);
             }
         }
+    } while (buffer.size() == 0 || buffer[buffer.size() - 1] != '\0');
 
-        // Check error to determine if we just woke from sleep
-        if (error == 113) {
-            // This runs twice and I don't know why /shrug
-            Log::writeWarning("[SOCKET] No route to host - normal behaviour after waking from sleep");
-            Log::writeWarning("[SOCKET] Reinitializing all sockets");
-
-            // Reinit sockets
-            closeConnection();
-            closeListeningSocket();
-            socketExit();
-            socketInitializeDefault();
-            createListeningSocket();
+    // Break up if multiple messages were received
+    size_t s = 0;
+    for (size_t c = 0; c < buffer.size(); c++) {
+        // Once the end is found add to buffer
+        if (buffer[c] == '\0') {
+            std::string str(buffer.begin() + s, buffer.begin() + c);
+            str.shrink_to_fit();
+            this->msgBuffer.push(str);
+            s = c + 1;
         }
     }
 
-    bool haveConnection() {
-        return (tSocket >= 0);
+    // Return a message in the cache (there will be one at this point!)
+    std::string str;
+    if (!this->msgBuffer.empty()) {
+        str = this->msgBuffer.front();
+        str.shrink_to_fit();
+        this->msgBuffer.pop();
+    } else {
+        str = "";
+    }
+    return str;
+}
+
+bool Socket::writeMessage(const std::string & str) {
+    // Create message
+    const char * tmp = str.c_str();
+    int len = strlen(tmp) + 1;
+
+    // Write data
+    if (write(this->tSocket, tmp, len) != len) {
+        Log::writeError("[SOCKET] Error writing data!");
+        return false;
     }
 
-    void closeConnection() {
-        if (tSocket >= 0) {
-            close(tSocket);
-            tSocket = -1;
-        }
-    }
+    Log::writeInfo("[SOCKET] Wrote data '" + str + "'");
+    return true;
+}
 
-    std::string readData() {
-        // If there are no 'cached' messages read from socket
-        if (msgCache[0] == NULL) {
-            char * buf = NULL;  // Buffer to read into (will grow)
-            int pos = 0;        // Position buffer finishes at
-            int rd = 0;         // Number of bytes read in iteration
-
-            // Read until at least one whole message is received
-            // Even if there is another message waiting in socket buffer it will be handled on next call
-            do {
-                // (Create) Increase buffer size each time
-                char * tmp = (char *) realloc((void *) buf, pos + BUFFER_SIZE);
-                if (tmp == NULL) {
-                    // Error occurred increasing buffer size
-                    Log::writeError("[SOCKET] Unable to increase read buffer - out of memory?");
-                    free(buf);
-                    return "";
-                }
-                buf = tmp;
-                rd = read(tSocket, buf + pos, BUFFER_SIZE);
-                if (rd == 0) {
-                    // Lost connection while attempting to read
-                    closeConnection();
-                    Log::writeWarning("[SOCKET] Lost connection on read - closed tSocket");
-                    free(buf);
-                    return "";
-
-                } else if (rd < 0) {
-                    // Timed out waiting to read
-                    free(buf);
-                    return "";
-                }
-                pos += rd;
-            } while (buf[pos - 1] != '\0');
-
-            // Split messages up (in case multiple messages are sent together)
-            char * msg = buf;
-            while ((msg - buf) < pos) {
-                // Copy into own memory
-                char * tmp = (char *) malloc((strlen(msg) + 1) * sizeof(char));
-                strcpy(tmp, msg);
-
-                // Insert into buffer (if full messages will be lost)
-                short i = 0;
-                while (i < CACHE_SIZE) {
-                    if (msgCache[i] == NULL) {
-                        msgCache[i] = tmp;
-                        break;
-                    }
-                    i++;
-                }
-                if (i == CACHE_SIZE) {
-                    Log::writeError("[SOCKET] Message cache size insuffient - lost some messages");
-                    free(tmp);
-                    break;
-                }
-
-                // Get next message
-                msg = strchr(msg, '\0');
-                msg++;
-            }
-
-            free(buf);
-        }
-
-        // Return message and shift other messages down the queue
-        if (msgCache[0] != NULL) {
-            char * msg = msgCache[0];
-            for (int i = 0; i < CACHE_SIZE - 1; i++) {
-                msgCache[i] = msgCache[i + 1];
-            }
-            msgCache[CACHE_SIZE - 1] = NULL;
-            return std::string(msg);
-        }
-
-        // This shouldn't ever be reached unless some unknown error occurs
-        Log::writeError("[SOCKET] Unknown error occurred reading from socket");
-        return "";
-    }
-
-    void writeData(const std::string & data) {
-        const char * tmp = data.c_str();
-        int len = strlen(tmp) + 1;
-
-        if (write(tSocket, tmp, len) != len) {
-            Log::writeError("[SOCKET] Error writing data");
-        }
-    }
-};
+Socket::~Socket() {
+    this->closeTSocket();
+    this->closeLSocket();
+}
