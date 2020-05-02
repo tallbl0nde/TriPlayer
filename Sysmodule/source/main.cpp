@@ -2,6 +2,9 @@
 #include "Log.hpp"
 #include "Service.hpp"
 
+// Path to log file
+#define LOG_FILE "/switch/TriPlayer/sysmodule.log"
+
 // Heap size:
 // Sockets: ~0.1MB
 // MP3: ~0.5MB
@@ -44,7 +47,8 @@ void __appInit(void) {
     }
     fsdevMountSdmc();
 
-    Log::openFile(Log::Level::Warning);
+    Log::openFile(LOG_FILE, Log::Level::Success);
+    Log::writeSuccess("=== Sysmodule started! ===");
 
     // Sockets use small buffers
     constexpr SocketInitConfig sockCfg = {

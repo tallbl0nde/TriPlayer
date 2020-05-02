@@ -20,10 +20,6 @@ class Database {
         // Call all necessary pragma statements
         void setup();
 
-        // Log given string alond with extended code (to stdout)
-        // Format: "[SQLITE] string: status (code)"
-        void logMessage(std::string);
-
         // Log memory usage
         void logMemory();
 

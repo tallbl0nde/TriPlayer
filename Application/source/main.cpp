@@ -1,15 +1,17 @@
 #include "Application.hpp"
-#include "Utils.hpp"
+#include "Log.hpp"
+
+// Path to log file
+#define LOG_FILE "/switch/TriPlayer/application.log"
 
 int main(void) {
     // Start services
     romfsInit();
     socketInitializeDefault();
 
-    #if _NXLINK_
-        nxlinkStdio();
-        Utils::writeStdout("=== stdout redirected to nxlink ===");
-    #endif
+    // Start logging
+    Log::openFile(LOG_FILE, Log::Level::Success);
+    Log::writeSuccess("=== Application Launched ===");
 
     // Start actual 'app' execution
     Main::Application * app = new Main::Application();
@@ -17,8 +19,8 @@ int main(void) {
     delete app;
 
     // Stop services
-    romfsExit();
     socketExit();
+    romfsExit();
 
     return 0;
 }

@@ -1,6 +1,7 @@
+#include "Log.hpp"
 #include "Protocol.hpp"
+#include "Socket.hpp"
 #include "Sysmodule.hpp"
-#include "Utils.hpp"
 
 // Macro for adding delimiter
 #define DELIM std::string(1, Protocol::Delimiter)
@@ -46,17 +47,17 @@ void Sysmodule::reconnect() {
     if (str.length() > 0) {
         int ver = std::stoi(str);
         if (ver != Protocol::Version) {
-            Utils::writeStdout("[SYSMODULE] Versions do not match!");
+            Log::writeError("[SYSMODULE] Versions do not match!");
             this->error_ = true;
             return;
         }
     } else {
-        Utils::writeStdout("[SYSMODULE] An error occurred getting version!");
+        Log::writeError("[SYSMODULE] An error occurred getting version!");
         this->error_ = true;
         return;
     }
 
-    Utils::writeStdout("[SYSMODULE] Socket (re)connected successfully!");
+    Log::writeSuccess("[SYSMODULE] Socket (re)connected successfully!");
     this->error_ = false;
 }
 
@@ -86,6 +87,7 @@ void Sysmodule::process() {
 
             // Clear queue if an error occurred
             if (this->error_) {
+                Log::writeError("[SYSMODULE] Error occurred while processing queue - cleared queue");
                 this->writeQueue = std::queue< std::pair<std::string, std::function<void(std::string)> > >();
                 continue;
             }
@@ -103,7 +105,11 @@ void Sysmodule::process() {
             this->sendGetVolume();
             this->lastUpdateTime = now;
             now = std::chrono::steady_clock::now();
-            Utils::writeStdout(std::to_string(std::chrono::duration_cast< std::chrono::duration<double> >(now - this->lastUpdateTime).count()) + " seconds");
+
+            // Check if we need to log to save cycles
+            if (Log::loggingLevel() == Log::Level::Info) {
+                Log::writeInfo("Sysmodule update took: " + std::to_string(std::chrono::duration_cast< std::chrono::duration<double> >(now - this->lastUpdateTime).count()) + " seconds");
+            }
 
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));

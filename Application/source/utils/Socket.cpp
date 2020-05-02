@@ -1,20 +1,20 @@
 #include <arpa/inet.h>
 #include <cstring>
 #include <errno.h>
+#include "Log.hpp"
 #include "Socket.hpp"
 #include <sys/socket.h>
 #include <sys/time.h>
-#include "Utils.hpp"
 
 // Characters to read/write in one go
-#define BUFFER_SIZE 200
+#define BUFFER_SIZE 2000
 
 namespace Utils::Socket {
     SockFD createSocket(int port) {
         // Create file descriptor
         SockFD sock = socket(AF_INET, SOCK_STREAM, 0);
         if (sock < 0) {
-            Utils::writeStdout("[SOCKET] [createSocket()] Error creating socket file descriptor!");
+            Log::writeError("[SOCKET] Error creating socket: " + std::to_string(errno));
             return -1;
         }
 
@@ -26,13 +26,11 @@ namespace Utils::Socket {
 
         // Actually attempt connection
         if (connect(sock, (struct sockaddr *) &addr, sizeof(addr)) != 0) {
-            Utils::writeStdout("[SOCKET] [createSocket()] Error connecting to port " + std::to_string(port));
+            Log::writeError("[SOCKET] Error connecting to sysmodule: " + std::to_string(errno));
             closeSocket(sock);
             return -2;
         }
 
-        // No errors! :)
-        Utils::writeStdout("[SOCKET] [createSocket()] Connected successfully");
         return sock;
     }
 
@@ -51,11 +49,14 @@ namespace Utils::Socket {
 
         // Write data
         if (write(sock, tmp, len) != len) {
-            Utils::writeStdout("[SOCKET] [writeToSocket()] Error writing data!");
+            Log::writeError("[SOCKET] An error occurred while writing data: " + std::to_string(errno));
             return false;
         }
 
-        Utils::writeStdout("[SOCKET] [writeToSocket()] Wrote data '" + str + "'");
+        // Don't bother concating if it won't be logged
+        if (Log::loggingLevel() == Log::Level::Info) {
+            Log::writeInfo("[SOCKET] Wrote data: '" + str + "'");
+        }
         return true;
     }
 
@@ -64,32 +65,28 @@ namespace Utils::Socket {
 
         // Attempt to read
         if (read(sock, buf, BUFFER_SIZE) <= 0) {
-            Utils::writeStdout("[SOCKET] [readFromSocket()] Error occurred reading from socket");
+            Log::writeError("[SOCKET] Error occurred reading from socket: " + std::to_string(errno));
             return "";
         }
 
         // Return read chars
         std::string str(buf);
-        Utils::writeStdout("[SOCKET] [readFromSocket()] Read data '" + str + "'");
+
+        // Don't bother concating if it won't be logged
+        if (Log::loggingLevel() == Log::Level::Info) {
+            Log::writeInfo("[SOCKET] Read data: '" + str + "'");
+        }
         return str;
     }
 
     bool closeSocket(SockFD sock) {
         // Close the socket
         if (close(sock) != 0) {
-            switch (errno) {
-                case EBADF:
-                    Utils::writeStdout("[SOCKET] [closeSocket()] Unable to close socket - invalid file descriptor");
-                    break;
-
-                default:
-                    Utils::writeStdout("[SOCKET] [closeSocket()] Unable to close socket - an unknown error occurred");
-                    break;
-            }
+            Log::writeError("[SOCKET] Error occurred while closing socket: " + std::to_string(errno));
             return false;
         }
 
-        Utils::writeStdout("[SOCKET] [closeSocket()] Socket closed successfully!");
+        Log::writeSuccess("[SOCKET] Socket closed successfully!");
         return true;
     }
 };

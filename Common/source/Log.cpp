@@ -2,8 +2,6 @@
 #include "Log.hpp"
 #include <mutex>
 
-// Path to log file
-#define LOG_FILE "/switch/TriPlayer/sysmodule.log"
 // Path to log flag
 #define LOG_FLAG "/config/TriPlayer/log.flag"
 
@@ -32,21 +30,24 @@ static void writeString(std::string msg) {
 }
 
 namespace Log {
-    bool openFile(Level l) {
+    Level loggingLevel() {
+        return level;
+    }
+
+    bool openFile(std::string f, Level l) {
         level = l;
 
         // Check if flag is present
-        if (access(LOG_FLAG, F_OK) == -1) {
+        if (access(f.c_str(), F_OK) == -1) {
             return false;
         }
 
         // Open log file if flag exists
-        file = fopen(LOG_FILE, "a");
+        file = fopen(f.c_str(), "a");
         if (file == nullptr) {
             return false;
         }
 
-        writeString("===== sys-triplayer started! =====");
         return true;
     }
 

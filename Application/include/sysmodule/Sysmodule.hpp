@@ -6,7 +6,6 @@
 #include <functional>
 #include <mutex>
 #include <queue>
-#include "Socket.hpp"
 #include "Types.hpp"
 #include <vector>
 

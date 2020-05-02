@@ -1,5 +1,5 @@
-#ifndef LOG_H
-#define LOG_H
+#ifndef LOG_HPP
+#define LOG_HPP
 
 #include <string>
 
@@ -12,8 +12,11 @@ namespace Log {
         Error = 3
     };
 
-    // Open file for writing (must be called in writing thread)
-    bool openFile(Level = Level::Info);
+    // Returns log level (can be used to save some log calls)
+    Level loggingLevel();
+
+    // Open file for writing
+    bool openFile(std::string, Level = Level::Info);
 
     // Log message
     void writeError(std::string);

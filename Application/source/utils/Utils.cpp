@@ -1,14 +1,7 @@
 #include <cmath>
 #include <filesystem>
-#include <iostream>
-#include <mutex>
 #include <sys/stat.h>
 #include "Utils.hpp"
-
-// Mutex for printing to stdout
-#ifdef _NXLINK_
-    std::mutex stdoutMutex;
-#endif
 
 namespace Utils {
     time_t getModifiedTimestamp(std::string path) {
@@ -127,15 +120,4 @@ namespace Utils {
         delete[] tmp;
         return str;
     }
-
-    #ifdef _NXLINK_
-        void writeStdout(std::string str) {
-            std::lock_guard<std::mutex> mtx(stdoutMutex);
-            std::cout << str << std::endl;
-        }
-    #else
-        void writeStdout(std::string str){
-
-        }
-    #endif
 };
