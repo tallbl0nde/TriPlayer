@@ -17,21 +17,21 @@ namespace Screen {
     void MainScreen::update(uint32_t dt) {
         // Update player element values
         PlaybackStatus ps = this->app->sysmodule()->status();
-        if (ps == Playing) {
+        if (ps == PlaybackStatus::Playing) {
             this->pause->setHidden(false);
             this->play->setHidden(true);
             if (this->play->focussed()) {
                 this->setFocussed(this->pause);
             }
 
-        } else if (ps == Paused) {
+        } else if (ps == PlaybackStatus::Paused) {
             this->pause->setHidden(true);
             this->play->setHidden(false);
             if (this->pause->focussed()) {
                 this->setFocussed(this->play);
             }
 
-        } else if (ps == Stopped) {
+        } else if (ps == PlaybackStatus::Stopped) {
             this->pause->setHidden(true);
             this->play->setHidden(false);
             if (this->pause->focussed()) {
@@ -48,7 +48,7 @@ namespace Screen {
         this->seekBar->setValue(per);
 
         // Update song info
-        SongID id = this->app->sysmodule()->playingID();
+        SongID id = this->app->sysmodule()->currentSong();
         if (id != this->playingID) {
             this->playingID = id;
             SongInfo si = this->app->database()->getSongInfoForID(id);
@@ -92,7 +92,7 @@ namespace Screen {
             l->setTextColour(this->app->theme()->FG());
             SongID id = si[i].ID;
             l->setCallback([this, id](){
-                this->app->sysmodule()->playSong(id);
+                this->app->sysmodule()->sendPlaySong(id);
             });
             this->list->addElement(l);
 
@@ -219,26 +219,26 @@ namespace Screen {
         this->previous = new Aether::Image(550, 628, "romfs:/icons/previous.png");
         this->previous->setColour(this->app->theme()->FG());
         this->previous->setCallback([this]() {
-            this->app->sysmodule()->previousSong();
+            this->app->sysmodule()->sendPrevious();
         });
         this->addElement(this->previous);
         this->play = new Aether::Image(610, 610, "romfs:/icons/play.png");
         this->play->setColour(this->app->theme()->FG());
         this->play->setCallback([this]() {
-            this->app->sysmodule()->resumePlayback();
+            this->app->sysmodule()->sendResume();
         });
         this->play->setHidden(true);
         this->addElement(this->play);
         this->pause = new Aether::Image(610, 610, "romfs:/icons/pause.png");
         this->pause->setColour(this->app->theme()->FG());
         this->pause->setCallback([this]() {
-            this->app->sysmodule()->pausePlayback();
+            this->app->sysmodule()->sendPause();
         });
         this->addElement(this->pause);
         this->next = new Aether::Image(705, 628, "romfs:/icons/next.png");
         this->next->setColour(this->app->theme()->FG());
         this->next->setCallback([this]() {
-            this->app->sysmodule()->nextSong();
+            this->app->sysmodule()->sendNext();
         });
         this->addElement(this->next);
         this->repeat = new Aether::Image(770, 630, "romfs:/icons/repeat.png");

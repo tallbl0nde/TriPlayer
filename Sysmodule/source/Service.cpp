@@ -1,5 +1,5 @@
 #include <cstdlib>
-#include "Commands.h"
+#include "Protocol.hpp"
 #include "Service.hpp"
 #include "Socket.hpp"
 
@@ -34,7 +34,7 @@ void MainService::process() {
         if (msg.length() > 0) {
             // If the message is not blank we've received data!
             size_t argIdx;
-            SM_Command cmd = (SM_Command)std::stoi(msg, &argIdx);
+            Protocol::Command cmd = (Protocol::Command)std::stoi(msg, &argIdx);
 
             // Skip over separating character
             argIdx++;
@@ -42,40 +42,47 @@ void MainService::process() {
                 msg = msg.substr(argIdx);
             }
 
-            std::string reply = "";
+            std::string reply;
             switch (cmd) {
-                case VERSION:
+                case Protocol::Command::Version:
                     // Reply with version of protocol (sysmodule version is irrelevant)
-                    reply = std::to_string(SM_PROTOCOL_VERSION);
+                    reply = std::to_string(Protocol::Version);
                     break;
 
-                case RESUME:
+                case Protocol::Command::Resume:
                     this->audio->resume();
+                    reply = std::to_string(this->currentID);
                     break;
 
-                case PAUSE:
+                case Protocol::Command::Pause:
                     this->audio->pause();
+                    reply = std::to_string(this->currentID);
                     break;
 
-                case PREVIOUS:
-                    //
+                case Protocol::Command::Previous:
+                    // Change song here!
+                    reply = std::to_string(this->currentID);
                     break;
 
-                case NEXT:
-                    //
+                case Protocol::Command::Next:
+                    // Change song here!
+                    reply = std::to_string(this->currentID);
                     break;
 
-                case GETVOLUME:
+                case Protocol::Command::GetVolume:
                     // Round to three decimals
                     reply = std::to_string(audio->volume() + 0.005);
                     reply = reply.substr(0, reply.find(".") + 3);
                     break;
 
-                case SETVOLUME:
-                    this->audio->setVolume(std::stod(msg));
+                case Protocol::Command::SetVolume: {
+                    double vol = std::stod(msg);
+                    this->audio->setVolume(vol);
+                    reply = std::to_string(vol);
                     break;
+                }
 
-                case PLAY: {
+                case Protocol::Command::Play: {
                     this->currentID = std::stoi(msg);
                     std::string path = this->db->getPathForID(this->currentID);
 
@@ -90,58 +97,82 @@ void MainService::process() {
                         // Prepare Audio class for new format
                         this->audio->newSong(this->source->sampleRate(), this->source->channels());
                         this->skip = false;
+                        reply = std::to_string(this->currentID);
+                    } else {
+                        reply = std::to_string(-1);
                     }
                     break;
                 }
 
-                case ADDTOQUEUE:
-                    //
+                case Protocol::Command::QueueIdx:
+                    // Query queue pos here!
+                    reply = std::to_string(0);
                     break;
 
-                case REMOVEFROMQUEUE:
-                    //
+                case Protocol::Command::AddToQueue:
+                    // Add to queue here!
+                    reply = std::to_string(0);
                     break;
 
-                case GETQUEUE:
-                    //
+                case Protocol::Command::RemoveFromQueue:
+                    // Remove from queue here!
+                    reply = std::to_string(0);
                     break;
 
-                case SETQUEUE:
-                    //
+                case Protocol::Command::GetQueue:
+                    // Concat queue
+                    reply = std::to_string(0);
                     break;
 
-                case SHUFFLE:
-                    //
+                case Protocol::Command::SetQueue:
+                    // Return length of queue
+                    reply = std::to_string(0);
                     break;
 
-                case SETREPEAT:
-                    //
+                case Protocol::Command::GetRepeat:
+                    // Return repeat
+                    reply = std::to_string(0);
                     break;
 
-                case GETSONG:
+                case Protocol::Command::SetRepeat:
+                    // Adjust repeat here
+                    reply = std::to_string(0);
+                    break;
+
+                case Protocol::Command::GetShuffle:
+                    // Return shuffle
+                    reply = std::to_string(0);
+                    break;
+
+                case Protocol::Command::SetShuffle:
+                    // Adjust shuffle here
+                    reply = std::to_string(0);
+                    break;
+
+                case Protocol::Command::GetSong:
                     reply = std::to_string(this->currentID);
                     break;
 
-                case GETSTATUS: {
-                    SM_Status s = ERROR;
+                case Protocol::Command::GetStatus: {
+                    Protocol::Status s = Protocol::Status::Error;
                     switch (audio->status()) {
                         case AudioStatus::Playing:
-                            s = PLAYING;
+                            s = Protocol::Status::Playing;
                             break;
 
                         case AudioStatus::Paused:
-                            s = PAUSED;
+                            s = Protocol::Status::Paused;
                             break;
 
                         case AudioStatus::Stopped:
-                            s = STOPPED;
+                            s = Protocol::Status::Stopped;
                             break;
                     }
                     reply = std::to_string((int)s);
                     break;
                 }
 
-                case GETPOSITION: {
+                case Protocol::Command::GetPosition: {
                     if (this->source == nullptr) {
                         reply = std::to_string(0.0);
                         break;
@@ -154,26 +185,17 @@ void MainService::process() {
                     break;
                 }
 
-                case GETSHUFFLE:
-                    //
-                    break;
-
-                case GETREPEAT:
-                    //
-                    break;
-
-                case RESET:
+                case Protocol::Command::Reset:
                     // Disconnect from database so it can update (this will be improved)
                     delete this->db;
-                    std::this_thread::sleep_for(std::chrono::seconds(10));
+                    std::this_thread::sleep_for(std::chrono::seconds(Protocol::Timeout - 1));
                     this->db = new Database();
+                    reply = std::to_string(Protocol::Version);
                     break;
             }
 
-            // Send reply if there is one
-            if (reply.length() > 0) {
-                this->socket->writeMessage(reply);
-            }
+            // Send reply
+            this->socket->writeMessage(reply);
         }
     }
 }

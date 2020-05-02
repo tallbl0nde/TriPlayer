@@ -72,7 +72,7 @@ namespace Screen {
         // Now commit all changes to DB!
         this->currentStage = Update;
         // Reset the sysmodule to stop playback, clear queue and ensure DB won't be accessed
-        this->app->sysmodule()->reset();
+        this->app->sysmodule()->sendReset();
         // Lock the database for writing
         this->app->database()->lock();
 
@@ -204,7 +204,7 @@ namespace Screen {
         this->lastStage = Search;
 
         // Check if connected to sysmodule
-        if (this->app->sysmodule()->isConnected()) {
+        if (!this->app->sysmodule()->error()) {
             // Start searching for files
             this->future = std::async(std::launch::async, &Splash::processFiles, this);
         } else {

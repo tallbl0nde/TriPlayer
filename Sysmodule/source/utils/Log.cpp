@@ -3,7 +3,7 @@
 #include <mutex>
 
 // Path to log file
-#define LOG_FILE "/log.txt"
+#define LOG_FILE "/switch/TriPlayer/sysmodule.log"
 // Path to log flag
 #define LOG_FLAG "/config/TriPlayer/log.flag"
 
@@ -13,6 +13,23 @@ static FILE * file;
 static Log::Level level;
 // Mutex to handle actually writing to file
 static std::mutex mutex;
+
+static void writeString(std::string msg) {
+    if (file == nullptr) {
+        return;
+    }
+
+    // Get timestamp
+    std::time_t time = std::time(nullptr);
+    struct tm * t = std::localtime(&time);
+    char buf[12];
+    std::strftime(buf, sizeof(buf), "[%T] ", t);
+
+    // Lock stream and write!
+    std::lock_guard<std::mutex> mtx(mutex);
+    fprintf(file, "%s%s\n", buf, msg.c_str());
+    fflush(file);
+}
 
 namespace Log {
     bool openFile(Level l) {
@@ -29,7 +46,7 @@ namespace Log {
             return false;
         }
 
-        writeSuccess("===== sys-triplayer started! =====");
+        writeString("===== sys-triplayer started! =====");
         return true;
     }
 
@@ -38,23 +55,6 @@ namespace Log {
             fclose(file);
             file = nullptr;
         }
-    }
-
-    static void writeString(std::string msg) {
-        if (file == nullptr) {
-            return;
-        }
-
-        // Get timestamp
-        std::time_t time = std::time(nullptr);
-        struct tm * t = std::localtime(&time);
-        char buf[12];
-        std::strftime(buf, sizeof(buf), "[%T] ", t);
-
-        // Lock stream and write!
-        std::lock_guard<std::mutex> mtx(mutex);
-        fprintf(file, "%s%s\n", buf, msg.c_str());
-        fflush(file);
     }
 
     void writeError(std::string msg) {

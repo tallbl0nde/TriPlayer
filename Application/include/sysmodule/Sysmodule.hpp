@@ -2,6 +2,8 @@
 #define SYSMODULE_HPP
 
 #include <atomic>
+#include <chrono>
+#include <functional>
 #include <mutex>
 #include <queue>
 #include "Socket.hpp"
@@ -15,70 +17,87 @@ class Sysmodule {
         // Socket file descriptor (set negative if an error occurred)
         SockFD socket;
 
-        // Status vars
-        std::atomic<SongID> currentID;
-        std::atomic<double> position_;
-        std::atomic<PlaybackStatus> status_;
-        // queue here too
-        std::atomic<int> version;   // Set negative if an error occurred
-        std::atomic<int> volume;
+        std::atomic<bool> error_;
+        std::atomic<bool> exit_;
+        std::chrono::steady_clock::time_point lastUpdateTime;
 
-        // Writes are queued
-        void addToWQueue(std::string);
-        // Mutex to protect pushes onto queue
+        // === Status vars ===
+        std::atomic<double> volume_;
+        std::atomic<size_t> songIdx_;
+        std::atomic<bool> queueChanged_;
+        std::vector<SongID> queue_;
         std::mutex queueMutex;
-        // Socket write queue
-        std::queue<std::string> writeQueue;
+        std::atomic<RepeatMode> repeatMode_;
+        std::atomic<ShuffleMode> shuffleMode_;
+        std::atomic<SongID> currentSong_;
+        std::atomic<PlaybackStatus> status_;
+        std::atomic<double> position_;
+        // ======
 
-        // Functions which actually update status vars
-        bool getPosition_();
-        bool getSongID_();
-        bool getStatus_();
+        // Queue of messages to write and callback
+        std::queue< std::pair<std::string, std::function<void(std::string)> > > writeQueue;
+        std::mutex writeMutex;
+        void addToWriteQueue(std::string, std::function<void(std::string)>);
 
     public:
         // Constructor creates a socket and attempts connection to sysmodule
         Sysmodule();
-        // Returns whether versions match (will return false if the connection failed as well)
-        bool isConnected();
+
+        // Returns true when an error occurred in communication
+        bool error();
         // (Drops) current socket and reconnects
         void reconnect();
 
-        // Function to poll sysmodule frequently
-        void updateState();
+        // Main function which updates state when replies received
+        void process();
 
-        // Sends relevant command to sysmodule, returning true if the sysmodule received the command
+        // === Returns private (state) variables ===
+        SongID currentSong();
+        double position();
+        bool queueChanged();
+        std::vector<SongID> queue();
+        RepeatMode repeatMode();
+        ShuffleMode shuffleMode();
+        size_t songIdx();
+        PlaybackStatus status();
+        double volume();
+
+        // === Send command to sysmodule ===
+        // Updates relevant variable when reply received or sets error() true
+
         // Playback commands
-        void resumePlayback();
-        void pausePlayback();
-        void previousSong();
-        void nextSong();
-        void setVolume(int); // 0 to 100
+        void sendResume();
+        void sendPause();
+        void sendPrevious();
+        void sendNext();
+        void sendGetVolume();
+        void sendSetVolume(const double);
 
         // Manipulate queue
-        void playSong(SongID);
-        void addToQueue(SongID);
-        void removeFromQueue(SongID);
-        // bool getQueue(std::vector<SongID> &); // Vector to store IDs in
-        // bool setQueue(std::vector<SongID>); // Vector of IDs to add
+        void sendPlaySong(const SongID);
+        void sendGetSongIdx();
+        void sendAddToQueue(const SongID);
+        void sendRemoveFromQueue(const size_t);
+        void sendGetQueue();
+        void sendSetQueue(const std::vector<SongID> &);
 
-        // Shuffle current queue
-        void shuffleQueue();
-
-        // Toggle repeat
-        void repeatOn();
-        void repeatOff();
+        // Shuffle/repeat
+        void sendGetRepeat();
+        void sendSetRepeat(const RepeatMode);
+        void sendGetShuffle();
+        void sendSetShuffle(const ShuffleMode);
 
         // Status
-        SongID playingID(); // Variable to store ID in
-        double position(); // Variable to store percentage played (0 - 100)
-        PlaybackStatus status(); // Variable to store status in
-        // get shuffle get repeat
+        void sendGetSong();
+        void sendGetStatus();
+        void sendGetPosition();
 
-        // Reinit sysmodule - will cause socket to disconnect!
-        bool reset();
+        // Reinit sysmodule
+        void sendReset();
+        // ======
 
-        // Call to 'join' thread (stops updateState loop)
-        void finish();
+        // Call to 'join' thread (stops main loop)
+        void exit();
 
         // Destructor closes socket
         ~Sysmodule();

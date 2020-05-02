@@ -10,6 +10,9 @@ namespace Utils::Socket {
     // Accepts port number
     SockFD createSocket(int);
 
+    // Set read timeout on socket
+    void setTimeout(SockFD, int);
+
     // Write given string to socket (returns true on success)
     bool writeToSocket(SockFD, std::string);
 

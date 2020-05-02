@@ -6,7 +6,9 @@
 #include "Utils.hpp"
 
 // Mutex for printing to stdout
-std::mutex stdoutMutex;
+#ifdef _NXLINK_
+    std::mutex stdoutMutex;
+#endif
 
 namespace Utils {
     time_t getModifiedTimestamp(std::string path) {

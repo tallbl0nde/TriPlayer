@@ -1,16 +1,13 @@
 #include <arpa/inet.h>
-#include "Commands.h"
 #include <cstring>
-#include <netinet/in.h>
+#include <errno.h>
 #include "Socket.hpp"
 #include <sys/socket.h>
 #include <sys/time.h>
 #include "Utils.hpp"
 
-// Read buffer grow size (in bytes)
-#define BUFFER_SIZE 1000
-// Timeout for read operations (in seconds)
-#define TIMEOUT 5
+// Characters to read/write in one go
+#define BUFFER_SIZE 200
 
 namespace Utils::Socket {
     SockFD createSocket(int port) {
@@ -34,15 +31,17 @@ namespace Utils::Socket {
             return -2;
         }
 
-        // Set read timeout
-        struct timeval time;
-        time.tv_sec = TIMEOUT;
-        time.tv_usec = 0;
-        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char *)& time, sizeof(time));
-
         // No errors! :)
         Utils::writeStdout("[SOCKET] [createSocket()] Connected successfully");
         return sock;
+    }
+
+    void setTimeout(SockFD sock, int sec) {
+        // Set read timeout
+        struct timeval time;
+        time.tv_sec = sec;
+        time.tv_usec = 0;
+        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char *)& time, sizeof(time));
     }
 
     bool writeToSocket(SockFD sock, std::string str) {

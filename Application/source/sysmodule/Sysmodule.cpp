@@ -1,259 +1,356 @@
-#include "Commands.h"
+#include "Protocol.hpp"
 #include "Sysmodule.hpp"
 #include "Utils.hpp"
 
-#define PORT 3333
-#define VOL_AMT 10
+// Macro for adding delimiter
+#define DELIM std::string(1, Protocol::Delimiter)
+// Number of seconds between updating state (automatically)
+#define UPDATE_DELAY 0.1
 
-// Query/update variables this often
-#define QUERY_MS 100
+void Sysmodule::addToWriteQueue(std::string s, std::function<void(std::string)> f) {
+    if (this->error_) {
+        return;
+    }
+
+    std::lock_guard<std::mutex> mtx(this->writeMutex);
+    this->writeQueue.push(std::pair< std::string, std::function<void(std::string)> >(s, f));
+}
 
 Sysmodule::Sysmodule() {
+    this->error_ = true;
+    this->exit_ = false;
+    this->lastUpdateTime = std::chrono::steady_clock::now();
+
     // Get socket
     this->socket = -1;
     this->reconnect();
 }
 
-bool Sysmodule::isConnected() {
-    return (version == SM_PROTOCOL_VERSION);
+bool Sysmodule::error() {
+    return this->error_;
 }
 
 void Sysmodule::reconnect() {
+    std::lock_guard<std::mutex> mtx(this->writeMutex);
+
+    // Create and setup socket
     if (this->socket >= 0) {
         Utils::Socket::closeSocket(this->socket);
     }
-    this->socket = Utils::Socket::createSocket(PORT);
+    this->socket = Utils::Socket::createSocket(Protocol::Port);
+    Utils::Socket::setTimeout(this->socket, Protocol::Timeout);
 
     // Get protocol version
-    Utils::Socket::writeToSocket(this->socket, std::to_string(VERSION));
+    Utils::Socket::writeToSocket(this->socket, std::to_string((int)Protocol::Command::Version));
     std::string str = Utils::Socket::readFromSocket(this->socket);
-    if (str != "") {
-        this->version = std::stoi(str);
+    if (str.length() > 0) {
+        int ver = std::stoi(str);
+        if (ver != Protocol::Version) {
+            Utils::writeStdout("[SYSMODULE] Versions do not match!");
+            this->error_ = true;
+            return;
+        }
     } else {
-        this->version = -1;
+        Utils::writeStdout("[SYSMODULE] An error occurred getting version!");
+        this->error_ = true;
+        return;
     }
-    if (this->version != SM_PROTOCOL_VERSION) {
-        Utils::writeStdout("[SYSMODULE] [isReady()] Sysmodule version does not match!");
-        this->version = -1;
-    }
+
+    Utils::writeStdout("[SYSMODULE] Socket (re)connected successfully!");
+    this->error_ = false;
 }
 
-void Sysmodule::addToWQueue(std::string s) {
-    queueMutex.lock();
-    this->writeQueue.push(s);
-    queueMutex.unlock();
-}
+void Sysmodule::process() {
+    // Loop until we want to exit
+    while (!this->exit_) {
+        // Sleep if an error occurred
+        if (this->error_) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            continue;
+        }
 
-void Sysmodule::updateState() {
-    // Stop the loop if any of these fail (should only fail if socket/service is stopped/closed)
-    bool loop = true;
-    while (loop && this->version >= 0) {
-        auto start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-
-        // Write queued messages
-        queueMutex.lock();
-        while (writeQueue.size() > 0) {
-            if (!Utils::Socket::writeToSocket(this->socket, writeQueue.front())) {
-                loop = false;
+        // First process anything on the queue
+        std::unique_lock<std::mutex> mtx(this->writeMutex);
+        while (!this->writeQueue.empty()) {
+            if (!Utils::Socket::writeToSocket(this->socket, this->writeQueue.front().first)) {
+                this->error_ = true;
+            } else {
+                std::string str = Utils::Socket::readFromSocket(this->socket);
+                if (str.length() == 0) {
+                    this->error_ = true;
+                } else {
+                    this->writeQueue.front().second(str);
+                    this->writeQueue.pop();
+                }
             }
-            writeQueue.pop();
-            if (!loop) {
-                break;
+
+            // Clear queue if an error occurred
+            if (this->error_) {
+                this->writeQueue = std::queue< std::pair<std::string, std::function<void(std::string)> > >();
+                continue;
             }
         }
-        queueMutex.unlock();
+        mtx.unlock();
 
-        // Update variables
-        if (loop) {
-            loop = this->getSongID_();
-        }
-        if (loop) {
-            loop = this->getPosition_();
-        }
-        auto time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        Utils::writeStdout("Get pos took: " + std::to_string(time - start) + " milliseconds");
-        if (loop) {
-            loop = this->getStatus_();
-        }
-        time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        Utils::writeStdout("Get status took: " + std::to_string(time - start) + " milliseconds");
+        // Check if variables need to be updated
+        std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+        if (std::chrono::duration_cast< std::chrono::duration<double> >(now - this->lastUpdateTime).count() > UPDATE_DELAY) {
+            this->sendGetPosition();
+            this->sendGetRepeat();
+            this->sendGetShuffle();
+            this->sendGetSong();
+            this->sendGetStatus();
+            this->sendGetVolume();
+            this->lastUpdateTime = now;
+            now = std::chrono::steady_clock::now();
+            Utils::writeStdout(std::to_string(std::chrono::duration_cast< std::chrono::duration<double> >(now - this->lastUpdateTime).count()) + " seconds");
 
-        // Determine how long to sleep (in ms)
-        auto end = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        Utils::writeStdout("Sysmodule loop took: " + std::to_string(end - start) + " milliseconds");
-        int sleep = QUERY_MS - (end - start);
-        if (sleep > 0) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(sleep));
+        } else {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     }
 }
 
-bool Sysmodule::getSongID_() {
-    // Request song ID
-    if (!Utils::Socket::writeToSocket(this->socket, std::to_string(GETSONG))) {
-        return false;
-    }
-
-    // Read ID
-    std::string str = Utils::Socket::readFromSocket(this->socket);
-    if (str == "") {
-        return false;
-    }
-
-    this->currentID = std::stoi(str);
-    return true;
-}
-
-bool Sysmodule::getStatus_() {
-    // Request status
-    if (!Utils::Socket::writeToSocket(this->socket, std::to_string(GETSTATUS))) {
-        this->status_ = Error;
-        return false;
-    }
-
-    // Read status
-    std::string str = Utils::Socket::readFromSocket(this->socket);
-    if (str == "") {
-        this->status_ = Error;
-        return false;
-    }
-
-    SM_Status st = (SM_Status)std::stoi(str);
-    switch (st) {
-        case ERROR:
-            this->status_ = Error;
-            break;
-
-        case PLAYING:
-            this->status_ = Playing;
-            break;
-
-        case PAUSED:
-            this->status_ = Paused;
-            break;
-
-        case STOPPED:
-            this->status_ = Stopped;
-            break;
-    }
-    return true;
-}
-
-bool Sysmodule::getPosition_() {
-    // Request position
-    if (!Utils::Socket::writeToSocket(this->socket, std::to_string(GETPOSITION))) {
-        return false;
-    }
-
-    // Read position
-    std::string str = Utils::Socket::readFromSocket(this->socket);
-    if (str == "") {
-        return false;
-    }
-
-    this->position_ = std::stod(str);
-    return true;
-}
-
-void Sysmodule::resumePlayback() {
-    this->addToWQueue(std::to_string(RESUME));
-}
-
-void Sysmodule::pausePlayback() {
-    this->addToWQueue(std::to_string(PAUSE));
-}
-
-void Sysmodule::previousSong() {
-    this->addToWQueue(std::to_string(PREVIOUS));
-}
-
-void Sysmodule::nextSong() {
-    this->addToWQueue(std::to_string(NEXT));
-}
-
-void Sysmodule::setVolume(int v) {
-    this->addToWQueue(std::to_string(SETVOLUME) + std::string(1, SM_DELIMITER) + std::to_string(v));
-}
-
-void Sysmodule::playSong(SongID i) {
-    this->addToWQueue(std::to_string(PLAY) + std::string(1, SM_DELIMITER) + std::to_string(i));
-}
-
-void Sysmodule::addToQueue(SongID i) {
-    this->addToWQueue(std::to_string(ADDTOQUEUE) + std::string(1, SM_DELIMITER) + std::to_string(i));
-}
-
-void Sysmodule::removeFromQueue(SongID i) {
-    this->addToWQueue(std::to_string(REMOVEFROMQUEUE) + std::string(1, SM_DELIMITER) + std::to_string(i));
-}
-
-// bool Sysmodule::getQueue(std::vector<SongID> & q) {
-//     // Request queue
-//     if (!Utils::Socket::writeToSocket(this->socket, std::to_string(GETQUEUE))) {
-//         return false;
-//     }
-
-//     // Read queue
-//     std::string str = Utils::Socket::readFromSocket(this->socket);
-//     if (str == "") {
-//         return false;
-//     }
-
-//     // Split received string and populate vector
-//     q.clear();
-//     unsigned int lpos = 0;
-//     unsigned int pos;
-//     while ((pos = str.find(SM_DELIMITER, lpos)) != std::string::npos) {
-//         q.push_back(std::stoi(str.substr(lpos, pos)));
-//         lpos = pos + 1;
-//     }
-
-//     return true;
-// }
-
-// bool Sysmodule::setQueue(std::vector<SongID> q) {
-//     // Create string from vector
-//     std::string str = std::to_string(SETQUEUE);
-//     for (size_t i = 0; i < q.size(); i++) {
-//         str += std::string(1, SM_DELIMITER);
-//         str += q[i];
-//     }
-
-//     return Utils::Socket::writeToSocket(this->socket, str);
-// }
-
-void Sysmodule::shuffleQueue() {
-    this->addToWQueue(std::to_string(SHUFFLE));
-}
-
-void Sysmodule::repeatOn() {
-    this->addToWQueue(std::to_string(SETREPEAT));
-}
-
-void Sysmodule::repeatOff() {
-    this->addToWQueue(std::to_string(SETREPEAT));
-}
-
-SongID Sysmodule::playingID() {
-    return this->currentID;
+SongID Sysmodule::currentSong() {
+    return this->currentSong_;
 }
 
 double Sysmodule::position() {
     return this->position_;
 }
 
+bool Sysmodule::queueChanged() {
+    return this->queueChanged_;
+}
+
+std::vector<SongID> Sysmodule::queue() {
+    return this->queue_;
+}
+
+RepeatMode Sysmodule::repeatMode() {
+    return this->repeatMode_;
+}
+
+ShuffleMode Sysmodule::shuffleMode() {
+    return this->shuffleMode_;
+}
+
+size_t Sysmodule::songIdx() {
+    return this->songIdx_;
+}
+
 PlaybackStatus Sysmodule::status() {
     return this->status_;
 }
 
-void Sysmodule::finish() {
-    this->version = -1;
+double Sysmodule::volume() {
+    return this->volume_;
 }
 
-bool Sysmodule::reset() {
-    return Utils::Socket::writeToSocket(this->socket, std::to_string(RESET));
+void Sysmodule::sendResume() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::Resume), [this](std::string s) {
+        this->currentSong_ = std::stoi(s);
+    });
+}
+
+void Sysmodule::sendPause() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::Pause), [this](std::string s) {
+        this->currentSong_ = std::stoi(s);
+    });
+}
+
+void Sysmodule::sendPrevious() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::Previous), [this](std::string s) {
+        this->currentSong_ = std::stoi(s);
+    });
+}
+
+void Sysmodule::sendNext() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::Next), [this](std::string s) {
+        this->currentSong_ = std::stoi(s);
+    });
+}
+
+void Sysmodule::sendGetVolume() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetVolume), [this](std::string s) {
+        this->volume_ = std::stod(s);
+    });
+}
+
+void Sysmodule::sendSetVolume(const double v) {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::SetVolume) + DELIM + std::to_string(v), [this](std::string s) {
+        this->volume_ = std::stod(s);
+    });
+}
+
+void Sysmodule::sendPlaySong(const SongID id) {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::Play) + DELIM + std::to_string(id), [this](std::string s) {
+        this->currentSong_ = std::stoi(s);
+    });
+}
+
+void Sysmodule::sendGetSongIdx() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::QueueIdx), [this](std::string s) {
+        this->songIdx_ = std::stoi(s);
+    });
+}
+
+void Sysmodule::sendAddToQueue(const SongID id) {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::AddToQueue) + DELIM + std::to_string(id), [this, id](std::string s) {
+        if (std::stoi(s) != id) {
+            // Handle error here
+        } else {
+            // Edit queue as needed
+        }
+    });
+}
+
+void Sysmodule::sendRemoveFromQueue(const size_t pos) {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::RemoveFromQueue) + DELIM + std::to_string(pos), [this, pos](std::string s) {
+        if (std::stoul(s) != pos) {
+            // Handle error here
+        } else {
+            // Edit queue as needed
+        }
+    });
+}
+
+void Sysmodule::sendGetQueue() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetQueue), [this](std::string s) {
+        // Set queue here
+    });
+}
+
+void Sysmodule::sendSetQueue(const std::vector<SongID> & q) {
+    // Construct string first
+    std::string seq;
+    size_t size = q.size();
+    for (size_t i = 0; i < size; i++) {
+        if (i != size - 1) {
+            seq.push_back(Protocol::Delimiter);
+        }
+        seq += std::to_string(q[i]);
+    }
+
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::SetQueue) + DELIM + seq, [this, size](std::string s) {
+        if (std::stoul(s) != size) {
+            // Handle error here
+        } else {
+            // Update queue (maybe do this before adding to write queue?)
+        }
+    });
+}
+
+void Sysmodule::sendGetRepeat() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetRepeat), [this](std::string s) {
+        RepeatMode rm = RepeatMode::Off;
+        switch ((Protocol::Repeat)std::stoi(s)) {
+            case Protocol::Repeat::Off:
+                rm = RepeatMode::Off;
+                break;
+
+            case Protocol::Repeat::One:
+                rm = RepeatMode::One;
+                break;
+
+            case Protocol::Repeat::All:
+                rm = RepeatMode::All;
+                break;
+        }
+        this->repeatMode_ = rm;
+    });
+}
+
+void Sysmodule::sendSetRepeat(const RepeatMode m) {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::SetRepeat) + DELIM + std::to_string((int)m), [this, m](std::string s) {
+        RepeatMode rm;
+        switch ((Protocol::Repeat)std::stoi(s)) {
+            case Protocol::Repeat::Off:
+                rm = RepeatMode::Off;
+                break;
+
+            case Protocol::Repeat::One:
+                rm = RepeatMode::One;
+                break;
+
+            case Protocol::Repeat::All:
+                rm = RepeatMode::All;
+                break;
+        }
+
+        if (rm != m) {
+            // Handle error here
+        } else {
+            this->repeatMode_ = rm;
+        }
+    });
+}
+
+void Sysmodule::sendGetShuffle() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetShuffle), [this](std::string s) {
+        this->shuffleMode_ = ((Protocol::Shuffle)std::stoi(s) == Protocol::Shuffle::Off ? ShuffleMode::Off : ShuffleMode::On);
+    });
+}
+
+void Sysmodule::sendSetShuffle(const ShuffleMode m) {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::SetShuffle) + DELIM + std::to_string((int)m), [this, m](std::string s) {
+        ShuffleMode sm = ((Protocol::Shuffle)std::stoi(s) == Protocol::Shuffle::Off ? ShuffleMode::Off : ShuffleMode::On);
+        if (sm != m) {
+            // Handle error here
+        } else {
+            this->shuffleMode_ = sm;
+        }
+    });
+}
+
+void Sysmodule::sendGetSong() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetSong), [this](std::string s) {
+        this->currentSong_ = std::stoi(s);
+    });
+}
+
+void Sysmodule::sendGetStatus() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetStatus), [this](std::string s) {
+        PlaybackStatus ps = PlaybackStatus::Error;
+        switch ((Protocol::Status)std::stoi(s)) {
+            case Protocol::Status::Error:
+                ps = PlaybackStatus::Error;
+                break;
+
+            case Protocol::Status::Playing:
+                ps = PlaybackStatus::Playing;
+                break;
+
+            case Protocol::Status::Paused:
+                ps = PlaybackStatus::Paused;
+                break;
+
+            case Protocol::Status::Stopped:
+                ps = PlaybackStatus::Stopped;
+                break;
+        }
+        this->status_ = ps;
+    });
+}
+
+void Sysmodule::sendGetPosition() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetPosition), [this](std::string s) {
+        this->position_ = std::stod(s);
+    });
+}
+
+void Sysmodule::sendReset() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::Reset), [this](std::string s) {
+        this->position_ = std::stod(s);
+    });
+}
+
+void Sysmodule::exit() {
+    this->exit_ = true;
 }
 
 Sysmodule::~Sysmodule() {
-    Utils::Socket::closeSocket(this->socket);
+    if (this->socket >= 0) {
+        Utils::Socket::closeSocket(this->socket);
+    }
 }

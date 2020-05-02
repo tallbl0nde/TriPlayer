@@ -183,8 +183,8 @@ void Audio::pause() {
 }
 
 void Audio::stop() {
+    std::lock_guard<std::mutex> mtx(this->mutex);
     if (this->voice >= 0) {
-        std::lock_guard<std::mutex> mtx(this->mutex);
         audrvVoiceStop(&this->drv, this->voice);
         audrvUpdate(&this->drv);
     }
