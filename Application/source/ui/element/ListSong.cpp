@@ -6,6 +6,8 @@
 #define HEIGHT 60
 // Amount either side of list to keep textures (in pixels)
 #define TEX_THRESHOLD 2000
+// Pixel gap between text fields
+#define TEXT_GAP 30
 
 namespace CustomElm {
     SDL_Texture * ListSong::lineTexture = nullptr;
@@ -57,7 +59,6 @@ namespace CustomElm {
                     this->length->setHidden(false);
                     this->isRendering = Done;
                 }
-                break;
 
             case Done:
                 // Check if move outside of threshold and if so remove texture to save memory
@@ -66,6 +67,10 @@ namespace CustomElm {
                     this->artist->deleteTexture();
                     this->album->deleteTexture();
                     this->length->deleteTexture();
+                    this->title->setHidden(true);
+                    this->artist->setHidden(true);
+                    this->album->setHidden(true);
+                    this->length->setHidden(true);
                     this->isRendering = Waiting;
                 }
                 break;
@@ -122,14 +127,14 @@ namespace CustomElm {
         this->album->setY(this->y() + (this->h() - this->album->h())/2);
         this->length->setY(this->y() + (this->h() - this->length->h())/2);
 
-        if (this->title->x() + this->title->w() > this->artist->x()) {
-            this->title->setW(this->artist->x() - this->title->x() - 35);
+        if (this->title->x() + this->title->w() > this->artist->x() - TEXT_GAP) {
+            this->title->setW(this->artist->x() - this->title->x() - TEXT_GAP);
         }
-        if (this->artist->x() + this->artist->w() > this->album->x()) {
-            this->artist->setW(this->album->x() - this->artist->x() - 35);
+        if (this->artist->x() + this->artist->w() > this->album->x() - TEXT_GAP) {
+            this->artist->setW(this->album->x() - this->artist->x() - TEXT_GAP);
         }
-        if (this->album->x() + this->album->w() > this->length->x()) {
-            this->album->setW(this->length->x() - this->album->x() - 35);
+        if (this->album->x() + this->album->w() > this->length->x() - TEXT_GAP) {
+            this->album->setW(this->length->x() - this->album->x() - TEXT_GAP);
         }
 
         // Resize line texture if it is not the right size

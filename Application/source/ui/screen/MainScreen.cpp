@@ -75,7 +75,36 @@ namespace Screen {
     void MainScreen::setupSongs() {
         this->deselectSideItems();
         this->sideSongs->setActivated(true);
-        // this->heading->setString("Songs");
+        this->heading->setString("Songs");
+
+        // Create items for songs
+        unsigned int totalSecs = 0;
+        this->list->removeAllElements();
+        std::vector<SongInfo> si = this->app->database()->getAllSongInfo();
+        for (size_t i = 0; i < si.size(); i++) {
+            totalSecs += si[i].duration;
+            CustomElm::ListSong * l = new CustomElm::ListSong(this->app->threadQueue());
+            l->setTitleString(si[i].title);
+            l->setArtistString(si[i].artist);
+            l->setAlbumString(si[i].album);
+            l->setLengthString(Utils::secondsToHMS(si[i].duration));
+            l->setLineColour(this->app->theme()->muted2());
+            l->setTextColour(this->app->theme()->FG());
+            SongID id = si[i].ID;
+            l->setCallback([this, id](){
+                this->app->sysmodule()->playSong(id);
+            });
+            this->list->addElement(l);
+
+            if (i == 0) {
+                l->setY(this->list->y() + 10);
+            }
+        }
+
+        this->subLength->setString(Utils::secondsToHoursMins(totalSecs));
+        this->subLength->setX(1205 - this->subLength->w());
+        this->subTotal->setString(std::to_string(si.size()) + (si.size() == 1 ? " track" : " tracks" ));
+        this->subTotal->setX(1205 - this->subTotal->w());
     }
 
     void MainScreen::onLoad() {
@@ -254,52 +283,37 @@ namespace Screen {
         this->addElement(this->fullscreen);
 
         // === MAIN ===
-        // Heading
-        this->heading = new Aether::Text(420, 40, "", 60);
+        // Headings
+        this->heading = new Aether::Text(385, 40, "", 60);
         this->heading->setColour(this->app->theme()->FG());
         this->addElement(this->heading);
-
-        // Add list headings
-        this->titleH = new Aether::Text(415, 160, "Title", 20);
-        this->titleH->setColour(this->app->theme()->muted());
-        this->addElement(this->titleH);
-        this->artistH = new Aether::Text(773, 160, "Artist", 20);
-        this->artistH->setColour(this->app->theme()->muted());
-        this->addElement(this->artistH);
-        this->albumH = new Aether::Text(965, 160, "Album", 20);
-        this->albumH->setColour(this->app->theme()->muted());
-        this->addElement(this->albumH);
-        this->lengthH = new Aether::Text(1215, 160, "Length", 20);
-        this->lengthH->setX(this->lengthH->x() - this->lengthH->w());
-        this->lengthH->setColour(this->app->theme()->muted());
-        this->addElement(this->lengthH);
+        this->subLength = new Aether::Text(1205, 80, "", 20);
+        this->subLength->setColour(this->app->theme()->muted());
+        this->addElement(this->subLength);
+        this->subTotal = new Aether::Text(1205, this->subLength->y() - 25, "", 20);
+        this->subTotal->setColour(this->app->theme()->muted());
+        this->addElement(this->subTotal);
 
         // Create list
-        this->list = new Aether::List(320, 190, 950, 400);
+        this->list = new Aether::List(320, 180, 950, 420);
         this->list->setScrollBarColour(this->app->theme()->muted2());
         this->list->setShowScrollBar(true);
         this->addElement(this->list);
 
-        // Create items for each songs
-        std::vector<SongInfo> si = this->app->database()->getAllSongInfo();
-        for (size_t i = 0; i < si.size(); i++) {
-            CustomElm::ListSong * l = new CustomElm::ListSong(this->app->threadQueue());
-            l->setTitleString(si[i].title);
-            l->setArtistString(si[i].artist);
-            l->setAlbumString(si[i].album);
-            l->setLengthString(Utils::secondsToHMS(si[i].duration));
-            l->setLineColour(this->app->theme()->muted2());
-            l->setTextColour(this->app->theme()->FG());
-            SongID id = si[i].ID;
-            l->setCallback([this, id](){
-                this->app->sysmodule()->playSong(id);
-            });
-            this->list->addElement(l);
-
-            if (i == 0) {
-                l->setY(this->list->y() + 20);
-            }
-        }
+        // Add list headings
+        this->titleH = new Aether::Text(385, this->list->y() - 30, "Title", 20);
+        this->titleH->setColour(this->app->theme()->muted());
+        this->addElement(this->titleH);
+        this->artistH = new Aether::Text(753, this->list->y() - 30, "Artist", 20);
+        this->artistH->setColour(this->app->theme()->muted());
+        this->addElement(this->artistH);
+        this->albumH = new Aether::Text(948, this->list->y() - 30, "Album", 20);
+        this->albumH->setColour(this->app->theme()->muted());
+        this->addElement(this->albumH);
+        this->lengthH = new Aether::Text(1205, this->list->y() - 30, "Length", 20);
+        this->lengthH->setX(this->lengthH->x() - this->lengthH->w());
+        this->lengthH->setColour(this->app->theme()->muted());
+        this->addElement(this->lengthH);
 
         // Set songs active
         this->setFocussed(this->sideSongs);
@@ -338,7 +352,9 @@ namespace Screen {
         this->removeElement(this->volumeIcon);
         this->removeElement(this->volume);
         this->removeElement(this->fullscreen);
-        // this->removeElement(this->heading);
-        // this->removeElement(this->list);
+        this->removeElement(this->heading);
+        this->removeElement(this->subLength);
+        this->removeElement(this->subTotal);
+        this->removeElement(this->list);
     }
 };

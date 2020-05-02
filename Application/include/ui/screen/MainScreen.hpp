@@ -54,6 +54,8 @@ namespace Screen {
 
             // Main 'section'
             Aether::Text * heading;
+            Aether::Text * subLength;
+            Aether::Text * subTotal;
             Aether::Text * titleH;
             Aether::Text * artistH;
             Aether::Text * albumH;

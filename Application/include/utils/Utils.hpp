@@ -21,6 +21,9 @@ namespace Utils {
     // Format seconds in HH:MM:SS
     std::string secondsToHMS(unsigned int);
 
+    // Format seconds in x hours, y minutes
+    std::string secondsToHoursMins(unsigned int);
+
     // Truncate string to given decimal places (don't use on strings without a decimal!)
     // Does nothing if outside of range or no decimal place
     std::string truncateToDecimalPlace(std::string, unsigned int);
