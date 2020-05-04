@@ -256,7 +256,6 @@ unsigned int Database::getModifiedTimeForPath(std::string path) {
         if (sqlite3_step(this->cmd) == SQLITE_ROW) {
             ret = sqlite3_column_int(this->cmd, 0);
         }
-        Log::writeInfo("[SQLITE] Result");
     }
     sqlite3_finalize(this->cmd);
 
@@ -272,7 +271,6 @@ SongID Database::getSongIDForPath(std::string path) {
         if (sqlite3_step(this->cmd) == SQLITE_ROW) {
             ret = sqlite3_column_int(this->cmd, 0);
         }
-        Log::writeInfo("[SQLITE] Result");
     }
     sqlite3_finalize(this->cmd);
 

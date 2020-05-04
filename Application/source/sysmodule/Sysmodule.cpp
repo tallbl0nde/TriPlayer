@@ -1,3 +1,4 @@
+#include <cstring>
 #include "Log.hpp"
 #include "Protocol.hpp"
 #include "Socket.hpp"
@@ -21,6 +22,8 @@ Sysmodule::Sysmodule() {
     this->error_ = true;
     this->exit_ = false;
     this->lastUpdateTime = std::chrono::steady_clock::now();
+    this->queue_ = new PlayQueue();
+    this->queueChanged_ = false;
 
     // Get socket
     this->socket = -1;
@@ -126,11 +129,24 @@ double Sysmodule::position() {
 }
 
 bool Sysmodule::queueChanged() {
-    return this->queueChanged_;
+    if (this->queueChanged_) {
+        this->queueChanged_ = false;
+        return true;
+    }
+
+    return false;
 }
 
 std::vector<SongID> Sysmodule::queue() {
-    return this->queue_;
+    std::lock_guard<std::mutex> mtx(queueMutex);
+    // Return a copy of the queue as a vector (this is likely slow - there must be a better way?)
+    std::vector<SongID> v;
+    v.reserve(this->queue_->size());
+    for (size_t i = 0; i < this->queue_->size(); i++) {
+        v.push_back(this->queue_->IDatPosition(i));
+    }
+
+    return v;
 }
 
 RepeatMode Sysmodule::repeatMode() {
@@ -223,7 +239,17 @@ void Sysmodule::sendRemoveFromQueue(const size_t pos) {
 
 void Sysmodule::sendGetQueue() {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::GetQueue), [this](std::string s) {
-        // Set queue here
+        // Add each token in string
+        std::lock_guard<std::mutex> mtx(queueMutex);
+        this->queue_->clear();
+        char * str = strdup(s.c_str());
+        char * tok = strtok(str, &Protocol::Delimiter);
+        while (tok != nullptr) {
+            this->queue_->addID(strtol(tok, nullptr, 10), this->queue_->size());
+            tok = strtok(nullptr, &Protocol::Delimiter);
+        }
+        free(str);
+        this->queueChanged_ = true;
     });
 }
 

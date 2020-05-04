@@ -52,7 +52,7 @@ ifdef NXLINK
 CFLAGS	+= -D_NXLINK_
 endif
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -std=c++17
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -std=gnu++17
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)

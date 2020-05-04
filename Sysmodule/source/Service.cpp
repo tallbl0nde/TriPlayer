@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <cstring>
+#include "MP3.hpp"
 #include "Protocol.hpp"
 #include "Service.hpp"
 #include "Socket.hpp"
@@ -329,10 +330,10 @@ void MainService::decodeSource() {
                 size_t dec = this->source->decode(buf, this->audio->bufferSize());
 
                 // Wait until a buffer is available to queue
-                while (!this->audio->bufferAvailable() && !this->skip) {
+                while (!this->audio->bufferAvailable() && !this->skip && !this->exit_) {
                     svcSleepThread(2E+7);
                 }
-                if (!this->skip) {
+                if (!this->skip && !this->exit_) {
                     this->audio->addBuffer(buf, dec);
                 }
                 delete[] buf;

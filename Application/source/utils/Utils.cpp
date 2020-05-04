@@ -67,18 +67,21 @@ namespace Utils {
 
         // Hours
         int h = sec/3600;
-        str += std::to_string(h);
+        if (h != 0) {
+            str += std::to_string(h);
+        }
         if (h == 1) {
             str += " hour";
-        } else {
+        } else if (h != 0) {
             str += " hours";
         }
 
         // Minutes
         int m = ((sec/60)%60);
         if (h > 0) {
-            str += ", " + std::to_string(m);
+            str += ", ";
         }
+        str += std::to_string(m);
         if (m == 1) {
             str += " minute";
         } else {

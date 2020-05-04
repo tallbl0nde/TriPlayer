@@ -1,5 +1,6 @@
 #include <future>
 #include "Log.hpp"
+#include "MP3.hpp"
 #include "Service.hpp"
 
 // Path to log file
@@ -98,18 +99,18 @@ int main(int argc, char * argv[]) {
     // Create Service
     MainService * s = new MainService();
 
-    // Start communication thread
-    std::future<void> socketThread = std::async(std::launch::async, &MainService::process, s);
+    // Start audio thread
+    std::future<void> audioThread = std::async(std::launch::async, &Audio::process, Audio::getInstance());
     // Start decoding thread
     std::future<void> decodeThread = std::async(std::launch::async, &MainService::decodeSource, s);
 
-    // This thread is responsible for managing audio output + buffers
-    Audio::getInstance()->process();
+    // This thread is responsible for handling communication
+    s->process();
 
-    // Join threads (only run after audio is done)
-    s->exit();
+    // Join threads (only run after service has exit signal)
+    Audio::getInstance()->exit();
+    audioThread.get();
     decodeThread.get();
-    socketThread.get();
 
     // Now that it's done we can delete!
     delete s;

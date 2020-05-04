@@ -5,6 +5,7 @@
 #include <chrono>
 #include <functional>
 #include <mutex>
+#include "PlayQueue.hpp"
 #include <queue>
 #include "Types.hpp"
 #include <vector>
@@ -24,7 +25,7 @@ class Sysmodule {
         std::atomic<double> volume_;
         std::atomic<size_t> songIdx_;
         std::atomic<bool> queueChanged_;
-        std::vector<SongID> queue_;
+        PlayQueue * queue_;
         std::mutex queueMutex;
         std::atomic<RepeatMode> repeatMode_;
         std::atomic<ShuffleMode> shuffleMode_;

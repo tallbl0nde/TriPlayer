@@ -67,12 +67,12 @@ namespace Screen {
             // Duration of playing song in seconds
             unsigned int playingDuration;
 
-            // Deselect all side items
-            void deselectSideItems();
+            // 'Reset' screen state - deselect side items, clear list by waiting for threads first
+            void resetState();
 
             // Functions to setup screen based on chosen item
+            void setupQueue();
             void setupSongs();
-            // and so on...
 
         public:
             MainScreen(Main::Application *);

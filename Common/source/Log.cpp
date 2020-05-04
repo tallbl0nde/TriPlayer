@@ -38,7 +38,7 @@ namespace Log {
         level = l;
 
         // Check if flag is present
-        if (access(f.c_str(), F_OK) == -1) {
+        if (access(LOG_FLAG, F_OK) == -1) {
             return false;
         }
 
