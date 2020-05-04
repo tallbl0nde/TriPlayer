@@ -6,10 +6,11 @@
 #define LOG_FILE "/switch/TriPlayer/sysmodule.log"
 
 // Heap size:
-// Sockets: ~0.1MB
-// MP3: ~0.5MB
 // DB: ~0.5MB
-#define INNER_HEAP_SIZE 1 * 1024 * 1024
+// Queue: ~0.2MB
+// MP3: ~0.5MB
+// Sockets: ~0.1MB
+#define INNER_HEAP_SIZE (size_t)(1.5 * 1024 * 1024)
 
 // It hangs if I don't use C... I wish I knew why!
 extern "C" {

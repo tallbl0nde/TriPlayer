@@ -7,6 +7,12 @@ enum class AudioStatus {
     Stopped     // No buffer is playing/queued
 };
 
+enum class RepeatMode {
+    Off,        // Don't repeat
+    One,        // Repeat the same song
+    All         // Repeat the queue
+};
+
 typedef int SongID;
 
 #endif

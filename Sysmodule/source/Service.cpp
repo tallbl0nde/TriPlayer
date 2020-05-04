@@ -1,14 +1,19 @@
 #include <cstdlib>
+#include <cstring>
 #include "Protocol.hpp"
 #include "Service.hpp"
 #include "Socket.hpp"
 
 // Port to listen on
 #define LISTEN_PORT 3333
+// Number of seconds to wait before previous becomes (back to start)
+#define PREV_WAIT 2
 
 MainService::MainService() {
     this->audio = Audio::getInstance();
-    this->currentID = -1;
+    this->pressTime = std::time(nullptr);
+    this->queue = new PlayQueue();
+    this->repeatMode = RepeatMode::Off;
     this->source = nullptr;
     this->skip = false;
 
@@ -51,23 +56,83 @@ void MainService::process() {
 
                 case Protocol::Command::Resume:
                     this->audio->resume();
-                    reply = std::to_string(this->currentID);
+                    reply = std::to_string(this->queue->currentID());
                     break;
 
                 case Protocol::Command::Pause:
                     this->audio->pause();
-                    reply = std::to_string(this->currentID);
+                    reply = std::to_string(this->queue->currentID());
                     break;
 
                 case Protocol::Command::Previous:
-                    // Change song here!
-                    reply = std::to_string(this->currentID);
+                    // Check there is a song in the queue
+                    if (this->queue->size() > 0) {
+                        this->skip = true;
+                        std::lock_guard<std::mutex> mtx(this->sMutex);
+                        delete this->source;
+
+                        // Check if we're at the start of the queue
+                        if (this->queue->currentIdx() == 0) {
+                            // Wrap around and play last song if on the first song and repeat is on
+                            if (this->repeatMode == RepeatMode::All && (std::time(nullptr) - this->pressTime) >= PREV_WAIT) {
+                                this->queue->setIdx(this->queue->size());
+                            }
+
+                        // Otherwise we can move backwards a song
+                        } else {
+                            // If pressed again go back a song
+                            if ((std::time(nullptr) - this->pressTime) < PREV_WAIT) {
+                                this->queue->decrementIdx();
+                                this->repeatMode = (this->repeatMode != RepeatMode::Off ? RepeatMode::All : RepeatMode::Off);
+                            }
+                        }
+
+                        // This will restart the current song if nothing occurred above
+                        this->source = new MP3(this->db->getPathForID(this->queue->currentID()));
+                        this->audio->newSong(this->source->sampleRate(), this->source->channels());
+
+                        this->pressTime = std::time(nullptr);
+                        this->skip = false;
+                    }
+
+                    reply = std::to_string(this->queue->currentID());
                     break;
 
-                case Protocol::Command::Next:
-                    // Change song here!
-                    reply = std::to_string(this->currentID);
+                case Protocol::Command::Next: {
+                    // Check there is a song in the queue
+                    if (this->queue->size() > 0) {
+                        this->skip = true;
+                        std::lock_guard<std::mutex> mtx(this->sMutex);
+                        delete this->source;
+
+                        // Check if we're at the end of the queue
+                        bool shouldStop = false;
+                        if (this->queue->currentIdx() == (this->queue->size() - 1)) {
+                            // Wrap around to start
+                            this->queue->setIdx(0);
+
+                            // Stop if repeat is off
+                            if (this->repeatMode == RepeatMode::Off) {
+                                shouldStop = true;
+                            }
+
+                        // Otherwise we're not at the end and can go forwards
+                        } else {
+                            this->queue->incrementIdx();
+                            this->repeatMode = (this->repeatMode != RepeatMode::Off ? RepeatMode::All : RepeatMode::Off);
+                        }
+
+                        // Prepare the next song (but don't play if we wrapped around)
+                        this->source = new MP3(this->db->getPathForID(this->queue->currentID()));
+                        this->audio->newSong(this->source->sampleRate(), this->source->channels());
+
+                        this->pressTime = std::time(nullptr);
+                        this->skip = false;
+                    }
+
+                    reply = std::to_string(this->queue->currentID());
                     break;
+                }
 
                 case Protocol::Command::GetVolume:
                     // Round to three decimals
@@ -83,8 +148,8 @@ void MainService::process() {
                 }
 
                 case Protocol::Command::Play: {
-                    this->currentID = std::stoi(msg);
-                    std::string path = this->db->getPathForID(this->currentID);
+                    SongID id = std::stoi(msg);
+                    std::string path = this->db->getPathForID(id);
 
                     // Play song if path returned
                     if (path.length() > 0) {
@@ -97,60 +162,114 @@ void MainService::process() {
                         // Prepare Audio class for new format
                         this->audio->newSong(this->source->sampleRate(), this->source->channels());
                         this->skip = false;
-                        reply = std::to_string(this->currentID);
-                    } else {
-                        reply = std::to_string(-1);
+
+                        // Reset queue
+                        this->queue->clear();
+                        this->queue->addID(id, 0);
                     }
+
+                    reply = std::to_string(this->queue->currentID());
                     break;
                 }
 
                 case Protocol::Command::QueueIdx:
-                    // Query queue pos here!
-                    reply = std::to_string(0);
+                    reply = std::to_string(this->queue->currentIdx());
                     break;
 
-                case Protocol::Command::AddToQueue:
-                    // Add to queue here!
-                    reply = std::to_string(0);
+                case Protocol::Command::AddToQueue: {
+                    SongID id = std::stoi(msg);
+                    if (!this->queue->addID(id, this->queue->size())) {
+                        id = -1;    // Indicates unable to add
+                    }
+                    reply = std::to_string(id);
                     break;
+                }
 
-                case Protocol::Command::RemoveFromQueue:
-                    // Remove from queue here!
-                    reply = std::to_string(0);
+                case Protocol::Command::RemoveFromQueue: {
+                    size_t pos = std::stoi(msg);
+                    if (!this->queue->removeID(pos)) {
+                        pos = -1;    // Indicates unable to remove
+                    }
+                    reply = std::to_string(pos);
                     break;
+                }
 
                 case Protocol::Command::GetQueue:
-                    // Concat queue
-                    reply = std::to_string(0);
+                    if (this->queue->size() == 0) {
+                        reply = std::string(1, Protocol::Delimiter);
+
+                    } else {
+                        for (size_t i = 0; i < this->queue->size(); i++) {
+                            reply += std::to_string(this->queue->IDatPosition(i));
+                            reply += std::string(1, Protocol::Delimiter);
+                        }
+                    }
                     break;
 
-                case Protocol::Command::SetQueue:
-                    // Return length of queue
-                    reply = std::to_string(0);
-                    break;
+                case Protocol::Command::SetQueue: {
+                    this->queue->clear();
 
-                case Protocol::Command::GetRepeat:
-                    // Return repeat
-                    reply = std::to_string(0);
+                    // Add each token in string
+                    char * str = strdup(msg.c_str());
+                    msg = "";
+                    char * tok = strtok(str, &Protocol::Delimiter);
+                    while (tok != nullptr) {
+                        this->queue->addID(strtol(tok, nullptr, 10), this->queue->size());
+                        tok = strtok(str, &Protocol::Delimiter);
+                    }
+                    free(str);
+
+                    reply = std::to_string(this->queue->size());
                     break;
+                }
+
+                case Protocol::Command::GetRepeat: {
+                    Protocol::Repeat rm = Protocol::Repeat::Off;
+                    switch ((RepeatMode)std::stoi(msg)) {
+                        case RepeatMode::Off:
+                            rm = Protocol::Repeat::Off;
+                            break;
+
+                        case RepeatMode::One:
+                            rm = Protocol::Repeat::One;
+                            break;
+
+                        case RepeatMode::All:
+                            rm = Protocol::Repeat::All;
+                            break;
+                    }
+                    reply = std::to_string((int)rm);
+                    break;
+                }
 
                 case Protocol::Command::SetRepeat:
-                    // Adjust repeat here
-                    reply = std::to_string(0);
+                    switch ((Protocol::Repeat)std::stoi(msg)) {
+                        case Protocol::Repeat::Off:
+                            this->repeatMode = RepeatMode::Off;
+                            break;
+
+                        case Protocol::Repeat::One:
+                            this->repeatMode = RepeatMode::One;
+                            break;
+
+                        case Protocol::Repeat::All:
+                            this->repeatMode = RepeatMode::All;
+                            break;
+                    }
+                    reply = msg;
                     break;
 
                 case Protocol::Command::GetShuffle:
-                    // Return shuffle
-                    reply = std::to_string(0);
+                    reply = std::to_string((int)(this->queue->isShuffled() ? Protocol::Shuffle::On : Protocol::Shuffle::Off));
                     break;
 
                 case Protocol::Command::SetShuffle:
-                    // Adjust shuffle here
-                    reply = std::to_string(0);
+                    ((Protocol::Shuffle)std::stoi(msg) == Protocol::Shuffle::Off ? this->queue->unshuffle() : this->queue->shuffle());
+                    reply = std::to_string((int)(this->queue->isShuffled() ? Protocol::Shuffle::On : Protocol::Shuffle::Off));
                     break;
 
                 case Protocol::Command::GetSong:
-                    reply = std::to_string(this->currentID);
+                    reply = std::to_string(this->queue->currentID());
                     break;
 
                 case Protocol::Command::GetStatus: {
@@ -230,6 +349,7 @@ void MainService::decodeSource() {
 
 MainService::~MainService() {
     delete this->db;
+    delete this->queue;
     delete this->socket;
     delete this->source;
 }

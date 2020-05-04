@@ -3,10 +3,12 @@
 
 #include <atomic>
 #include "Audio.hpp"
+#include <ctime>
 #include "Database.hpp"
-#include "MP3.hpp"
+#include "PlayQueue.hpp"
 #include <mutex>
 #include "Socket.hpp"
+#include "Source.hpp"
 
 // Class which manages all actions taken when receiving a command
 // Essentially encapsulates everything
@@ -14,21 +16,26 @@ class MainService {
     private:
         // Audio instance
         Audio * audio;
-
         // Database object
         Database * db;
-
-        // Whether to stop loop and exit
-        std::atomic<bool> exit_;
-
+        // Queue of songs
+        PlayQueue * queue;
         // Socket object for communication
         Socket * socket;
 
-        // TEMP (will be removed when queue implemented)
-        SongID currentID;
-        MP3 * source;
-        std::mutex sMutex;  // For accessing above source
-        std::atomic<bool> skip; // Stop waiting for buffer and change song
+        // Whether to stop loop and exit
+        std::atomic<bool> exit_;
+        // Timestamp of last previous press
+        std::time_t pressTime;
+        // Repeat mode
+        std::atomic<RepeatMode> repeatMode;
+
+        // Mutex for accessing source
+        std::mutex sMutex;
+        // Source currently playing
+        Source * source;
+        // Set true to stop decode thread waiting for a free buffer
+        std::atomic<bool> skip;
 
     public:
         // Constructor initializes socket related things
