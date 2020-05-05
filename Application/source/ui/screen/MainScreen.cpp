@@ -47,6 +47,13 @@ namespace Screen {
         this->position->setString(Utils::secondsToHMS(this->playingDuration * (per / 100.0)));
         this->seekBar->setValue(per);
 
+        // Update volume
+        if (!this->volume->selected()) {
+            this->volume->setValue(this->app->sysmodule()->volume());
+        } else {
+            this->app->sysmodule()->sendSetVolume(this->volume->value());
+        }
+
         // Update song info
         SongID id = this->app->sysmodule()->currentSong();
         if (id != this->playingID) {
@@ -302,9 +309,11 @@ namespace Screen {
         this->position->setY(693 - this->position->h()/2);
         this->position->setColour(this->app->theme()->FG());
         this->addElement(this->position);
-        this->seekBar = new Aether::RoundProgressBar(440, 690, 400, 8);
-        this->seekBar->setBackgroundColour(this->app->theme()->muted2());
-        this->seekBar->setForegroundColour(this->app->theme()->accent());
+        this->seekBar = new CustomElm::Slider(440, 684, 400, 20, 8);
+        this->seekBar->setBarBackgroundColour(this->app->theme()->muted2());
+        this->seekBar->setBarForegroundColour(this->app->theme()->accent());
+        this->seekBar->setKnobColour(this->app->theme()->FG());
+        this->seekBar->setNudge(1);
         this->addElement(this->seekBar);
         this->duration = new Aether::Text(860, 0, "0:00", 18);
         this->duration->setY(693 - this->duration->h()/2);
@@ -318,10 +327,15 @@ namespace Screen {
             // Toggle volume here
         });
         this->addElement(this->volumeIcon);
-        this->volume = new Aether::RoundProgressBar(1025, 650, 130, 8);
-        this->volume->setBackgroundColour(this->app->theme()->muted2());
-        this->volume->setForegroundColour(this->app->theme()->accent());
+        this->volume = new CustomElm::Slider(1025, 644, 130, 20, 8);
+        this->volume->setBarBackgroundColour(this->app->theme()->muted2());
+        this->volume->setBarForegroundColour(this->app->theme()->accent());
+        this->volume->setKnobColour(this->app->theme()->FG());
+        this->volume->setNudge(5);
         this->volume->setValue(100.0);
+        this->volume->setCallback([this]() {
+            this->app->sysmodule()->sendSetVolume(this->volume->value());
+        });
         this->addElement(this->volume);
         this->fullscreen = new Aether::Image(1195, 638, "romfs:/icons/fullscreen.png");
         this->fullscreen->setColour(this->app->theme()->muted());

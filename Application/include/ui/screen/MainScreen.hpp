@@ -4,6 +4,7 @@
 #include "Application.hpp"
 #include "SearchBox.hpp"
 #include "SideButton.hpp"
+#include "Slider.hpp"
 
 namespace Main {
     class Application;
@@ -46,10 +47,10 @@ namespace Screen {
             Aether::Image * next;
             Aether::Image * repeat;
             Aether::Text * position;
-            Aether::RoundProgressBar * seekBar;
+            CustomElm::Slider * seekBar;
             Aether::Text * duration;
             Aether::Image * volumeIcon;
-            Aether::RoundProgressBar * volume;
+            CustomElm::Slider * volume;
             Aether::Image * fullscreen;
 
             // Main 'section'

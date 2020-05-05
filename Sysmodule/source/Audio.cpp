@@ -23,6 +23,7 @@ Audio::Audio() {
     this->status_ = AudioStatus::Stopped;
     this->success = true;
     this->voice = -1;
+    this->vol = 100.0;
 
     // Create the driver
     Result rc = audrvCreate(&this->drv, &audrenCfg, OUT_CHANNELS);
@@ -222,7 +223,7 @@ void Audio::setVolume(double v) {
 
     std::lock_guard<std::mutex> mtx(this->mutex);
     this->vol = v;
-    audrvMixSetVolume(&this->drv, this->sink, (float)this->vol);
+    audrvMixSetVolume(&this->drv, this->sink, this->vol/100.0);
     Log::writeInfo("[AUDIO] Volume set to " + std::to_string(this->vol));
 }
 
