@@ -216,7 +216,7 @@ void MainService::process() {
                     char * tok = strtok(str, &Protocol::Delimiter);
                     while (tok != nullptr) {
                         this->queue->addID(strtol(tok, nullptr, 10), this->queue->size());
-                        tok = strtok(str, &Protocol::Delimiter);
+                        tok = strtok(nullptr, &Protocol::Delimiter);
                     }
                     free(str);
 

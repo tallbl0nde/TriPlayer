@@ -80,8 +80,8 @@ namespace CustomElm {
     void ListSong::render() {
         Element::render();
         if (this->isRendering == Done && this->isVisible()) {
-            SDLHelper::drawTexture(this->lineTexture, this->lineColour, this->x(), this->y());
-            SDLHelper::drawTexture(this->lineTexture, this->lineColour, this->x(), this->y() + this->h());
+            SDLHelper::drawTexture(this->lineTexture, this->lineColour, this->x(), this->y(), this->w());
+            SDLHelper::drawTexture(this->lineTexture, this->lineColour, this->x(), this->y() + this->h(), this->w());
         }
     }
 
@@ -135,14 +135,6 @@ namespace CustomElm {
         }
         if (this->album->x() + this->album->w() > this->length->x() - TEXT_GAP) {
             this->album->setW(this->length->x() - this->album->x() - TEXT_GAP);
-        }
-
-        // Resize line texture if it is not the right size
-        int tw, th;
-        SDLHelper::getDimensions(this->lineTexture, &tw, &th);
-        if (tw != this->w()) {
-            SDLHelper::destroyTexture(this->lineTexture);
-            SDLHelper::renderFilledRect(this->w(), 1);
         }
     }
 }

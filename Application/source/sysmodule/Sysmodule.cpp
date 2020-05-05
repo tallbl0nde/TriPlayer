@@ -104,6 +104,7 @@ void Sysmodule::process() {
             this->sendGetRepeat();
             this->sendGetShuffle();
             this->sendGetSong();
+            this->sendGetSongIdx();
             this->sendGetStatus();
             this->sendGetVolume();
             this->lastUpdateTime = now;

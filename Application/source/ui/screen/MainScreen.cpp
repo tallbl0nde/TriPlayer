@@ -93,6 +93,7 @@ namespace Screen {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
         std::vector<SongID> queue = this->app->sysmodule()->queue();
+        size_t currentSong = this->app->sysmodule()->songIdx();
         for (size_t i = 0; i < queue.size(); i++) {
             SongInfo si = this->app->database()->getSongInfoForID(queue[i]);
             totalSecs += si.duration;
@@ -102,7 +103,7 @@ namespace Screen {
             l->setAlbumString(si.album);
             l->setLengthString(Utils::secondsToHMS(si.duration));
             l->setLineColour(this->app->theme()->muted2());
-            l->setTextColour(this->app->theme()->FG());
+            l->setTextColour(currentSong == i ? this->app->theme()->accent() : this->app->theme()->FG());
             SongID id = queue[i];
             l->setCallback([this, id](){
 
