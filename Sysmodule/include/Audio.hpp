@@ -50,6 +50,8 @@ class Audio {
         // Bool indicating if initialized/created successfully
         std::atomic<bool> success;
 
+        // Offset for samples played by voice
+        int sampleOffset;
         // Playback status
         std::atomic<AudioStatus> status_;
         // Volume (0 - 100.0)
@@ -86,6 +88,8 @@ class Audio {
 
         // Returns number of samples played
         int samplesPlayed();
+        // Set the number of samples played (used when seeking)
+        void setSamplesPlayed(int);
 
         // Volume (0 - 100.0)
         double volume();

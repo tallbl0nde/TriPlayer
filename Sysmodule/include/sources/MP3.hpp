@@ -18,7 +18,9 @@ class MP3 : public Source {
         // Takes path to a .mp3 file
         MP3(std::string);
 
-        virtual size_t decode(unsigned char *, size_t);
+        size_t decode(unsigned char *, size_t);
+        void seek(size_t);
+        size_t tell();
 
         // Closes file and frees mpg123
         ~MP3();

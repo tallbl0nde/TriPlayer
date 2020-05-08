@@ -95,6 +95,7 @@ void Audio::exit() {
 
 void Audio::newSong(long rate, int channels) {
     this->stop();
+    this->sampleOffset = 0;
 
     std::lock_guard<std::mutex> mtx(this->mutex);
     // Drop previous voice
@@ -186,6 +187,7 @@ void Audio::pause() {
 void Audio::stop() {
     std::lock_guard<std::mutex> mtx(this->mutex);
     if (this->voice >= 0) {
+        this->sampleOffset += audrvVoiceGetPlayedSampleCount(&this->drv, this->voice);
         audrvVoiceStop(&this->drv, this->voice);
         audrvUpdate(&this->drv);
     }
@@ -207,8 +209,13 @@ int Audio::samplesPlayed() {
         return 0;
     }
 
-    std::unique_lock<std::mutex> mtx(this->mutex);
-    return audrvVoiceGetPlayedSampleCount(&this->drv, this->voice);
+    std::lock_guard<std::mutex> mtx(this->mutex);
+    return (this->sampleOffset + audrvVoiceGetPlayedSampleCount(&this->drv, this->voice));
+}
+
+void Audio::setSamplesPlayed(int s) {
+    std::lock_guard<std::mutex> mtx(this->mutex);
+    this->sampleOffset = s;
 }
 
 double Audio::volume() {

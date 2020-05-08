@@ -10,7 +10,6 @@ class Source {
         // These must be set by children
         int channels_;
         long sampleRate_;
-        int decodedSamples_;
         int totalSamples_;
         bool valid_;
 
@@ -26,10 +25,10 @@ class Source {
         // Returns true if file was opened without errors
         bool valid();
 
-        // Return position in song (0 - 100.0)
-        double position();
-        // Seek to position in song (0 - 100.0)
-        // virtual void seek(double) = 0;
+        // Seek to sample in song
+        virtual void seek(size_t) = 0;
+        // Return position in song (in samples)
+        virtual size_t tell() = 0;
 
         // Return number of channels
         int channels();

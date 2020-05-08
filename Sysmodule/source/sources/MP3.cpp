@@ -79,8 +79,22 @@ size_t MP3::decode(unsigned char * buf, size_t sz) {
         Log::writeInfo("[MP3] Decoded " + std::to_string(decoded) + " bytes");
     }
 
-    this->decodedSamples_ += decoded;
     return decoded;
+}
+
+void MP3::seek(size_t pos) {
+    off_t res = mpg123_seek(this->mpg, pos, SEEK_SET);
+    if (res < 0) {
+        Log::writeError("[MP3] An error occurred attempting to seek to: " + std::to_string(pos));
+    }
+}
+
+size_t MP3::tell() {
+    int pos = mpg123_tell(this->mpg);
+    if (pos == MPG123_ERR) {
+        return 0;
+    }
+    return pos;
 }
 
 MP3::~MP3() {
