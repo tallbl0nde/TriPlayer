@@ -384,6 +384,7 @@ void Sysmodule::sendGetPosition() {
 }
 
 void Sysmodule::sendSetPosition(double pos) {
+    this->position_ = pos;
     this->addToWriteQueue(std::to_string((int)Protocol::Command::SetPosition) + DELIM + std::to_string(pos), [this](std::string s) {
         this->position_ = std::stod(s);
     });

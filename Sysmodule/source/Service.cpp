@@ -322,9 +322,15 @@ void MainService::process() {
                     this->skip = true;
                     std::lock_guard<std::mutex> mtx(this->sMutex);
                     if (this->source != nullptr) {
-                        this->source->seek(std::stod(msg) * this->source->totalSamples());
                         this->audio->stop();
+                        this->source->seek((std::stod(msg)/100.0) * this->source->totalSamples());
                         this->audio->setSamplesPlayed(this->source->tell());
+                        this->skip = false;
+
+                        // Return position to 5 digits
+                        double pos = 100 * (this->audio->samplesPlayed()/(double)this->source->totalSamples());
+                        reply = std::to_string(pos + 0.00005);
+                        reply = reply.substr(0, reply.find(".") + 5);
 
                     } else {
                         reply = std::to_string(0);

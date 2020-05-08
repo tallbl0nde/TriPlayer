@@ -32,6 +32,12 @@ MP3::MP3(std::string path) : Source() {
             Log::writeWarning("[MP3] Unable to enable gapless decoding");
         }
 
+        // Enable fuzzy seeking
+        result = mpg123_param(this->mpg, MPG123_FLAGS, MPG123_FUZZY, 0.0);
+        if (result != MPG123_OK) {
+            Log::writeWarning("[MP3] Unable to enable fuzzy seeking");
+        }
+
         // Attempt to open file
         int result = mpg123_open(this->mpg, path.c_str());
         if (result != MPG123_OK) {

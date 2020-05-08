@@ -42,8 +42,13 @@ namespace Screen {
             // Throw error overlay or something
         }
 
-        // Update playback position
-        double per = this->app->sysmodule()->position();
+        // Only update seek bar with sysmodule if not selected
+        double per;
+        if (!this->seekBar->selected()) {
+            per = this->app->sysmodule()->position();
+        } else {
+            per = this->seekBar->value();
+        }
         this->position->setString(Utils::secondsToHMS(this->playingDuration * (per / 100.0)));
         this->seekBar->setValue(per);
 
@@ -314,6 +319,9 @@ namespace Screen {
         this->seekBar->setBarForegroundColour(this->app->theme()->accent());
         this->seekBar->setKnobColour(this->app->theme()->FG());
         this->seekBar->setNudge(1);
+        this->seekBar->setCallback([this]() {
+            this->app->sysmodule()->sendSetPosition(this->seekBar->value());
+        });
         this->addElement(this->seekBar);
         this->duration = new Aether::Text(860, 0, "0:00", 18);
         this->duration->setY(693 - this->duration->h()/2);
