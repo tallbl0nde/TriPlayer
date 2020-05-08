@@ -27,6 +27,7 @@ class Sysmodule {
         std::atomic<bool> queueChanged_;
         PlayQueue * queue_;
         std::mutex queueMutex;
+        std::atomic<size_t> queueSize_;
         std::atomic<RepeatMode> repeatMode_;
         std::atomic<ShuffleMode> shuffleMode_;
         std::atomic<SongID> currentSong_;
@@ -56,6 +57,7 @@ class Sysmodule {
         double position();
         bool queueChanged();
         std::vector<SongID> queue();
+        size_t queueSize();
         RepeatMode repeatMode();
         ShuffleMode shuffleMode();
         size_t songIdx();
@@ -64,6 +66,7 @@ class Sysmodule {
 
         // === Send command to sysmodule ===
         // Updates relevant variable when reply received or sets error() true
+        // See Common/Protocol.hpp for explanation of functions
 
         // Playback commands
         void sendResume();
@@ -76,9 +79,10 @@ class Sysmodule {
         // Manipulate queue
         void sendPlaySong(const SongID);
         void sendGetSongIdx();
+        void sendGetQueueSize();
         void sendAddToQueue(const SongID);
         void sendRemoveFromQueue(const size_t);
-        void sendGetQueue();
+        void sendGetQueue(const size_t, const size_t);
         void sendSetQueue(const std::vector<SongID> &);
 
         // Shuffle/repeat
@@ -91,6 +95,7 @@ class Sysmodule {
         void sendGetSong();
         void sendGetStatus();
         void sendGetPosition();
+        void sendSetPosition(double);
 
         // Reinit sysmodule
         void sendReset();

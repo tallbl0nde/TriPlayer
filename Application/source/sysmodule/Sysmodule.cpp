@@ -101,6 +101,7 @@ void Sysmodule::process() {
         std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
         if (std::chrono::duration_cast< std::chrono::duration<double> >(now - this->lastUpdateTime).count() > UPDATE_DELAY) {
             this->sendGetPosition();
+            this->sendGetQueueSize();
             this->sendGetRepeat();
             this->sendGetShuffle();
             this->sendGetSong();
@@ -148,6 +149,10 @@ std::vector<SongID> Sysmodule::queue() {
     }
 
     return v;
+}
+
+size_t Sysmodule::queueSize() {
+    return this->queueSize_;
 }
 
 RepeatMode Sysmodule::repeatMode() {
@@ -218,6 +223,12 @@ void Sysmodule::sendGetSongIdx() {
     });
 }
 
+void Sysmodule::sendGetQueueSize() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::QueueSize), [this](std::string s) {
+        this->queueSize_ = std::stoi(s);
+    });
+}
+
 void Sysmodule::sendAddToQueue(const SongID id) {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::AddToQueue) + DELIM + std::to_string(id), [this, id](std::string s) {
         if (std::stoi(s) != id) {
@@ -238,8 +249,8 @@ void Sysmodule::sendRemoveFromQueue(const size_t pos) {
     });
 }
 
-void Sysmodule::sendGetQueue() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetQueue), [this](std::string s) {
+void Sysmodule::sendGetQueue(const size_t s, const size_t e) {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetQueue) + DELIM + std::to_string(s) + DELIM + std::to_string(e), [this](std::string s) {
         // Add each token in string
         std::lock_guard<std::mutex> mtx(queueMutex);
         this->queue_->clear();
@@ -372,9 +383,15 @@ void Sysmodule::sendGetPosition() {
     });
 }
 
+void Sysmodule::sendSetPosition(double pos) {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::SetPosition) + DELIM + std::to_string(pos), [this](std::string s) {
+        this->position_ = std::stod(s);
+    });
+}
+
 void Sysmodule::sendReset() {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::Reset), [this](std::string s) {
-        this->position_ = std::stod(s);
+
     });
 }
 

@@ -19,6 +19,7 @@ Audio::Audio() {
     this->waveBuf = nullptr;
     this->exit_ = true;
     this->memPool = nullptr;
+    this->sampleOffset = 0;
     this->sink = -1;
     this->status_ = AudioStatus::Stopped;
     this->success = true;
@@ -206,7 +207,7 @@ AudioStatus Audio::status() {
 
 int Audio::samplesPlayed() {
     if (this->voice < 0) {
-        return 0;
+        return this->sampleOffset;
     }
 
     std::lock_guard<std::mutex> mtx(this->mutex);

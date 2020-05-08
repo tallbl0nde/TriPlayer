@@ -177,6 +177,10 @@ void MainService::process() {
                     reply = std::to_string(this->queue->currentIdx());
                     break;
 
+                case Protocol::Command::QueueSize:
+                    reply = std::to_string(this->queue->size());
+                    break;
+
                 case Protocol::Command::AddToQueue: {
                     SongID id = std::stoi(msg);
                     if (!this->queue->addID(id, this->queue->size())) {
@@ -195,17 +199,26 @@ void MainService::process() {
                     break;
                 }
 
-                case Protocol::Command::GetQueue:
+                case Protocol::Command::GetQueue: {
                     if (this->queue->size() == 0) {
                         reply = std::string(1, Protocol::Delimiter);
 
                     } else {
-                        for (size_t i = 0; i < this->queue->size(); i++) {
+                        // Get start and end indexes
+                        size_t next;
+                        size_t s = std::stoi(msg, &next);
+                        next++;
+                        msg = msg.substr(next);
+                        size_t e = std::stoi(msg);
+                        e = (e > this->queue->size() ? this->queue->size() - 1 : e);
+
+                        for (size_t i = s; i < e + 1; i++) {
                             reply += std::to_string(this->queue->IDatPosition(i));
                             reply += std::string(1, Protocol::Delimiter);
                         }
                     }
                     break;
+                }
 
                 case Protocol::Command::SetQueue: {
                     this->queue->clear();
@@ -302,6 +315,20 @@ void MainService::process() {
                     double pos = 100 * (this->audio->samplesPlayed()/(double)this->source->totalSamples());
                     reply = std::to_string(pos + 0.00005);
                     reply = reply.substr(0, reply.find(".") + 5);
+                    break;
+                }
+
+                case Protocol::Command::SetPosition: {
+                    this->skip = true;
+                    std::lock_guard<std::mutex> mtx(this->sMutex);
+                    if (this->source != nullptr) {
+                        this->source->seek(std::stod(msg) * this->source->totalSamples());
+                        this->audio->stop();
+                        this->audio->setSamplesPlayed(this->source->tell());
+
+                    } else {
+                        reply = std::to_string(0);
+                    }
                     break;
                 }
 

@@ -89,7 +89,7 @@ namespace Screen {
     }
 
     void MainScreen::setupQueue() {
-        this->app->sysmodule()->sendGetQueue(); // Start fetch operation as early as possible
+        this->app->sysmodule()->sendGetQueue(0, this->app->sysmodule()->queueSize() - 1); // Start fetch operation as early as possible
         this->resetState();
         this->sideQueue->setActivated(true);
         this->heading->setString("Play Queue");
