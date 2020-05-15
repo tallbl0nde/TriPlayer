@@ -211,8 +211,8 @@ void Sysmodule::sendSetVolume(const double v) {
     });
 }
 
-void Sysmodule::sendPlaySong(const SongID id) {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::Play) + DELIM + std::to_string(id), [this](std::string s) {
+void Sysmodule::sendSetSongIdx(const size_t id) {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::SetQueueIdx) + DELIM + std::to_string(id), [this](std::string s) {
         this->currentSong_ = std::stoi(s);
     });
 }
@@ -270,13 +270,11 @@ void Sysmodule::sendSetQueue(const std::vector<SongID> & q) {
     std::string seq;
     size_t size = q.size();
     for (size_t i = 0; i < size; i++) {
-        if (i != size - 1) {
-            seq.push_back(Protocol::Delimiter);
-        }
+        seq.push_back(Protocol::Delimiter);
         seq += std::to_string(q[i]);
     }
 
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::SetQueue) + DELIM + seq, [this, size](std::string s) {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::SetQueue) + seq, [this, size](std::string s) {
         if (std::stoul(s) != size) {
             // Handle error here
         } else {

@@ -86,6 +86,7 @@ namespace Screen {
         this->app->threadQueue()->waitUntilDone();
 
         // (Re)create list
+        this->songIDs.clear();
         this->removeElement(this->list);
         this->list = new Aether::List(320, 180, 950, 410);
         this->list->setScrollBarColour(this->app->theme()->muted2());
@@ -94,7 +95,7 @@ namespace Screen {
     }
 
     void MainScreen::setupQueue() {
-        this->app->sysmodule()->sendGetQueue(0, this->app->sysmodule()->queueSize() - 1); // Start fetch operation as early as possible
+        this->app->sysmodule()->sendGetQueue(0, this->app->sysmodule()->queueSize()); // Start fetch operation as early as possible
         this->resetState();
         this->sideQueue->setActivated(true);
         this->heading->setString("Play Queue");
@@ -104,10 +105,10 @@ namespace Screen {
         while (!this->app->sysmodule()->queueChanged()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
-        std::vector<SongID> queue = this->app->sysmodule()->queue();
+        this->songIDs = this->app->sysmodule()->queue();
         size_t currentSong = this->app->sysmodule()->songIdx();
-        for (size_t i = 0; i < queue.size(); i++) {
-            SongInfo si = this->app->database()->getSongInfoForID(queue[i]);
+        for (size_t i = 0; i < this->songIDs.size(); i++) {
+            SongInfo si = this->app->database()->getSongInfoForID(this->songIDs[i]);
             totalSecs += si.duration;
             CustomElm::ListSong * l = new CustomElm::ListSong(this->app->threadQueue());
             l->setTitleString(si.title);
@@ -116,9 +117,8 @@ namespace Screen {
             l->setLengthString(Utils::secondsToHMS(si.duration));
             l->setLineColour(this->app->theme()->muted2());
             l->setTextColour(currentSong == i ? this->app->theme()->accent() : this->app->theme()->FG());
-            SongID id = queue[i];
-            l->setCallback([this, id](){
-
+            l->setCallback([this, i](){
+                this->app->sysmodule()->sendSetSongIdx(i);
             });
             this->list->addElement(l);
 
@@ -129,7 +129,7 @@ namespace Screen {
 
         this->subLength->setString(Utils::secondsToHoursMins(totalSecs));
         this->subLength->setX(1205 - this->subLength->w());
-        this->subTotal->setString(std::to_string(queue.size()) + (queue.size() == 1 ? " track" : " tracks" ));
+        this->subTotal->setString(std::to_string(this->songIDs.size()) + (this->songIDs.size() == 1 ? " track" : " tracks" ));
         this->subTotal->setX(1205 - this->subTotal->w());
     }
 
@@ -142,6 +142,7 @@ namespace Screen {
         unsigned int totalSecs = 0;
         std::vector<SongInfo> si = this->app->database()->getAllSongInfo();
         for (size_t i = 0; i < si.size(); i++) {
+            this->songIDs.push_back(si[i].ID);
             totalSecs += si[i].duration;
             CustomElm::ListSong * l = new CustomElm::ListSong(this->app->threadQueue());
             l->setTitleString(si[i].title);
@@ -150,9 +151,9 @@ namespace Screen {
             l->setLengthString(Utils::secondsToHMS(si[i].duration));
             l->setLineColour(this->app->theme()->muted2());
             l->setTextColour(this->app->theme()->FG());
-            SongID id = si[i].ID;
-            l->setCallback([this, id](){
-                this->app->sysmodule()->sendAddToQueue(id);
+            l->setCallback([this, i](){
+                this->app->sysmodule()->sendSetQueue(this->songIDs);
+                this->app->sysmodule()->sendSetSongIdx(i);
             });
             this->list->addElement(l);
 

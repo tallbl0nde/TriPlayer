@@ -67,6 +67,8 @@ namespace Screen {
             SongID playingID;
             // Duration of playing song in seconds
             unsigned int playingDuration;
+            // Vector of song IDs matching list
+            std::vector<SongID> songIDs;
 
             // 'Reset' screen state - deselect side items, clear list by waiting for threads first
             void resetState();

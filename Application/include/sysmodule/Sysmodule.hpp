@@ -77,7 +77,7 @@ class Sysmodule {
         void sendSetVolume(const double);
 
         // Manipulate queue
-        void sendPlaySong(const SongID);
+        void sendSetSongIdx(const size_t);
         void sendGetSongIdx();
         void sendGetQueueSize();
         void sendAddToQueue(const SongID);

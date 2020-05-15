@@ -148,34 +148,24 @@ void MainService::process() {
                     break;
                 }
 
-                case Protocol::Command::Play: {
-                    SongID id = std::stoi(msg);
-                    std::string path = this->db->getPathForID(id);
-
-                    // Play song if path returned
-                    if (path.length() > 0) {
-                        this->skip = true;
-                        std::lock_guard<std::mutex> mtx(this->sMutex);
-                        // Create new source
-                        delete this->source;
-                        this->source = new MP3(path);
-
-                        // Prepare Audio class for new format
-                        this->audio->newSong(this->source->sampleRate(), this->source->channels());
-                        this->skip = false;
-
-                        // Reset queue
-                        this->queue->clear();
-                        this->queue->addID(id, 0);
-                    }
-
-                    reply = std::to_string(this->queue->currentID());
-                    break;
-                }
-
                 case Protocol::Command::QueueIdx:
                     reply = std::to_string(this->queue->currentIdx());
                     break;
+
+                case Protocol::Command::SetQueueIdx: {
+                    this->queue->setIdx(std::stoi(msg));
+
+                    // Change song
+                    this->skip = true;
+                    std::lock_guard<std::mutex> mtx(this->sMutex);
+                    delete this->source;
+                    this->source = new MP3(this->db->getPathForID(this->queue->currentID()));
+                    this->audio->newSong(this->source->sampleRate(), this->source->channels());
+                    this->skip = false;
+
+                    reply = std::to_string(this->queue->currentIdx());
+                    break;
+                }
 
                 case Protocol::Command::QueueSize:
                     reply = std::to_string(this->queue->size());
@@ -204,18 +194,21 @@ void MainService::process() {
                         reply = std::string(1, Protocol::Delimiter);
 
                     } else {
-                        // Get start and end indexes
+                        // Get start index and number to read
                         size_t next;
                         size_t s = std::stoi(msg, &next);
                         next++;
                         msg = msg.substr(next);
-                        size_t e = std::stoi(msg);
-                        e = (e > this->queue->size() ? this->queue->size() - 1 : e);
+                        size_t n = std::stoi(msg);
+                        n = (n > this->queue->size() ? this->queue->size() : n);
 
-                        for (size_t i = s; i < e + 1; i++) {
+                        for (size_t i = s; i < n; i++) {
                             reply += std::to_string(this->queue->IDatPosition(i));
-                            reply += std::string(1, Protocol::Delimiter);
+                            if (i < n-1) {
+                                reply += std::string(1, Protocol::Delimiter);
+                            }
                         }
+
                     }
                     break;
                 }
