@@ -102,10 +102,10 @@ int main(int argc, char * argv[]) {
     // Start audio thread
     std::future<void> audioThread = std::async(std::launch::async, &Audio::process, Audio::getInstance());
     // Start decoding thread
-    std::future<void> decodeThread = std::async(std::launch::async, &MainService::decodeSource, s);
+    std::future<void> decodeThread = std::async(std::launch::async, &MainService::audioThread, s);
 
     // This thread is responsible for handling communication
-    s->process();
+    s->socketThread();
 
     // Join threads (only run after service has exit signal)
     Audio::getInstance()->exit();

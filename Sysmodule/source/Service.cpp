@@ -1,12 +1,8 @@
 #include <cstdlib>
 #include <cstring>
 #include "MP3.hpp"
-#include "Protocol.hpp"
 #include "Service.hpp"
-#include "Socket.hpp"
 
-// Port to listen on
-#define LISTEN_PORT 3333
 // Number of seconds to wait before previous becomes (back to start)
 #define PREV_WAIT 2
 
@@ -15,11 +11,12 @@ MainService::MainService() {
     this->pressTime = std::time(nullptr);
     this->queue = new PlayQueue();
     this->repeatMode = RepeatMode::Off;
+    this->seekTo = -1;
     this->source = nullptr;
-    this->skip = false;
+    this->songChanged = false;
 
     // Create listening socket (exit if error occurred)
-    this->socket = new Socket(3333);
+    this->socket = new Socket(Protocol::Port);
     this->exit_ = !this->socket->ready();
 
     // Create database
@@ -33,7 +30,78 @@ void MainService::exit() {
     this->exit_ = true;
 }
 
-void MainService::process() {
+void MainService::audioThread() {
+    while (!this->exit_) {
+        std::unique_lock<std::shared_mutex> qMtx(this->qMutex);
+        std::unique_lock<std::shared_mutex> sMtx(this->sMutex);
+
+        // Change source if the current song has been changed
+        if (this->songChanged) {
+            delete this->source;
+            this->source = new MP3(this->db->getPathForID(this->queue->currentID()));
+            this->audio->newSong(this->source->sampleRate(), this->source->channels());
+            this->songChanged = false;
+        }
+        qMtx.unlock();
+
+        // Seek if required
+        if (this->seekTo >= 0 && this->source != nullptr) {
+            this->audio->stop();
+            this->source->seek(this->seekTo * this->source->totalSamples());
+            this->audio->setSamplesPlayed(this->source->tell());
+            this->seekTo = -1;
+        }
+
+        // Decode/change
+        if (this->source != nullptr) {
+            if (this->source->valid()) {
+                // Decode into buffer
+                u8 * buf = new u8[this->audio->bufferSize()];
+                size_t dec = this->source->decode(buf, this->audio->bufferSize());
+                sMtx.unlock();
+
+                // Wait until a buffer is available to queue or there is an update
+                while (!this->audio->bufferAvailable() && !(this->songChanged || this->seekTo >= 0)) {
+                    svcSleepThread(2E+7);
+                }
+                if (!(this->songChanged || this->seekTo >= 0)) {
+                    this->audio->addBuffer(buf, dec);
+                }
+                delete[] buf;
+
+            // If not valid attempt to move to next song in queue
+            } else {
+                // Check if there is another song to play
+                qMtx.lock();
+                if (this->queue->currentIdx() >= this->queue->size() - 1) {
+                    if (this->repeatMode == RepeatMode::All) {
+                        this->queue->setIdx(0);
+                        this->songChanged = true;
+                    }
+                } else {
+                    if (this->repeatMode == RepeatMode::One && this->source->done()) {
+                        this->songChanged = true;
+                    } else {
+                        this->queue->incrementIdx();
+                        this->songChanged = true;
+                    }
+                }
+                qMtx.unlock();
+
+                // Otherwise just sleep until a new song is chosen
+                if (!this->songChanged) {
+                    svcSleepThread(1E+8);
+                }
+            }
+
+        } else {
+            // Sleep for 0.1 sec if no source to play
+            svcSleepThread(1E+8);
+        }
+    }
+}
+
+void MainService::socketThread() {
     while (!this->exit_) {
         // Blocks until a message is received
         std::string msg = this->socket->readMessage();
@@ -55,23 +123,24 @@ void MainService::process() {
                     reply = std::to_string(Protocol::Version);
                     break;
 
-                case Protocol::Command::Resume:
+                case Protocol::Command::Resume: {
                     this->audio->resume();
+                    std::shared_lock<std::shared_mutex> mtx(this->qMutex);
                     reply = std::to_string(this->queue->currentID());
                     break;
+                }
 
-                case Protocol::Command::Pause:
+                case Protocol::Command::Pause: {
                     this->audio->pause();
+                    std::shared_lock<std::shared_mutex> mtx(this->qMutex);
                     reply = std::to_string(this->queue->currentID());
                     break;
+                }
 
-                case Protocol::Command::Previous:
+                case Protocol::Command::Previous: {
                     // Check there is a song in the queue
+                    std::unique_lock<std::shared_mutex> mtx(this->qMutex);
                     if (this->queue->size() > 0) {
-                        this->skip = true;
-                        std::lock_guard<std::mutex> mtx(this->sMutex);
-                        delete this->source;
-
                         // Check if we're at the start of the queue
                         if (this->queue->currentIdx() == 0) {
                             // Wrap around and play last song if on the first song and repeat is on
@@ -88,34 +157,22 @@ void MainService::process() {
                             }
                         }
 
-                        // This will restart the current song if nothing occurred above
-                        this->source = new MP3(this->db->getPathForID(this->queue->currentID()));
-                        this->audio->newSong(this->source->sampleRate(), this->source->channels());
-
                         this->pressTime = std::time(nullptr);
-                        this->skip = false;
+                        this->songChanged = true;   // Always (re)start song when previous is pressed
                     }
 
                     reply = std::to_string(this->queue->currentID());
                     break;
+                }
 
                 case Protocol::Command::Next: {
                     // Check there is a song in the queue
+                    std::unique_lock<std::shared_mutex> mtx(this->qMutex);
                     if (this->queue->size() > 0) {
-                        this->skip = true;
-                        std::lock_guard<std::mutex> mtx(this->sMutex);
-                        delete this->source;
-
                         // Check if we're at the end of the queue
-                        bool shouldStop = false;
                         if (this->queue->currentIdx() == (this->queue->size() - 1)) {
                             // Wrap around to start
                             this->queue->setIdx(0);
-
-                            // Stop if repeat is off
-                            if (this->repeatMode == RepeatMode::Off) {
-                                shouldStop = true;
-                            }
 
                         // Otherwise we're not at the end and can go forwards
                         } else {
@@ -123,12 +180,8 @@ void MainService::process() {
                             this->repeatMode = (this->repeatMode != RepeatMode::Off ? RepeatMode::All : RepeatMode::Off);
                         }
 
-                        // Prepare the next song (but don't play if we wrapped around)
-                        this->source = new MP3(this->db->getPathForID(this->queue->currentID()));
-                        this->audio->newSong(this->source->sampleRate(), this->source->channels());
-
                         this->pressTime = std::time(nullptr);
-                        this->skip = false;
+                        this->songChanged = true;   // Always (re)start song when next is pressed
                     }
 
                     reply = std::to_string(this->queue->currentID());
@@ -148,31 +201,29 @@ void MainService::process() {
                     break;
                 }
 
-                case Protocol::Command::QueueIdx:
-                    reply = std::to_string(this->queue->currentIdx());
-                    break;
-
-                case Protocol::Command::SetQueueIdx: {
-                    this->queue->setIdx(std::stoi(msg));
-
-                    // Change song
-                    this->skip = true;
-                    std::lock_guard<std::mutex> mtx(this->sMutex);
-                    delete this->source;
-                    this->source = new MP3(this->db->getPathForID(this->queue->currentID()));
-                    this->audio->newSong(this->source->sampleRate(), this->source->channels());
-                    this->skip = false;
-
+                case Protocol::Command::QueueIdx: {
+                    std::shared_lock<std::shared_mutex> mtx(this->qMutex);
                     reply = std::to_string(this->queue->currentIdx());
                     break;
                 }
 
-                case Protocol::Command::QueueSize:
+                case Protocol::Command::SetQueueIdx: {
+                    std::unique_lock<std::shared_mutex> mtx(this->qMutex);
+                    this->queue->setIdx(std::stoi(msg));
+                    this->songChanged = true;
+                    reply = std::to_string(this->queue->currentIdx());
+                    break;
+                }
+
+                case Protocol::Command::QueueSize: {
+                    std::shared_lock<std::shared_mutex> mtx(this->qMutex);
                     reply = std::to_string(this->queue->size());
                     break;
+                }
 
                 case Protocol::Command::AddToQueue: {
                     SongID id = std::stoi(msg);
+                    std::unique_lock<std::shared_mutex> mtx(this->qMutex);
                     if (!this->queue->addID(id, this->queue->size())) {
                         id = -1;    // Indicates unable to add
                     }
@@ -182,6 +233,7 @@ void MainService::process() {
 
                 case Protocol::Command::RemoveFromQueue: {
                     size_t pos = std::stoi(msg);
+                    std::unique_lock<std::shared_mutex> mtx(this->qMutex);
                     if (!this->queue->removeID(pos)) {
                         pos = -1;    // Indicates unable to remove
                     }
@@ -190,6 +242,7 @@ void MainService::process() {
                 }
 
                 case Protocol::Command::GetQueue: {
+                    std::shared_lock<std::shared_mutex> mtx(this->qMutex);
                     if (this->queue->size() == 0) {
                         reply = std::string(1, Protocol::Delimiter);
 
@@ -214,6 +267,7 @@ void MainService::process() {
                 }
 
                 case Protocol::Command::SetQueue: {
+                    std::unique_lock<std::shared_mutex> mtx(this->qMutex);
                     this->queue->clear();
 
                     // Add each token in string
@@ -266,18 +320,24 @@ void MainService::process() {
                     reply = msg;
                     break;
 
-                case Protocol::Command::GetShuffle:
+                case Protocol::Command::GetShuffle: {
+                    std::shared_lock<std::shared_mutex> mtx(this->qMutex);
                     reply = std::to_string((int)(this->queue->isShuffled() ? Protocol::Shuffle::On : Protocol::Shuffle::Off));
                     break;
+                }
 
-                case Protocol::Command::SetShuffle:
+                case Protocol::Command::SetShuffle: {
+                    std::unique_lock<std::shared_mutex> mtx(this->qMutex);
                     ((Protocol::Shuffle)std::stoi(msg) == Protocol::Shuffle::Off ? this->queue->unshuffle() : this->queue->shuffle());
                     reply = std::to_string((int)(this->queue->isShuffled() ? Protocol::Shuffle::On : Protocol::Shuffle::Off));
                     break;
+                }
 
-                case Protocol::Command::GetSong:
+                case Protocol::Command::GetSong: {
+                    std::shared_lock<std::shared_mutex> mtx(this->qMutex);
                     reply = std::to_string(this->queue->currentID());
                     break;
+                }
 
                 case Protocol::Command::GetStatus: {
                     Protocol::Status s = Protocol::Status::Error;
@@ -299,6 +359,7 @@ void MainService::process() {
                 }
 
                 case Protocol::Command::GetPosition: {
+                    std::shared_lock<std::shared_mutex> mtx(this->sMutex);
                     if (this->source == nullptr) {
                         reply = std::to_string(0.0);
                         break;
@@ -312,22 +373,18 @@ void MainService::process() {
                 }
 
                 case Protocol::Command::SetPosition: {
-                    this->skip = true;
-                    std::lock_guard<std::mutex> mtx(this->sMutex);
-                    if (this->source != nullptr) {
-                        this->audio->stop();
-                        this->source->seek((std::stod(msg)/100.0) * this->source->totalSamples());
-                        this->audio->setSamplesPlayed(this->source->tell());
-                        this->skip = false;
+                    this->seekTo = std::stod(msg)/100.0;
 
-                        // Return position to 5 digits
-                        double pos = 100 * (this->audio->samplesPlayed()/(double)this->source->totalSamples());
-                        reply = std::to_string(pos + 0.00005);
-                        reply = reply.substr(0, reply.find(".") + 5);
-
-                    } else {
-                        reply = std::to_string(0);
+                    // Return position to 5 digits
+                    std::shared_lock<std::shared_mutex> mtx(this->sMutex);
+                    if (this->source == nullptr) {
+                        reply = std::to_string(0.0);
+                        break;
                     }
+
+                    double pos = 100 * (this->audio->samplesPlayed()/(double)this->source->totalSamples());
+                    reply = std::to_string(pos + 0.00005);
+                    reply = reply.substr(0, reply.find(".") + 5);
                     break;
                 }
 
@@ -342,34 +399,6 @@ void MainService::process() {
 
             // Send reply
             this->socket->writeMessage(reply);
-        }
-    }
-}
-
-void MainService::decodeSource() {
-    while (!this->exit_) {
-        std::lock_guard<std::mutex> mtx(this->sMutex);
-        if (this->source != nullptr) {
-            if (this->source->valid()) {
-                // Decode into buffer
-                u8 * buf = new u8[this->audio->bufferSize()];
-                size_t dec = this->source->decode(buf, this->audio->bufferSize());
-
-                // Wait until a buffer is available to queue
-                while (!this->audio->bufferAvailable() && !this->skip && !this->exit_) {
-                    svcSleepThread(2E+7);
-                }
-                if (!this->skip && !this->exit_) {
-                    this->audio->addBuffer(buf, dec);
-                }
-                delete[] buf;
-            } else {
-                // Sleep for 0.1 sec if no source to play
-                svcSleepThread(1E+8);
-            }
-        } else {
-            // Sleep for 0.1 sec if no source to play
-            svcSleepThread(1E+8);
         }
     }
 }

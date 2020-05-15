@@ -6,7 +6,8 @@
 #include <ctime>
 #include "Database.hpp"
 #include "PlayQueue.hpp"
-#include <mutex>
+#include "Protocol.hpp"
+#include <shared_mutex>
 #include "Socket.hpp"
 #include "Source.hpp"
 
@@ -29,13 +30,16 @@ class MainService {
         std::time_t pressTime;
         // Repeat mode
         std::atomic<RepeatMode> repeatMode;
+        // Status vars for comm. between threads
+        std::atomic<bool> songChanged;
+        std::atomic<double> seekTo;
 
+        // Mutex for accessing queue
+        std::shared_mutex qMutex;
         // Mutex for accessing source
-        std::mutex sMutex;
+        std::shared_mutex sMutex;
         // Source currently playing
         Source * source;
-        // Set true to stop decode thread waiting for a free buffer
-        std::atomic<bool> skip;
 
     public:
         // Constructor initializes socket related things
@@ -44,11 +48,10 @@ class MainService {
         // Call to exit and prepare for deletion (will stop loop)
         void exit();
 
-        // Function to run which listens and takes action when receiving a command
-        void process();
-
-        // TEMP (shouldn't be part of this class)
-        void decodeSource();
+        // Handles decoding and shifting between songs due to commands
+        void audioThread();
+        // listens and takes action when receiving a command
+        void socketThread();
 
         ~MainService();
 };
