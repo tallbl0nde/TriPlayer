@@ -29,9 +29,6 @@ namespace Main {
             // Display object used for rendering
             Aether::Display * display;
 
-            // ThreadQueue used for rendering on another thread
-            Aether::ThreadQueue * threadQueue_;
-
             // Screens of the app
             Screen::MainScreen * scMain;
             Screen::Splash * scSplash;
@@ -66,8 +63,6 @@ namespace Main {
             // Pop screen from stack
             void popScreen();
 
-            // Returns pointer to threadQueue
-            Aether::ThreadQueue * threadQueue();
             // Returns database pointer
             Database * database();
             // Returns sysmodule pointer

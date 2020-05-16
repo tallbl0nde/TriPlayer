@@ -18,10 +18,10 @@ namespace CustomElm {
             Aether::Colour lineColour;
 
             // Texts
-            Aether::Exp::ThreadedText * title;
-            Aether::Exp::ThreadedText * artist;
-            Aether::Exp::ThreadedText * album;
-            Aether::Exp::ThreadedText * length;
+            Aether::Text * title;
+            Aether::Text * artist;
+            Aether::Text * album;
+            Aether::Text * length;
 
             // Status of threaded elements
             RenderingStatus isRendering;
@@ -30,8 +30,8 @@ namespace CustomElm {
             void positionItems();
 
         public:
-            // Constructor sets up elements (takes pointer to ThreadQueue which is passed to strings)
-            ListSong(Aether::ThreadQueue *);
+            // Constructor sets up elements
+            ListSong();
 
             // Position text once rendered
             void update(uint32_t);

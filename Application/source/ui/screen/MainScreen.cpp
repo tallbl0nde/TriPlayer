@@ -82,8 +82,8 @@ namespace Screen {
         this->sideArtists->setActivated(false);
         this->sideAlbums->setActivated(false);
         this->sideQueue->setActivated(false);
-        this->app->threadQueue()->removeQueuedTasks();
-        this->app->threadQueue()->waitUntilDone();
+        Aether::ThreadPool::removeQueuedTasks();
+        Aether::ThreadPool::waitUntilDone();
 
         // (Re)create list
         this->songIDs.clear();
@@ -110,7 +110,7 @@ namespace Screen {
         for (size_t i = 0; i < this->songIDs.size(); i++) {
             SongInfo si = this->app->database()->getSongInfoForID(this->songIDs[i]);
             totalSecs += si.duration;
-            CustomElm::ListSong * l = new CustomElm::ListSong(this->app->threadQueue());
+            CustomElm::ListSong * l = new CustomElm::ListSong();
             l->setTitleString(si.title);
             l->setArtistString(si.artist);
             l->setAlbumString(si.album);
@@ -144,7 +144,7 @@ namespace Screen {
         for (size_t i = 0; i < si.size(); i++) {
             this->songIDs.push_back(si[i].ID);
             totalSecs += si[i].duration;
-            CustomElm::ListSong * l = new CustomElm::ListSong(this->app->threadQueue());
+            CustomElm::ListSong * l = new CustomElm::ListSong();
             l->setTitleString(si[i].title);
             l->setArtistString(si[i].artist);
             l->setAlbumString(si[i].album);

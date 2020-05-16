@@ -14,6 +14,7 @@ namespace Main {
         this->sysThread = std::async(std::launch::async, &Sysmodule::process, this->sysmodule_);
 
         // Create Aether instance
+        Aether::ThreadPool::setMaxThreads(8);
         this->display = new Aether::Display();
         this->display->setBackgroundColour(0, 0, 0);
         this->display->setFont("romfs:/Quicksand.ttf");
@@ -26,9 +27,6 @@ namespace Main {
         this->scSplash = new Screen::Splash(this);
         this->scMain = new Screen::MainScreen(this);
         this->setScreen(ScreenID::Splash);
-
-        // Use eight threads for rendering (it's fast enough!)
-        this->threadQueue_ = new Aether::ThreadQueue(8);
     }
 
     void Application::setHoldDelay(int i) {
@@ -59,10 +57,6 @@ namespace Main {
         this->display->popScreen();
     }
 
-    Aether::ThreadQueue * Application::threadQueue() {
-        return this->threadQueue_;
-    }
-
     Database * Application::database() {
         return this->database_;
     }
@@ -78,7 +72,7 @@ namespace Main {
     void Application::run() {
         // Do main loop
         while (this->display->loop()) {
-            this->threadQueue_->processQueue();
+
         }
     }
 
@@ -87,15 +81,12 @@ namespace Main {
     }
 
     Application::~Application() {
-        // Delete first to ensure all threads are terminated before deleting elements!
-        delete this->threadQueue_;
+        // Cleanup Aether first to ensure threads are done (so screens can be deleted safely)
+        delete this->display;
 
         // Delete screens
         delete this->scMain;
         delete this->scSplash;
-
-        // Cleanup Aether
-        delete this->display;
 
         // Disconnect from sysmodule
         this->sysmodule_->exit();

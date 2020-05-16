@@ -12,17 +12,17 @@
 namespace CustomElm {
     SDL_Texture * ListSong::lineTexture = nullptr;
 
-    ListSong::ListSong(Aether::ThreadQueue * tq) : Element(0, 0, 100, HEIGHT) {
-        this->title = new Aether::Exp::ThreadedText(tq, this->x(), this->y(), "", FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
+    ListSong::ListSong() : Element(0, 0, 100, HEIGHT) {
+        this->title = new Aether::Text(this->x(), this->y(), "", FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
         this->title->setHidden(true);
         this->addElement(this->title);
-        this->artist = new Aether::Exp::ThreadedText(tq, this->x(), this->y(), "", FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
+        this->artist = new Aether::Text(this->x(), this->y(), "", FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
         this->artist->setHidden(true);
         this->addElement(this->artist);
-        this->album = new Aether::Exp::ThreadedText(tq, this->x(), this->y(), "", FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
+        this->album = new Aether::Text(this->x(), this->y(), "", FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
         this->album->setHidden(true);
         this->addElement(this->album);
-        this->length = new Aether::Exp::ThreadedText(tq, this->x(), this->y(), "", FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
+        this->length = new Aether::Text(this->x(), this->y(), "", FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
         this->length->setHidden(true);
         this->addElement(this->length);
         this->isRendering = Waiting;
@@ -63,10 +63,10 @@ namespace CustomElm {
             case Done:
                 // Check if move outside of threshold and if so remove texture to save memory
                 if (this->y() < this->parent->y() - TEX_THRESHOLD || this->y() > this->parent->y() + this->parent->h() + TEX_THRESHOLD) {
-                    this->title->deleteTexture();
-                    this->artist->deleteTexture();
-                    this->album->deleteTexture();
-                    this->length->deleteTexture();
+                    this->title->destroyTexture();
+                    this->artist->destroyTexture();
+                    this->album->destroyTexture();
+                    this->length->destroyTexture();
                     this->title->setHidden(true);
                     this->artist->setHidden(true);
                     this->album->setHidden(true);
