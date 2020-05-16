@@ -8,6 +8,7 @@ namespace Screen {
         this->app = a;
         this->playingID = -1;
         this->playingDuration = 0;
+        this->repeatMode = RepeatMode::Off;
 
         this->onButtonPress(Aether::Button::B, [this](){
             this->app->exit();
@@ -40,6 +41,12 @@ namespace Screen {
 
         } else {
             // Throw error overlay or something
+        }
+
+        // Update repeat when needed
+        if (this->app->sysmodule()->repeatMode() != this->repeatMode) {
+            this->repeatMode = this->app->sysmodule()->repeatMode();
+            this->setRepeatIcon();
         }
 
         // Only update seek bar with sysmodule if not selected
@@ -166,6 +173,37 @@ namespace Screen {
         this->subLength->setX(1205 - this->subLength->w());
         this->subTotal->setString(std::to_string(si.size()) + (si.size() == 1 ? " track" : " tracks" ));
         this->subTotal->setX(1205 - this->subTotal->w());
+    }
+
+    void MainScreen::setRepeatIcon() {
+        switch (this->repeatMode) {
+            case RepeatMode::Off:
+                this->repeat->setHidden(false);
+                this->repeat->setColour(this->app->theme()->muted());
+                this->repeatOne->setHidden(true);
+                if (this->repeatOne->focussed()) {
+                    this->setFocussed(this->repeat);
+                }
+                break;
+
+            case RepeatMode::One:
+                this->repeatOne->setHidden(false);
+                this->repeatOne->setColour(this->app->theme()->accent());
+                this->repeat->setHidden(true);
+                if (this->repeat->focussed()) {
+                    this->setFocussed(this->repeatOne);
+                }
+                break;
+
+            case RepeatMode::All:
+                this->repeat->setHidden(false);
+                this->repeat->setColour(this->app->theme()->accent());
+                this->repeatOne->setHidden(true);
+                if (this->repeatOne->focussed()) {
+                    this->setFocussed(this->repeat);
+                }
+                break;
+        }
     }
 
     void MainScreen::onLoad() {
@@ -305,9 +343,20 @@ namespace Screen {
         this->repeat = new Aether::Image(770, 630, "romfs:/icons/repeat.png");
         this->repeat->setColour(this->app->theme()->muted());
         this->repeat->setCallback([this]() {
-            // Repeat toggle here
+            if (this->repeatMode == RepeatMode::Off) {
+                this->app->sysmodule()->sendSetRepeat(RepeatMode::All);
+            } else if (this->repeatMode == RepeatMode::All) {
+                this->app->sysmodule()->sendSetRepeat(RepeatMode::One);
+            }
         });
         this->addElement(this->repeat);
+        this->repeatOne = new Aether::Image(770, 630, "romfs:/icons/repeatone.png");
+        this->repeatOne->setColour(this->app->theme()->muted());
+        this->repeatOne->setCallback([this]() {
+            this->app->sysmodule()->sendSetRepeat(RepeatMode::Off);
+        });
+        this->addElement(this->repeatOne);
+        this->repeatOne->setHidden(true);
 
         // Seeking
         this->position = new Aether::Text(0, 0, "0:00", 18);

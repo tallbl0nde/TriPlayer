@@ -46,6 +46,7 @@ namespace Screen {
             Aether::Image * pause;
             Aether::Image * next;
             Aether::Image * repeat;
+            Aether::Image * repeatOne;
             Aether::Text * position;
             CustomElm::Slider * seekBar;
             Aether::Text * duration;
@@ -65,6 +66,8 @@ namespace Screen {
 
             // Cached playing song ID (update player text on change)
             SongID playingID;
+            // Cached repeat mode (to avoid updating icon every frame)
+            RepeatMode repeatMode;
             // Duration of playing song in seconds
             unsigned int playingDuration;
             // Vector of song IDs matching list
@@ -76,6 +79,9 @@ namespace Screen {
             // Functions to setup screen based on chosen item
             void setupQueue();
             void setupSongs();
+
+            // "Helpers"
+            void setRepeatIcon();
 
         public:
             MainScreen(Main::Application *);

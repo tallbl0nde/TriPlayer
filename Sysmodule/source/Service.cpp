@@ -54,7 +54,7 @@ void MainService::audioThread() {
 
         // Decode/change
         if (this->source != nullptr) {
-            if (this->source->valid()) {
+            if (this->source->valid() && !this->source->done()) {
                 // Decode into buffer
                 u8 * buf = new u8[this->audio->bufferSize()];
                 size_t dec = this->source->decode(buf, this->audio->bufferSize());
@@ -74,12 +74,14 @@ void MainService::audioThread() {
                 // Check if there is another song to play
                 qMtx.lock();
                 if (this->queue->currentIdx() >= this->queue->size() - 1) {
-                    if (this->repeatMode == RepeatMode::All) {
+                    if (this->repeatMode == RepeatMode::One && this->source->valid()) {
+                        this->songChanged = true;
+                    } else if (this->repeatMode == RepeatMode::All) {
                         this->queue->setIdx(0);
                         this->songChanged = true;
                     }
                 } else {
-                    if (this->repeatMode == RepeatMode::One && this->source->done()) {
+                    if (this->repeatMode == RepeatMode::One && this->source->valid()) {
                         this->songChanged = true;
                     } else {
                         this->queue->incrementIdx();
@@ -144,13 +146,15 @@ void MainService::socketThread() {
                         // Check if we're at the start of the queue
                         if (this->queue->currentIdx() == 0) {
                             // Wrap around and play last song if on the first song and repeat is on
-                            if (this->repeatMode == RepeatMode::All && (std::time(nullptr) - this->pressTime) >= PREV_WAIT) {
-                                this->queue->setIdx(this->queue->size());
+                            if ((std::time(nullptr) - this->pressTime) < PREV_WAIT) {
+                                if (this->repeatMode != RepeatMode::Off) {
+                                    this->queue->setIdx(this->queue->size());
+                                    this->repeatMode = (this->repeatMode != RepeatMode::Off ? RepeatMode::All : RepeatMode::Off);
+                                }
                             }
 
                         // Otherwise we can move backwards a song
                         } else {
-                            // If pressed again go back a song
                             if ((std::time(nullptr) - this->pressTime) < PREV_WAIT) {
                                 this->queue->decrementIdx();
                                 this->repeatMode = (this->repeatMode != RepeatMode::Off ? RepeatMode::All : RepeatMode::Off);
@@ -173,6 +177,7 @@ void MainService::socketThread() {
                         if (this->queue->currentIdx() == (this->queue->size() - 1)) {
                             // Wrap around to start
                             this->queue->setIdx(0);
+                            this->repeatMode = (this->repeatMode != RepeatMode::Off ? RepeatMode::All : RepeatMode::Off);
 
                         // Otherwise we're not at the end and can go forwards
                         } else {
@@ -286,7 +291,7 @@ void MainService::socketThread() {
 
                 case Protocol::Command::GetRepeat: {
                     Protocol::Repeat rm = Protocol::Repeat::Off;
-                    switch ((RepeatMode)std::stoi(msg)) {
+                    switch (this->repeatMode) {
                         case RepeatMode::Off:
                             rm = Protocol::Repeat::Off;
                             break;

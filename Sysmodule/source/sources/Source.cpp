@@ -8,7 +8,7 @@ Source::Source() {
 }
 
 bool Source::done() {
-    return (this->tell() >= this->totalSamples_);
+    return this->done_;
 }
 
 bool Source::valid() {

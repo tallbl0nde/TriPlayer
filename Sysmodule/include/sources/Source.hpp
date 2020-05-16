@@ -9,6 +9,7 @@ class Source {
     protected:
         // These must be set by children
         int channels_;
+        bool done_;
         long sampleRate_;
         int totalSamples_;
         bool valid_;

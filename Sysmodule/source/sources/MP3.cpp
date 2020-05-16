@@ -80,7 +80,7 @@ size_t MP3::decode(unsigned char * buf, size_t sz) {
     mpg123_read(mpg, buf, sz, &decoded);
     if (decoded == 0) {
         Log::writeWarning("[MP3] Finished decoding file");
-        this->valid_ = false;
+        this->done_ = true;
     } else {
         Log::writeInfo("[MP3] Decoded " + std::to_string(decoded) + " bytes");
     }
