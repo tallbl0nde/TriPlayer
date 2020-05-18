@@ -173,6 +173,7 @@ void Audio::resume() {
     if (this->status_ == AudioStatus::Paused) {
         std::lock_guard<std::mutex> mtx(this->mutex);
         audrvVoiceSetPaused(&this->drv, this->voice, false);
+        audrvUpdate(&this->drv);
         this->status_ = AudioStatus::Playing;
     }
 }
@@ -181,6 +182,7 @@ void Audio::pause() {
     if (this->status_ == AudioStatus::Playing) {
         std::lock_guard<std::mutex> mtx(this->mutex);
         audrvVoiceSetPaused(&this->drv, this->voice, true);
+        audrvUpdate(&this->drv);
         this->status_ = AudioStatus::Paused;
     }
 }
