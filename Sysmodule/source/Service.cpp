@@ -61,10 +61,10 @@ void MainService::audioThread() {
                 sMtx.unlock();
 
                 // Wait until a buffer is available to queue or there is an update
-                while (!this->audio->bufferAvailable() && !(this->songChanged || this->seekTo >= 0)) {
+                while (!this->audio->bufferAvailable() && !(this->songChanged || this->seekTo >= 0) && !this->exit_) {
                     svcSleepThread(2E+7);
                 }
-                if (!(this->songChanged || this->seekTo >= 0)) {
+                if (!(this->songChanged || this->seekTo >= 0) && !this->exit_) {
                     this->audio->addBuffer(buf, dec);
                 }
                 delete[] buf;
@@ -258,15 +258,19 @@ void MainService::socketThread() {
                         next++;
                         msg = msg.substr(next);
                         size_t n = std::stoi(msg);
-                        n = (n > this->queue->size() ? this->queue->size() : n);
 
-                        for (size_t i = s; i < n; i++) {
-                            reply += std::to_string(this->queue->IDatPosition(i));
-                            if (i < n-1) {
-                                reply += std::string(1, Protocol::Delimiter);
+                        // Return nothing if requesting zero!
+                        if (n == 0) {
+                            reply = std::string(1, Protocol::Delimiter);
+                        } else {
+                            n = (n > this->queue->size() ? this->queue->size() : n);
+                            for (size_t i = s; i < n; i++) {
+                                reply += std::to_string(this->queue->IDatPosition(i));
+                                if (i < n-1) {
+                                    reply += std::string(1, Protocol::Delimiter);
+                                }
                             }
                         }
-
                     }
                     break;
                 }

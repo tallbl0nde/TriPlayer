@@ -163,7 +163,9 @@ void PlayQueue::setIdx(unsigned short i) {
 }
 
 void PlayQueue::clear() {
+    this->idx = 0;
     this->queue.erase(this->queue.begin(), this->queue.end());
+    this->shuffled = false;
 }
 
 size_t PlayQueue::size() {
@@ -175,6 +177,10 @@ bool PlayQueue::isShuffled() {
 }
 
 void PlayQueue::shuffle() {
+    if (this->queue.size() == 0) {
+        return;
+    }
+
     // RNG
     std::default_random_engine gen;
     gen.seed(std::time(nullptr));
@@ -183,6 +189,7 @@ void PlayQueue::shuffle() {
     PlayQueuePair tmp = this->queue[this->idx];
     this->queue[this->idx] = this->queue[0];
     this->queue[0] = tmp;
+    this->setIdx(0);
 
     // Uses the Yates-Fisher algorithm
     for (size_t i = this->queue.size() - 1; i > 1; i--) {
@@ -201,6 +208,9 @@ void PlayQueue::unshuffle() {
         return;
     }
 
+    // Get pos of current song
+    unsigned short songPos = this->queue[this->currentIdx()].pos;
+
     // Sort by pos value
     std::sort(this->queue.begin(), this->queue.end(), [](const PlayQueuePair & lhs, const PlayQueuePair & rhs) {
         return lhs.pos < rhs.pos;
@@ -208,6 +218,10 @@ void PlayQueue::unshuffle() {
 
     // Update pos values
     for (size_t i = 0; i < this->queue.size(); i++) {
+        // Set same song as current song
+        if (this->queue[i].pos == songPos) {
+            this->setIdx(i);
+        }
         this->queue[i].pos = i;
     }
     this->maxPos = this->queue.size();

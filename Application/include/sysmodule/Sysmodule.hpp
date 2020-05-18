@@ -22,17 +22,17 @@ class Sysmodule {
         std::chrono::steady_clock::time_point lastUpdateTime;
 
         // === Status vars ===
-        std::atomic<double> volume_;
-        std::atomic<size_t> songIdx_;
+        std::atomic<SongID> currentSong_;
+        std::atomic<double> position_;
         std::atomic<bool> queueChanged_;
         PlayQueue * queue_;
         std::mutex queueMutex;
         std::atomic<size_t> queueSize_;
         std::atomic<RepeatMode> repeatMode_;
         std::atomic<ShuffleMode> shuffleMode_;
-        std::atomic<SongID> currentSong_;
+        std::atomic<size_t> songIdx_;
         std::atomic<PlaybackStatus> status_;
-        std::atomic<double> position_;
+        std::atomic<double> volume_;
         // ======
 
         // Queue of messages to write and callback

@@ -9,6 +9,7 @@ namespace Screen {
         this->playingID = -1;
         this->playingDuration = 0;
         this->repeatMode = RepeatMode::Off;
+        this->shuffleMode = ShuffleMode::Off;
 
         this->onButtonPress(Aether::Button::B, [this](){
             this->app->exit();
@@ -47,6 +48,12 @@ namespace Screen {
         if (this->app->sysmodule()->repeatMode() != this->repeatMode) {
             this->repeatMode = this->app->sysmodule()->repeatMode();
             this->setRepeatIcon();
+        }
+
+        // Update shuffle when needed
+        if (this->app->sysmodule()->shuffleMode() != this->shuffleMode) {
+            this->shuffleMode = this->app->sysmodule()->shuffleMode();
+            this->shuffle->setColour((this->shuffleMode == ShuffleMode::Off ? this->app->theme()->muted() : this->app->theme()->accent()));
         }
 
         // Only update seek bar with sysmodule if not selected
@@ -102,16 +109,12 @@ namespace Screen {
     }
 
     void MainScreen::setupQueue() {
-        this->app->sysmodule()->sendGetQueue(0, this->app->sysmodule()->queueSize()); // Start fetch operation as early as possible
         this->resetState();
         this->sideQueue->setActivated(true);
         this->heading->setString("Play Queue");
 
         // Create items for songs in queue
         unsigned int totalSecs = 0;
-        while (!this->app->sysmodule()->queueChanged()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        }
         this->songIDs = this->app->sysmodule()->queue();
         size_t currentSong = this->app->sysmodule()->songIdx();
         for (size_t i = 0; i < this->songIDs.size(); i++) {
@@ -161,6 +164,7 @@ namespace Screen {
             l->setCallback([this, i](){
                 this->app->sysmodule()->sendSetQueue(this->songIDs);
                 this->app->sysmodule()->sendSetSongIdx(i);
+                this->app->sysmodule()->sendSetShuffle(this->shuffleMode);
             });
             this->list->addElement(l);
 
@@ -312,7 +316,7 @@ namespace Screen {
         this->shuffle = new Aether::Image(480, 630, "romfs:/icons/shuffle.png");
         this->shuffle->setColour(this->app->theme()->muted());
         this->shuffle->setCallback([this]() {
-            // Shuffle toggle here
+            this->app->sysmodule()->sendSetShuffle((this->shuffleMode == ShuffleMode::Off ? ShuffleMode::On : ShuffleMode::Off));
         });
         this->addElement(this->shuffle);
         this->previous = new Aether::Image(550, 628, "romfs:/icons/previous.png");

@@ -19,11 +19,19 @@ void Sysmodule::addToWriteQueue(std::string s, std::function<void(std::string)> 
 }
 
 Sysmodule::Sysmodule() {
+    this->currentSong_ = -1;
     this->error_ = true;
     this->exit_ = false;
     this->lastUpdateTime = std::chrono::steady_clock::now();
+    this->position_ = 0.0;
     this->queue_ = new PlayQueue();
     this->queueChanged_ = false;
+    this->queueSize_ = 0;
+    this->repeatMode_ = RepeatMode::Off;
+    this->shuffleMode_ = ShuffleMode::Off;
+    this->songIdx_ = 0;
+    this->status_ = PlaybackStatus::Stopped;
+    this->volume_ = 100.0;
 
     // Get socket
     this->socket = -1;
@@ -74,6 +82,7 @@ void Sysmodule::process() {
         }
 
         // First process anything on the queue
+        std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
         std::unique_lock<std::mutex> mtx(this->writeMutex);
         while (!this->writeQueue.empty()) {
             if (!Utils::Socket::writeToSocket(this->socket, this->writeQueue.front().first)) {
@@ -97,8 +106,13 @@ void Sysmodule::process() {
         }
         mtx.unlock();
 
+        // Check if we need to log to save cycles
+        if (Log::loggingLevel() == Log::Level::Info) {
+            Log::writeInfo("Sysmodule update took: " + std::to_string(std::chrono::duration_cast< std::chrono::duration<double> >(std::chrono::steady_clock::now() - now).count()) + " seconds");
+        }
+
         // Check if variables need to be updated
-        std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+        now = std::chrono::steady_clock::now();
         if (std::chrono::duration_cast< std::chrono::duration<double> >(now - this->lastUpdateTime).count() > UPDATE_DELAY) {
             this->sendGetPosition();
             this->sendGetQueueSize();
@@ -109,11 +123,10 @@ void Sysmodule::process() {
             this->sendGetStatus();
             this->sendGetVolume();
             this->lastUpdateTime = now;
-            now = std::chrono::steady_clock::now();
 
-            // Check if we need to log to save cycles
-            if (Log::loggingLevel() == Log::Level::Info) {
-                Log::writeInfo("Sysmodule update took: " + std::to_string(std::chrono::duration_cast< std::chrono::duration<double> >(now - this->lastUpdateTime).count()) + " seconds");
+            // Check if the queue needs to be updated
+            if (this->queueSize_ != this->queue_->size() || this->songIdx_ != this->queue_->currentIdx()) {
+                this->sendGetQueue(0, this->queueSize_);
             }
 
         } else {

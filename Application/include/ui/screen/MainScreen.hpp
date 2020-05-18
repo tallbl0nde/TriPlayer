@@ -64,10 +64,11 @@ namespace Screen {
             Aether::Text * lengthH;
             Aether::List * list;
 
-            // Cached playing song ID (update player text on change)
+            // Cached vars to avoid updating every frame
             SongID playingID;
-            // Cached repeat mode (to avoid updating icon every frame)
             RepeatMode repeatMode;
+            ShuffleMode shuffleMode;
+
             // Duration of playing song in seconds
             unsigned int playingDuration;
             // Vector of song IDs matching list
