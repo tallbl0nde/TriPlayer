@@ -1,4 +1,6 @@
 #include "Application.hpp"
+#include "MainScreen.hpp"
+#include "Splash.hpp"
 
 namespace Main {
     Application::Application() {

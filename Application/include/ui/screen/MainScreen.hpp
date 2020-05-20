@@ -1,7 +1,7 @@
 #ifndef SCREEN_MAINSCREEN_HPP
 #define SCREEN_MAINSCREEN_HPP
 
-#include "Application.hpp"
+#include "Frame.hpp"
 #include "SearchBox.hpp"
 #include "SideButton.hpp"
 #include "Slider.hpp"
@@ -54,15 +54,8 @@ namespace Screen {
             CustomElm::Slider * volume;
             Aether::Image * fullscreen;
 
-            // Main 'section'
-            Aether::Text * heading;
-            Aether::Text * subLength;
-            Aether::Text * subTotal;
-            Aether::Text * titleH;
-            Aether::Text * artistH;
-            Aether::Text * albumH;
-            Aether::Text * lengthH;
-            Aether::List * list;
+            // Right-hand side 'frame'
+            CustomElm::Frame * frame;
 
             // Cached vars to avoid updating every frame
             SongID playingID;
@@ -71,10 +64,8 @@ namespace Screen {
 
             // Duration of playing song in seconds
             unsigned int playingDuration;
-            // Vector of song IDs matching list
-            std::vector<SongID> songIDs;
 
-            // 'Reset' screen state - deselect side items, clear list by waiting for threads first
+            // 'Reset' screen state - deselect side items, and delete frame
             void resetState();
 
             // Functions to setup screen based on chosen item

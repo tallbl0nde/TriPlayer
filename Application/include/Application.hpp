@@ -6,9 +6,6 @@
 #include "Sysmodule.hpp"
 #include "Theme.hpp"
 
-#include "MainScreen.hpp"
-#include "Splash.hpp"
-
 // Forward declaration because cyclic dependency /shrug
 namespace Screen {
     class MainScreen;

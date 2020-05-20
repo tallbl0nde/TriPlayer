@@ -1,7 +1,7 @@
 #ifndef SCREEN_SPLASH_HPP
 #define SCREEN_SPLASH_HPP
 
-#include "Application.hpp"
+#include "Aether.hpp"
 #include <atomic>
 #include <future>
 

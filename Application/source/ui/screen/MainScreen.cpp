@@ -1,4 +1,6 @@
-#include "ListSong.hpp"
+#include "Application.hpp"
+#include "FrameQueue.hpp"
+#include "FrameSongs.hpp"
 #include "MainScreen.hpp"
 #include "Types.hpp"
 #include "Utils.hpp"
@@ -98,85 +100,22 @@ namespace Screen {
         this->sideQueue->setActivated(false);
         Aether::ThreadPool::removeQueuedTasks();
         Aether::ThreadPool::waitUntilDone();
-
-        // (Re)create list
-        this->songIDs.clear();
-        this->removeElement(this->list);
-        this->list = new Aether::List(320, 180, 950, 410);
-        this->list->setScrollBarColour(this->app->theme()->muted2());
-        this->list->setShowScrollBar(true);
-        this->addElement(this->list);
+        this->removeElement(this->frame);
+        this->frame = nullptr;
     }
 
     void MainScreen::setupQueue() {
         this->resetState();
         this->sideQueue->setActivated(true);
-        this->heading->setString("Play Queue");
-
-        // Create items for songs in queue
-        unsigned int totalSecs = 0;
-        this->songIDs = this->app->sysmodule()->queue();
-        size_t currentSong = this->app->sysmodule()->songIdx();
-        for (size_t i = 0; i < this->songIDs.size(); i++) {
-            SongInfo si = this->app->database()->getSongInfoForID(this->songIDs[i]);
-            totalSecs += si.duration;
-            CustomElm::ListSong * l = new CustomElm::ListSong();
-            l->setTitleString(si.title);
-            l->setArtistString(si.artist);
-            l->setAlbumString(si.album);
-            l->setLengthString(Utils::secondsToHMS(si.duration));
-            l->setLineColour(this->app->theme()->muted2());
-            l->setTextColour(currentSong == i ? this->app->theme()->accent() : this->app->theme()->FG());
-            l->setCallback([this, i](){
-                this->app->sysmodule()->sendSetSongIdx(i);
-            });
-            this->list->addElement(l);
-
-            if (i == 0) {
-                l->setY(this->list->y() + 10);
-            }
-        }
-
-        this->subLength->setString(Utils::secondsToHoursMins(totalSecs));
-        this->subLength->setX(1205 - this->subLength->w());
-        this->subTotal->setString(std::to_string(this->songIDs.size()) + (this->songIDs.size() == 1 ? " track" : " tracks" ));
-        this->subTotal->setX(1205 - this->subTotal->w());
+        this->frame = new Frame::Queue(this->app);
+        this->addElement(this->frame);
     }
 
     void MainScreen::setupSongs() {
         this->resetState();
         this->sideSongs->setActivated(true);
-        this->heading->setString("Songs");
-
-        // Create items for songs
-        unsigned int totalSecs = 0;
-        std::vector<SongInfo> si = this->app->database()->getAllSongInfo();
-        for (size_t i = 0; i < si.size(); i++) {
-            this->songIDs.push_back(si[i].ID);
-            totalSecs += si[i].duration;
-            CustomElm::ListSong * l = new CustomElm::ListSong();
-            l->setTitleString(si[i].title);
-            l->setArtistString(si[i].artist);
-            l->setAlbumString(si[i].album);
-            l->setLengthString(Utils::secondsToHMS(si[i].duration));
-            l->setLineColour(this->app->theme()->muted2());
-            l->setTextColour(this->app->theme()->FG());
-            l->setCallback([this, i](){
-                this->app->sysmodule()->sendSetQueue(this->songIDs);
-                this->app->sysmodule()->sendSetSongIdx(i);
-                this->app->sysmodule()->sendSetShuffle(this->shuffleMode);
-            });
-            this->list->addElement(l);
-
-            if (i == 0) {
-                l->setY(this->list->y() + 10);
-            }
-        }
-
-        this->subLength->setString(Utils::secondsToHoursMins(totalSecs));
-        this->subLength->setX(1205 - this->subLength->w());
-        this->subTotal->setString(std::to_string(si.size()) + (si.size() == 1 ? " track" : " tracks" ));
-        this->subTotal->setX(1205 - this->subTotal->w());
+        this->frame = new Frame::Songs(this->app);
+        this->addElement(this->frame);
     }
 
     void MainScreen::setRepeatIcon() {
@@ -406,40 +345,14 @@ namespace Screen {
         });
         this->addElement(this->fullscreen);
 
-        // === MAIN ===
-        // Headings
-        this->heading = new Aether::Text(385, 40, "", 60);
-        this->heading->setColour(this->app->theme()->FG());
-        this->addElement(this->heading);
-        this->subLength = new Aether::Text(1205, 80, "", 20);
-        this->subLength->setColour(this->app->theme()->muted());
-        this->addElement(this->subLength);
-        this->subTotal = new Aether::Text(1205, this->subLength->y() - 25, "", 20);
-        this->subTotal->setColour(this->app->theme()->muted());
-        this->addElement(this->subTotal);
-
-        // Add list headings
-        this->titleH = new Aether::Text(385, 150, "Title", 20);
-        this->titleH->setColour(this->app->theme()->muted());
-        this->addElement(this->titleH);
-        this->artistH = new Aether::Text(753, 150, "Artist", 20);
-        this->artistH->setColour(this->app->theme()->muted());
-        this->addElement(this->artistH);
-        this->albumH = new Aether::Text(948, 150, "Album", 20);
-        this->albumH->setColour(this->app->theme()->muted());
-        this->addElement(this->albumH);
-        this->lengthH = new Aether::Text(1205, 150, "Length", 20);
-        this->lengthH->setX(this->lengthH->x() - this->lengthH->w());
-        this->lengthH->setColour(this->app->theme()->muted());
-        this->addElement(this->lengthH);
-
         // Set songs active
-        this->list = nullptr;
         this->setFocussed(this->sideSongs);
+        this->frame = nullptr;
         this->setupSongs();
     }
 
     void MainScreen::onUnload() {
+        this->resetState();
         this->removeElement(this->bg);
         this->removeElement(this->sidegrad);
         this->removeElement(this->sideBg);
@@ -471,9 +384,5 @@ namespace Screen {
         this->removeElement(this->volumeIcon);
         this->removeElement(this->volume);
         this->removeElement(this->fullscreen);
-        this->removeElement(this->heading);
-        this->removeElement(this->subLength);
-        this->removeElement(this->subTotal);
-        this->removeElement(this->list);
     }
 };

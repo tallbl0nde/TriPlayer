@@ -1,3 +1,4 @@
+#include "Application.hpp"
 #include "MP3.hpp"
 #include "Splash.hpp"
 #include "Utils.hpp"
