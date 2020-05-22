@@ -40,7 +40,7 @@ namespace CustomElm {
         switch (this->isRendering) {
             case Waiting:
                 // Waiting to render - check position and start if within threshold
-                if (this->y() >= this->parent->y() - TEX_THRESHOLD && this->y() <= this->parent->y() + this->parent->h() + TEX_THRESHOLD) {
+                if (this->y() >= this->parent()->y() - TEX_THRESHOLD && this->y() <= this->parent()->y() + this->parent()->h() + TEX_THRESHOLD) {
                     this->title->startRendering();
                     this->artist->startRendering();
                     this->album->startRendering();
@@ -62,7 +62,7 @@ namespace CustomElm {
 
             case Done:
                 // Check if move outside of threshold and if so remove texture to save memory
-                if (this->y() < this->parent->y() - TEX_THRESHOLD || this->y() > this->parent->y() + this->parent->h() + TEX_THRESHOLD) {
+                if (this->y() < this->parent()->y() - TEX_THRESHOLD || this->y() > this->parent()->y() + this->parent()->h() + TEX_THRESHOLD) {
                     this->title->destroyTexture();
                     this->artist->destroyTexture();
                     this->album->destroyTexture();
@@ -83,6 +83,26 @@ namespace CustomElm {
             SDLHelper::drawTexture(this->lineTexture, this->lineColour, this->x(), this->y(), this->w());
             SDLHelper::drawTexture(this->lineTexture, this->lineColour, this->x(), this->y() + this->h(), this->w());
         }
+    }
+
+    void ListSong::restartRendering() {
+        // Clear elements if they do not have a texture
+        if (!this->title->textureReady()) {
+            this->title->destroyTexture();
+        }
+        if (!this->artist->textureReady()) {
+            this->artist->destroyTexture();
+        }
+        if (!this->album->textureReady()) {
+            this->album->destroyTexture();
+        }
+        if (!this->length->textureReady()) {
+            this->length->destroyTexture();
+        }
+
+        // Go back to waiting stage
+        this->setHidden(true);
+        this->isRendering = Waiting;
     }
 
     void ListSong::setTitleString(std::string s) {

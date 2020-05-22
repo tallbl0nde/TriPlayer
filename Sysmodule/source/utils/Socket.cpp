@@ -56,23 +56,26 @@ void Socket::closeLSocket() {
 void Socket::createTSocket() {
     // Wait for a client to connect
     Log::writeInfo("[SOCKET] Waiting for a connection...");
-    socklen_t sz = sizeof(this->addr);
-    this->tSocket = accept(this->lSocket, (struct sockaddr *) &this->addr, (socklen_t *) &sz);
-    if (this->tSocket < 0) {
-        switch (errno) {
-            default:
-                Log::writeError("[SOCKET] Error occurred accepting a connection: " + std::to_string(errno));
-
+    bool connected = false;
+    while (!connected) {
+        socklen_t sz = sizeof(this->addr);
+        this->tSocket = accept(this->lSocket, (struct sockaddr *) &this->addr, (socklen_t *) &sz);
+        if (this->tSocket < 0) {
             // Errno is set to 113 when waking from sleep
-            case 113:
+            if (errno == 113) {
                 Log::writeWarning("[SOCKET] No route to host - normal behaviour after waking from sleep");
                 this->closeLSocket();
                 this->createLSocket();
-                this->createTSocket();
-                break;
-        };
-    } else {
-        Log::writeSuccess("[SOCKET] Transfer socket connected!");
+
+            // Otherwise log errno
+            } else {
+                Log::writeError("[SOCKET] Error occurred accepting a connection: " + std::to_string(errno));
+            }
+
+        } else {
+            connected = true;
+            Log::writeSuccess("[SOCKET] Transfer socket connected!");
+        }
     }
 }
 

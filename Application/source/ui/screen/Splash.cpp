@@ -22,37 +22,37 @@ namespace Screen {
 
         // Find songs that need to be removed
         std::vector<SongID> remove;
-        for (size_t i = 0; i < files.size(); i++) {
-            // Check if modified since added to database
-            unsigned int dataMTime = this->app->database()->getModifiedTimeForPath(files[i]);
-            unsigned int diskMTime = Utils::getModifiedTimestamp(files[i]);
+        // for (size_t i = 0; i < files.size(); i++) {
+        //     // Check if modified since added to database
+        //     unsigned int dataMTime = this->app->database()->getModifiedTimeForPath(files[i]);
+        //     unsigned int diskMTime = Utils::getModifiedTimestamp(files[i]);
 
-            // If so remove previous entry and then add later
-            if (diskMTime > dataMTime) {
-                remove.push_back(this->app->database()->getSongIDForPath(files[i]));
-            }
-        }
+        //     // If so remove previous entry and then add later
+        //     if (diskMTime > dataMTime) {
+        //         remove.push_back(this->app->database()->getSongIDForPath(files[i]));
+        //     }
+        // }
 
-        std::vector<std::string> paths = this->app->database()->getAllSongPaths();
-        for (size_t i = 0; i < paths.size(); i++) {
-            // If file is no longer present remove it
-            if (std::find(files.begin(), files.end(), paths[i]) == files.end()) {
-                remove.push_back(this->app->database()->getSongIDForPath(paths[i]));
-            }
-        }
+        // std::vector<std::string> paths = this->app->database()->getAllSongPaths();
+        // for (size_t i = 0; i < paths.size(); i++) {
+        //     // If file is no longer present remove it
+        //     if (std::find(files.begin(), files.end(), paths[i]) == files.end()) {
+        //         remove.push_back(this->app->database()->getSongIDForPath(paths[i]));
+        //     }
+        // }
 
         // Find songs that need to be added
         std::vector< std::pair<std::string, unsigned int> > add;
-        for (size_t i = 0; i < files.size(); i++) {
-            // Check if modified since added to database
-            unsigned int dataMTime = this->app->database()->getModifiedTimeForPath(files[i]);
-            unsigned int diskMTime = Utils::getModifiedTimestamp(files[i]);
+        // for (size_t i = 0; i < files.size(); i++) {
+        //     // Check if modified since added to database
+        //     unsigned int dataMTime = this->app->database()->getModifiedTimeForPath(files[i]);
+        //     unsigned int diskMTime = Utils::getModifiedTimestamp(files[i]);
 
-            // Add part of 'update entry'
-            if (dataMTime == 0 || diskMTime > dataMTime) {
-                add.push_back(std::pair<std::string, unsigned int>(files[i], diskMTime));
-            }
-        }
+        //     // Add part of 'update entry'
+        //     if (dataMTime == 0 || diskMTime > dataMTime) {
+        //         add.push_back(std::pair<std::string, unsigned int>(files[i], diskMTime));
+        //     }
+        // }
 
         // Don't do anything if no changes
         if (remove.size() == 0 && add.size() == 0) {

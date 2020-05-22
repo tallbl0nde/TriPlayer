@@ -39,6 +39,9 @@ namespace CustomElm {
             // Render lineTexture as well as normal rendering
             void render();
 
+            // Start render tasks if needed (only call after emptying ThreadPool!)
+            void restartRendering();
+
             // Set strings
             void setTitleString(std::string);
             void setArtistString(std::string);

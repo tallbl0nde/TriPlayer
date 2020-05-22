@@ -1,5 +1,7 @@
 #include <cstring>
+#include <limits>
 #include "Log.hpp"
+#include <mutex>
 #include "Protocol.hpp"
 #include "Socket.hpp"
 #include "Sysmodule.hpp"
@@ -14,7 +16,7 @@ void Sysmodule::addToWriteQueue(std::string s, std::function<void(std::string)> 
         return;
     }
 
-    std::lock_guard<std::mutex> mtx(this->writeMutex);
+    std::scoped_lock<std::shared_mutex> mtx(this->writeMutex);
     this->writeQueue.push(std::pair< std::string, std::function<void(std::string)> >(s, f));
 }
 
@@ -24,7 +26,6 @@ Sysmodule::Sysmodule() {
     this->exit_ = false;
     this->lastUpdateTime = std::chrono::steady_clock::now();
     this->position_ = 0.0;
-    this->queue_ = new PlayQueue();
     this->queueChanged_ = false;
     this->queueSize_ = 0;
     this->repeatMode_ = RepeatMode::Off;
@@ -36,6 +37,9 @@ Sysmodule::Sysmodule() {
     // Get socket
     this->socket = -1;
     this->reconnect();
+
+    // Fetch queue at launch
+    this->sendGetQueue(0, 65535);
 }
 
 bool Sysmodule::error() {
@@ -43,7 +47,7 @@ bool Sysmodule::error() {
 }
 
 void Sysmodule::reconnect() {
-    std::lock_guard<std::mutex> mtx(this->writeMutex);
+    std::scoped_lock<std::shared_mutex> mtx(this->writeMutex);
 
     // Create and setup socket
     if (this->socket >= 0) {
@@ -83,7 +87,7 @@ void Sysmodule::process() {
 
         // First process anything on the queue
         std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
-        std::unique_lock<std::mutex> mtx(this->writeMutex);
+        std::unique_lock<std::shared_mutex> mtx(this->writeMutex);
         while (!this->writeQueue.empty()) {
             if (!Utils::Socket::writeToSocket(this->socket, this->writeQueue.front().first)) {
                 this->error_ = true;
@@ -92,7 +96,10 @@ void Sysmodule::process() {
                 if (str.length() == 0) {
                     this->error_ = true;
                 } else {
-                    this->writeQueue.front().second(str);
+                    std::function<void(std::string)> queuedFunc = this->writeQueue.front().second;
+                    mtx.unlock();
+                    queuedFunc(str);
+                    mtx.lock();
                     this->writeQueue.pop();
                 }
             }
@@ -124,13 +131,8 @@ void Sysmodule::process() {
             this->sendGetVolume();
             this->lastUpdateTime = now;
 
-            // Check if the queue needs to be updated
-            if (this->queueSize_ != this->queue_->size() || this->songIdx_ != this->queue_->currentIdx()) {
-                this->sendGetQueue(0, this->queueSize_);
-            }
-
         } else {
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
 }
@@ -153,15 +155,10 @@ bool Sysmodule::queueChanged() {
 }
 
 std::vector<SongID> Sysmodule::queue() {
-    std::lock_guard<std::mutex> mtx(queueMutex);
-    // Return a copy of the queue as a vector (this is likely slow - there must be a better way?)
-    std::vector<SongID> v;
-    v.reserve(this->queue_->size());
-    for (size_t i = 0; i < this->queue_->size(); i++) {
-        v.push_back(this->queue_->IDatPosition(i));
-    }
+    std::shared_lock<std::shared_mutex> mtx(this->queueMutex);
 
-    return v;
+    // Return a copy of the vector (this is likely slow - there must be a better way?)
+    return this->queue_;
 }
 
 size_t Sysmodule::queueSize() {
@@ -186,6 +183,27 @@ PlaybackStatus Sysmodule::status() {
 
 double Sysmodule::volume() {
     return this->volume_;
+}
+
+size_t Sysmodule::waitSongIdx() {
+    std::atomic<bool> done = false;
+
+    // Query song idx
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::QueueIdx), [this, &done](std::string s) {
+        this->songIdx_ = std::stoi(s);
+        done = true;
+    });
+
+    // Block until done
+    while (!done) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        if (this->error_) {
+            return std::numeric_limits<size_t>::max();
+            break;
+        }
+    }
+
+    return this->songIdx_;
 }
 
 void Sysmodule::sendResume() {
@@ -245,9 +263,13 @@ void Sysmodule::sendGetQueueSize() {
 void Sysmodule::sendAddToQueue(const SongID id) {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::AddToQueue) + DELIM + std::to_string(id), [this, id](std::string s) {
         if (std::stoi(s) != id) {
-            // Handle error here
+            // On an error get the whole queue again
+            this->sendGetQueue(0, 65535);
+
         } else {
-            // Edit queue as needed
+            // On success append to local queue
+            std::scoped_lock<std::shared_mutex> mtx(this->queueMutex);
+            this->queue_.push_back(id);
         }
     });
 }
@@ -255,9 +277,13 @@ void Sysmodule::sendAddToQueue(const SongID id) {
 void Sysmodule::sendRemoveFromQueue(const size_t pos) {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::RemoveFromQueue) + DELIM + std::to_string(pos), [this, pos](std::string s) {
         if (std::stoul(s) != pos) {
-            // Handle error here
+            // On an error get the whole queue again
+            this->sendGetQueue(0, 65535);
+
         } else {
-            // Edit queue as needed
+            // On success remove from local queue
+            std::scoped_lock<std::shared_mutex> mtx(this->queueMutex);
+            this->queue_.erase(this->queue_.begin() + pos);
         }
     });
 }
@@ -265,12 +291,12 @@ void Sysmodule::sendRemoveFromQueue(const size_t pos) {
 void Sysmodule::sendGetQueue(const size_t s, const size_t e) {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::GetQueue) + DELIM + std::to_string(s) + DELIM + std::to_string(e), [this](std::string s) {
         // Add each token in string
-        std::lock_guard<std::mutex> mtx(queueMutex);
-        this->queue_->clear();
+        std::scoped_lock<std::shared_mutex> mtx(this->queueMutex);
+        this->queue_.clear();
         char * str = strdup(s.c_str());
         char * tok = strtok(str, &Protocol::Delimiter);
         while (tok != nullptr) {
-            this->queue_->addID(strtol(tok, nullptr, 10), this->queue_->size());
+            this->queue_.push_back(strtol(tok, nullptr, 10));
             tok = strtok(nullptr, &Protocol::Delimiter);
         }
         free(str);
@@ -287,11 +313,14 @@ void Sysmodule::sendSetQueue(const std::vector<SongID> & q) {
         seq += std::to_string(q[i]);
     }
 
+    // Edit local queue before sending to sysmodule
+    this->queue_ = q;
+    this->queueChanged_ = true;
+
     this->addToWriteQueue(std::to_string((int)Protocol::Command::SetQueue) + seq, [this, size](std::string s) {
         if (std::stoul(s) != size) {
-            // Handle error here
-        } else {
-            // Update queue (maybe do this before adding to write queue?)
+            // On an error get the whole queue again
+            this->sendGetQueue(0, 65535);
         }
     });
 }
@@ -335,6 +364,7 @@ void Sysmodule::sendSetRepeat(const RepeatMode m) {
 
         if (rm != m) {
             // Handle error here
+
         } else {
             this->repeatMode_ = rm;
         }
@@ -352,7 +382,9 @@ void Sysmodule::sendSetShuffle(const ShuffleMode m) {
         ShuffleMode sm = ((Protocol::Shuffle)std::stoi(s) == Protocol::Shuffle::Off ? ShuffleMode::Off : ShuffleMode::On);
         if (sm != m) {
             // Handle error here
+
         } else {
+            this->sendGetQueue(0, 65535);
             this->shuffleMode_ = sm;
         }
     });

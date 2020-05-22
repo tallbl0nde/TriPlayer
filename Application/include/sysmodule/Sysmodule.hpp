@@ -4,7 +4,7 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
-#include <mutex>
+#include <shared_mutex>
 #include "PlayQueue.hpp"
 #include <queue>
 #include "Types.hpp"
@@ -24,9 +24,9 @@ class Sysmodule {
         // === Status vars ===
         std::atomic<SongID> currentSong_;
         std::atomic<double> position_;
-        std::atomic<bool> queueChanged_;
-        PlayQueue * queue_;
-        std::mutex queueMutex;
+        std::atomic<bool> queueChanged_;    // Set true when the whole queue has been updated (not just a single song)
+        std::vector<SongID> queue_;
+        std::shared_mutex queueMutex;
         std::atomic<size_t> queueSize_;
         std::atomic<RepeatMode> repeatMode_;
         std::atomic<ShuffleMode> shuffleMode_;
@@ -37,7 +37,7 @@ class Sysmodule {
 
         // Queue of messages to write and callback
         std::queue< std::pair<std::string, std::function<void(std::string)> > > writeQueue;
-        std::mutex writeMutex;
+        std::shared_mutex writeMutex;
         void addToWriteQueue(std::string, std::function<void(std::string)>);
 
     public:
@@ -63,6 +63,10 @@ class Sysmodule {
         size_t songIdx();
         PlaybackStatus status();
         double volume();
+
+        // Blocks calling thread until it is guaranteed songIdx has been updated
+        // Returns max size_t on error (e.g. not connected)
+        size_t waitSongIdx();
 
         // === Send command to sysmodule ===
         // Updates relevant variable when reply received or sets error() true
