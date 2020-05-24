@@ -8,6 +8,7 @@ namespace Main {
     class Theme {
         private:
             Aether::Colour bottomBG_;
+            Aether::Colour popupBG_;
             Aether::Colour sideBG_;
 
             Aether::Colour muted_;
@@ -25,6 +26,7 @@ namespace Main {
 
             // Returns private members
             Aether::Colour bottomBG();
+            Aether::Colour popupBG();
             Aether::Colour sideBG();
             Aether::Colour muted();
             Aether::Colour muted2();
