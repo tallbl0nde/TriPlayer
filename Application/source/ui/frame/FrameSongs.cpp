@@ -3,6 +3,8 @@
 #include "ListSong.hpp"
 #include "Utils.hpp"
 
+#include "SongMenu.hpp"
+
 namespace Frame {
     Songs::Songs(Main::Application * a) : Frame(a) {
         this->heading->setString("Songs");
@@ -18,12 +20,17 @@ namespace Frame {
             l->setArtistString(si[i].artist);
             l->setAlbumString(si[i].album);
             l->setLengthString(Utils::secondsToHMS(si[i].duration));
+            l->setDotsColour(this->app->theme()->muted());
             l->setLineColour(this->app->theme()->muted2());
             l->setTextColour(this->app->theme()->FG());
             l->setCallback([this, i](){
                 this->app->sysmodule()->sendSetQueue(this->songIDs);
                 this->app->sysmodule()->sendSetSongIdx(i);
                 this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+            });
+            SongID id = si[i].ID;
+            l->setMoreCallback([this, id]() {
+                this->app->showSongMenu(id);
             });
             this->list->addElement(l);
 

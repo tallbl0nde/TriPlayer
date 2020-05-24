@@ -2,7 +2,7 @@
 
 // Size vars
 #define W 380
-#define ITEM_HEIGHT 55
+#define ITEM_HEIGHT 60
 #define ITEM_INDENT 20
 
 namespace CustomOvl {

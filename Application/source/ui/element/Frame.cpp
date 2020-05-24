@@ -24,13 +24,13 @@ namespace CustomElm {
         this->titleH = new Aether::Text(this->x() + 65, this->y() + 150, "Title", 20);
         this->titleH->setColour(this->app->theme()->muted());
         this->addElement(this->titleH);
-        this->artistH = new Aether::Text(this->x() + 433, this->y() + 150, "Artist", 20);
+        this->artistH = new Aether::Text(this->x() + 425, this->y() + 150, "Artist", 20);
         this->artistH->setColour(this->app->theme()->muted());
         this->addElement(this->artistH);
-        this->albumH = new Aether::Text(this->x() + 628, this->y() + 150, "Album", 20);
+        this->albumH = new Aether::Text(this->x() + 620, this->y() + 150, "Album", 20);
         this->albumH->setColour(this->app->theme()->muted());
         this->addElement(this->albumH);
-        this->lengthH = new Aether::Text(this->x() + 885, this->y() + 150, "Length", 20);
+        this->lengthH = new Aether::Text(this->x() + 850, this->y() + 150, "Length", 20);
         this->lengthH->setX(this->lengthH->x() - this->lengthH->w());
         this->lengthH->setColour(this->app->theme()->muted());
         this->addElement(this->lengthH);

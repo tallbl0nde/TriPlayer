@@ -22,6 +22,11 @@ namespace CustomElm {
             Aether::Text * artist;
             Aether::Text * album;
             Aether::Text * length;
+            Aether::Image * dots;
+
+            // Callback when dots pressed
+            std::function<void()> moreCallback;
+            bool callMore;
 
             // Status of threaded elements
             RenderingStatus isRendering;
@@ -33,6 +38,12 @@ namespace CustomElm {
             // Constructor sets up elements
             ListSong();
 
+            // Override setInactive to deactivate touch on dots
+            void setInactive();
+
+            // Handle button press and pressing more button first
+            bool handleEvent(Aether::InputEvent *);
+
             // Position text once rendered
             void update(uint32_t);
 
@@ -42,6 +53,9 @@ namespace CustomElm {
             // Start render tasks if needed (only call after emptying ThreadPool!)
             void restartRendering();
 
+            // Set callback for "more" button
+            void setMoreCallback(std::function<void()>);
+
             // Set strings
             void setTitleString(std::string);
             void setArtistString(std::string);
@@ -49,6 +63,7 @@ namespace CustomElm {
             void setLengthString(std::string);
 
             // Set colours
+            void setDotsColour(Aether::Colour);
             void setLineColour(Aether::Colour);
             void setTextColour(Aether::Colour);
 

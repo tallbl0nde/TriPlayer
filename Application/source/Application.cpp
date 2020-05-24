@@ -29,6 +29,9 @@ namespace Main {
         this->scSplash = new Screen::Splash(this);
         this->scMain = new Screen::MainScreen(this);
         this->setScreen(ScreenID::Splash);
+
+        // Create overlays
+        this->ovlSongMenu = nullptr;
     }
 
     void Application::setHoldDelay(int i) {
@@ -37,6 +40,43 @@ namespace Main {
 
     void Application::addOverlay(Aether::Overlay * o) {
         this->display->addOverlay(o);
+    }
+
+    void Application::setupSongMenu(SongID id) {
+        // Appearance
+        this->ovlSongMenu->setRemoveFromQueueText("Remove from Queue");
+        this->ovlSongMenu->setAddToQueueText("Add to Queue");
+        this->ovlSongMenu->setAddToPlaylistText("Add to Playlist");
+        this->ovlSongMenu->setGoToArtistText("Go to Artist");
+        this->ovlSongMenu->setGoToAlbumText("Go to Album");
+        this->ovlSongMenu->setViewDetailsText("View Details");
+        this->ovlSongMenu->setBackgroundColour(this->theme_->popupBG());
+        this->ovlSongMenu->setIconColour(this->theme_->muted());
+        this->ovlSongMenu->setLineColour(this->theme_->muted2());
+        this->ovlSongMenu->setMutedTextColour(this->theme_->muted());
+        this->ovlSongMenu->setTextColour(this->theme_->FG());
+
+        // Song Metadata
+        SongInfo si = this->database_->getSongInfoForID(id);
+        this->ovlSongMenu->setAlbum(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
+        this->ovlSongMenu->setTitle(si.title);
+        this->ovlSongMenu->setArtist(si.artist);
+    }
+
+    void Application::showSongMenu(SongID id) {
+        delete this->ovlSongMenu;
+        this->ovlSongMenu = new CustomOvl::SongMenu(false);
+        this->setupSongMenu(id);
+        // set callbacks
+        this->addOverlay(this->ovlSongMenu);
+    }
+
+    void Application::showSongMenu(SongID id, size_t pos) {
+        delete this->ovlSongMenu;
+        this->ovlSongMenu = new CustomOvl::SongMenu(true);
+        this->setupSongMenu(id);
+        // set callbacks (including remove!)
+        this->addOverlay(this->ovlSongMenu);
     }
 
     void Application::setScreen(ScreenID s) {
@@ -85,6 +125,9 @@ namespace Main {
     Application::~Application() {
         // Cleanup Aether first to ensure threads are done (so screens can be deleted safely)
         delete this->display;
+
+        // Delete overlays
+        delete this->ovlSongMenu;
 
         // Delete screens
         delete this->scMain;

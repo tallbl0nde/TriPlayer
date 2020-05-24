@@ -25,6 +25,9 @@ namespace CustomElm {
         this->length = new Aether::Text(this->x(), this->y(), "", FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
         this->length->setHidden(true);
         this->addElement(this->length);
+        this->dots = new Aether::Image(this->x(), this->y(), "romfs:/icons/verticaldots.png", 1, 1, Aether::RenderType::Deferred);
+        this->addElement(this->dots);
+        this->dots->setHidden(true);
         this->isRendering = Waiting;
 
         // Create line texture if it doesn't exist
@@ -32,6 +35,37 @@ namespace CustomElm {
             this->lineTexture = SDLHelper::renderFilledRect(this->w(), 1);
         }
         this->lineColour = Aether::Colour{255, 255, 255, 255};
+    }
+
+    void ListSong::setInactive() {
+        Element::setInactive();
+        this->callMore = false;
+    }
+
+    bool ListSong::handleEvent(Aether::InputEvent * e) {
+        // Check if button press and focussed
+        if (this->highlighted() && e->type() == Aether::EventType::ButtonPressed) {
+            if (e->button() == Aether::Button::X) {
+                this->moreCallback();
+                return true;
+            }
+        }
+
+        // Check if pressed over dots
+        if (e->touchX() >= this->length->x() + this->length->w() && e->touchY() >= this->y() && e->touchX() <= this->x() + this->w() && e->touchY() <= this->y() + this->h()) {
+            if (e->type() == Aether::EventType::TouchPressed) {
+                // Do nothing when dots pressed
+                this->callMore = true;
+                return true;
+
+            } else if (e->type() == Aether::EventType::TouchReleased && this->callMore) {
+                this->moreCallback();
+                this->callMore = false;
+                return true;
+            }
+        }
+
+        return Element::handleEvent(e);
     }
 
     void ListSong::update(uint32_t dt) {
@@ -45,18 +79,20 @@ namespace CustomElm {
                     this->artist->startRendering();
                     this->album->startRendering();
                     this->length->startRendering();
+                    this->dots->startRendering();
                     this->isRendering = InProgress;
                 }
                 break;
 
             case InProgress:
                 // Check if all are ready and if so move show and change to done
-                if (this->title->textureReady() && this->artist->textureReady() && this->album->textureReady() && this->length->textureReady()) {
+                if (this->title->textureReady() && this->artist->textureReady() && this->album->textureReady() && this->length->textureReady() && this->dots->textureReady()) {
                     this->positionItems();
                     this->title->setHidden(false);
                     this->artist->setHidden(false);
                     this->album->setHidden(false);
                     this->length->setHidden(false);
+                    this->dots->setHidden(false);
                     this->isRendering = Done;
                 }
 
@@ -67,10 +103,12 @@ namespace CustomElm {
                     this->artist->destroyTexture();
                     this->album->destroyTexture();
                     this->length->destroyTexture();
+                    this->dots->destroyTexture();
                     this->title->setHidden(true);
                     this->artist->setHidden(true);
                     this->album->setHidden(true);
                     this->length->setHidden(true);
+                    this->dots->setHidden(true);
                     this->isRendering = Waiting;
                 }
                 break;
@@ -105,6 +143,10 @@ namespace CustomElm {
         this->isRendering = Waiting;
     }
 
+    void ListSong::setMoreCallback(std::function<void()> f) {
+        this->moreCallback = f;
+    }
+
     void ListSong::setTitleString(std::string s) {
         this->title->setString(s);
     }
@@ -119,6 +161,10 @@ namespace CustomElm {
 
     void ListSong::setLengthString(std::string s) {
         this->length->setString(s);
+    }
+
+    void ListSong::setDotsColour(Aether::Colour c) {
+        this->dots->setColour(c);
     }
 
     void ListSong::setLineColour(Aether::Colour c) {
@@ -139,9 +185,10 @@ namespace CustomElm {
 
     void ListSong::positionItems() {
         this->title->setX(this->x() + 15);
-        this->artist->setX(this->x() + this->w() * 0.45);
-        this->album->setX(this->x() + this->w() * 0.68);
-        this->length->setX(this->x() + this->w() - 15 - this->length->w());
+        this->artist->setX(this->x() + this->w() * 0.44);
+        this->album->setX(this->x() + this->w() * 0.67);
+        this->length->setX(this->x() + this->w() - 50 - this->length->w());
+        this->dots->setXY(this->x() + this->w() - 25, this->y() + (this->h() - this->dots->h())/2 + 1);
         this->title->setY(this->y() + (this->h() - this->title->h())/2);
         this->artist->setY(this->y() + (this->h() - this->artist->h())/2);
         this->album->setY(this->y() + (this->h() - this->album->h())/2);

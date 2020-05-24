@@ -3,6 +3,7 @@
 
 #include "Database.hpp"
 #include <future>
+#include "SongMenu.hpp"
 #include "Sysmodule.hpp"
 #include "Theme.hpp"
 
@@ -30,6 +31,10 @@ namespace Main {
             Screen::MainScreen * scMain;
             Screen::Splash * scSplash;
 
+            // Overlays
+            CustomOvl::SongMenu * ovlSongMenu;
+            void setupSongMenu(SongID);
+
             // Database object
             Database * database_;
 
@@ -52,6 +57,10 @@ namespace Main {
             // Pass an overlay element in order to render
             // Element is not deleted when closed!
             void addOverlay(Aether::Overlay *);
+
+            // Sets up and shows the "SongMenu" overlay using given SongID
+            void showSongMenu(SongID);
+            void showSongMenu(SongID, size_t);  // Also shows remove from queue given position
 
             // Pass screen enum to change to it
             void setScreen(ScreenID);

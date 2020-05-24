@@ -89,11 +89,20 @@ namespace Frame {
         l->setArtistString(si.artist);
         l->setAlbumString(si.album);
         l->setLengthString(Utils::secondsToHMS(si.duration));
+        l->setDotsColour(this->app->theme()->muted());
         l->setLineColour(this->app->theme()->muted2());
         l->setTextColour(this->app->theme()->FG());
         l->setCallback([this, i](){
             this->app->sysmodule()->sendSetSongIdx(i);
             this->songPressed = true;
+        });
+        SongID id = si.ID;
+        l->setMoreCallback([this, i, id]() {
+            if (i == this->songIdx) {
+                this->app->showSongMenu(id);
+            } else {
+                this->app->showSongMenu(id, i);
+            }
         });
 
         return l;
