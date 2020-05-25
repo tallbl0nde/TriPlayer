@@ -4,7 +4,7 @@
 #include <random>
 
 // Maximum number of IDs (reserved at creation)
-#define MAX_SIZE 30000  // Requires 180kB (120kB for IDs, 60kB for position)
+#define MAX_SIZE 25000  // Requires 150kB (100kB for IDs, 50kB for position)
 
 PlayQueue::PlayQueue() {
     this->idx = 0;

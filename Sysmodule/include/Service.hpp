@@ -5,6 +5,7 @@
 #include "Audio.hpp"
 #include <ctime>
 #include "Database.hpp"
+#include <deque>
 #include "PlayQueue.hpp"
 #include "Protocol.hpp"
 #include <shared_mutex>
@@ -19,8 +20,10 @@ class MainService {
         Audio * audio;
         // Database object
         Database * db;
-        // Queue of songs
+        // Main queue of songs
         PlayQueue * queue;
+        // Queue of 'queued' songs
+        std::deque<SongID> subQueue;
         // Socket object for communication
         Socket * socket;
 
@@ -38,6 +41,8 @@ class MainService {
         std::shared_mutex qMutex;
         // Mutex for accessing source
         std::shared_mutex sMutex;
+        // Mutex for accessing sub-queue
+        std::shared_mutex sqMutex;
         // Source currently playing
         Source * source;
 

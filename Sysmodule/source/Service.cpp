@@ -5,6 +5,8 @@
 
 // Number of seconds to wait before previous becomes (back to start)
 #define PREV_WAIT 2
+// Max size of sub-queue (requires 20kB)
+#define SUBQUEUE_MAX_SIZE 5000
 
 MainService::MainService() {
     this->audio = Audio::getInstance();
@@ -32,17 +34,25 @@ void MainService::exit() {
 
 void MainService::audioThread() {
     while (!this->exit_) {
-        std::unique_lock<std::shared_mutex> qMtx(this->qMutex);
         std::unique_lock<std::shared_mutex> sMtx(this->sMutex);
+        std::unique_lock<std::shared_mutex> sqMtx(this->sqMutex);
+        std::unique_lock<std::shared_mutex> qMtx(this->qMutex);
 
         // Change source if the current song has been changed
         if (this->songChanged) {
+            // Check if we need to pop off of subqueue
+            if (!this->subQueue.empty()) {
+                this->queue->addID(this->subQueue.front(), this->queue->currentIdx());
+                this->subQueue.pop_front();
+            }
+
             delete this->source;
             this->source = new MP3(this->db->getPathForID(this->queue->currentID()));
             this->audio->newSong(this->source->sampleRate(), this->source->channels());
             this->songChanged = false;
         }
         qMtx.unlock();
+        sqMtx.unlock();
 
         // Seek if required
         if (this->seekTo >= 0 && this->source != nullptr) {
@@ -72,6 +82,7 @@ void MainService::audioThread() {
             // If not valid attempt to move to next song in queue
             } else {
                 // Check if there is another song to play
+                sqMtx.lock();
                 qMtx.lock();
                 if (this->queue->currentIdx() >= this->queue->size() - 1) {
                     if (this->repeatMode == RepeatMode::One && this->source->valid()) {
@@ -89,6 +100,7 @@ void MainService::audioThread() {
                     }
                 }
                 qMtx.unlock();
+                sqMtx.unlock();
 
                 // Otherwise just sleep until a new song is chosen
                 if (!this->songChanged) {
@@ -206,6 +218,74 @@ void MainService::socketThread() {
                     break;
                 }
 
+                case Protocol::Command::GetSubQueue: {
+                    std::shared_lock<std::shared_mutex> mtx(this->sqMutex);
+                    if (this->subQueue.size() == 0) {
+                        reply = std::string(1, Protocol::Delimiter);
+
+                    } else {
+                        // Get start index and number to read
+                        size_t next;
+                        size_t s = std::stoi(msg, &next);
+                        next++;
+                        msg = msg.substr(next);
+                        size_t n = std::stoi(msg);
+
+                        // Return nothing if requesting zero!
+                        if (n == 0) {
+                            reply = std::string(1, Protocol::Delimiter);
+                        } else {
+                            n = (n > this->subQueue.size() ? this->subQueue.size() : n);
+                            for (size_t i = s; i < n; i++) {
+                                reply += std::to_string(this->subQueue[i]);
+                                if (i < n-1) {
+                                    reply += std::string(1, Protocol::Delimiter);
+                                }
+                            }
+                        }
+                    }
+                    break;
+                }
+
+                case Protocol::Command::SkipSubQueueSongs: {
+                    size_t j = std::stoi(msg);
+                    size_t i;
+                    std::unique_lock<std::shared_mutex> mtx(this->sqMutex);
+                    for (i = 0; i < j; i++) {
+                        this->subQueue.pop_front();
+                    }
+                    this->songChanged = true;
+                    reply = std::to_string(i);
+                    break;
+                }
+
+                case Protocol::Command::SubQueueSize: {
+                    std::shared_lock<std::shared_mutex> mtx(this->sqMutex);
+                    reply = std::to_string(this->subQueue.size());
+                    break;
+                }
+
+                case Protocol::Command::AddToSubQueue: {
+                    SongID id = std::stoi(msg);
+                    std::unique_lock<std::shared_mutex> mtx(this->sqMutex);
+                    if (this->subQueue.size() < SUBQUEUE_MAX_SIZE) {
+                        this->subQueue.push_back(id);
+                        reply = std::to_string(id);
+                    } else {
+                        reply = std::to_string(-1);
+                    }
+                    break;
+                }
+
+                case Protocol::Command::RemoveFromSubQueue: {
+                    size_t pos = std::stoi(msg);
+                    std::unique_lock<std::shared_mutex> mtx(this->sqMutex);
+                    pos = (pos > this->subQueue.size() ? this->subQueue.size()-1 : pos);
+                    this->subQueue.erase(this->subQueue.begin() + pos);
+                    reply = std::to_string(pos);
+                    break;
+                }
+
                 case Protocol::Command::QueueIdx: {
                     std::shared_lock<std::shared_mutex> mtx(this->qMutex);
                     reply = std::to_string(this->queue->currentIdx());
@@ -223,16 +303,6 @@ void MainService::socketThread() {
                 case Protocol::Command::QueueSize: {
                     std::shared_lock<std::shared_mutex> mtx(this->qMutex);
                     reply = std::to_string(this->queue->size());
-                    break;
-                }
-
-                case Protocol::Command::AddToQueue: {
-                    SongID id = std::stoi(msg);
-                    std::unique_lock<std::shared_mutex> mtx(this->qMutex);
-                    if (!this->queue->addID(id, this->queue->size())) {
-                        id = -1;    // Indicates unable to add
-                    }
-                    reply = std::to_string(id);
                     break;
                 }
 

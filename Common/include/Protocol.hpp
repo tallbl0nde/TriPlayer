@@ -22,10 +22,14 @@ namespace Protocol {
         Next,               // Skip to next song in queue                 // Nothing                                          // ID of new song playing
         GetVolume,          // Get volume level                           // Nothing                                          // Volume level [double (between 0.0 and 100.0)]
         SetVolume,          // Set volume level                           // New volume level (between 0.0 and 100.0)         // New volume level [double (between 0.0 and 100.0)]
+        GetSubQueue,        // Get sub-queue                              // First index and number to get                    // Delimited sequence of IDs matching sub-queue
+        SkipSubQueueSongs,  // Skip forward given number of songs + play  // Number of songs to skip                          // Number of songs skipped
+        SubQueueSize,       // Get number of songs in sub-queue           // Nothing                                          // Number of songs in sub-queue
+        AddToSubQueue,      // Add song to 'sub-queue'                    // ID of song to add to 'sub-queue'                 // ID of song added
+        RemoveFromSubQueue, // Remove song from 'sub-queue'               // Position of song to remove                       // Position of song removed
         QueueIdx,           // Get position of current song in queue      // Nothing                                          // Position of currently playing song in queue
         SetQueueIdx,        // Set index of current song in queue         // Position to move to                              // The new queue index
         QueueSize,          // Get number of songs in queue               // Nothing                                          // Number of songs in queue
-        AddToQueue,         // Add song to queue                          // ID of song to add to end of queue                // ID of song added
         RemoveFromQueue,    // Remove song from queue                     // Position of song to remove                       // Position of song removed
         GetQueue,           // Get play queue                             // First index and number to get                    // Delimited sequence of IDs matching queue
         SetQueue,           // Set play queue songs (will clear)          // Delimited sequence of IDs to add to queue        // Number of songs added to queue
