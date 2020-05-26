@@ -88,14 +88,22 @@ namespace Main {
         this->addOverlay(this->ovlSongMenu);
     }
 
-    void Application::showSongMenu(SongID id, size_t pos) {
+    void Application::showSongMenu(SongID id, size_t pos, SongMenuType type) {
         delete this->ovlSongMenu;
         this->ovlSongMenu = new CustomOvl::SongMenu(true);
         this->setupSongMenu(id);
-        this->ovlSongMenu->setRemoveFromQueueFunc([this, pos]() {
-            // this->sysmodule_->sendRemoveFromQueue(pos);
-            // this->ovlSongMenu->close();
-        });
+        if (type == SongMenuType::RemoveFromQueue) {
+            this->ovlSongMenu->setRemoveFromQueueFunc([this, pos]() {
+                this->sysmodule_->sendRemoveFromQueue(pos);
+                this->ovlSongMenu->close();
+            });
+
+        } else {
+            this->ovlSongMenu->setRemoveFromQueueFunc([this, pos]() {
+                this->sysmodule_->sendRemoveFromSubQueue(pos);
+                this->ovlSongMenu->close();
+            });
+        }
         this->addOverlay(this->ovlSongMenu);
     }
 

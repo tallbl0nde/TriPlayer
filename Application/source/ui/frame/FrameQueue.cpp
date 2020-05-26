@@ -1,7 +1,6 @@
 #include "Application.hpp"
 #include "dtl.hpp"
 #include "FrameQueue.hpp"
-#include <limits>
 #include "ListSong.hpp"
 #include <sstream>
 #include "Utils.hpp"
@@ -48,7 +47,7 @@ namespace Frame {
 
     void Queue::initEmpty() {
         this->list->setHidden(true);
-        this->subTotal->setHidden(true);
+        this->subLength->setHidden(true);
         this->subTotal->setHidden(true);
         this->removeElement(this->emptyMsg);
         this->emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "Your Play Queue is empty!", 24);
@@ -83,15 +82,28 @@ namespace Frame {
 
     void Queue::updateList() {
         // Get queues
-        std::vector<SongID> tmpQueue = this->app->sysmodule()->queue();
+        std::vector<SongID> queue = this->app->sysmodule()->queue();
         std::vector<SongID> subQueue = this->app->sysmodule()->subQueue();
         size_t songIdx = this->app->sysmodule()->waitSongIdx();
-        SongID currentID = tmpQueue[songIdx];
-        std::vector<SongID> queue(tmpQueue.begin() + songIdx + 1, tmpQueue.end()); // Note we don't include the current song in the queue!
+        SongID currentID = -1;
+
+        // Safety check before 'slicing' queue (if there's an error leave it empty)
+        if (songIdx >= queue.size()) {
+            queue.clear();
+        } else {
+            currentID = queue[songIdx];
+            queue = std::vector<SongID>(queue.begin() + songIdx + 1, queue.end()); // Note we don't include the current song in the queue!
+        }
+
+        // Set empty if so
+        if (queue.empty() && subQueue.empty()) {
+            this->initEmpty();
+            return;
+        }
 
         // Set current song
         if (currentID != this->cachedSongID) {
-            this->removeElement(this->playingElm);
+            this->list->removeElement(this->playingElm);
             this->playingElm = this->getListSong(currentID);
             this->playingElm->setTextColour(this->app->theme()->accent());
             this->playingElm->setMoreCallback([this, currentID]() {
@@ -108,10 +120,10 @@ namespace Frame {
         subQueueDiff.compose();
 
         // Remove/add queue heading if needed
-        if (subQueue.size() == 0 && this->queue != nullptr) {
+        if (subQueue.empty() && this->queue != nullptr) {
             this->list->removeElement(this->queue);
             this->queue = nullptr;
-        } else if (subQueue.size() != 0 && this->queue == nullptr) {
+        } else if (!subQueue.empty() && this->queue == nullptr) {
             this->queue = new Aether::Element(0, 0, 100, 80);
             Aether::Text * tmp = new Aether::Text(this->queue->x(), this->queue->y(), "Next in Queue", 28);
             tmp->setY(tmp->y() + (this->queue->h() - tmp->h())/2 + 10);
@@ -128,17 +140,22 @@ namespace Frame {
             // Take action based on first char
             switch (line[0]) {
                 // Remove element
-                case '-':
+                case '-': {
+                    std::list<CustomElm::ListSong *>::iterator prev = std::prev(it);
                     this->list->removeElement(*it);
                     this->queueEls.erase(it);
+                    it = prev;
+                    std::advance(it, 1);
                     break;
+                }
 
                 // Add element
                 case '+': {
                     SongID id = std::stoi(line.substr(1, line.length() - 1));
+                    size_t pos = std::distance(this->queueEls.begin(), it) + 1;
                     CustomElm::ListSong * l = this->getListSong(id);
-                    l->setMoreCallback([this, id]() {
-                        // Need to tell it to remove from sub queue
+                    l->setMoreCallback([this, id, pos]() {
+                        this->app->showSongMenu(id, pos, SongMenuType::RemoveFromSubQueue);
                     });
                     if (it == this->queueEls.begin()) {
                         this->list->addElementAfter(l, this->queue);
@@ -156,6 +173,13 @@ namespace Frame {
             }
         }
 
+        // Hide 'Up Next' heading if it's empty
+        if (queue.empty()) {
+            this->upnext->setHidden(true);
+        } else {
+            this->upnext->setHidden(false);
+        }
+
         // Update normal queue (including current song)
         it = this->upnextEls.begin();
         std::stringstream ss2;
@@ -164,17 +188,22 @@ namespace Frame {
             // Take action based on first char
             switch (line[0]) {
                 // Remove element
-                case '-':
+                case '-': {
+                    std::list<CustomElm::ListSong *>::iterator prev = std::prev(it);
                     this->list->removeElement(*it);
                     this->upnextEls.erase(it);
+                    it = prev;
+                    std::advance(it, 1);
                     break;
+                }
 
                 // Add element
                 case '+': {
                     SongID id = std::stoi(line.substr(1, line.length() - 1));
+                    size_t pos = std::distance(this->upnextEls.begin(), it) + 1;
                     CustomElm::ListSong * l = this->getListSong(id);
-                    l->setMoreCallback([this, id]() {
-                        // Need to tell it to remove from main queue
+                    l->setMoreCallback([this, id, pos]() {
+                        this->app->showSongMenu(id, pos, SongMenuType::RemoveFromQueue);
                     });
                     if (it == this->upnextEls.begin()) {
                         this->list->addElementAfter(l, this->upnext);
@@ -197,18 +226,14 @@ namespace Frame {
         this->cachedQueue = queue;
         this->cachedSubQueue = subQueue;
 
-        if (this->cachedQueue.size() == 0 && this->cachedSubQueue.size() == 0) {
-            this->initEmpty();
-        } else {
-            // Update length + track strings
-            std::vector<SongID> tmp = {this->cachedSongID};
-            unsigned int totalSecs = durationOfQueue(this->cachedQueue, this->songInfo) + durationOfQueue(this->cachedSubQueue, this->songInfo) + durationOfQueue(tmp, this->songInfo);
-            this->subLength->setString(Utils::secondsToHoursMins(totalSecs));
-            this->subLength->setX(this->x() + 885 - this->subLength->w());
-            unsigned int totalTracks = this->cachedQueue.size() + this->cachedSubQueue.size() + 1;  // Plus 1 for playing song
-            this->subTotal->setString(std::to_string(totalTracks) + (totalTracks == 1 ? " track" : " tracks" ) + " remaining");
-            this->subTotal->setX(this->x() + 885 - this->subTotal->w());
-        }
+        // Update length + track strings
+        std::vector<SongID> tmp = {this->cachedSongID};
+        unsigned int totalSecs = durationOfQueue(this->cachedQueue, this->songInfo) + durationOfQueue(this->cachedSubQueue, this->songInfo) + durationOfQueue(tmp, this->songInfo);
+        this->subLength->setString(Utils::secondsToHoursMins(totalSecs));
+        this->subLength->setX(this->x() + 885 - this->subLength->w());
+        unsigned int totalTracks = this->cachedQueue.size() + this->cachedSubQueue.size() + 1;  // Plus 1 for playing song
+        this->subTotal->setString(std::to_string(totalTracks) + (totalTracks == 1 ? " track" : " tracks" ) + " remaining");
+        this->subTotal->setX(this->x() + 885 - this->subTotal->w());
     }
 
     CustomElm::ListSong * Queue::getListSong(size_t id) {
@@ -240,9 +265,10 @@ namespace Frame {
     }
 
     void Queue::update(uint32_t dt) {
-        // Completely reinit list if queue is majorly changed
-        if (this->app->sysmodule()->queueChanged()) {
-            // this->updateList();
+        // Edit list when either queue is changed (call both to ensure only done once)
+        bool b = (this->app->sysmodule()->queueChanged() || this->app->sysmodule()->subQueueChanged());
+        if (b) {
+            this->updateList();
         }
 
         Frame::update(dt);

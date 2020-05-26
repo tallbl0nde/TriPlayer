@@ -16,7 +16,7 @@ void Sysmodule::addToWriteQueue(std::string s, std::function<void(std::string)> 
         return;
     }
 
-    std::scoped_lock<std::shared_mutex> mtx(this->writeMutex);
+    std::scoped_lock<std::mutex> mtx(this->writeMutex);
     this->writeQueue.push(std::pair< std::string, std::function<void(std::string)> >(s, f));
 }
 
@@ -49,7 +49,7 @@ bool Sysmodule::error() {
 }
 
 void Sysmodule::reconnect() {
-    std::scoped_lock<std::shared_mutex> mtx(this->writeMutex);
+    std::scoped_lock<std::mutex> mtx(this->writeMutex);
 
     // Create and setup socket
     if (this->socket >= 0) {
@@ -89,7 +89,7 @@ void Sysmodule::process() {
 
         // First process anything on the queue
         std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
-        std::unique_lock<std::shared_mutex> mtx(this->writeMutex);
+        std::unique_lock<std::mutex> mtx(this->writeMutex);
         while (!this->writeQueue.empty()) {
             if (!Utils::Socket::writeToSocket(this->socket, this->writeQueue.front().first)) {
                 this->error_ = true;
@@ -158,9 +158,7 @@ bool Sysmodule::queueChanged() {
 }
 
 std::vector<SongID> Sysmodule::queue() {
-    std::shared_lock<std::shared_mutex> mtx(this->queueMutex);
-
-    // Return a copy of the vector (this is likely slow - there must be a better way?)
+    std::scoped_lock<std::mutex> mtx(this->queueMutex);
     return this->queue_;
 }
 
@@ -181,10 +179,16 @@ size_t Sysmodule::songIdx() {
 }
 
 bool Sysmodule::subQueueChanged() {
-    return this->subQueueChanged_;
+    if (this->subQueueChanged_) {
+        this->subQueueChanged_ = false;
+        return true;
+    }
+
+    return false;
 }
 
 std::vector<SongID> Sysmodule::subQueue() {
+    std::scoped_lock<std::mutex> mtx(this->subQueueMutex);
     return this->subQueue_;
 }
 
@@ -259,32 +263,41 @@ void Sysmodule::sendSetVolume(const double v) {
 
 void Sysmodule::sendSetSongIdx(const size_t id) {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::SetQueueIdx) + DELIM + std::to_string(id), [this](std::string s) {
-        this->currentSong_ = std::stoi(s);
+        this->songIdx_ = std::stoi(s);
     });
 }
 
 void Sysmodule::sendGetSongIdx() {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::QueueIdx), [this](std::string s) {
-        this->songIdx_ = std::stoi(s);
+        size_t tmp = std::stoul(s);
+
+        // Update queues if size changes
+        if (this->songIdx_ != tmp) {
+            this->sendGetQueue(0, 25000);
+            this->sendGetSubQueue(0, 5000);
+        }
+
+        this->songIdx_ = tmp;
     });
 }
 
 void Sysmodule::sendGetQueueSize() {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::QueueSize), [this](std::string s) {
-        this->queueSize_ = std::stoi(s);
+        size_t tmp = std::stoul(s);
+
+        // Update queue if size changes
+        if (this->queueSize_ != tmp) {
+            this->sendGetQueue(0, 25000);
+        }
+
+        this->queueSize_ = tmp;
     });
 }
 
 void Sysmodule::sendRemoveFromQueue(const size_t pos) {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::RemoveFromQueue) + DELIM + std::to_string(pos), [this, pos](std::string s) {
         if (std::stoul(s) != pos) {
-            // On an error get the whole queue again
-            this->sendGetQueue(0, 25000);
-
-        } else {
-            // On success remove from local queue
-            std::scoped_lock<std::shared_mutex> mtx(this->queueMutex);
-            this->queue_.erase(this->queue_.begin() + pos);
+            // Error message here
         }
     });
 }
@@ -292,7 +305,7 @@ void Sysmodule::sendRemoveFromQueue(const size_t pos) {
 void Sysmodule::sendGetQueue(const size_t s, const size_t e) {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::GetQueue) + DELIM + std::to_string(s) + DELIM + std::to_string(e), [this](std::string s) {
         // Add each token in string
-        std::scoped_lock<std::shared_mutex> mtx(this->queueMutex);
+        std::scoped_lock<std::mutex> mtx(this->queueMutex);
         this->queue_.clear();
         char * str = strdup(s.c_str());
         char * tok = strtok(str, &Protocol::Delimiter);
@@ -314,14 +327,9 @@ void Sysmodule::sendSetQueue(const std::vector<SongID> & q) {
         seq += std::to_string(q[i]);
     }
 
-    // Edit local queue before sending to sysmodule
-    this->queue_ = q;
-    this->queueChanged_ = true;
-
     this->addToWriteQueue(std::to_string((int)Protocol::Command::SetQueue) + seq, [this, size](std::string s) {
         if (std::stoul(s) != size) {
-            // On an error get the whole queue again
-            this->sendGetQueue(0, 25000);
+            // Error message here
         }
     });
 }
@@ -329,14 +337,7 @@ void Sysmodule::sendSetQueue(const std::vector<SongID> & q) {
 void Sysmodule::sendAddToSubQueue(const SongID id) {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::AddToSubQueue) + DELIM + std::to_string(id), [this, id](std::string s) {
         if (std::stoi(s) != id) {
-            // On an error get the whole queue again
-            this->sendGetQueue(0, 25000);
-            this->sendGetSubQueue(0, 5000);
-
-        } else {
-            // On success append to local queue
-            std::scoped_lock<std::shared_mutex> mtx(this->subQueueMutex);
-            this->subQueue_.push_back(id);
+            // Error message here
         }
     });
 }
@@ -344,27 +345,28 @@ void Sysmodule::sendAddToSubQueue(const SongID id) {
 void Sysmodule::sendRemoveFromSubQueue(const size_t pos) {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::RemoveFromSubQueue) + DELIM + std::to_string(pos), [this, pos](std::string s) {
         if (std::stoul(s) != pos) {
-            // On an error get the whole queue again
-            this->sendGetQueue(0, 25000);
-
-        } else {
-            // On success remove from local queue
-            std::scoped_lock<std::shared_mutex> mtx(this->subQueueMutex);
-            this->subQueue_.erase(this->subQueue_.begin() + pos);
+            // Error message here
         }
     });
 }
 
 void Sysmodule::sendGetSubQueueSize() {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::SubQueueSize), [this](std::string s) {
-        this->subQueueSize_ = std::stoi(s);
+        size_t tmp = std::stoul(s);
+
+        // Update queue if size changes
+        if (this->subQueueSize_ != tmp) {
+            this->sendGetSubQueue(0, 5000);
+        }
+
+        this->subQueueSize_ = tmp;
     });
 }
 
 void Sysmodule::sendGetSubQueue(const size_t s, const size_t e) {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::GetSubQueue) + DELIM + std::to_string(s) + DELIM + std::to_string(e), [this](std::string s) {
         // Add each token in string
-        std::scoped_lock<std::shared_mutex> mtx(this->subQueueMutex);
+        std::scoped_lock<std::mutex> mtx(this->subQueueMutex);
         this->subQueue_.clear();
         char * str = strdup(s.c_str());
         char * tok = strtok(str, &Protocol::Delimiter);
@@ -380,15 +382,7 @@ void Sysmodule::sendGetSubQueue(const size_t s, const size_t e) {
 void Sysmodule::sendSkipSubQueueSongs(const size_t n) {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::SkipSubQueueSongs) + DELIM + std::to_string(n), [this, n](std::string s) {
         if (std::stoul(s) != n) {
-            // Error occurred skipping, get queue
-            this->sendGetSubQueue(0, 5000);
-
-        } else {
-            // Remove n songs from local queue
-            std::scoped_lock<std::shared_mutex> mtx(this->subQueueMutex);
-            for (size_t i = 0; i <= n; i++) {
-                this->subQueue_.erase(this->subQueue_.begin());
-            }
+            // Error message here
         }
     });
 }
@@ -449,12 +443,11 @@ void Sysmodule::sendSetShuffle(const ShuffleMode m) {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::SetShuffle) + DELIM + std::to_string((int)m), [this, m](std::string s) {
         ShuffleMode sm = ((Protocol::Shuffle)std::stoi(s) == Protocol::Shuffle::Off ? ShuffleMode::Off : ShuffleMode::On);
         if (sm != m) {
-            // Handle error here
-
-        } else {
-            this->sendGetQueue(0, 25000);
-            this->shuffleMode_ = sm;
+            // Error message here
         }
+
+        this->sendGetQueue(0, 25000);
+        this->shuffleMode_ = sm;
     });
 }
 

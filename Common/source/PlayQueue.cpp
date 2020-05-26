@@ -155,7 +155,7 @@ void PlayQueue::incrementIdx() {
 }
 
 void PlayQueue::setIdx(unsigned short i) {
-    if (i >= this->queue.size()) {
+    if (i >= this->queue.size() && this->queue.size() > 0) {
         this->idx = this->queue.size() - 1;
     } else {
         this->idx = i;
