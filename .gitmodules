@@ -4,6 +4,6 @@
 [submodule "Application/libs/Aether"]
 	path = Application/libs/Aether
 	url = https://github.com/tallbl0nde/Aether.git
-[submodule "Application/libs/DTL"]
-	path = Application/libs/DTL
-	url = https://github.com/cubicdaiya/dtl.git
+[submodule "Application/libs/dtl"]
+	path = Application/libs/dtl
+	url = https://github.com/cubicdaiya/dtl
