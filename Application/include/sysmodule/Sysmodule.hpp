@@ -30,6 +30,10 @@ class Sysmodule {
         std::atomic<size_t> queueSize_;
         std::atomic<RepeatMode> repeatMode_;
         std::atomic<ShuffleMode> shuffleMode_;
+        std::atomic<bool> subQueueChanged_;    // Set true when the whole queue has been updated (not just a single song)
+        std::vector<SongID> subQueue_;
+        std::shared_mutex subQueueMutex;
+        std::atomic<size_t> subQueueSize_;
         std::atomic<size_t> songIdx_;
         std::atomic<PlaybackStatus> status_;
         std::atomic<double> volume_;
@@ -61,6 +65,9 @@ class Sysmodule {
         RepeatMode repeatMode();
         ShuffleMode shuffleMode();
         size_t songIdx();
+        bool subQueueChanged();
+        std::vector<SongID> subQueue();
+        size_t subQueueSize();
         PlaybackStatus status();
         double volume();
 
@@ -84,10 +91,14 @@ class Sysmodule {
         void sendSetSongIdx(const size_t);
         void sendGetSongIdx();
         void sendGetQueueSize();
-        void sendAddToQueue(const SongID);
         void sendRemoveFromQueue(const size_t);
         void sendGetQueue(const size_t, const size_t);
         void sendSetQueue(const std::vector<SongID> &);
+        void sendAddToSubQueue(const SongID);
+        void sendRemoveFromSubQueue(const size_t);
+        void sendGetSubQueueSize();
+        void sendGetSubQueue(const size_t, const size_t);
+        void sendSkipSubQueueSongs(const size_t);
 
         // Shuffle/repeat
         void sendGetRepeat();

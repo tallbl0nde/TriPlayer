@@ -61,13 +61,30 @@ namespace Main {
         this->ovlSongMenu->setAlbum(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
         this->ovlSongMenu->setTitle(si.title);
         this->ovlSongMenu->setArtist(si.artist);
+
+        // Callbacks
+        this->ovlSongMenu->setAddToQueueFunc([this, id]() {
+            this->sysmodule_->sendAddToSubQueue(id);
+            this->ovlSongMenu->close();
+        });
+        this->ovlSongMenu->setAddToPlaylistFunc([this, id]() {
+            // add to playlist
+        });
+        this->ovlSongMenu->setGoToArtistFunc([this, id]() {
+            // go to artist
+        });
+        this->ovlSongMenu->setGoToAlbumFunc([this, id]() {
+            // go to album
+        });
+        this->ovlSongMenu->setViewDetailsFunc([this, id]() {
+            // view details
+        });
     }
 
     void Application::showSongMenu(SongID id) {
         delete this->ovlSongMenu;
         this->ovlSongMenu = new CustomOvl::SongMenu(false);
         this->setupSongMenu(id);
-        // set callbacks
         this->addOverlay(this->ovlSongMenu);
     }
 
@@ -75,7 +92,10 @@ namespace Main {
         delete this->ovlSongMenu;
         this->ovlSongMenu = new CustomOvl::SongMenu(true);
         this->setupSongMenu(id);
-        // set callbacks (including remove!)
+        this->ovlSongMenu->setRemoveFromQueueFunc([this, pos]() {
+            // this->sysmodule_->sendRemoveFromQueue(pos);
+            // this->ovlSongMenu->close();
+        });
         this->addOverlay(this->ovlSongMenu);
     }
 

@@ -2,33 +2,42 @@
 #define FRAME_QUEUE_HPP
 
 #include "Frame.hpp"
+#include <list>
 #include "ListSong.hpp"
 
 namespace Frame {
     class Queue : public CustomElm::Frame {
         private:
-            // Top element in list
-            std::vector<CustomElm::ListSong *> elements;
-            // Vector for IDs in queue
-            std::vector<SongID> songIDs;
+            // Elements in list
+            Aether::Element * playing;
+            CustomElm::ListSong * playingElm;
+            Aether::Element * queue;
+            std::list<CustomElm::ListSong *> queueEls;
+            Aether::Element * upnext;
+            std::list<CustomElm::ListSong *> upnextEls;
+
             // Temporary vector of SongInfo
             std::vector<SongInfo> songInfo;
 
             // Empty message
             Aether::Text * emptyMsg;
 
-            // "Cached" variables for updating on event
-            size_t songIdx;
+            // Was an item pressed?
             bool songPressed;
 
+            // "Cached" variables for updating
+            SongID cachedSongID;
+            std::vector<SongID> cachedQueue;
+            std::vector<SongID> cachedSubQueue;
+
+            // Prepare empty list
+            void createList();
             // Hide list element and show empty message
             void initEmpty();
-            // Recreate list from scratch
-            void initList();
-            // Set 'remaining' strings (also makes sure songIdx is up to date)
-            void updateStrings();
+            // Update list elements
+            void updateList();
 
-            // Create a ListSong for given index in vector
+            // Create a ListSong for given id
             CustomElm::ListSong * getListSong(size_t);
 
         public:
