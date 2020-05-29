@@ -7,6 +7,13 @@
 
 namespace Frame {
     class Queue : public CustomElm::Frame {
+        // Section in list
+        enum class Section {
+            Playing,
+            Queue,
+            UpNext
+        };
+
         private:
             // Elements in list
             Aether::Element * playing;
@@ -26,6 +33,7 @@ namespace Frame {
             bool songPressed;
 
             // "Cached" variables for updating
+            size_t cachedSongIdx;
             SongID cachedSongID;
             std::vector<SongID> cachedQueue;
             std::vector<SongID> cachedSubQueue;
@@ -38,7 +46,7 @@ namespace Frame {
             void updateList();
 
             // Create a ListSong for given id
-            CustomElm::ListSong * getListSong(size_t);
+            CustomElm::ListSong * getListSong(size_t, Section);
 
         public:
             // Constructor sets strings and forms list using database and queue

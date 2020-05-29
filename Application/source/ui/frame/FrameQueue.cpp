@@ -104,7 +104,7 @@ namespace Frame {
         // Set current song
         if (currentID != this->cachedSongID) {
             this->list->removeElement(this->playingElm);
-            this->playingElm = this->getListSong(currentID);
+            this->playingElm = this->getListSong(currentID, Section::Playing);
             this->playingElm->setTextColour(this->app->theme()->accent());
             this->playingElm->setMoreCallback([this, currentID]() {
                 // Show normal song menu (can't remove from queue!)
@@ -153,7 +153,7 @@ namespace Frame {
                 case '+': {
                     SongID id = std::stoi(line.substr(1, line.length() - 1));
                     size_t pos = std::distance(this->queueEls.begin(), it) + 1;
-                    CustomElm::ListSong * l = this->getListSong(id);
+                    CustomElm::ListSong * l = this->getListSong(id, Section::Queue);
                     l->setMoreCallback([this, id, pos]() {
                         this->app->showSongMenu(id, pos, SongMenuType::RemoveFromSubQueue);
                     });
@@ -201,7 +201,7 @@ namespace Frame {
                 case '+': {
                     SongID id = std::stoi(line.substr(1, line.length() - 1));
                     size_t pos = std::distance(this->upnextEls.begin(), it) + 1;
-                    CustomElm::ListSong * l = this->getListSong(id);
+                    CustomElm::ListSong * l = this->getListSong(id, Section::UpNext);
                     l->setMoreCallback([this, id, pos]() {
                         this->app->showSongMenu(id, pos, SongMenuType::RemoveFromQueue);
                     });
@@ -222,6 +222,7 @@ namespace Frame {
         }
 
         // Update cached variables
+        this->cachedSongIdx = songIdx;
         this->cachedSongID = currentID;
         this->cachedQueue = queue;
         this->cachedSubQueue = subQueue;
@@ -236,7 +237,7 @@ namespace Frame {
         this->subTotal->setX(this->x() + 885 - this->subTotal->w());
     }
 
-    CustomElm::ListSong * Queue::getListSong(size_t id) {
+    CustomElm::ListSong * Queue::getListSong(size_t id, Section sec) {
         // Get info for song (will be blank if not found)
         SongInfo si;
         // I can't think of a case where the songInfo would be in there twice
@@ -256,17 +257,40 @@ namespace Frame {
         l->setDotsColour(this->app->theme()->muted());
         l->setLineColour(this->app->theme()->muted2());
         l->setTextColour(this->app->theme()->FG());
-        l->setCallback([this, id](){
-            this->app->sysmodule()->sendSetSongIdx(id);
-            this->songPressed = true;
-        });
+
+        if (sec == Section::Playing) {
+            // Do nothing if playing but allow to be selected
+            l->setCallback(nullptr);
+
+        } else if (sec == Section::Queue) {
+            // Set sub queue idx
+            l->setCallback([this, l](){
+                // Calculate distance since first song in queue
+                size_t num = std::distance(this->queueEls.begin(), std::find(this->queueEls.begin(), this->queueEls.end(), l));
+
+                this->app->sysmodule()->sendSkipSubQueueSongs(num);
+                this->songPressed = true;
+            });
+
+        } else if (sec == Section::UpNext) {
+            // Set up next idx
+            l->setCallback([this, l](){
+                // Calculate distance since start (find will always return within list)
+                size_t idx = std::distance(this->upnextEls.begin(), std::find(this->upnextEls.begin(), this->upnextEls.end(), l));
+                idx += this->app->sysmodule()->songIdx();
+
+                // Need to add one for first song
+                this->app->sysmodule()->sendSetSongIdx(idx + 1);
+                this->songPressed = true;
+            });
+        }
 
         return l;
     }
 
     void Queue::update(uint32_t dt) {
         // Edit list when either queue is changed (call both to ensure only done once)
-        bool b = (this->app->sysmodule()->queueChanged() || this->app->sysmodule()->subQueueChanged());
+        bool b = (this->app->sysmodule()->queueChanged() || this->app->sysmodule()->subQueueChanged() || this->cachedSongIdx != this->app->sysmodule()->songIdx());
         if (b) {
             this->updateList();
         }
