@@ -42,7 +42,7 @@ ICON 		:= 	icon.jpg
 # LIBS: Libraries to link against
 # (I dunno what the rest is)
 #---------------------------------------------------------------------------------
-LIBS	:=  -lAether -lnx -lSQLite `sdl2-config --libs` -lSDL2_ttf `freetype-config --libs` -lSDL2_gfx -lSDL2_image -lpng -ljpeg -lwebp
+LIBS	:=  -lAether -lmpg123 -lnx -lSQLite `sdl2-config --libs` -lSDL2_ttf `freetype-config --libs` -lSDL2_gfx -lSDL2_image -lpng -ljpeg -lwebp
 
 ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 

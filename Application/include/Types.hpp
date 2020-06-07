@@ -30,6 +30,7 @@ enum class ShuffleMode {
 };
 
 // Struct storing information about song
+// All strings are UTF-8 encoded!
 struct SongInfo {
     SongID ID;              // unique ID
     std::string title;      // title
