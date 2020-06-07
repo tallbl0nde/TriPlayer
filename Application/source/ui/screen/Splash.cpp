@@ -1,7 +1,5 @@
 #include "Application.hpp"
-#include "MP3.hpp"
 #include "Splash.hpp"
-#include "Utils.hpp"
 
 namespace Screen {
     Splash::Splash(Main::Application * a) : Screen() {
@@ -13,99 +11,18 @@ namespace Screen {
         });
     }
 
-    void Splash::processFiles() {
-        // Search for files in folder
-        this->currentStage = Search;
-        this->currentFile = 0;
-        std::vector<std::string> files = Utils::getFilesWithExt("/music", ".mp3");
-        this->totalFiles = files.size();
-
-        // Find songs that need to be removed
-        std::vector<SongID> remove;
-        for (size_t i = 0; i < files.size(); i++) {
-            // Check if modified since added to database
-            unsigned int dataMTime = this->app->database()->getModifiedTimeForPath(files[i]);
-            unsigned int diskMTime = Utils::getModifiedTimestamp(files[i]);
-
-            // If so remove previous entry and then add later
-            if (diskMTime > dataMTime) {
-                remove.push_back(this->app->database()->getSongIDForPath(files[i]));
-            }
-        }
-
-        std::vector<std::string> paths = this->app->database()->getAllSongPaths();
-        for (size_t i = 0; i < paths.size(); i++) {
-            // If file is no longer present remove it
-            if (std::find(files.begin(), files.end(), paths[i]) == files.end()) {
-                remove.push_back(this->app->database()->getSongIDForPath(paths[i]));
-            }
-        }
-
-        // Find songs that need to be added
-        std::vector< std::pair<std::string, unsigned int> > add;
-        for (size_t i = 0; i < files.size(); i++) {
-            // Check if modified since added to database
-            unsigned int dataMTime = this->app->database()->getModifiedTimeForPath(files[i]);
-            unsigned int diskMTime = Utils::getModifiedTimestamp(files[i]);
-
-            // Add part of 'update entry'
-            if (dataMTime == 0 || diskMTime > dataMTime) {
-                add.push_back(std::pair<std::string, unsigned int>(files[i], diskMTime));
-            }
-        }
-
-        // Don't do anything if no changes
-        if (remove.size() == 0 && add.size() == 0) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(600));
-            this->currentStage = Done;
-            return;
-        }
-
-        // Proceed to parsing new songs
-        this->currentStage = Parse;
-        std::vector<SongInfo> infos;
-        for (size_t i = 0; i < add.size(); i++) {
-            infos.push_back(Utils::MP3::getInfoFromID3(add[i].first));
-            this->currentFile = i+1;
-        }
-        this->currentFile++;
-
-        // Now commit all changes to DB!
-        this->currentStage = Update;
-        // Reset the sysmodule to stop playback, clear queue and ensure DB won't be accessed (blocks)
-        this->app->sysmodule()->waitReset();
-        // Lock the database for writing
-        this->app->database()->lock();
-
-        // First remove entries
-        for (size_t i = 0; i < remove.size(); i++) {
-            this->app->database()->removeSong(remove[i]);
-        }
-        // Next add entries (infos and add have same size)
-        for (size_t i = 0; i < add.size(); i++) {
-            this->app->database()->addSong(infos[i], add[i].first, add[i].second);
-        }
-
-        // Clean 'empty' artists/albums from DB
-        this->app->database()->cleanup();
-
-        // Unlock database now that everything is done
-        this->app->database()->unlock();
-        this->currentStage = Done;
-    }
-
     void Splash::update(uint32_t dt) {
         Screen::update(dt);
 
         // Read into copy in case value changes
-        LoadingStage curr = this->currentStage;
+        ProcessStage curr = this->currentStage;
         if (curr != this->lastStage) {
             switch (curr) {
-                case Search:
+                case ProcessStage::Search:
                     // Never called
                     break;
 
-                case Parse:
+                case ProcessStage::Parse:
                     this->status->setString("Scanning new songs...");
                     this->status->setX(640 - this->status->w()/2);
                     this->statusNum->setHidden(false);
@@ -116,7 +33,7 @@ namespace Screen {
                     this->hint->setHidden(false);
                     break;
 
-                case Update:
+                case ProcessStage::Update:
                     this->status->setString("Updating database...");
                     this->statusNum->setHidden(true);
                     this->anim->setX(620);
@@ -124,7 +41,7 @@ namespace Screen {
                     this->percent->setHidden(true);
                     break;
 
-                case Done:
+                case ProcessStage::Done:
                     this->anim->setHidden(true);
                     this->hint->setHidden(true);
                     this->status->setHidden(true);
@@ -134,7 +51,7 @@ namespace Screen {
             this->lastStage = curr;
         }
 
-        if (curr == Parse) {
+        if (curr == ProcessStage::Parse) {
             // Read into copy in case value changes
             int currF = this->currentFile;
             if (currF != this->lastFile) {
@@ -201,13 +118,16 @@ namespace Screen {
 
         this->currentFile = 0;
         this->lastFile = 0;
-        this->currentStage = Search;
-        this->lastStage = Search;
+        this->currentStage = ProcessStage::Search;
+        this->lastStage = ProcessStage::Search;
 
         // Check if connected to sysmodule
         if (!this->app->sysmodule()->error()) {
             // Start searching for files
-            this->future = std::async(std::launch::async, &Splash::processFiles, this);
+            this->app->sysmodule()->waitReset();
+            this->future = std::async(std::launch::async, [this](){
+                Utils::processFileChanges(this->app->database(), this->currentFile, this->currentStage, this->totalFiles);
+            });
         } else {
             this->status->setString("Unable to connect to Sysmodule!");
             this->status->setX(640 - this->status->w()/2);

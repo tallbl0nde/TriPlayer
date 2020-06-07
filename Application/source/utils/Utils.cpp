@@ -1,5 +1,7 @@
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
+#include "MP3.hpp"
 #include <sys/stat.h>
 #include "Utils.hpp"
 
@@ -23,6 +25,66 @@ namespace Utils {
         }
 
         return paths;
+    }
+
+    void processFileChanges(Database * db, std::atomic<int> & aFile, std::atomic<ProcessStage> & aStage, std::atomic<int> & aTotal) {
+        // Get list of file paths
+        aStage = ProcessStage::Search;
+        std::vector<std::string> paths = getFilesWithExt("/music", ".mp3");
+
+        // Have an 'adjacent' vector which stores modified time
+        std::vector<time_t> diskMTime;
+        for (size_t i = 0; i < paths.size(); i++) {
+            diskMTime.push_back(getModifiedTimestamp(paths[i]));
+        }
+
+        // Iterate over vector(s) and get data to insert/edit
+        std::vector<size_t> addPos;
+        std::vector<size_t> editPos;
+        for (size_t i = 0; i < paths.size(); i++) {
+            unsigned int dataMTime = db->getModifiedTimeForPath(paths[i]);
+
+            // DB time will be 0 if no entry exists!
+            if (dataMTime == 0) {
+                addPos.push_back(i);
+
+            // DB time will be behind if file changed
+            } else if (diskMTime[i] > dataMTime) {
+                editPos.push_back(i);
+            }
+        }
+
+        // Actually insert/update now (this is messy just so the user can get the status...)
+        db->lock();
+        aTotal = addPos.size() + editPos.size();
+        aStage = ProcessStage::Parse;
+        for (size_t i = 0; i < addPos.size(); i++) {
+            aFile++;
+            SongInfo info = Utils::MP3::getInfoFromID3(paths[addPos[i]]);
+            db->addSong(info, paths[addPos[i]], diskMTime[addPos[i]]);
+        }
+        for (size_t i = 0; i < editPos.size(); i++) {
+            aFile++;
+            SongInfo info = Utils::MP3::getInfoFromID3(paths[editPos[i]]);
+            SongID id = db->getSongIDForPath(paths[editPos[i]]);
+            db->updateSong(id, info, diskMTime[editPos[i]]);
+        }
+
+        // Remove any deleted songs
+        aStage = ProcessStage::Update;
+        std::vector<std::string> dbPaths = db->getAllSongPaths();
+        for (size_t i = 0; i < dbPaths.size(); i++) {
+            // If DB's path is not present remove it!
+            if (std::find(paths.begin(), paths.end(), dbPaths[i]) == paths.end()) {
+                db->removeSong(db->getSongIDForPath(dbPaths[i]));
+            }
+        }
+
+        // Cleanup database (TBD)
+        db->cleanup();
+        db->unlock();
+
+        aStage = ProcessStage::Done;
     }
 
     float roundToDecimalPlace(float val, unsigned int p) {
@@ -103,24 +165,5 @@ namespace Utils {
         }
 
         return str.substr(0, dec + 1 + p);
-    }
-
-    std::string unicodeToASCII(char * utf, unsigned int len) {
-        if (len <= 1) {
-            return "";
-        }
-
-        bool isLE = ((*(utf) == 0xFF && *(utf + 1) == 0xFE) ? true : false);
-        unsigned int chars = (len - 2)/2;
-        char * tmp = new char[chars];
-        for (size_t i = (isLE ? 2 : 3); i < len; i += 2) {
-            tmp[(i - 2)/2] = *(utf + i);
-        }
-        while (tmp[chars - 1] == '\0') {
-            chars--;
-        }
-        std::string str(&tmp[0], chars);
-        delete[] tmp;
-        return str;
     }
 };

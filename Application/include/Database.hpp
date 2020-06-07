@@ -6,6 +6,9 @@
 #include "Types.hpp"
 #include <vector>
 
+// The Database class interacts with the database stored on the sd card
+// to read/write data. It also caches some data in order to speed up
+// some repeated queries.
 class Database {
     private:
         // sqlite3 handle
@@ -23,6 +26,10 @@ class Database {
         // Log memory usage
         void logMemory();
 
+        // Private queries
+        void addArtist(std::string);
+        void addAlbum(std::string, std::string);
+
     public:
         // Constructor opens (or creates) database
         Database();
@@ -38,6 +45,8 @@ class Database {
         // Add song into database (handles artists, etc...)
         // Takes SongInfo, path and modified timestamp
         void addSong(SongInfo, std::string, unsigned int);
+        // Update the given song's info and modified timestamp
+        void updateSong(SongID, SongInfo, unsigned int);
         // Remove song from database with ID
         void removeSong(SongID);
 

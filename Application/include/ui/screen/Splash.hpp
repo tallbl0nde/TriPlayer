@@ -2,8 +2,8 @@
 #define SCREEN_SPLASH_HPP
 
 #include "Aether.hpp"
-#include <atomic>
 #include <future>
+#include "Utils.hpp"
 
 namespace Main {
     class Application;
@@ -24,26 +24,13 @@ namespace Screen {
             Aether::Animation * anim;
             Aether::Text * hint;
 
-            // Stages of loading process (used to update UI)
-            enum LoadingStage {
-                Search,     // Search music folder for paths
-                Parse,      // Parse each file's metadata
-                Update,     // Update/clean database
-                Done
-            };
-
-            // Function which runs alongside UI to load stuff
-            void processFiles();
-
             // === The following variables are used to communicate between threads === //
             // Future for thread
             std::future<void> future;
             // Stage of 'loading'
-            std::atomic<LoadingStage> currentStage;
+            std::atomic<ProcessStage> currentStage;
             // Value of last lStage
-            LoadingStage lastStage;
-
-            // == Stage 1: Reading file metadata ==
+            ProcessStage lastStage;
             // Variable which signals how many files have been read (set to 0 until files have been found)
             std::atomic<int> currentFile;
             // Total number of files found
