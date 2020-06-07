@@ -15,10 +15,14 @@ class Database {
         sqlite3_stmt * cmd;
 
     public:
-        // Opens read-only
+        // Does nothing
         Database();
 
-        // Returns true if opened successfully
+        // Opens a connection to database (returns true if successful)
+        bool openConnection();
+        // Drops an open connection to the database
+        void dropConnection();
+        // Returns true if connection is open and ready for queries
         bool ready();
 
         // Return a path matching given ID (or blank if not found)

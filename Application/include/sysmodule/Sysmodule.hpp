@@ -71,6 +71,8 @@ class Sysmodule {
         PlaybackStatus status();
         double volume();
 
+        // Blocks calling thread until the sysmodule has reset it's state
+        void waitReset();
         // Blocks calling thread until it is guaranteed songIdx has been updated
         // Returns max size_t on error (e.g. not connected)
         size_t waitSongIdx();
@@ -112,8 +114,6 @@ class Sysmodule {
         void sendGetPosition();
         void sendSetPosition(double);
 
-        // Reinit sysmodule
-        void sendReset();
         // ======
 
         // Call to 'join' thread (stops main loop)

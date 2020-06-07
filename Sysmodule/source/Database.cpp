@@ -5,26 +5,29 @@
 #define DB_FILE "/switch/TriPlayer/music.db"
 
 Database::Database() {
-    // Open connection
-    if (sqlite3_open_v2(DB_FILE, &this->db, SQLITE_OPEN_READONLY, "unix-none") != SQLITE_OK) {
-        this->db = nullptr;
-        Log::writeError("[DB] Unable to open database R/O");
-    }
+    this->db = nullptr;
+    this->cmd = nullptr;
+}
 
-    // Store journal in memory (otherwise file is unwritable)
-    sqlite3_prepare_v2(this->db, "PRAGMA journal_mode=MEMORY;", -1, &this->cmd, NULL);
-    if (this->cmd != nullptr) {
-        sqlite3_step(this->cmd);
-    } else {
-        Log::writeError("[DB] Unable to set journal mode to memory");
-        sqlite3_close(this->db);
-        this->db = nullptr;
+bool Database::openConnection() {
+    if (!this->ready()) {
+        // Open connection
+        if (sqlite3_open_v2(DB_FILE, &this->db, SQLITE_OPEN_READONLY, "unix-none") != SQLITE_OK) {
+            this->db = nullptr;
+            Log::writeError("[DB] Unable to open read-only connection to database");
+            return false;
+        }
     }
-    sqlite3_finalize(this->cmd);
 
     // Note foreign keys aren't required for these operations
+    Log::writeSuccess("[DB] Prepared for queries");
+    return true;
+}
+
+void Database::dropConnection() {
     if (this->db != nullptr) {
-        Log::writeSuccess("[DB] Prepared for queries");
+        sqlite3_close(this->db);
+        this->db = nullptr;
     }
 }
 
@@ -35,7 +38,7 @@ bool Database::ready() {
 std::string Database::getPathForID(SongID id) {
     std::string str = "";
 
-    if (this->db != nullptr) {
+    if (this->ready()) {
         sqlite3_prepare_v2(this->db, "SELECT path FROM Songs WHERE id = ?;", -1, &this->cmd, nullptr);
         if (this->cmd != nullptr) {
             sqlite3_bind_int(this->cmd, 1, id);
@@ -59,5 +62,5 @@ std::string Database::getPathForID(SongID id) {
 }
 
 Database::~Database() {
-    sqlite3_close(this->db);
+    this->dropConnection();
 }

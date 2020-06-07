@@ -24,7 +24,6 @@ MainService::MainService() {
     // Create database
     if (!this->exit_) {
         this->db = new Database();
-        this->exit_ = !this->db->ready();
     }
 }
 
@@ -44,6 +43,11 @@ void MainService::audioThread() {
             if (!this->subQueue.empty()) {
                 this->queue->addID(this->subQueue.front(), this->queue->currentIdx());
                 this->subQueue.pop_front();
+            }
+
+            // Reconnect to database if necessary
+            if (!this->db->ready()) {
+                this->db->openConnection();
             }
 
             delete this->source;
@@ -467,13 +471,25 @@ void MainService::socketThread() {
                     break;
                 }
 
-                case Protocol::Command::Reset:
-                    // Disconnect from database so it can update (this will be improved)
-                    delete this->db;
-                    std::this_thread::sleep_for(std::chrono::seconds(Protocol::Timeout - 1));
-                    this->db = new Database();
+                case Protocol::Command::Reset: {
+                    // Need to lock everything!!
+                    std::scoped_lock<std::shared_mutex> sMtx(this->sMutex);
+                    std::scoped_lock<std::shared_mutex> sqMtx(this->sqMutex);
+                    std::scoped_lock<std::shared_mutex> qMtx(this->qMutex);
+
+                    // Disconnect from database so it can be written to
+                    this->db->dropConnection();
+
+                    // Stop playback and empty queues
+                    this->audio->stop();
+                    this->queue->clear();
+                    this->subQueue.clear();
+                    delete this->source;
+                    this->source = nullptr;
+
                     reply = std::to_string(Protocol::Version);
                     break;
+                }
             }
 
             // Send reply

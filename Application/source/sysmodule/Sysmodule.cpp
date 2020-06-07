@@ -204,6 +204,19 @@ double Sysmodule::volume() {
     return this->volume_;
 }
 
+void Sysmodule::waitReset() {
+    std::atomic<bool> done = false;
+
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::Reset), [&done](std::string s) {
+        done = true;
+    });
+
+    // Block until done
+    while (!done) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+}
+
 size_t Sysmodule::waitSongIdx() {
     std::atomic<bool> done = false;
 
@@ -491,12 +504,6 @@ void Sysmodule::sendSetPosition(double pos) {
     this->position_ = pos;
     this->addToWriteQueue(std::to_string((int)Protocol::Command::SetPosition) + DELIM + std::to_string(pos), [this](std::string s) {
         this->position_ = std::stod(s);
-    });
-}
-
-void Sysmodule::sendReset() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::Reset), [this](std::string s) {
-
     });
 }
 
