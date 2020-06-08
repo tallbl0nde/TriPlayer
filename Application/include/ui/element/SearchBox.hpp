@@ -1,7 +1,7 @@
 #ifndef ELEMENT_SEARCHBOX_HPP
 #define ELEMENT_SEARCHBOX_HPP
 
-#include "Aether.hpp"
+#include "Aether/Aether.hpp"
 
 namespace CustomElm {
     class SearchBox : public Aether::Element {

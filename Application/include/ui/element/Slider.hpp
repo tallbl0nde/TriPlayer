@@ -1,7 +1,7 @@
 #ifndef ELEMENT_SLIDER_HPP
 #define ELEMENT_SLIDER_HPP
 
-#include "Aether.hpp"
+#include "Aether/Aether.hpp"
 
 namespace CustomElm {
     // A slider is a bar with a knob that can be changed by touch/controller

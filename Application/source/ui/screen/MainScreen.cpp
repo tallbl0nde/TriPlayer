@@ -98,8 +98,6 @@ namespace Screen {
         this->sideArtists->setActivated(false);
         this->sideAlbums->setActivated(false);
         this->sideQueue->setActivated(false);
-        Aether::ThreadPool::removeQueuedTasks();
-        Aether::ThreadPool::waitUntilDone();
         this->removeElement(this->frame);
         this->frame = nullptr;
     }

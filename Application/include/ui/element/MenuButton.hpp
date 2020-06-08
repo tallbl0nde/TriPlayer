@@ -1,7 +1,7 @@
 #ifndef ELEMENT_MENUBUTTON_HPP
 #define ELEMENT_MENUBUTTON_HPP
 
-#include "Aether.hpp"
+#include "Aether/Aether.hpp"
 
 namespace CustomElm {
     // A MenuButton appears in SongMenu

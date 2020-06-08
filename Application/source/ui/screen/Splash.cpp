@@ -67,8 +67,8 @@ namespace Screen {
 
     void Splash::onLoad() {
         // Set background
-        this->bg = new Aether::Image(0, 0, "romfs:/bg/splash.png");
-        this->addElement(this->bg);
+        // this->bg = new Aether::Image(0, 0, "romfs:/bg/splash.png");
+        // this->addElement(this->bg);
 
         // Add all other elements
         Aether::Text * t = new Aether::Text(560, 315, "Version " + std::string(VER_STRING), 26);
@@ -139,7 +139,7 @@ namespace Screen {
     }
 
     void Splash::onUnload() {
-        this->removeElement(this->bg);
+        // this->removeElement(this->bg);
         this->removeElement(this->status);
         this->removeElement(this->statusNum);
         this->removeElement(this->pbar);

@@ -1,7 +1,7 @@
 #ifndef ELEMENT_FRAME_HPP
 #define ELEMENT_FRAME_HPP
 
-#include "Aether.hpp"
+#include "Aether/Aether.hpp"
 
 namespace Main {
     class Application;

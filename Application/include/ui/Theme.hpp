@@ -1,7 +1,7 @@
 #ifndef THEME_HPP
 #define THEME_HPP
 
-#include "Aether.hpp"
+#include "Aether/Aether.hpp"
 
 namespace Main {
     // Stores colours for the current theme

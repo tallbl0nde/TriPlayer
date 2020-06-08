@@ -1,7 +1,7 @@
 #ifndef ELEMENT_SIDEBUTTON_HPP
 #define ELEMENT_SIDEBUTTON_HPP
 
-#include "Aether.hpp"
+#include "Aether/Aether.hpp"
 
 namespace CustomElm {
     // A SideButton appears in the left hand side pane
