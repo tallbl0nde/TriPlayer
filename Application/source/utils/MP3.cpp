@@ -203,6 +203,72 @@ namespace Utils::MP3 {
         mpg = nullptr;
     }
 
+    // Searches and returns an appropriate image
+    SongArt getArtFromID3(std::string path) {
+        SongArt sa;
+        sa.data = nullptr;
+        sa.size = 0;
+
+        // Use mpg123 to find images
+        if (mpg != nullptr) {
+            int err = mpg123_open(mpg, path.c_str());
+            if (err == MPG123_OK) {
+                // Check if there are ID3 tags
+                mpg123_seek(mpg, 0, SEEK_SET);
+                if (mpg123_meta_check(mpg) & MPG123_ID3) {
+                    // Structures storing metadata (v1 not used)
+                    mpg123_id3v1 * v1;
+                    mpg123_id3v2 * v2;
+
+                    // Parse metadata
+                    err = mpg123_id3(mpg, &v1, &v2);
+                    if (err == MPG123_OK) {
+                        // Check for ID3v2 tags
+                        if (v2 != nullptr) {
+                            // Iterate over all images to find a fitting image
+                            for (size_t i = 0; i < v2->pictures; i++) {
+                                mpg123_picture * pic = &v2->picture[i];
+                                std::string mType = mpgStrToString(&(pic->mime_type));
+
+                                // Need matching type and mime type
+                                if (pic->type == mpg123_id3_pic_other || pic->type == mpg123_id3_pic_front_cover) {
+                                    if (mType == "image/jpg" || mType == "image/jpeg" || mType == "image/png") {
+                                        // Copy image into struct
+                                        sa.data = new unsigned char[pic->size];
+                                        std::memcpy(sa.data, pic->data, pic->size);
+                                        sa.size = pic->size;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // Log if none found
+                            if (sa.data == nullptr) {
+                                Log::writeWarning("[MP3] No suitable art found in: " + path);
+                            }
+
+                        } else {
+                            Log::writeWarning("[MP3] No ID3v2 tags were found in: " + path);
+                        }
+
+                    } else {
+                        Log::writeError("[MP3] Failed to parse metadata for: " + path);
+                    }
+                } else {
+                    Log::writeError("[MP3] Failed to parse metadata for: " + path);
+                }
+                // Free memory used by metadata
+                mpg123_meta_free(mpg);
+            }
+            // Close file
+            mpg123_close(mpg);
+        } else {
+            Log::writeError("[MP3] Unable to open file: " + path);
+        }
+
+        return sa;
+    }
+
     // Checks for tag type and calls appropriate function
     SongInfo getInfoFromID3(std::string path) {
         // Default info to return

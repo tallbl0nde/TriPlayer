@@ -290,6 +290,22 @@ unsigned int Database::getModifiedTimeForPath(std::string path) {
     return ret;
 }
 
+std::string Database::getPathForID(SongID id) {
+    std::string str = "";
+
+    sqlite3_prepare_v2(this->db, "SELECT path FROM Songs WHERE id = ?;", -1, &this->cmd, nullptr);
+    if (this->cmd != nullptr) {
+        sqlite3_bind_int(this->cmd, 1, id);
+        if (sqlite3_step(this->cmd) == SQLITE_ROW) {
+            const unsigned char * s = sqlite3_column_text(this->cmd, 0);
+            str = std::string((const char *)s);
+        }
+    }
+    sqlite3_finalize(cmd);
+
+    return str;
+}
+
 SongID Database::getSongIDForPath(std::string path) {
     SongID ret = -1;
     sqlite3_prepare_v2(this->db, "SELECT id FROM Songs WHERE path = ?;", -1, &this->cmd, nullptr);

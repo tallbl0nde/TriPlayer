@@ -56,6 +56,8 @@ class Database {
         std::vector<std::string> getAllSongPaths();
         // Returns modified time for song matching path (0 on error/not found!)
         unsigned int getModifiedTimeForPath(std::string);
+        // Return a path matching given ID (or blank if not found)
+        std::string getPathForID(SongID);
         // Return ID of song with given path (-1 if not found)
         SongID getSongIDForPath(std::string);
         // Returns SongInfo for given ID (id will be -1 if not found!)

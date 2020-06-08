@@ -5,6 +5,7 @@
 #include <ctime>
 #include "Database.hpp"
 #include <string>
+#include "Sysmodule.hpp"
 #include <vector>
 
 // Stages of update process (used to update UI)
@@ -27,7 +28,7 @@ namespace Utils {
 
     // Updates the provided database to reflect the state of files on the sd card in /music
     // Atomics are used to provide the current status
-    void processFileChanges(Database *, std::atomic<int> &, std::atomic<ProcessStage> &, std::atomic<int> &);
+    void processFileChanges(Database *, Sysmodule *, std::atomic<int> &, std::atomic<ProcessStage> &, std::atomic<int> &);
 
     // Round the given double to the specified number of decimal places
     float roundToDecimalPlace(float, unsigned int);

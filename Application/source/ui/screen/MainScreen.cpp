@@ -2,6 +2,7 @@
 #include "FrameQueue.hpp"
 #include "FrameSongs.hpp"
 #include "MainScreen.hpp"
+#include "MP3.hpp"
 #include "Types.hpp"
 #include "Utils.hpp"
 
@@ -85,6 +86,20 @@ namespace Screen {
                 this->trackArtist->setString(si.artist);
                 this->duration->setString(Utils::secondsToHMS(si.duration));
                 this->playingDuration = si.duration;
+            }
+
+            // Change album cover
+            std::string path = this->app->database()->getPathForID(id);
+            this->removeElement(this->albumCover);
+            this->albumCover = nullptr;
+            if (path.length() > 0) {
+                SongArt sa = Utils::MP3::getArtFromID3(path);
+                if (sa.data != nullptr) {
+                    this->albumCover = new Aether::Image(this->albumCoverDefault->x(), this->albumCoverDefault->y(), sa.data, sa.size);
+                    this->albumCover->setWH(this->albumCoverDefault->w(), this->albumCoverDefault->h());
+                    this->addElement(this->albumCover);
+                    delete[] sa.data;
+                }
             }
         }
 
@@ -238,10 +253,12 @@ namespace Screen {
         this->playerBg = new Aether::Rectangle(0, 590, 1280, 130);
         this->playerBg->setColour(this->app->theme()->bottomBG());
         this->addElement(this->playerBg);
+
         // Album/song playing
-        this->albumCover = new Aether::Image(10, 600, "romfs:/misc/noalbum.png");
-        this->albumCover->setWH(110, 110);
-        this->addElement(this->albumCover);
+        this->albumCover = nullptr;
+        this->albumCoverDefault = new Aether::Image(10, 600, "romfs:/misc/noalbum.png");
+        this->albumCoverDefault->setWH(110, 110);
+        this->addElement(this->albumCoverDefault);
         this->trackName = new Aether::Text(140, 625, "Nothing playing!", 24);
         this->trackName->setColour(this->app->theme()->FG());
         this->addElement(this->trackName);
@@ -368,6 +385,7 @@ namespace Screen {
         this->removeElement(this->sideQueue);
         this->removeElement(this->playerBg);
         this->removeElement(this->albumCover);
+        this->removeElement(this->albumCoverDefault);
         this->removeElement(this->trackName);
         this->removeElement(this->trackArtist);
         this->removeElement(this->shuffle);

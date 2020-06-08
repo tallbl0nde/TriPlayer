@@ -29,6 +29,13 @@ enum class ShuffleMode {
     On
 };
 
+// Struct storing pointer to and size of album art
+// Pointer should be deleted when no longer needed
+struct SongArt {
+    unsigned char * data;
+    size_t size;
+};
+
 // Struct storing information about song
 // All strings are UTF-8 encoded!
 struct SongInfo {

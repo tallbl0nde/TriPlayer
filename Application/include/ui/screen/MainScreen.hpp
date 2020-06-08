@@ -38,6 +38,7 @@ namespace Screen {
             // Player
             Aether::Rectangle * playerBg;
             Aether::Image * albumCover;
+            Aether::Image * albumCoverDefault;
             Aether::Text * trackName;
             Aether::Text * trackArtist;
             Aether::Image * shuffle;

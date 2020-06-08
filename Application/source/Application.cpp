@@ -1,5 +1,6 @@
 #include "Application.hpp"
 #include "MainScreen.hpp"
+#include "MP3.hpp"
 #include "Splash.hpp"
 
 namespace Main {
@@ -58,9 +59,23 @@ namespace Main {
 
         // Song Metadata
         SongInfo si = this->database_->getSongInfoForID(id);
-        this->ovlSongMenu->setAlbum(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
         this->ovlSongMenu->setTitle(si.title);
         this->ovlSongMenu->setArtist(si.artist);
+
+        // Song Art
+        bool hasArt = false;
+        std::string path = this->database_->getPathForID(id);
+        if (path.length() > 0) {
+            SongArt sa = Utils::MP3::getArtFromID3(path);
+            if (sa.data != nullptr) {
+                this->ovlSongMenu->setAlbum(new Aether::Image(0, 0, sa.data, sa.size));
+                hasArt = true;
+                delete[] sa.data;
+            }
+        }
+        if (!hasArt) {
+            this->ovlSongMenu->setAlbum(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
+        }
 
         // Callbacks
         this->ovlSongMenu->setAddToQueueFunc([this, id]() {

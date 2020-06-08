@@ -67,8 +67,8 @@ namespace Screen {
 
     void Splash::onLoad() {
         // Set background
-        // this->bg = new Aether::Image(0, 0, "romfs:/bg/splash.png");
-        // this->addElement(this->bg);
+        this->bg = new Aether::Image(0, 0, "romfs:/bg/splash.png");
+        this->addElement(this->bg);
 
         // Add all other elements
         Aether::Text * t = new Aether::Text(560, 315, "Version " + std::string(VER_STRING), 26);
@@ -124,9 +124,8 @@ namespace Screen {
         // Check if connected to sysmodule
         if (!this->app->sysmodule()->error()) {
             // Start searching for files
-            this->app->sysmodule()->waitReset();
             this->future = std::async(std::launch::async, [this](){
-                Utils::processFileChanges(this->app->database(), this->currentFile, this->currentStage, this->totalFiles);
+                Utils::processFileChanges(this->app->database(), this->app->sysmodule(), this->currentFile, this->currentStage, this->totalFiles);
             });
         } else {
             this->status->setString("Unable to connect to Sysmodule!");
@@ -139,7 +138,7 @@ namespace Screen {
     }
 
     void Splash::onUnload() {
-        // this->removeElement(this->bg);
+        this->removeElement(this->bg);
         this->removeElement(this->status);
         this->removeElement(this->statusNum);
         this->removeElement(this->pbar);
