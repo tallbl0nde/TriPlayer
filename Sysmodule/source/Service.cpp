@@ -88,13 +88,19 @@ void MainService::audioThread() {
                 // Check if there is another song to play
                 sqMtx.lock();
                 qMtx.lock();
+
+                // If past the end of the queue
                 if (this->queue->currentIdx() >= this->queue->size() - 1) {
-                    if (this->repeatMode == RepeatMode::One && this->source->valid()) {
+                    if (this->repeatMode == RepeatMode::Off && !this->subQueue.empty()) {
+                        this->songChanged = true;
+                    } else if (this->repeatMode == RepeatMode::One && this->source->valid()) {
                         this->songChanged = true;
                     } else if (this->repeatMode == RepeatMode::All) {
                         this->queue->setIdx(0);
                         this->songChanged = true;
                     }
+
+                // Not at the end
                 } else {
                     if (this->repeatMode == RepeatMode::One && this->source->valid()) {
                         this->songChanged = true;
@@ -274,7 +280,14 @@ void MainService::socketThread() {
                     std::unique_lock<std::shared_mutex> mtx(this->sqMutex);
                     if (this->subQueue.size() < SUBQUEUE_MAX_SIZE) {
                         this->subQueue.push_back(id);
+                        mtx.unlock();
                         reply = std::to_string(id);
+
+                        // Start playing if there is nothing playing
+                        std::shared_lock<std::shared_mutex> qMtx(this->qMutex);
+                        if (this->queue->currentID() == -1) {
+                            this->songChanged = true;
+                        }
                     } else {
                         reply = std::to_string(-1);
                     }
@@ -297,6 +310,12 @@ void MainService::socketThread() {
                 }
 
                 case Protocol::Command::SetQueueIdx: {
+                    // Clear sub queue whenever jumping to a song past it
+                    std::unique_lock<std::shared_mutex> sqMtx(this->sqMutex);
+                    this->subQueue.clear();
+                    sqMtx.unlock();
+
+                    // Now actually skip to song
                     std::unique_lock<std::shared_mutex> mtx(this->qMutex);
                     this->queue->setIdx(std::stoi(msg));
                     this->songChanged = true;
@@ -350,6 +369,10 @@ void MainService::socketThread() {
                 }
 
                 case Protocol::Command::SetQueue: {
+                    std::unique_lock<std::shared_mutex> sqMtx(this->sqMutex);
+                    this->subQueue.clear();
+                    sqMtx.unlock();
+
                     std::unique_lock<std::shared_mutex> mtx(this->qMutex);
                     this->queue->clear();
 
