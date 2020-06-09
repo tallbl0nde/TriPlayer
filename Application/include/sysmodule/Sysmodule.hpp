@@ -5,7 +5,6 @@
 #include <chrono>
 #include <functional>
 #include <mutex>
-#include "PlayQueue.hpp"
 #include <queue>
 #include "Types.hpp"
 #include <vector>
