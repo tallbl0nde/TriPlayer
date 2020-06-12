@@ -15,6 +15,14 @@
 // Class which manages all actions taken when receiving a command
 // Essentially encapsulates everything
 class MainService {
+    // Enum specifying what action to take when changing a song (i.e. getting a new source)
+    enum class SongAction {
+        Previous,   // Go to the last song in the queue (if there is one)
+        Next,       // Skip to the next song in the queue (if there is one)
+        Replay,     // Restart the currently playing song
+        Nothing     // Do nothing
+    };
+
     private:
         // Audio instance
         Audio * audio;
@@ -34,7 +42,7 @@ class MainService {
         // Repeat mode
         std::atomic<RepeatMode> repeatMode;
         // Status vars for comm. between threads
-        std::atomic<bool> songChanged;
+        std::atomic<SongAction> songAction; // (should this be a queue?)
         std::atomic<double> seekTo;
 
         // Mutex for accessing queue
@@ -54,7 +62,7 @@ class MainService {
         void exit();
 
         // Handles decoding and shifting between songs due to commands
-        void audioThread();
+        void playbackThread();
         // listens and takes action when receiving a command
         void socketThread();
 

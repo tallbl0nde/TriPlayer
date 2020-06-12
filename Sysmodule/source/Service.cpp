@@ -15,7 +15,7 @@ MainService::MainService() {
     this->repeatMode = RepeatMode::Off;
     this->seekTo = -1;
     this->source = nullptr;
-    this->songChanged = false;
+    this->songAction = SongAction::Nothing;
 
     // Create listening socket (exit if error occurred)
     this->socket = new Socket(Protocol::Port);
@@ -31,96 +31,130 @@ void MainService::exit() {
     this->exit_ = true;
 }
 
-void MainService::audioThread() {
+void MainService::playbackThread() {
     while (!this->exit_) {
         std::unique_lock<std::shared_mutex> sMtx(this->sMutex);
         std::unique_lock<std::shared_mutex> sqMtx(this->sqMutex);
         std::unique_lock<std::shared_mutex> qMtx(this->qMutex);
 
         // Change source if the current song has been changed
-        if (this->songChanged) {
-            // Check if we need to pop off of subqueue
-            if (!this->subQueue.empty()) {
-                this->queue->addID(this->subQueue.front(), this->queue->currentIdx());
-                this->subQueue.pop_front();
-            }
+        if (this->songAction != SongAction::Nothing) {
+            // Only do something if a queue has something in it
+            if (!(this->queue->empty() && this->subQueue.empty())) {
+                switch (this->songAction) {
+                    case SongAction::Previous:
+                        // If repeat is on and we're at the start, wrap around
+                        if (this->repeatMode != RepeatMode::Off && this->queue->currentIdx() == 0) {
+                            this->queue->setIdx(this->queue->size());
 
-            // Reconnect to database if necessary
-            if (!this->db->ready()) {
-                this->db->openConnection();
-            }
+                        // Go back to last song on queue otherwise (won't do anything if at the start)
+                        } else {
+                            this->queue->decrementIdx();
+                        }
 
-            delete this->source;
-            this->source = new MP3(this->db->getPathForID(this->queue->currentID()));
-            this->audio->newSong(this->source->sampleRate(), this->source->channels());
-            this->songChanged = false;
+                        this->repeatMode = (this->repeatMode != RepeatMode::Off ? RepeatMode::All : RepeatMode::Off);
+                        break;
+
+                    case SongAction::Next:
+                        // If repeat is on and we're at the end, wrap around
+                        if (this->repeatMode != RepeatMode::Off && (this->queue->currentIdx() == this->queue->size() - 1) && this->subQueue.empty()) {
+                            this->queue->setIdx(0);
+
+                        // Otherwise advance to next song (check subqueue if there's one there)
+                        } else {
+                            // Check if we need to pop off of subqueue
+                            if (!this->subQueue.empty()) {
+                                this->queue->addID(this->subQueue.front(), this->queue->currentIdx() + 1);
+                                this->subQueue.pop_front();
+                            }
+
+                            this->queue->incrementIdx();
+                        }
+
+                        this->repeatMode = (this->repeatMode != RepeatMode::Off ? RepeatMode::All : RepeatMode::Off);
+                        break;
+
+                    default:
+                        // Do nothing if set to SongAction::Replay (just want to replay current song)
+                        break;
+                }
+
+                // Reconnect to database if necessary
+                if (!this->db->ready()) {
+                    this->db->openConnection();
+                }
+
+                // Delete old source and prepare a new one
+                delete this->source;
+                this->source = new MP3(this->db->getPathForID(this->queue->currentID()));
+                this->audio->newSong(this->source->sampleRate(), this->source->channels());
+            }
+            this->songAction = SongAction::Nothing;
         }
+
+        // Don't need queues for a while
         qMtx.unlock();
         sqMtx.unlock();
 
-        // Seek if required
-        if (this->seekTo >= 0 && this->source != nullptr) {
-            this->audio->stop();
-            this->source->seek(this->seekTo * this->source->totalSamples());
-            this->audio->setSamplesPlayed(this->source->tell());
-            this->seekTo = -1;
-        }
-
-        // Decode/change
+        bool sleep = true;
         if (this->source != nullptr) {
+            sleep = false;
+
+            // Seek to a position if required
+            if (this->source->valid() && this->seekTo >= 0) {
+                this->audio->stop();
+                this->source->seek(this->seekTo * this->source->totalSamples());
+                this->audio->setSamplesPlayed(this->source->tell());
+                this->seekTo = -1;
+            }
+
+            // If the source is not corrupt and not done decode into an available buffer
             if (this->source->valid() && !this->source->done()) {
-                // Decode into buffer
                 u8 * buf = new u8[this->audio->bufferSize()];
                 size_t dec = this->source->decode(buf, this->audio->bufferSize());
                 sMtx.unlock();
 
                 // Wait until a buffer is available to queue or there is an update
-                while (!this->audio->bufferAvailable() && !(this->songChanged || this->seekTo >= 0) && !this->exit_) {
-                    svcSleepThread(2E+7);
-                }
-                if (!(this->songChanged || this->seekTo >= 0) && !this->exit_) {
-                    this->audio->addBuffer(buf, dec);
+                while (this->songAction == SongAction::Nothing && this->seekTo < 0 && !this->exit_) {
+                    if (this->audio->bufferAvailable()) {
+                        this->audio->addBuffer(buf, dec);
+                        break;
+                    } else {
+                        svcSleepThread(2E+7);
+                    }
                 }
                 delete[] buf;
 
-            // If not valid attempt to move to next song in queue
+            // If not valid attempt to move to change song
             } else {
-                // Check if there is another song to play
                 sqMtx.lock();
                 qMtx.lock();
 
-                // If past the end of the queue
-                if (this->queue->currentIdx() >= this->queue->size() - 1) {
-                    if (this->repeatMode == RepeatMode::Off && !this->subQueue.empty()) {
-                        this->songChanged = true;
-                    } else if (this->repeatMode == RepeatMode::One && this->source->valid()) {
-                        this->songChanged = true;
-                    } else if (this->repeatMode == RepeatMode::All) {
-                        this->queue->setIdx(0);
-                        this->songChanged = true;
-                    }
+                // Replay current song if repeat is set to one
+                if (this->repeatMode == RepeatMode::One && this->source->valid()) {
+                    this->songAction = SongAction::Replay;
 
-                // Not at the end
+                // Don't go to next song if at the end and repeat is off
+                } else if (this->queue->currentIdx() >= this->queue->size() - 1 && this->repeatMode == RepeatMode::Off && this->subQueue.empty()) {
+                    this->songAction = SongAction::Nothing;
+
+                // Otherwise advance to next song
                 } else {
-                    if (this->repeatMode == RepeatMode::One && this->source->valid()) {
-                        this->songChanged = true;
-                    } else {
-                        this->queue->incrementIdx();
-                        this->songChanged = true;
-                    }
+                    this->songAction = SongAction::Next;
                 }
+
                 qMtx.unlock();
                 sqMtx.unlock();
 
-                // Otherwise just sleep until a new song is chosen
-                if (!this->songChanged) {
-                    svcSleepThread(1E+8);
+                if (this->songAction == SongAction::Nothing) {
+                    sleep = true;
                 }
             }
+        }
 
-        } else {
-            // Sleep for 0.1 sec if no source to play
-            svcSleepThread(1E+8);
+        // Sleep if no action is required
+        if (sleep) {
+            svcSleepThread(5E+7);
         }
     }
 }
@@ -161,59 +195,30 @@ void MainService::socketThread() {
                     break;
                 }
 
-                case Protocol::Command::Previous: {
-                    // Check there is a song in the queue
-                    std::unique_lock<std::shared_mutex> mtx(this->qMutex);
-                    if (this->queue->size() > 0) {
-                        // Check if we're at the start of the queue
-                        if (this->queue->currentIdx() == 0) {
-                            // Wrap around and play last song if on the first song and repeat is on
-                            if ((std::time(nullptr) - this->pressTime) < PREV_WAIT) {
-                                if (this->repeatMode != RepeatMode::Off) {
-                                    this->queue->setIdx(this->queue->size());
-                                    this->repeatMode = (this->repeatMode != RepeatMode::Off ? RepeatMode::All : RepeatMode::Off);
-                                }
-                            }
+                case Protocol::Command::Previous:
+                    // Simply set the 'SongAction' to Previous/Replay based on time of last press
+                    // The other thread will handle changing songs
 
-                        // Otherwise we can move backwards a song
-                        } else {
-                            if ((std::time(nullptr) - this->pressTime) < PREV_WAIT) {
-                                this->queue->decrementIdx();
-                                this->repeatMode = (this->repeatMode != RepeatMode::Off ? RepeatMode::All : RepeatMode::Off);
-                            }
-                        }
+                    // Change song if within timeframe
+                    if ((std::time(nullptr) - this->pressTime) < PREV_WAIT) {
+                        this->songAction = SongAction::Previous;
 
-                        this->pressTime = std::time(nullptr);
-                        this->songChanged = true;   // Always (re)start song when previous is pressed
+                    // Otherwise restart the current song
+                    } else {
+                        this->songAction = SongAction::Replay;
                     }
 
-                    reply = std::to_string(this->queue->currentID());
+                    this->pressTime = std::time(nullptr);
+                    reply = std::to_string(0);
                     break;
-                }
 
-                case Protocol::Command::Next: {
-                    // Check there is a song in the queue
-                    std::unique_lock<std::shared_mutex> mtx(this->qMutex);
-                    if (this->queue->size() > 0) {
-                        // Check if we're at the end of the queue
-                        if (this->queue->currentIdx() == (this->queue->size() - 1)) {
-                            // Wrap around to start
-                            this->queue->setIdx(0);
-                            this->repeatMode = (this->repeatMode != RepeatMode::Off ? RepeatMode::All : RepeatMode::Off);
-
-                        // Otherwise we're not at the end and can go forwards
-                        } else {
-                            this->queue->incrementIdx();
-                            this->repeatMode = (this->repeatMode != RepeatMode::Off ? RepeatMode::All : RepeatMode::Off);
-                        }
-
-                        this->pressTime = std::time(nullptr);
-                        this->songChanged = true;   // Always (re)start song when next is pressed
-                    }
-
-                    reply = std::to_string(this->queue->currentID());
+                case Protocol::Command::Next:
+                    // Simply set the 'SongAction' to Next
+                    // The other thread will handle changing songs
+                    this->songAction = SongAction::Next;
+                    this->pressTime = std::time(nullptr);
+                    reply = std::to_string(0);
                     break;
-                }
 
                 case Protocol::Command::GetVolume:
                     // Round to three decimals
@@ -264,7 +269,7 @@ void MainService::socketThread() {
                     for (i = 0; i < j; i++) {
                         this->subQueue.pop_front();
                     }
-                    this->songChanged = true;
+                    this->songAction = SongAction::Next;
                     reply = std::to_string(i);
                     break;
                 }
@@ -286,7 +291,7 @@ void MainService::socketThread() {
                         // Start playing if there is nothing playing
                         std::shared_lock<std::shared_mutex> qMtx(this->qMutex);
                         if (this->queue->currentID() == -1) {
-                            this->songChanged = true;
+                            this->songAction = SongAction::Next;
                         }
                     } else {
                         reply = std::to_string(-1);
@@ -310,15 +315,9 @@ void MainService::socketThread() {
                 }
 
                 case Protocol::Command::SetQueueIdx: {
-                    // Clear sub queue whenever jumping to a song past it
-                    std::unique_lock<std::shared_mutex> sqMtx(this->sqMutex);
-                    this->subQueue.clear();
-                    sqMtx.unlock();
-
-                    // Now actually skip to song
-                    std::unique_lock<std::shared_mutex> mtx(this->qMutex);
+                    std::sharted_lock<std::shared_mutex> mtx(this->qMutex);
                     this->queue->setIdx(std::stoi(msg));
-                    this->songChanged = true;
+                    this->songAction = SongAction::Replay;
                     reply = std::to_string(this->queue->currentIdx());
                     break;
                 }

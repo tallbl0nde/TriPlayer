@@ -52,6 +52,8 @@ class PlayQueue {
 
         // Clear the queue
         void clear();
+        // Returns true if empty
+        bool empty();
         // Return number of IDs in queue
         size_t size();
 

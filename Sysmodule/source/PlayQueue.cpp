@@ -168,6 +168,10 @@ void PlayQueue::clear() {
     this->shuffled = false;
 }
 
+bool PlayQueue::empty() {
+    return (this->queue.size() == 0);
+}
+
 size_t PlayQueue::size() {
     return this->queue.size();
 }

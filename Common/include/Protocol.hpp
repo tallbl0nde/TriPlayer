@@ -18,8 +18,8 @@ namespace Protocol {
         Version,            // Request version of sysmodule               // Nothing                                          // Version of sysmodule
         Resume,             // Resume playback                            // Nothing                                          // ID of song playing
         Pause,              // Pause playback                             // Nothing                                          // ID of song playing
-        Previous,           // Jump to last played song                   // Nothing                                          // ID of new song playing
-        Next,               // Skip to next song in queue                 // Nothing                                          // ID of new song playing
+        Previous,           // Jump to last played song                   // Nothing                                          // Result code (0 = success)
+        Next,               // Skip to next song in queue                 // Nothing                                          // Result code (0 = success)
         GetVolume,          // Get volume level                           // Nothing                                          // Volume level [double (between 0.0 and 100.0)]
         SetVolume,          // Set volume level                           // New volume level (between 0.0 and 100.0)         // New volume level [double (between 0.0 and 100.0)]
         GetSubQueue,        // Get sub-queue                              // First index and number to get                    // Delimited sequence of IDs matching sub-queue

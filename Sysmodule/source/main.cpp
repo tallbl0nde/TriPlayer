@@ -16,6 +16,7 @@
 // It hangs if I don't use C... I wish I knew why!
 extern "C" {
     u32 __nx_applet_type = AppletType_None;
+    u32 __nx_fs_num_sessions = 1;
 
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
@@ -102,7 +103,7 @@ int main(int argc, char * argv[]) {
     // Start audio thread
     std::future<void> audioThread = std::async(std::launch::async, &Audio::process, Audio::getInstance());
     // Start decoding thread
-    std::future<void> decodeThread = std::async(std::launch::async, &MainService::audioThread, s);
+    std::future<void> playbackThread = std::async(std::launch::async, &MainService::playbackThread, s);
 
     // This thread is responsible for handling communication
     s->socketThread();
@@ -110,7 +111,7 @@ int main(int argc, char * argv[]) {
     // Join threads (only run after service has exit signal)
     Audio::getInstance()->exit();
     audioThread.get();
-    decodeThread.get();
+    playbackThread.get();
 
     // Now that it's done we can delete!
     delete s;
