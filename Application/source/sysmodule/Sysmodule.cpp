@@ -252,13 +252,17 @@ void Sysmodule::sendPause() {
 
 void Sysmodule::sendPrevious() {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::Previous), [this](std::string s) {
-        this->currentSong_ = std::stoi(s);
+        if (std::stoi(s) != 0) {
+            // Handle error
+        }
     });
 }
 
 void Sysmodule::sendNext() {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::Next), [this](std::string s) {
-        this->currentSong_ = std::stoi(s);
+        if (std::stoi(s) != 0) {
+            // Handle error
+        }
     });
 }
 

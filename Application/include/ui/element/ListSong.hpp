@@ -50,9 +50,6 @@ namespace CustomElm {
             // Render lineTexture as well as normal rendering
             void render();
 
-            // Start render tasks if needed (only call after emptying ThreadPool!)
-            void restartRendering();
-
             // Set callback for "more" button
             void setMoreCallback(std::function<void()>);
 

@@ -123,26 +123,6 @@ namespace CustomElm {
         }
     }
 
-    void ListSong::restartRendering() {
-        // Clear elements if they do not have a texture
-        if (!this->title->textureReady()) {
-            this->title->destroyTexture();
-        }
-        if (!this->artist->textureReady()) {
-            this->artist->destroyTexture();
-        }
-        if (!this->album->textureReady()) {
-            this->album->destroyTexture();
-        }
-        if (!this->length->textureReady()) {
-            this->length->destroyTexture();
-        }
-
-        // Go back to waiting stage
-        this->setHidden(true);
-        this->isRendering = Waiting;
-    }
-
     void ListSong::setMoreCallback(std::function<void()> f) {
         this->moreCallback = f;
     }

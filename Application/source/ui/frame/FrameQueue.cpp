@@ -96,7 +96,7 @@ namespace Frame {
         }
 
         // Set empty if so
-        if (queue.empty() && subQueue.empty()) {
+        if (currentID == -1 && queue.empty() && subQueue.empty()) {
             this->initEmpty();
             return;
         }
@@ -152,9 +152,11 @@ namespace Frame {
                 // Add element
                 case '+': {
                     SongID id = std::stoi(line.substr(1, line.length() - 1));
-                    size_t pos = std::distance(this->queueEls.begin(), it) + 1;
                     CustomElm::ListSong * l = this->getListSong(id, Section::Queue);
-                    l->setMoreCallback([this, id, pos]() {
+                    l->setMoreCallback([this, id, l]() {
+                        // Need to find current position
+                        std::list<CustomElm::ListSong *>::iterator it = std::find(this->queueEls.begin(), this->queueEls.end(), l);
+                        size_t pos = std::distance(this->queueEls.begin(), it);
                         this->app->showSongMenu(id, pos, SongMenuType::RemoveFromSubQueue);
                     });
                     if (it == this->queueEls.begin()) {
@@ -200,9 +202,11 @@ namespace Frame {
                 // Add element
                 case '+': {
                     SongID id = std::stoi(line.substr(1, line.length() - 1));
-                    size_t pos = std::distance(this->upnextEls.begin(), it) + 1;
                     CustomElm::ListSong * l = this->getListSong(id, Section::UpNext);
-                    l->setMoreCallback([this, id, pos]() {
+                    l->setMoreCallback([this, id, l]() {
+                        // Need to find current position
+                        std::list<CustomElm::ListSong *>::iterator it = std::find(this->upnextEls.begin(), this->upnextEls.end(), l);
+                        size_t pos = std::distance(this->upnextEls.begin(), it) + this->cachedSongIdx + 1;
                         this->app->showSongMenu(id, pos, SongMenuType::RemoveFromQueue);
                     });
                     if (it == this->upnextEls.begin()) {
@@ -293,6 +297,15 @@ namespace Frame {
         bool b = (this->app->sysmodule()->queueChanged() || this->app->sysmodule()->subQueueChanged() || this->cachedSongIdx != this->app->sysmodule()->songIdx());
         if (b) {
             this->updateList();
+        }
+
+        // Jump to start if list if a song is pressed
+        if (this->songPressed) {
+            this->songPressed = false;
+            if (this->upnextEls.size() > 0) {
+                this->list->setFocussed(*(this->upnextEls.begin()));
+                this->list->setScrollPos(0);
+            }
         }
 
         Frame::update(dt);
