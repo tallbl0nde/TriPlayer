@@ -2,9 +2,9 @@
 #define SCREEN_MAINSCREEN_HPP
 
 #include "Frame.hpp"
+#include "Player.hpp"
 #include "SearchBox.hpp"
 #include "SideButton.hpp"
-#include "Slider.hpp"
 
 namespace Main {
     class Application;
@@ -36,35 +36,13 @@ namespace Screen {
             CustomElm::SideButton * sideQueue;
 
             // Player
-            Aether::Rectangle * playerBg;
-            Aether::Image * albumCover;
-            Aether::Image * albumCoverDefault;
-            Aether::Text * trackName;
-            Aether::Text * trackArtist;
-            Aether::Image * shuffle;
-            Aether::Image * previous;
-            Aether::Image * play;
-            Aether::Image * pause;
-            Aether::Image * next;
-            Aether::Image * repeat;
-            Aether::Image * repeatOne;
-            Aether::Text * position;
-            CustomElm::Slider * seekBar;
-            Aether::Text * duration;
-            Aether::Image * volumeIcon;
-            CustomElm::Slider * volume;
-            Aether::Image * fullscreen;
+            CustomElm::Player * player;
 
             // Right-hand side 'frame'
             CustomElm::Frame * frame;
 
             // Cached vars to avoid updating every frame
             SongID playingID;
-            RepeatMode repeatMode;
-            ShuffleMode shuffleMode;
-
-            // Duration of playing song in seconds
-            unsigned int playingDuration;
 
             // 'Reset' screen state - deselect side items, and delete frame
             void resetState();
@@ -72,9 +50,6 @@ namespace Screen {
             // Functions to setup screen based on chosen item
             void setupQueue();
             void setupSongs();
-
-            // "Helpers"
-            void setRepeatIcon();
 
         public:
             MainScreen(Main::Application *);

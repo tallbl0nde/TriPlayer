@@ -25,7 +25,8 @@ namespace CustomOvl {
         this->album = nullptr;
         this->title = new Aether::Text(this->bg->x() + 130, this->bg->y() + 33, "", 24);
         this->title->setScroll(true);
-        this->title->setScrollSpeed(70);
+        this->title->setScrollSpeed(35);
+        this->title->setScrollWaitTime(1200);
         this->bg->addElement(this->title);
         this->artist = new Aether::Text(this->title->x(), this->title->y() + 34, "", 18);
         this->bg->addElement(this->artist);
