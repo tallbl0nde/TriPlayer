@@ -166,9 +166,6 @@ namespace Main {
     }
 
     Application::~Application() {
-        // Cleanup Aether first to ensure threads are done (so screens can be deleted safely)
-        delete this->display;
-
         // Delete overlays
         delete this->ovlSongMenu;
 
@@ -176,10 +173,14 @@ namespace Main {
         delete this->scMain;
         delete this->scSplash;
 
+        // Cleanup Aether after screens are deleted
+        delete this->display;
+
         // Disconnect from sysmodule
         this->sysmodule_->exit();
         this->sysThread.get();
         delete this->sysmodule_;
+
         // Close/save database
         delete this->database_;
     }

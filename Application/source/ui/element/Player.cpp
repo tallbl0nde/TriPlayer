@@ -26,6 +26,7 @@ namespace CustomElm {
         this->trackArtist = new Aether::Text(140, 660, "Play a song", 18);
         this->addElement(this->trackArtist);
         this->trackArtistDots = new Aether::Text(0, 0, "...", 18);
+        this->trackArtistDots->setHidden(true);
         this->addElement(this->trackArtistDots);
 
         // Controls
@@ -38,6 +39,7 @@ namespace CustomElm {
         this->addElement(this->play);
         this->pause = new Aether::Image(610, 610, "romfs:/icons/pause.png");
         this->addElement(this->pause);
+        this->setFocussed(this->pause);
         this->next = new Aether::Image(705, 628, "romfs:/icons/next.png");
         this->addElement(this->next);
         this->repeat = new Aether::Image(770, 630, "romfs:/icons/repeat.png");
@@ -117,14 +119,14 @@ namespace CustomElm {
         if (playing) {
             this->pause->setHidden(false);
             this->play->setHidden(true);
-            if (this->play->focussed()) {
+            if (this->focussed() == this->play) {
                 this->setFocussed(this->pause);
             }
 
         } else {
             this->pause->setHidden(true);
             this->play->setHidden(false);
-            if (this->pause->focussed()) {
+            if (this->focussed() == this->pause) {
                 this->setFocussed(this->play);
             }
         }
@@ -136,7 +138,7 @@ namespace CustomElm {
                 this->repeat->setHidden(false);
                 this->repeat->setColour(this->muted);
                 this->repeatOne->setHidden(true);
-                if (this->repeatOne->focussed()) {
+                if (this->focussed() == this->repeatOne) {
                     this->setFocussed(this->repeat);
                 }
                 break;
@@ -145,7 +147,7 @@ namespace CustomElm {
                 this->repeatOne->setHidden(false);
                 this->repeatOne->setColour(this->accent);
                 this->repeat->setHidden(true);
-                if (this->repeat->focussed()) {
+                if (this->focussed() == this->repeat) {
                     this->setFocussed(this->repeatOne);
                 }
                 break;
@@ -154,7 +156,7 @@ namespace CustomElm {
                 this->repeat->setHidden(false);
                 this->repeat->setColour(this->accent);
                 this->repeatOne->setHidden(true);
-                if (this->repeatOne->focussed()) {
+                if (this->focussed() == this->repeatOne) {
                     this->setFocussed(this->repeat);
                 }
                 break;

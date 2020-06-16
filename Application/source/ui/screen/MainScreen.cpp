@@ -1,6 +1,7 @@
 #include "Application.hpp"
 #include "FrameQueue.hpp"
 #include "FrameSongs.hpp"
+#include "Log.hpp"
 #include "MainScreen.hpp"
 #include "MP3.hpp"
 
@@ -9,12 +10,22 @@ namespace Screen {
         this->app = a;
         this->playingID = -1;
 
+        // Either exit or unfocus player on B
         this->onButtonPress(Aether::Button::B, [this]() {
-            this->app->exit();
+            if (this->playerDim->hidden()) {
+                this->app->exit();
+            } else {
+                this->setFocussed(this->container);
+            }
         });
+
+        // (Un)focus player when Y pressed
         this->onButtonPress(Aether::Button::Y, [this]() {
-            if (this->focussed() != this->player) {
+            if (this->playerDim->hidden()) {
                 this->setFocussed(this->player);
+                this->playerDim->setHidden(false);
+            } else {
+                this->setFocussed(this->container);
             }
         });
     }
@@ -49,8 +60,26 @@ namespace Screen {
             delete[] sa.data;
         }
 
+        // Show/hide dimming element based on current state
+        this->playerDim->setHidden(!(this->focussed() == this->player));
+
         // Now update elements
         Screen::update(dt);
+    }
+
+    void MainScreen::finalizeState() {
+        // Mark the container non-selectable so the highlight won't jump to it
+        this->container->addElement(this->frame);
+        this->container->setHasSelectable(false);
+
+        // (Re)add dimming element after frame so it's drawn on top
+        this->playerDim = new Aether::Rectangle(0, 0, 1280, 590);
+        this->playerDim->setColour(Aether::Colour{0, 0, 0, 130});
+        this->playerDim->setCallback([this]() {
+            this->setFocussed(this->container);
+        });
+        this->playerDim->setSelectable(false);  // Callback can only be triggered by touch
+        this->addElement(this->playerDim);
     }
 
     void MainScreen::resetState() {
@@ -59,22 +88,24 @@ namespace Screen {
         this->sideArtists->setActivated(false);
         this->sideAlbums->setActivated(false);
         this->sideQueue->setActivated(false);
-        this->removeElement(this->frame);
+        this->container->removeElement(this->frame);
+        this->removeElement(this->playerDim);
         this->frame = nullptr;
+        this->playerDim = nullptr;
     }
 
     void MainScreen::setupQueue() {
         this->resetState();
         this->sideQueue->setActivated(true);
         this->frame = new Frame::Queue(this->app);
-        this->addElement(this->frame);
+        this->finalizeState();
     }
 
     void MainScreen::setupSongs() {
         this->resetState();
         this->sideSongs->setActivated(true);
         this->frame = new Frame::Songs(this->app);
-        this->addElement(this->frame);
+        this->finalizeState();
     }
 
     void MainScreen::onLoad() {
@@ -84,35 +115,38 @@ namespace Screen {
         this->sidegrad = new Aether::Image(310, 15, "romfs:/misc/sidegradient.png");
         this->sidegrad->setColour(Aether::Colour{255, 255, 255, 200});
         this->addElement(this->sidegrad);
-
-        // === SIDEBAR ===
         this->sideBg = new Aether::Rectangle(0, 0, 310, 590);
         this->sideBg->setColour(this->app->theme()->sideBG());
         this->addElement(this->sideBg);
+
+        // Root container for everything except player
+        this->container = new Aether::Container(0, 0, 1280, 590);
+
+        // === SIDEBAR ===
         // User
         this->userBg = new Aether::Rectangle(25, 30, 200, 50, 10);
         this->userBg->setColour(this->app->theme()->muted2());
-        this->addElement(this->userBg);
+        this->container->addElement(this->userBg);
         this->userIcon = new Aether::Image(this->userBg->x(), this->userBg->y(), "romfs:/user.png");
         this->userIcon->setWH(50, 50);
-        this->addElement(this->userIcon);
+        this->container->addElement(this->userIcon);
         this->userText = new Aether::Text(this->userIcon->x() + this->userIcon->w() + 8, 0, "Username", 26);
         this->userText->setY(this->userBg->y() + (this->userBg->h() - this->userText->h())/2);
         this->userText->setColour(this->app->theme()->FG());
-        this->addElement(this->userText);
+        this->container->addElement(this->userText);
 
         // Settings
         this->settingsBg = new Aether::Rectangle(235, 30, 50, 50, 10);
         this->settingsBg->setColour(this->app->theme()->muted2());
-        this->addElement(this->settingsBg);
+        this->container->addElement(this->settingsBg);
         this->settingsIcon = new Aether::Image(this->settingsBg->x() + 10, this->settingsBg->y() + 10, "romfs:/icons/settings.png");
-        this->addElement(this->settingsIcon);
+        this->container->addElement(this->settingsIcon);
 
         // Search bar
         this->search = new CustomElm::SearchBox(25, 130, 260);
         this->search->setBoxColour(this->app->theme()->muted2());
         this->search->setIconColour(this->app->theme()->FG());
-        this->addElement(this->search);
+        this->container->addElement(this->search);
 
         // Navigation list
         this->sideRP = new CustomElm::SideButton(10, 210, 290);
@@ -123,7 +157,7 @@ namespace Screen {
         this->sideRP->setCallback([this](){
 
         });
-        this->addElement(this->sideRP);
+        this->container->addElement(this->sideRP);
         this->sideSongs = new CustomElm::SideButton(10, this->sideRP->y() + 60, 290);
         this->sideSongs->setIcon(new Aether::Image(0, 0, "romfs:/icons/musicnote.png"));
         this->sideSongs->setText("Songs");
@@ -132,7 +166,7 @@ namespace Screen {
         this->sideSongs->setCallback([this](){
             this->setupSongs();
         });
-        this->addElement(this->sideSongs);
+        this->container->addElement(this->sideSongs);
         this->sideArtists = new CustomElm::SideButton(10, this->sideSongs->y() + 60, 290);
         this->sideArtists->setIcon(new Aether::Image(0, 0, "romfs:/icons/user.png"));
         this->sideArtists->setText("Artists");
@@ -141,7 +175,7 @@ namespace Screen {
         this->sideArtists->setCallback([this](){
 
         });
-        this->addElement(this->sideArtists);
+        this->container->addElement(this->sideArtists);
         this->sideAlbums = new CustomElm::SideButton(10, this->sideArtists->y() + 60, 290);
         this->sideAlbums->setIcon(new Aether::Image(0, 0, "romfs:/icons/disc.png"));
         this->sideAlbums->setText("Albums");
@@ -150,10 +184,10 @@ namespace Screen {
         this->sideAlbums->setCallback([this](){
 
         });
-        this->addElement(this->sideAlbums);
+        this->container->addElement(this->sideAlbums);
         this->sideSeparator = new Aether::Rectangle(30, this->sideAlbums->y() + 70, 250, 1);
         this->sideSeparator->setColour(this->app->theme()->muted2());
-        this->addElement(this->sideSeparator);
+        this->container->addElement(this->sideSeparator);
         this->sideQueue = new CustomElm::SideButton(10, this->sideSeparator->y() + 10, 290);
         this->sideQueue->setIcon(new Aether::Image(0, 0, "romfs:/icons/queue.png"));
         this->sideQueue->setText("Play Queue");
@@ -162,7 +196,8 @@ namespace Screen {
         this->sideQueue->setCallback([this](){
             this->setupQueue();
         });
-        this->addElement(this->sideQueue);
+        this->container->addElement(this->sideQueue);
+        this->addElement(this->container);
 
         // === PLAYER ===
         this->player = new CustomElm::Player();
@@ -205,28 +240,15 @@ namespace Screen {
         this->player->setHasSelectable(false);
 
         // Set songs active
-        this->setFocussed(this->sideSongs);
         this->frame = nullptr;
+        this->playerDim = nullptr;
         this->setupSongs();
+        this->container->setFocussed(this->sideSongs);
     }
 
     void MainScreen::onUnload() {
         this->resetState();
-        this->removeElement(this->bg);
-        this->removeElement(this->sidegrad);
-        this->removeElement(this->sideBg);
-        this->removeElement(this->userBg);
-        this->removeElement(this->userIcon);
-        this->removeElement(this->userText);
-        this->removeElement(this->settingsBg);
-        this->removeElement(this->settingsIcon);
-        this->removeElement(this->search);
-        this->removeElement(this->sideRP);
-        this->removeElement(this->sideSongs);
-        this->removeElement(this->sideArtists);
-        this->removeElement(this->sideAlbums);
-        this->removeElement(this->sideSeparator);
-        this->removeElement(this->sideQueue);
+        this->removeElement(this->container);
         this->removeElement(this->player);
     }
 };

@@ -17,8 +17,10 @@ namespace Screen {
             Main::Application * app;
 
             // Misc
+            Aether::Container * container;
             Aether::Image * bg;
             Aether::Image * sidegrad;
+            Aether::Rectangle * playerDim;
 
             // Sidebar
             Aether::Rectangle * sideBg;
@@ -44,6 +46,8 @@ namespace Screen {
             // Cached vars to avoid updating every frame
             SongID playingID;
 
+            // Finalize screen state - add elements, set frame
+            void finalizeState();
             // 'Reset' screen state - deselect side items, and delete frame
             void resetState();
 
@@ -54,6 +58,7 @@ namespace Screen {
         public:
             MainScreen(Main::Application *);
 
+            // Update player values
             void update(uint32_t);
 
             // onLoad creates all elements
