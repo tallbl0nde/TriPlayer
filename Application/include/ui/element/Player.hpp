@@ -1,6 +1,7 @@
 #ifndef ELEMENT_PLAYER_HPP
 #define ELEMENT_PLAYER_HPP
 
+#include "RoundButton.hpp"
 #include "Slider.hpp"
 #include "Types.hpp"
 
@@ -19,12 +20,19 @@ namespace CustomElm {
             Aether::Text * trackArtistDots;
 
             // Controls
+            CustomElm::RoundButton * shuffleC;
             Aether::Image * shuffle;
+            CustomElm::RoundButton * previousC;
             Aether::Image * previous;
+            CustomElm::RoundButton * playC;
             Aether::Image * play;
+            CustomElm::RoundButton * pauseC;
             Aether::Image * pause;
+            CustomElm::RoundButton * nextC;
             Aether::Image * next;
+            CustomElm::RoundButton * repeatC;
             Aether::Image * repeat;
+            CustomElm::RoundButton * repeatOneC;
             Aether::Image * repeatOne;
 
             // Seekbar
@@ -33,8 +41,10 @@ namespace CustomElm {
             Aether::Text * duration;
 
             // Volume slider + fullscreen
+            CustomElm::RoundButton * volumeIconC;
             Aether::Image * volumeIcon;
             CustomElm::Slider * volume;
+            CustomElm::RoundButton * fullscreenC;
             Aether::Image * fullscreen;
 
             // Copy of variables used for updates
