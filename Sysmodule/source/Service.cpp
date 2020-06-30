@@ -235,7 +235,7 @@ void MainService::socketThread() {
 
                 case Protocol::Command::GetSubQueue: {
                     std::shared_lock<std::shared_mutex> mtx(this->sqMutex);
-                    if (this->subQueue.size() == 0) {
+                    if (this->subQueue.empty()) {
                         reply = std::string(1, Protocol::Delimiter);
 
                     } else {
@@ -315,7 +315,7 @@ void MainService::socketThread() {
                 }
 
                 case Protocol::Command::SetQueueIdx: {
-                    std::sharted_lock<std::shared_mutex> mtx(this->qMutex);
+                    std::shared_lock<std::shared_mutex> mtx(this->qMutex);
                     this->queue->setIdx(std::stoi(msg));
                     this->songAction = SongAction::Replay;
                     reply = std::to_string(this->queue->currentIdx());
@@ -340,7 +340,7 @@ void MainService::socketThread() {
 
                 case Protocol::Command::GetQueue: {
                     std::shared_lock<std::shared_mutex> mtx(this->qMutex);
-                    if (this->queue->size() == 0) {
+                    if (this->queue->empty()) {
                         reply = std::string(1, Protocol::Delimiter);
 
                     } else {
@@ -446,48 +446,50 @@ void MainService::socketThread() {
 
                 case Protocol::Command::GetStatus: {
                     Protocol::Status s = Protocol::Status::Error;
-                    switch (audio->status()) {
-                        case AudioStatus::Playing:
-                            s = Protocol::Status::Playing;
-                            break;
 
-                        case AudioStatus::Paused:
-                            s = Protocol::Status::Paused;
-                            break;
+                    // Say that we're playing if the song is currently seeking
+                    if (this->seekTo >= 0) {
+                        s = Protocol::Status::Playing;
+                    } else {
+                        switch (audio->status()) {
+                            case AudioStatus::Playing:
+                                s = Protocol::Status::Playing;
+                                break;
 
-                        case AudioStatus::Stopped:
-                            s = Protocol::Status::Stopped;
-                            break;
+                            case AudioStatus::Paused:
+                                s = Protocol::Status::Paused;
+                                break;
+
+                            case AudioStatus::Stopped:
+                                s = Protocol::Status::Stopped;
+                                break;
+                        }
                     }
                     reply = std::to_string((int)s);
                     break;
                 }
 
                 case Protocol::Command::GetPosition: {
-                    std::shared_lock<std::shared_mutex> mtx(this->sMutex);
-                    if (this->source == nullptr) {
-                        reply = std::to_string(0.0);
-                        break;
-                    }
-
                     // Return position to 5 digits
-                    double pos = 100 * (this->audio->samplesPlayed()/(double)this->source->totalSamples());
+                    double pos = 100.0 * this->seekTo;
+                    if (pos < 0) {
+                        // Check position if not seeking
+                        std::shared_lock<std::shared_mutex> mtx(this->sMutex);
+                        if (this->source == nullptr) {
+                            reply = std::to_string(0.0);
+                            break;
+                        }
+                        pos = 100 * (this->audio->samplesPlayed()/(double)this->source->totalSamples());
+                    }
                     reply = std::to_string(pos + 0.00005);
                     reply = reply.substr(0, reply.find(".") + 5);
                     break;
                 }
 
                 case Protocol::Command::SetPosition: {
-                    this->seekTo = std::stod(msg)/100.0;
-
                     // Return position to 5 digits
-                    std::shared_lock<std::shared_mutex> mtx(this->sMutex);
-                    if (this->source == nullptr) {
-                        reply = std::to_string(0.0);
-                        break;
-                    }
-
-                    double pos = 100 * (this->audio->samplesPlayed()/(double)this->source->totalSamples());
+                    double pos = std::stod(msg);
+                    this->seekTo = pos/100.0;
                     reply = std::to_string(pos + 0.00005);
                     reply = reply.substr(0, reply.find(".") + 5);
                     break;

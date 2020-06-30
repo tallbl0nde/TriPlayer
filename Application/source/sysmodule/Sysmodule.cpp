@@ -108,7 +108,7 @@ void Sysmodule::process() {
 
             // Clear queue if an error occurred
             if (this->error_) {
-                Log::writeError("[SYSMODULE] Error occurred while processing queue - cleared queue");
+                Log::writeError("[SYSMODULE] Command queue cleared as an error occurred during processing");
                 this->writeQueue = std::queue< std::pair<std::string, std::function<void(std::string)> > >();
                 continue;
             }
@@ -117,7 +117,7 @@ void Sysmodule::process() {
 
         // Check if we need to log to save cycles
         if (Log::loggingLevel() == Log::Level::Info) {
-            Log::writeInfo("Sysmodule update took: " + std::to_string(std::chrono::duration_cast< std::chrono::duration<double> >(std::chrono::steady_clock::now() - now).count()) + " seconds");
+            Log::writeInfo("[SYSMODULE] Update took: " + std::to_string(std::chrono::duration_cast< std::chrono::duration<double> >(std::chrono::steady_clock::now() - now).count()) + " seconds");
         }
 
         // Check if variables need to be updated

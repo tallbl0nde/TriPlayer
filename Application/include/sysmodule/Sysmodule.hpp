@@ -23,13 +23,13 @@ class Sysmodule {
         // === Status vars ===
         std::atomic<SongID> currentSong_;
         std::atomic<double> position_;
-        std::atomic<bool> queueChanged_;    // Set true when the whole queue has been updated (not just a single song)
+        std::atomic<bool> queueChanged_;        // Set true when the whole queue has been updated (not just a single song)
         std::vector<SongID> queue_;
         std::mutex queueMutex;
         std::atomic<size_t> queueSize_;
         std::atomic<RepeatMode> repeatMode_;
         std::atomic<ShuffleMode> shuffleMode_;
-        std::atomic<bool> subQueueChanged_;    // Set true when the whole queue has been updated (not just a single song)
+        std::atomic<bool> subQueueChanged_;     // Set true when the whole queue has been updated (not just a single song)
         std::vector<SongID> subQueue_;
         std::mutex subQueueMutex;
         std::atomic<size_t> subQueueSize_;

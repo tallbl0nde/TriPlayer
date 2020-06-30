@@ -291,8 +291,9 @@ namespace CustomElm {
     }
 
     void Player::setVolumeCallback(std::function<void(float)> f) {
-        this->volume->setCallback([this, f]() {
-            f(this->volume->value());
+        this->volumeFunc = f;
+        this->volume->setCallback([this]() {
+            this->volumeFunc(this->volume->value());
         });
     }
 
@@ -301,6 +302,14 @@ namespace CustomElm {
     }
 
     void Player::update(uint32_t dt) {
+        // Update seek bar position
         this->setPosition_(this->seekBar->value());
+
+        // Update volume instantly
+        if (this->volume->selected()) {
+            this->volumeFunc(this->volume->value());
+        }
+
+        Container::update(dt);
     }
 };

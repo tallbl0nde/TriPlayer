@@ -52,6 +52,7 @@ namespace CustomElm {
             Aether::Colour muted;
             unsigned int durationVal;
             std::function<void(RepeatMode)> repeatFunc;
+            std::function<void(float)> volumeFunc;
 
             // Actually alters text and seek bar
             void setPosition_(double);
