@@ -61,7 +61,7 @@ namespace Screen {
         }
 
         // Show/hide dimming element based on current state
-        this->playerDim->setHidden(!(this->focussed() == this->player));
+        this->playerDim->setHidden(!(this->focussed() == this->player && !this->isTouch));
 
         // Now update elements
         Screen::update(dt);
@@ -75,10 +75,6 @@ namespace Screen {
         // (Re)add dimming element after frame so it's drawn on top
         this->playerDim = new Aether::Rectangle(0, 0, 1280, 590);
         this->playerDim->setColour(Aether::Colour{0, 0, 0, 130});
-        this->playerDim->setCallback([this]() {
-            this->setFocussed(this->container);
-        });
-        this->playerDim->setSelectable(false);  // Callback can only be triggered by touch
         this->addElement(this->playerDim);
     }
 

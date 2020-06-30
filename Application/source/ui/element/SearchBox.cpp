@@ -1,14 +1,18 @@
 #include "NX.hpp"
 #include "SearchBox.hpp"
 
-#define CORNER_RAD 10
+// Box corner radius
+#define BOX_CORNER_RAD 18
+// Highlight corner radius
+#define HI_CORNER_RAD 22
+// Height
 #define HEIGHT 36
 
 namespace CustomElm {
     SearchBox::SearchBox(int x, int y, int w) : Element(x, y, w, HEIGHT) {
-        this->rect = new Aether::Rectangle(this->x(), this->y(), this->w(), this->h(), CORNER_RAD);
+        this->rect = new Aether::Rectangle(this->x(), this->y(), this->w(), this->h(), BOX_CORNER_RAD);
         this->addElement(this->rect);
-        this->icon = new Aether::Image(this->x() + this->h()/2, this->y() + this->h()/2, "romfs:/icons/search.png");
+        this->icon = new Aether::Image(this->x() + this->h()/2 + 5, this->y() + this->h()/2, "romfs:/icons/search.png");
         this->icon->setXY(this->icon->x() - this->icon->w()/2, this->icon->y() - this->icon->h()/2);
         this->addElement(this->icon);
         this->text = new Aether::Text(this->icon->x() + this->icon->w() + 10, 0, "", this->h() - 15);
@@ -45,12 +49,15 @@ namespace CustomElm {
         return this->text->string();
     }
 
-    void SearchBox::renderHighlighted() {
-        // Draw background
-        SDLHelper::drawRoundRect(this->hiBorder, this->x() - this->hiSize - 1, this->y() - this->hiSize - 1, this->w() + 2*(this->hiSize), this->h() + 2*(this->hiSize), CORNER_RAD + 2, this->hiSize);
+    void SearchBox::renderHighlightBG() {
+        // Nothing
     }
 
-    void SearchBox::renderSelected() {
-        SDLHelper::drawFilledRoundRect(this->hiSel, this->x(), this->y(), this->w(), this->h(), CORNER_RAD);
+    void SearchBox::renderHighlight() {
+        SDLHelper::drawRoundRect(this->hiBorder, this->x() - this->hiSize, this->y() - this->hiSize, this->w() + 2*(this->hiSize), this->h() + 2*(this->hiSize), HI_CORNER_RAD, this->hiSize);
+    }
+
+    void SearchBox::renderSelection() {
+        SDLHelper::drawFilledRoundRect(this->hiSel, this->x(), this->y(), this->w(), this->h(), BOX_CORNER_RAD);
     }
 };

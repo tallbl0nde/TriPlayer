@@ -57,6 +57,7 @@ namespace CustomElm {
         this->nextC = new CustomElm::RoundButton(720 - BTN_MAIN_SIZE/2, 640 - BTN_MAIN_SIZE/2, BTN_MAIN_SIZE);
         this->nextC->setImage(this->next);
         this->addElement(this->nextC);
+        this->repeatContainer = new Aether::Container(760, 600, 100, 80);
         this->repeat = new Aether::Image(0, 0, "romfs:/icons/repeat.png");
         this->repeatC = new CustomElm::RoundButton(790 - BTN_MAIN_SIZE/2, 640 - BTN_MAIN_SIZE/2, BTN_MAIN_SIZE);
         this->repeatC->setCallback([this]() {
@@ -69,14 +70,17 @@ namespace CustomElm {
             }
         });
         this->repeatC->setImage(this->repeat);
-        this->addElement(this->repeatC);
+        this->repeatContainer->addElement(this->repeatC);
+        this->addElement(this->repeatContainer);
+        this->repeatOneContainer = new Aether::Container(760, 600, 100, 80);
         this->repeatOne = new Aether::Image(0, 0, "romfs:/icons/repeatone.png");
         this->repeatOneC = new CustomElm::RoundButton(790 - BTN_MAIN_SIZE/2, 640 - BTN_MAIN_SIZE/2, BTN_MAIN_SIZE);
         this->repeatOneC->setCallback([this]() {
             this->repeatFunc(RepeatMode::All);
         });
         this->repeatOneC->setImage(this->repeatOne);
-        this->addElement(this->repeatOneC);
+        this->repeatOneContainer->addElement(this->repeatOneC);
+        this->addElement(this->repeatOneContainer);
 
         // Seeking
         this->position = new Aether::Text(0, 0, "0:00", 18);
@@ -165,8 +169,8 @@ namespace CustomElm {
                 this->repeatC->setHidden(false);
                 this->repeat->setColour(this->muted);
                 this->repeatOneC->setHidden(true);
-                if (this->focussed() == this->repeatOneC) {
-                    this->setFocussed(this->repeatC);
+                if (this->focussed() == this->repeatOneContainer) {
+                    this->setFocussed(this->repeatContainer);
                 }
                 break;
 
@@ -174,8 +178,8 @@ namespace CustomElm {
                 this->repeatOneC->setHidden(false);
                 this->repeatOne->setColour(this->accent);
                 this->repeatC->setHidden(true);
-                if (this->focussed() == this->repeatC) {
-                    this->setFocussed(this->repeatOneC);
+                if (this->focussed() == this->repeatContainer) {
+                    this->setFocussed(this->repeatOneContainer);
                 }
                 break;
 
@@ -183,8 +187,8 @@ namespace CustomElm {
                 this->repeatC->setHidden(false);
                 this->repeat->setColour(this->accent);
                 this->repeatOneC->setHidden(true);
-                if (this->focussed() == this->repeatOneC) {
-                    this->setFocussed(this->repeatC);
+                if (this->focussed() == this->repeatOneContainer) {
+                    this->setFocussed(this->repeatContainer);
                 }
                 break;
         }

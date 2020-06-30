@@ -5,8 +5,7 @@
 
 namespace CustomElm {
     // A slider is a bar with a knob that can be changed by touch/controller
-    // NOTE: Ellipse position is hardcoded because the SDL library can't render it in an accurate position :/
-    // NOTE 2.0: Callback is called on release!
+    // NOTE: Callback is called on release!
     // I should redo this at some point to make it more flexible!!
     class Slider : public Aether::Element {
         private:
@@ -42,8 +41,9 @@ namespace CustomElm {
             void setBarH(int);
 
             // We only highlight around the knob!
-            void renderHighlighted();
-            void renderSelected();
+            void renderHighlightBG();
+            void renderHighlight();
+            void renderSelection();
     };
 };
 

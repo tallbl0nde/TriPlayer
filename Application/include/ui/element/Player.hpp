@@ -30,8 +30,10 @@ namespace CustomElm {
             Aether::Image * pause;
             CustomElm::RoundButton * nextC;
             Aether::Image * next;
+            Aether::Container * repeatContainer;
             CustomElm::RoundButton * repeatC;
             Aether::Image * repeat;
+            Aether::Container * repeatOneContainer;
             CustomElm::RoundButton * repeatOneC;
             Aether::Image * repeatOne;
 

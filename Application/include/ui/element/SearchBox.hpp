@@ -27,8 +27,9 @@ namespace CustomElm {
             std::string string();
 
             // Custom highlight/select graphics
-            void renderHighlighted();
-            void renderSelected();
+            void renderHighlightBG();
+            void renderHighlight();
+            void renderSelection();
     };
 };
 

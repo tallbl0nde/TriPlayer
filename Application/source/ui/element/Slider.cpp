@@ -9,7 +9,7 @@ namespace CustomElm {
     Slider::Slider(int x, int y, int w, int h, int bh) : Aether::Element(x, y, w, h) {
         this->bar = new Aether::RoundProgressBar(x + h/2, y + (h - bh)/2, w - h, bh);
         this->addElement(this->bar);
-        this->knob = new Aether::Ellipse(x - 3, y - 3, h);
+        this->knob = new Aether::Ellipse(x, y, h);
         this->setNudge(1);
         this->setValue(0.0);
         this->addElement(this->knob);
@@ -98,25 +98,17 @@ namespace CustomElm {
             return;
         }
 
-        SDL_BlendMode bld = SDLHelper::getBlendMode();
-        if (this->selected()) {
-            SDLHelper::setBlendMode(SDL_BLENDMODE_BLEND);
-        }
-
         // Draw children
         for (size_t i = 0; i < this->children.size(); i++) {
             this->children[i]->render();
         }
 
         if (this->highlighted() && !this->isTouch) {
-            SDLHelper::setBlendMode(SDL_BLENDMODE_BLEND);
-            this->renderHighlighted();
+            this->renderHighlight();
         }
 
-        SDLHelper::setBlendMode(bld);
-
         if (this->selected()) {
-            this->renderSelected();
+            this->renderSelection();
         }
     }
 
@@ -164,21 +156,16 @@ namespace CustomElm {
         this->bar->setY(this->y() + (this->h() - this->bar->h())/2);
     }
 
-    void Slider::renderHighlighted() {
-        int midX = 2 + this->knob->x() + this->knob->xDiameter()/2;
-        int midY = 2 + this->knob->y() + this->knob->yDiameter()/2;
-
-        // Draw outline
-        SDLHelper::drawEllipse(this->hiBorder, midX, midY, this->knob->xDiameter() + 2*this->hiSize, this->knob->yDiameter() + 2*this->hiSize);
-
-        // Render an ellipse same colour as knob (this is a crude workaround but it works :D)
-        SDLHelper::drawEllipse(this->knob->getColour(), midX, midY, this->knob->xDiameter(), this->knob->yDiameter());
+    void Slider::renderHighlightBG() {
+        // Nothing
     }
 
-    void Slider::renderSelected() {
-        int midX = 2 + this->knob->x() + this->knob->xDiameter()/2;
-        int midY = 2 + this->knob->y() + this->knob->yDiameter()/2;
+    void Slider::renderHighlight() {
+        // Outline knob
+        SDLHelper::drawEllipse(this->hiBorder, this->knob->x() + this->knob->xDiameter()/2, this->knob->y() + this->knob->yDiameter()/2, this->knob->xDiameter()/2, this->knob->yDiameter()/2, this->hiSize);
+    }
 
-        SDLHelper::drawEllipse(this->hiSel, midX, midY, this->knob->xDiameter(), this->knob->yDiameter());
+    void Slider::renderSelection() {
+        SDLHelper::drawFilledEllipse(this->hiSel, this->knob->x() + this->knob->xDiameter()/2, this->knob->y() + this->knob->yDiameter()/2, this->knob->xDiameter()/2, this->knob->yDiameter()/2);
     }
 };
