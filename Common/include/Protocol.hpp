@@ -22,6 +22,8 @@ namespace Protocol {
         Next,               // Skip to next song in queue                 // Nothing                                          // Result code (0 = success)
         GetVolume,          // Get volume level                           // Nothing                                          // Volume level [double (between 0.0 and 100.0)]
         SetVolume,          // Set volume level                           // New volume level (between 0.0 and 100.0)         // New volume level [double (between 0.0 and 100.0)]
+        Mute,               // Mute music                                 // Nothing                                          // New volume level (always 0)
+        Unmute,             // Unmute music (if muted)                    // Nothing                                          // New volume level [double (between 0.0 and 100.0)]
         GetSubQueue,        // Get sub-queue                              // First index and number to get                    // Delimited sequence of IDs matching sub-queue
         SkipSubQueueSongs,  // Skip forward given number of songs + play  // Number of songs to skip                          // Number of songs skipped
         SubQueueSize,       // Get number of songs in sub-queue           // Nothing                                          // Number of songs in sub-queue

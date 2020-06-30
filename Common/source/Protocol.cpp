@@ -8,5 +8,5 @@ namespace Protocol {
     // Seconds to wait for reply before timing out
     const int Timeout = 5;
     // Protocol version
-    const int Version = 6;
+    const int Version = 7;
 };

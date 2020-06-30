@@ -87,6 +87,8 @@ class Sysmodule {
         void sendNext();
         void sendGetVolume();
         void sendSetVolume(const double);
+        void sendMute();
+        void sendUnmute();
 
         // Manipulate queue
         void sendSetSongIdx(const size_t);

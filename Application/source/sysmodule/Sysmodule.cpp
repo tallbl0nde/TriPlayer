@@ -278,6 +278,18 @@ void Sysmodule::sendSetVolume(const double v) {
     });
 }
 
+void Sysmodule::sendMute() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::Mute), [this](std::string s) {
+        this->volume_ = std::stod(s);
+    });
+}
+
+void Sysmodule::sendUnmute() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::Unmute), [this](std::string s) {
+        this->volume_ = std::stod(s);
+    });
+}
+
 void Sysmodule::sendSetSongIdx(const size_t id) {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::SetQueueIdx) + DELIM + std::to_string(id), [this](std::string s) {
         this->songIdx_ = std::stoi(s);

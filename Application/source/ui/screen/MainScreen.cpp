@@ -227,8 +227,12 @@ namespace Screen {
         this->player->setSeekCallback([this](float f) {
             this->app->sysmodule()->sendSetPosition(f);
         });
-        this->player->setVolumeIconCallback([this]() {
-            // Toggle volume here
+        this->player->setVolumeIconCallback([this](bool muteIcon) {
+            if (muteIcon) {
+                this->app->sysmodule()->sendUnmute();
+            } else {
+                this->app->sysmodule()->sendMute();
+            }
         });
         this->player->setVolumeCallback([this](float f) {
             this->app->sysmodule()->sendSetVolume(f);

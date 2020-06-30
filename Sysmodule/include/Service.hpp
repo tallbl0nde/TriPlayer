@@ -37,6 +37,8 @@ class MainService {
 
         // Whether to stop loop and exit
         std::atomic<bool> exit_;
+        // Volume when muted (used to unmute)
+        std::atomic<double> muteLevel;
         // Timestamp of last previous press
         std::time_t pressTime;
         // Repeat mode

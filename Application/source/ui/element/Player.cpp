@@ -95,6 +95,10 @@ namespace CustomElm {
         this->volumeIconC = new CustomElm::RoundButton(985 - BTN_MAIN_SIZE/2, 653 - BTN_MAIN_SIZE/2, BTN_MAIN_SIZE);
         this->volumeIconC->setImage(this->volumeIcon);
         this->addElement(this->volumeIconC);
+        this->volumeIconMuted = new Aether::Image(0, 0, "romfs:/icons/volumemuted.png");
+        this->volumeIconMutedC = new CustomElm::RoundButton(985 - BTN_MAIN_SIZE/2, 653 - BTN_MAIN_SIZE/2, BTN_MAIN_SIZE);
+        this->volumeIconMutedC->setImage(this->volumeIconMuted);
+        this->addElement(this->volumeIconMutedC);
         this->volume = new CustomElm::Slider(1025, 644, 130, 20, 8);
         this->volume->setNudge(5);
         this->addElement(this->volume);
@@ -207,6 +211,21 @@ namespace CustomElm {
         if (!this->volume->selected()) {
             this->volume->setValue(vol);
         }
+
+        // Show appropriate volume icon
+        if (vol == 0.0) {
+            this->volumeIconC->setHidden(true);
+            this->volumeIconMutedC->setHidden(false);
+            if (this->focussed() == this->volumeIconC) {
+                this->setFocussed(this->volumeIconMutedC);
+            }
+        } else {
+            this->volumeIconC->setHidden(false);
+            this->volumeIconMutedC->setHidden(true);
+            if (this->focussed() == this->volumeIconMutedC) {
+                this->setFocussed(this->volumeIconC);
+            }
+        }
     }
 
     void Player::setAccentColour(Aether::Colour c) {
@@ -225,6 +244,7 @@ namespace CustomElm {
         this->repeatC->setBackgroundColour(c);
         this->repeatOneC->setBackgroundColour(c);
         this->volumeIconC->setBackgroundColour(c);
+        this->volumeIconMutedC->setBackgroundColour(c);
         this->fullscreenC->setBackgroundColour(c);
     }
 
@@ -238,6 +258,7 @@ namespace CustomElm {
         this->seekBar->setKnobColour(c);
         this->trackName->setColour(c);
         this->volumeIcon->setColour(c);
+        this->volumeIconMuted->setColour(c);
         this->volume->setKnobColour(c);
     }
 
@@ -286,8 +307,13 @@ namespace CustomElm {
         });
     }
 
-    void Player::setVolumeIconCallback(std::function<void()> f) {
-        this->volumeIconC->setCallback(f);
+    void Player::setVolumeIconCallback(std::function<void(bool)> f) {
+        this->volumeIconC->setCallback([this, f]() {
+            f(false);
+        });
+        this->volumeIconMutedC->setCallback([this, f]() {
+            f(true);
+        });
     }
 
     void Player::setVolumeCallback(std::function<void(float)> f) {

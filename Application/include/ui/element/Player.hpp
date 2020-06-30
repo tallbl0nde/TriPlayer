@@ -43,6 +43,8 @@ namespace CustomElm {
             // Volume slider + fullscreen
             CustomElm::RoundButton * volumeIconC;
             Aether::Image * volumeIcon;
+            CustomElm::RoundButton * volumeIconMutedC;
+            Aether::Image * volumeIconMuted;
             CustomElm::Slider * volume;
             CustomElm::RoundButton * fullscreenC;
             Aether::Image * fullscreen;
@@ -87,7 +89,7 @@ namespace CustomElm {
             void setNextCallback(std::function<void()>);
             void setRepeatCallback(std::function<void(RepeatMode)>);
             void setSeekCallback(std::function<void(float)>);
-            void setVolumeIconCallback(std::function<void()>);
+            void setVolumeIconCallback(std::function<void(bool)>);
             void setVolumeCallback(std::function<void(float)>);
             void setFullscreenCallback(std::function<void()>);
 

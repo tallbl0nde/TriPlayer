@@ -10,6 +10,7 @@
 
 MainService::MainService() {
     this->audio = Audio::getInstance();
+    this->muteLevel = 0.0;
     this->pressTime = std::time(nullptr);
     this->queue = new PlayQueue();
     this->repeatMode = RepeatMode::Off;
@@ -209,7 +210,7 @@ void MainService::socketThread() {
                     }
 
                     this->pressTime = std::time(nullptr);
-                    reply = std::to_string(0);
+                    reply = "0";
                     break;
 
                 case Protocol::Command::Next:
@@ -217,12 +218,12 @@ void MainService::socketThread() {
                     // The other thread will handle changing songs
                     this->songAction = SongAction::Next;
                     this->pressTime = std::time(nullptr);
-                    reply = std::to_string(0);
+                    reply = "0";
                     break;
 
                 case Protocol::Command::GetVolume:
                     // Round to three decimals
-                    reply = std::to_string(audio->volume() + 0.005);
+                    reply = std::to_string(this->audio->volume() + 0.005);
                     reply = reply.substr(0, reply.find(".") + 3);
                     break;
 
@@ -232,6 +233,27 @@ void MainService::socketThread() {
                     reply = std::to_string(vol);
                     break;
                 }
+
+                case Protocol::Command::Mute: {
+                    double vol = this->audio->volume();
+                    if (vol > 0.0) {
+                        this->muteLevel = vol;
+                        this->audio->setVolume(0);
+                    }
+                    reply = "0";
+                    break;
+                }
+
+                case Protocol::Command::Unmute:
+                    if (this->muteLevel > 0.0) {
+                        this->audio->setVolume(this->muteLevel);
+                        this->muteLevel = 0.0;
+                    }
+
+                    // Round to three decimals
+                    reply = std::to_string(this->audio->volume() + 0.005);
+                    reply = reply.substr(0, reply.find(".") + 3);
+                    break;
 
                 case Protocol::Command::GetSubQueue: {
                     std::shared_lock<std::shared_mutex> mtx(this->sqMutex);
@@ -476,7 +498,7 @@ void MainService::socketThread() {
                         // Check position if not seeking
                         std::shared_lock<std::shared_mutex> mtx(this->sMutex);
                         if (this->source == nullptr) {
-                            reply = std::to_string(0.0);
+                            reply = "0";
                             break;
                         }
                         pos = 100 * (this->audio->samplesPlayed()/(double)this->source->totalSamples());
