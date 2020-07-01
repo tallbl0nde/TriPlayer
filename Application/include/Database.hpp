@@ -28,7 +28,7 @@ class Database {
 
         // Private queries
         void addArtist(std::string);
-        void addAlbum(std::string, std::string);
+        void addAlbum(std::string);
 
     public:
         // Constructor opens (or creates) database
