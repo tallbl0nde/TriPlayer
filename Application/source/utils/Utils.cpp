@@ -39,6 +39,8 @@ namespace Utils {
         }
 
         // Iterate over vector(s) and get data to insert/edit
+        db->close();
+        db->openReadOnly();
         std::vector<size_t> addPos;
         std::vector<size_t> editPos;
         for (size_t i = 0; i < paths.size(); i++) {
@@ -59,7 +61,8 @@ namespace Utils {
         if (addPos.size() + editPos.size() != 0) {
             hasLock = true;
             sys->waitReset();
-            db->lock();
+            db->close();
+            db->openReadWrite();
 
             // Actually insert/update now (this is messy just so the user can get the status...)
             aTotal = addPos.size() + editPos.size();
@@ -87,7 +90,7 @@ namespace Utils {
                     aStage = ProcessStage::Update;
                     hasLock = true;
                     sys->waitReset();
-                    db->lock();
+                    db->openReadWrite();
                 }
                 db->removeSong(db->getSongIDForPath(dbPaths[i]));
             }
@@ -96,7 +99,8 @@ namespace Utils {
         // Cleanup database (TBD)
         if (hasLock) {
             db->cleanup();
-            db->unlock();
+            db->close();
+            db->openReadOnly();
         }
 
         aStage = ProcessStage::Done;

@@ -193,7 +193,7 @@ bool SQLite::executeQuery() {
 
     // Perform the query
     int result = sqlite3_step(this->query);
-    bool ignore = (this->ignoreConstraints_ && (result & 0x00000011) == SQLITE_CONSTRAINT);
+    bool ignore = (this->ignoreConstraints_ && (result & 0x000000FF) == SQLITE_CONSTRAINT);
     if (result == SQLITE_DONE || ignore) {
         this->queryStatus = SQLite::Query::Finished;
     } else if (result == SQLITE_ROW) {
@@ -228,6 +228,10 @@ bool SQLite::getString(int col, std::string & data) {
     const unsigned char * tmp = sqlite3_column_text(this->query, col);
     data = std::string(reinterpret_cast<const char *>(tmp));
     return true;
+}
+
+bool SQLite::hasRow() {
+    return (this->queryStatus == SQLite::Query::Results);
 }
 
 bool SQLite::nextRow() {

@@ -73,7 +73,7 @@ class SQLite {
         // Functions to bind values to the given query
         // Parameters have order: (column number (starting from 0), data)
         // Returns true if successful, false on an error
-        bool bindInt(int, int);
+        bool bindInt(int, const int);
         bool bindString(int, const std::string &);
 
         // Performs the provided query on the database
@@ -84,6 +84,8 @@ class SQLite {
         // Returns true if successful, false on an error
         bool getInt(int, int &);
         bool getString(int, std::string &);
+        // Returns true if currently viewing a row, false otherwise
+        bool hasRow();
         // Move to the next row in the results
         // Returns true if successful, false on an error (doesn't write message, most likely due to being at the end)
         bool nextRow();

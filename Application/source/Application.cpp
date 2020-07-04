@@ -10,6 +10,7 @@ namespace Main {
 
         // Open database
         this->database_ = new Database();
+        this->database_->migrate();
 
         // Create sysmodule object (will attempt connection)
         this->sysmodule_ = new Sysmodule();
