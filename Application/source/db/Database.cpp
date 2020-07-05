@@ -1,10 +1,9 @@
 #include "Database.hpp"
-#include <filesystem>
-#include <fstream>
+#include "FS.hpp"
 #include "Log.hpp"
 
 // Location of the database file
-#define DB_PATH "/switch/TriPlayer/music.db"
+#define DB_PATH "/switch/TriPlayer/data.sqlite3"
 // Version of the database (database begins with zero from 'template', so this started at 1)
 #define DB_VERSION 1
 // Location of template file
@@ -16,16 +15,12 @@ bool keepFalse(const bool & a, const bool & b) {
 }
 
 Database::Database() {
-    // Check if file exists, and if not create directories
-    if (!std::filesystem::exists(DB_PATH)) {
-        std::filesystem::create_directory("/switch");
-        std::filesystem::create_directory("/switch/TriPlayer");
-
-        // Copy 'template' file (only contains Version table)
-        std::ifstream srcF(TEMPLATE_DB_PATH, std::ios::binary);
-        std::ofstream destF(DB_PATH, std::ios::binary);
-        destF << srcF.rdbuf();
-        destF.flush();
+    // Copy the template if the database doesn't exist
+    // Needed as SQLite spits IO errors otherwise
+    if (!Utils::Fs::fileExists(DB_PATH)) {
+        if (!Utils::Fs::copyFile(TEMPLATE_DB_PATH, DB_PATH)) {
+            Log::writeError("[DB] Fatal error: unable to copy template database");
+        }
     }
 
     // Create the database object
