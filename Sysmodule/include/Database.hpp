@@ -1,34 +1,35 @@
 #ifndef DATABASE_HPP
 #define DATABASE_HPP
 
-#include "sqlite3.h"
-#include <string>
+#include "SQLite.hpp"
 #include "Types.hpp"
 
-// Integrates with sqlite3 database to get required info for playback
+// The Database class interacts with the database stored on the sd card
+// to read/write data. All queries have a way of detecting if they failed.
 class Database {
     private:
-        // DB handle
-        sqlite3 * db;
+        // Interface to database
+        SQLite * db;
 
-        // Statement object
-        sqlite3_stmt * cmd;
+        // Private queries
+        bool getVersion(int &);
+        bool matchingVersion();
 
     public:
-        // Does nothing
+        // Constructor creates + 'migrates' the database to a newer version if needed
         Database();
 
-        // Opens a connection to database (returns true if successful)
-        bool openConnection();
-        // Drops an open connection to the database
-        void dropConnection();
-        // Returns true if connection is open and ready for queries
-        bool ready();
+        // Open the database read-write (will block until available)
+        bool openReadOnly();
+        // Open the database read-only (will block until available)
+        bool openReadWrite();
+        // Close a open connection (if there is one)
+        void close();
 
         // Return a path matching given ID (or blank if not found)
         std::string getPathForID(SongID);
 
-        // Closes connection
+        // Destructor closes handle
         ~Database();
 };
 

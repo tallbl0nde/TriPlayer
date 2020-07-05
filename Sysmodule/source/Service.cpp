@@ -80,9 +80,9 @@ void MainService::playbackThread() {
                         break;
                 }
 
-                // Reconnect to database if necessary
-                if (!this->db->ready()) {
-                    this->db->openConnection();
+                // Stop the sysmodule if the database is unreadable
+                if (!this->db->openReadOnly()) {
+                    this->exit_ = true;
                 }
 
                 // Delete old source and prepare a new one
@@ -524,7 +524,7 @@ void MainService::socketThread() {
                     std::scoped_lock<std::shared_mutex> qMtx(this->qMutex);
 
                     // Disconnect from database so it can be written to
-                    this->db->dropConnection();
+                    this->db->close();
 
                     // Stop playback and empty queues
                     this->audio->stop();
