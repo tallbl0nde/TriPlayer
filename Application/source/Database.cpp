@@ -2,6 +2,8 @@
 #include "FS.hpp"
 #include "Log.hpp"
 
+// Location of backup file
+#define BACKUP_PATH "/switch/TriPlayer/data_old.sqlite3"
 // Location of the database file
 #define DB_PATH "/switch/TriPlayer/data.sqlite3"
 // Version of the database (database begins with zero from 'template', so this started at 1)
@@ -56,7 +58,19 @@ bool Database::migrate() {
         }
     }
 
-    // Otherwise let's start migrating!
+    // Otherwise let's first backup the current database
+    if (version > 0 && ok) {
+        this->close();
+        if (!Utils::Fs::copyFile(DB_PATH, BACKUP_PATH)) {
+            this->setErrorMsg("An error occurred backing up the database");
+            return false;
+        } else {
+            Log::writeSuccess("[DB] Successfully backed up database");
+        }
+        this->openReadWrite();
+    }
+
+    // Now actually migrate
     if (ok) {
         switch (version) {
             case 0:
