@@ -5,9 +5,11 @@ namespace Screen {
     Splash::Splash(Main::Application * a) : Screen() {
         this->app = a;
 
-        // Allow to exit for now
+        // Can only exit on an error
         this->onButtonPress(Aether::Button::B, [this](){
-            this->app->exit();
+            if (this->app->sysmodule()->error()) {
+                this->app->exit();
+            }
         });
     }
 

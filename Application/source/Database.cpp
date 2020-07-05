@@ -422,6 +422,7 @@ std::string Database::getPathForID(SongID id) {
         return "";
     }
 
+    path.shrink_to_fit();
     return path;
 }
 
