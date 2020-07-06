@@ -1,5 +1,7 @@
 #include "Log.hpp"
 #include "SQLite.hpp"
+#include <thread>
+#include "FS.hpp"
 
 SQLite::SQLite(const std::string & pth) {
     this->path = pth;
@@ -103,6 +105,16 @@ bool SQLite::openConnection(Connection type) {
     // Open correct type of connection
     int result;
     if (type == SQLite::Connection::ReadOnly) {
+        // Wait until file is readable
+        bool logged = false;
+        while (!Utils::Fs::fileReadable(this->path)) {
+            if (!logged) {
+                this->setErrorMsg("Database file is not readable");
+                logged = true;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
         result = sqlite3_open_v2(this->path.c_str(), &this->db, SQLITE_OPEN_READONLY, "unix-none");
         if (result != SQLITE_OK) {
             this->setErrorMsg();
@@ -112,7 +124,17 @@ bool SQLite::openConnection(Connection type) {
         }
 
     } else if (type == SQLite::Connection::ReadWrite) {
-        result = sqlite3_open_v2(this->path.c_str(), &this->db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, "unix-none");
+        // Wait until file is writable
+        bool logged = false;
+        while (!Utils::Fs::fileWritable(this->path)) {
+            if (!logged) {
+                this->setErrorMsg("Database file is not writable");
+                logged = true;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        result = sqlite3_open_v2(this->path.c_str(), &this->db, SQLITE_OPEN_READWRITE, "unix-none");
         if (result != SQLITE_OK) {
             this->setErrorMsg();
             this->connectionType_ = SQLite::Connection::None;

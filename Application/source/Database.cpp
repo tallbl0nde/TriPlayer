@@ -22,6 +22,8 @@ Database::Database() {
     if (!Utils::Fs::fileExists(DB_PATH)) {
         if (!Utils::Fs::copyFile(TEMPLATE_DB_PATH, DB_PATH)) {
             Log::writeError("[DB] Fatal error: unable to copy template database");
+        } else {
+            Log::writeSuccess("[DB] Copied template database successfully");
         }
     }
 

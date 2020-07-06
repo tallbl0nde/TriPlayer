@@ -9,8 +9,8 @@ namespace Utils::Fs {
     }
 
     bool copyFile(const std::string & src, const std::string & dst) {
-        std::ifstream srcF(src, std::ios::binary);
-        std::ofstream destF(dst, std::ios::binary);
+        std::ifstream srcF(src, std::ios::in | std::ios::binary);
+        std::ofstream destF(dst, std::ios::out | std::ios::binary);
         destF << srcF.rdbuf();
         destF.flush();
         return true;
@@ -20,10 +20,10 @@ namespace Utils::Fs {
         return std::filesystem::exists(file);
     }
 
+
     bool fileReadable(const std::string & file) {
-        std::FILE * fp = std::fopen(file.c_str(), "r+");
+        std::FILE * fp = std::fopen(file.c_str(), "rb");
         if (fp == NULL) {
-            errno = 0;
             return false;
         }
         std::fclose(fp);
@@ -37,9 +37,8 @@ namespace Utils::Fs {
         }
 
         // Now check if writable
-        std::FILE * fp = std::fopen(file.c_str(), "w+");
+        std::FILE * fp = std::fopen(file.c_str(), "a+b");
         if (fp == NULL) {
-            errno = 0;
             return false;
         }
         std::fclose(fp);
