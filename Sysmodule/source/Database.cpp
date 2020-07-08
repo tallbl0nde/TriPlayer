@@ -17,7 +17,7 @@ Database::Database() {
 }
 
 bool Database::getVersion(int & version) {
-    bool ok = this->db->prepareQuery("SELECT * FROM Version;");
+    bool ok = this->db->prepareQuery("SELECT value FROM Variables WHERE name = 'version';");
     if (ok) {
         ok = this->db->executeQuery();
     }

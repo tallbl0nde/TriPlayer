@@ -9,7 +9,7 @@
 // Version of the database (database begins with zero from 'template', so this started at 1)
 #define DB_VERSION 1
 // Location of template file
-#define TEMPLATE_DB_PATH "romfs:/Template.db"
+#define TEMPLATE_DB_PATH "romfs:/db/template.sqlite3"
 
 // Custom boolean 'operator' which instead of 'keeping' true, will 'keep' false
 bool keepFalse(const bool & a, const bool & b) {
@@ -136,14 +136,8 @@ bool Database::migrateTo1() {
         return false;
     }
 
-    // Insert new version number
-    ok = this->db->prepareQuery("DELETE FROM Version;");
-    ok = keepFalse(ok, this->db->executeQuery());
-    if (!ok) {
-        this->setErrorMsg("Migration 1: Unable to delete old version");
-        return false;
-    }
-    ok = this->db->prepareQuery("INSERT INTO Version (number) VALUES (1);");
+    // Bump up version number
+    ok = this->db->prepareQuery("UPDATE Variables SET value = 1 WHERE name = 'version';");
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
         this->setErrorMsg("Migration 1: Unable to set version to 1");
@@ -201,7 +195,7 @@ bool Database::addAlbum(std::string & name) {
 }
 
 bool Database::getVersion(int & version) {
-    bool ok = this->db->prepareQuery("SELECT * FROM Version;");
+    bool ok = this->db->prepareQuery("SELECT value FROM Variables WHERE name = 'version';");
     if (ok) {
         ok = this->db->executeQuery();
     }
