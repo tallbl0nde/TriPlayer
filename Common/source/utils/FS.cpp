@@ -20,7 +20,7 @@ namespace Utils::Fs {
         return std::filesystem::exists(file);
     }
 
-
+    // Fix these functions eventually
     bool fileReadable(const std::string & file) {
         std::FILE * fp = std::fopen(file.c_str(), "rb");
         if (fp == NULL) {

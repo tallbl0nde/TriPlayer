@@ -106,14 +106,14 @@ bool SQLite::openConnection(Connection type) {
     int result;
     if (type == SQLite::Connection::ReadOnly) {
         // Wait until file is readable
-        bool logged = false;
-        while (!Utils::Fs::fileReadable(this->path)) {
-            if (!logged) {
-                this->setErrorMsg("Database file is not readable");
-                logged = true;
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
+        // bool logged = false;
+        // while (!Utils::Fs::fileReadable(this->path)) {
+        //     if (!logged) {
+        //         this->setErrorMsg("Database file is not readable");
+        //         logged = true;
+        //     }
+        //     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        // }
 
         result = sqlite3_open_v2(this->path.c_str(), &this->db, SQLITE_OPEN_READONLY, "unix-none");
         if (result != SQLITE_OK) {
@@ -125,14 +125,14 @@ bool SQLite::openConnection(Connection type) {
 
     } else if (type == SQLite::Connection::ReadWrite) {
         // Wait until file is writable
-        bool logged = false;
-        while (!Utils::Fs::fileWritable(this->path)) {
-            if (!logged) {
-                this->setErrorMsg("Database file is not writable");
-                logged = true;
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
+        // bool logged = false;
+        // while (!Utils::Fs::fileWritable(this->path)) {
+        //     if (!logged) {
+        //         this->setErrorMsg("Database file is not writable");
+        //         logged = true;
+        //     }
+        //     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        // }
 
         result = sqlite3_open_v2(this->path.c_str(), &this->db, SQLITE_OPEN_READWRITE, "unix-none");
         if (result != SQLITE_OK) {
