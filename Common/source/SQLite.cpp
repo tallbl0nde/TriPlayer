@@ -274,6 +274,14 @@ bool SQLite::nextRow() {
     return false;
 }
 
+bool SQLite::prepareAndExecuteQuery(const std::string & qry) {
+    bool ok = this->prepareQuery(qry);
+    if (ok) {
+        ok = this->executeQuery();
+    }
+    return ok;
+}
+
 SQLite::~SQLite() {
     // Cleans up both query and connection
     this->closeConnection();

@@ -90,6 +90,9 @@ class SQLite {
         // Returns true if successful, false on an error (doesn't write message, most likely due to being at the end)
         bool nextRow();
 
+        // Calls prepareQuery() and executeQuery() (does not allow binding obviously)
+        bool prepareAndExecuteQuery(const std::string &);
+
         // Destructor ensures the database has been closed
         ~SQLite();
 };
