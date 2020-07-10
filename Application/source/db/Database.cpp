@@ -2,6 +2,7 @@
 #include "FS.hpp"
 #include "Log.hpp"
 #include "Spellfix.h"
+#include "Utils.hpp"
 
 // Location of backup file
 #define BACKUP_PATH "/switch/TriPlayer/data_old.sqlite3"
@@ -426,6 +427,38 @@ bool Database::setSearchUpdate(int val) {
     return ok;
 }
 
+bool Database::spellfixString(const std::string & table, std::string & str) {
+    // Split into words
+    std::vector<std::string> words = Utils::splitIntoWords(str);
+    str = "";
+
+    // Fix each word using the spellfix extension
+    for (size_t i = 0; i < words.size(); i++) {
+        // Use string concatenation here as you can't bind a table name (I know it's not ideal but the names are hard coded at least)
+        bool ok = this->db->prepareQuery("SELECT word FROM " + table + " WHERE word MATCH ?;");
+        ok = keepFalse(ok, this->db->bindString(0, words[i]));
+        ok = keepFalse(ok, this->db->executeQuery());
+        if (!ok) {
+            this->setErrorMsg("Error performing spell check");
+            return false;
+        }
+
+        // Add fixed word onto string
+        std::string word;
+        ok = this->db->getString(0, word);
+        if (!ok) {
+            this->setErrorMsg("Error performing spell check");
+            return false;
+        }
+        str += word;
+        if (i < words.size() - 1) {
+            str += " ";
+        }
+    }
+
+    return true;
+}
+
 // ============================ //
 //       PUBLIC FUNCTIONS       //
 // ============================ //
@@ -734,6 +767,186 @@ Metadata::Song Database::getSongMetadataForID(SongID id) {
     }
 
     return m;
+}
+
+std::vector<Metadata::Album> Database::searchAlbums(std::string str) {
+    std::vector<Metadata::Album> v;
+
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[searchAlbums] No open connection");
+        return v;
+    }
+
+    // Split string into words and correct any spelling mistakes
+    if (!this->spellfixString("SpellfixAlbums", str)) {
+        return v;
+    }
+
+    // Perform search
+    bool ok = this->db->prepareQuery("SELECT id, name FROM Albums WHERE name IN (SELECT * FROM FtsAlbums WHERE FtsAlbums MATCH ?);");
+    ok = keepFalse(ok, this->db->bindString(0, str));
+    if (!ok) {
+        this->setErrorMsg("[searchAlbums] Unable to prepare search query");
+        return v;
+    }
+    ok = this->db->executeQuery();
+    if (!ok) {
+        this->setErrorMsg("[searchAlbums] Unable to search database");
+        return v;
+    }
+
+    // Collate results
+    while (ok) {
+        Metadata::Album m;
+        ok = this->db->getInt(0, m.ID);
+        ok = keepFalse(ok, this->db->getString(1, m.name));
+
+        if (ok) {
+            v.push_back(m);
+        }
+        ok = keepFalse(ok, this->db->nextRow());
+    }
+
+    return v;
+}
+
+std::vector<Metadata::Artist> Database::searchArtists(std::string str) {
+    std::vector<Metadata::Artist> v;
+
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[searchArtists] No open connection");
+        return v;
+    }
+
+    // Split string into words and correct any spelling mistakes
+    if (!this->spellfixString("SpellfixArtists", str)) {
+        return v;
+    }
+
+    // Perform search
+    bool ok = this->db->prepareQuery("SELECT id, name FROM Artists WHERE name IN (SELECT * FROM FtsArtists WHERE FtsArtists MATCH ?);");
+    ok = keepFalse(ok, this->db->bindString(0, str));
+    if (!ok) {
+        this->setErrorMsg("[searchArtists] Unable to prepare search query");
+        return v;
+    }
+    ok = this->db->executeQuery();
+    if (!ok) {
+        this->setErrorMsg("[searchArtists] Unable to search database");
+        return v;
+    }
+
+    // Collate results
+    while (ok) {
+        Metadata::Artist m;
+        ok = this->db->getInt(0, m.ID);
+        ok = keepFalse(ok, this->db->getString(1, m.name));
+
+        if (ok) {
+            v.push_back(m);
+        }
+        ok = keepFalse(ok, this->db->nextRow());
+    }
+
+    return v;
+}
+
+std::vector<Metadata::Playlist> Database::searchPlaylists(std::string str) {
+    std::vector<Metadata::Playlist> v;
+
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[searchPlaylists] No open connection");
+        return v;
+    }
+
+    // Split string into words and correct any spelling mistakes
+    if (!this->spellfixString("SpellfixPlaylists", str)) {
+        return v;
+    }
+
+    // Perform search
+    bool ok = this->db->prepareQuery("SELECT id, name, description FROM Playlists WHERE name IN (SELECT * FROM FtsPlaylists WHERE FtsPlaylists MATCH ?);");
+    ok = keepFalse(ok, this->db->bindString(0, str));
+    if (!ok) {
+        this->setErrorMsg("[searchPlaylists] Unable to prepare search query");
+        return v;
+    }
+    ok = this->db->executeQuery();
+    if (!ok) {
+        this->setErrorMsg("[searchPlaylists] Unable to search database");
+        return v;
+    }
+
+    // Collate results
+    while (ok) {
+        Metadata::Playlist m;
+        ok = this->db->getInt(0, m.ID);
+        ok = keepFalse(ok, this->db->getString(1, m.name));
+        ok = keepFalse(ok, this->db->getString(2, m.description));
+
+        if (ok) {
+            v.push_back(m);
+        }
+        ok = keepFalse(ok, this->db->nextRow());
+    }
+
+    return v;
+}
+
+std::vector<Metadata::Song> Database::searchSongs(std::string str) {
+    std::vector<Metadata::Song> v;
+
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[searchSongs] No open connection");
+        return v;
+    }
+
+    // Split string into words and correct any spelling mistakes
+    if (!this->spellfixString("SpellfixSongs", str)) {
+        return v;
+    }
+
+    // Perform search
+    bool ok = this->db->prepareQuery("SELECT Songs.id, Songs.title, Artists.name, Albums.name, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.title IN (SELECT * FROM FtsSongs WHERE FtsSongs MATCH ?);");
+    ok = keepFalse(ok, this->db->bindString(0, str));
+    if (!ok) {
+        this->setErrorMsg("[searchSongs] Unable to prepare search query");
+        return v;
+    }
+    ok = this->db->executeQuery();
+    if (!ok) {
+        this->setErrorMsg("[searchSongs] Unable to search database");
+        return v;
+    }
+
+    // Collate results
+    while (ok) {
+        Metadata::Song m;
+        int tmp;
+        ok = this->db->getInt(0, m.ID);
+        ok = keepFalse(ok, this->db->getString(1, m.title));
+        ok = keepFalse(ok, this->db->getString(2, m.artist));
+        ok = keepFalse(ok, this->db->getString(3, m.album));
+        ok = keepFalse(ok, this->db->getInt(4, tmp));
+        m.duration = tmp;
+        ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.plays = tmp;
+        ok = keepFalse(ok, this->db->getBool(6, m.favourite));
+        ok = keepFalse(ok, this->db->getString(7, m.path));
+        ok = keepFalse(ok, this->db->getInt(8, tmp));
+        m.modified = tmp;
+
+        if (ok) {
+            v.push_back(m);
+        }
+        ok = keepFalse(ok, this->db->nextRow());
+    }
+
+    return v;
 }
 
 void Database::cleanup() {

@@ -39,6 +39,9 @@ namespace Utils {
     // Format seconds in x hours, y minutes
     std::string secondsToHoursMins(unsigned int);
 
+    // Splits the given string into words (splits on space)
+    std::vector<std::string> splitIntoWords(const std::string &);
+
     // Truncate string to given decimal places (don't use on strings without a decimal!)
     // Does nothing if outside of range or no decimal place
     std::string truncateToDecimalPlace(std::string, unsigned int);

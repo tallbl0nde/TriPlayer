@@ -30,6 +30,7 @@ class Database {
         bool addAlbum(std::string &);
         bool getVersion(int &);
         bool setSearchUpdate(int);
+        bool spellfixString(const std::string &, std::string &);
 
     public:
         // Constructor creates + 'migrates' the database to a newer version if needed
@@ -76,6 +77,13 @@ class Database {
         SongID getSongIDForPath(std::string &);
         // Returns SongInfo for given ID (id will be -1 if not found!)
         Metadata::Song getSongMetadataForID(SongID);
+
+        // Search for records matching given text
+        // Empty if no matching songs or an error occurred
+        std::vector<Metadata::Album> searchAlbums(const std::string);
+        std::vector<Metadata::Artist> searchArtists(const std::string);
+        std::vector<Metadata::Playlist> searchPlaylists(const std::string);
+        std::vector<Metadata::Song> searchSongs(const std::string);
 
         // Tidies up database by removing redundant entries
         void cleanup();

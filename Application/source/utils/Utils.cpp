@@ -216,6 +216,34 @@ namespace Utils {
         return str;
     }
 
+    std::vector<std::string> splitIntoWords(const std::string & str) {
+        std::vector<std::string> words;
+
+        // Iterate over each word
+        std::string word = "";
+        size_t pos = 0;
+        while (pos < str.length()) {
+            // Append chars to word until a space is reached
+            if (str[pos] != ' ') {
+                word.append(1, str[pos]);
+            } else {
+                // Don't add empty words (i.e. due to repeated spaces)
+                if (word.length() > 0) {
+                    words.push_back(word);
+                    word = "";
+                }
+            }
+            pos++;
+        }
+
+        // Check we haven't missed the last word
+        if (word.length() > 0) {
+            words.push_back(word);
+        }
+
+        return words;
+    }
+
     std::string truncateToDecimalPlace(std::string str, unsigned int p) {
         size_t dec = str.find(".");
         if (dec == std::string::npos || p >= str.length() - dec) {
