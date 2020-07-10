@@ -37,6 +37,8 @@ namespace Screen {
             std::atomic<int> totalFiles;
             // Used to detect change
             int lastFile;
+            // Set to true to stop process thread
+            std::atomic<bool> stopSignal;
 
         public:
             Splash(Main::Application *);

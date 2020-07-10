@@ -28,7 +28,7 @@ namespace Utils {
 
     // Updates the provided database to reflect the state of files on the sd card in /music
     // Atomics are used to provide the current status
-    void processFileChanges(Database *, Sysmodule *, std::atomic<int> &, std::atomic<ProcessStage> &, std::atomic<int> &);
+    void processFileChanges(Database *, Sysmodule *, std::atomic<int> &, std::atomic<ProcessStage> &, std::atomic<int> &, std::atomic<bool> &);
 
     // Round the given double to the specified number of decimal places
     float roundToDecimalPlace(float, unsigned int);

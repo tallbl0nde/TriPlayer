@@ -7,6 +7,7 @@ namespace Screen {
 
         // Can only exit on an error
         this->onButtonPress(Aether::Button::B, [this](){
+            this->stopSignal = true;
             if (this->app->sysmodule()->error()) {
                 this->app->exit();
             }
@@ -122,12 +123,13 @@ namespace Screen {
         this->lastFile = 0;
         this->currentStage = ProcessStage::Search;
         this->lastStage = ProcessStage::Search;
+        this->stopSignal = false;
 
         // Check if connected to sysmodule
         if (!this->app->sysmodule()->error()) {
             // Start searching for files
             this->future = std::async(std::launch::async, [this](){
-                Utils::processFileChanges(this->app->database(), this->app->sysmodule(), this->currentFile, this->currentStage, this->totalFiles);
+                Utils::processFileChanges(this->app->database(), this->app->sysmodule(), this->currentFile, this->currentStage, this->totalFiles, this->stopSignal);
             });
         } else {
             this->status->setString("Unable to connect to Sysmodule!");

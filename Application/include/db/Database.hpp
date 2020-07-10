@@ -15,6 +15,10 @@ class Database {
         // String describing last error
         std::string error_;
 
+        // Indicates whether search_update has been set to 1
+        // Used to avoid repeated UPDATE queries
+        bool updateMarked;
+
         // Migrations - explanation in .cpp (all follow naming: migrateTo<version>)
         bool migrateTo1();
 
@@ -25,12 +29,18 @@ class Database {
         bool addArtist(std::string &);
         bool addAlbum(std::string &);
         bool getVersion(int &);
+        bool setSearchUpdate(int);
 
     public:
         // Constructor creates + 'migrates' the database to a newer version if needed
         Database();
         // Migrates the database to bring it to the latest version
         bool migrate();
+
+        // Returns if the database needs to be updated before searching
+        bool needsSearchUpdate();
+        // Indexes terms and prepares database for searching
+        bool prepareSearch();
 
         // Returns the last error that occurred (blank if no error has occurred)
         std::string error();

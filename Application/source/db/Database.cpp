@@ -1,6 +1,7 @@
 #include "Database.hpp"
 #include "FS.hpp"
 #include "Log.hpp"
+#include "Spellfix.h"
 
 // Location of backup file
 #define BACKUP_PATH "/switch/TriPlayer/data_old.sqlite3"
@@ -30,6 +31,13 @@ Database::Database() {
     // Create the database object
     this->db = new SQLite(DB_PATH);
     this->db->ignoreConstraints(true);
+
+    // Load the spellfix1 extension
+    sqlite3_auto_extension((void (*)(void))sqlite3_spellfix_init);
+
+    // Set variables
+    this->error_ = "";
+    this->updateMarked = false;
 }
 
 std::string Database::error() {
@@ -97,48 +105,93 @@ bool Database::migrate() {
 // Ver 1: Create all initial tables
 bool Database::migrateTo1() {
     // Create Artists table
-    bool ok = this->db->prepareQuery("CREATE TABLE Artists (id INTEGER NOT NULL PRIMARY KEY, name TEXT UNIQUE NOT NULL);");
-    ok = keepFalse(ok, this->db->executeQuery());
+    bool ok = this->db->prepareAndExecuteQuery("CREATE TABLE Artists (id INTEGER NOT NULL PRIMARY KEY, name TEXT UNIQUE NOT NULL);");
     if (!ok) {
         this->setErrorMsg("Migration 1: Unable to create the Artists table");
         return false;
     }
 
     // Create Albums table
-    ok = this->db->prepareQuery("CREATE TABLE Albums (id INTEGER NOT NULL PRIMARY KEY, name TEXT UNIQUE NOT NULL);");
-    ok = keepFalse(ok, this->db->executeQuery());
+    ok = this->db->prepareAndExecuteQuery("CREATE TABLE Albums (id INTEGER NOT NULL PRIMARY KEY, name TEXT UNIQUE NOT NULL);");
     if (!ok) {
         this->setErrorMsg("Migration 1: Unable to create the Albums table");
         return false;
     }
 
     // Create Songs table
-    ok = this->db->prepareQuery("CREATE TABLE Songs (id INTEGER NOT NULL PRIMARY KEY, path TEXT UNIQUE NOT NULL, modified DATETIME NOT NULL, lastplayed DATETIME NOT NULL DEFAULT 0, artist_id INT NOT NULL, album_id INT NOT NULL, title TEXT NOT NULL, duration INT NOT NULL, plays INT NOT NULL DEFAULT 0, favourite BOOLEAN NOT NULL DEFAULT 0, FOREIGN KEY (album_id) REFERENCES Albums (id), FOREIGN KEY (artist_id) REFERENCES Artists (id));");
-    ok = keepFalse(ok, this->db->executeQuery());
+    ok = this->db->prepareAndExecuteQuery("CREATE TABLE Songs (id INTEGER NOT NULL PRIMARY KEY, path TEXT UNIQUE NOT NULL, modified DATETIME NOT NULL, lastplayed DATETIME NOT NULL DEFAULT 0, artist_id INT NOT NULL, album_id INT NOT NULL, title TEXT NOT NULL, duration INT NOT NULL, plays INT NOT NULL DEFAULT 0, favourite BOOLEAN NOT NULL DEFAULT 0, FOREIGN KEY (album_id) REFERENCES Albums (id), FOREIGN KEY (artist_id) REFERENCES Artists (id));");
     if (!ok) {
         this->setErrorMsg("Migration 1: Unable to create the Songs table");
         return false;
     }
 
     // Create Playlists table
-    ok = this->db->prepareQuery("CREATE TABLE Playlists (id INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL DEFAULT \"\");");
-    ok = keepFalse(ok, this->db->executeQuery());
+    ok = this->db->prepareAndExecuteQuery("CREATE TABLE Playlists (id INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL DEFAULT \"\");");
     if (!ok) {
         this->setErrorMsg("Migration 1: Unable to create the Playlists table");
         return false;
     }
 
     // Create PlaylistSongs table
-    ok = this->db->prepareQuery("CREATE TABLE PlaylistSongs (playlist_id INTEGER, song_id INTEGER, FOREIGN KEY (playlist_id) REFERENCES Playlists (id) ON DELETE CASCADE, FOREIGN KEY (song_id) REFERENCES Songs (id) ON DELETE CASCADE);");
-    ok = keepFalse(ok, this->db->executeQuery());
+    ok = this->db->prepareAndExecuteQuery("CREATE TABLE PlaylistSongs (playlist_id INTEGER, song_id INTEGER, FOREIGN KEY (playlist_id) REFERENCES Playlists (id) ON DELETE CASCADE, FOREIGN KEY (song_id) REFERENCES Songs (id) ON DELETE CASCADE);");
     if (!ok) {
         this->setErrorMsg("Migration 1: Unable to create the Playlists table");
         return false;
     }
 
-    // Bump up version number
-    ok = this->db->prepareQuery("UPDATE Variables SET value = 1 WHERE name = 'version';");
-    ok = keepFalse(ok, this->db->executeQuery());
+    // Create Full Text Search virtual tables for all main tables
+    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsSongs USING fts4");
+    if (!ok) {
+        this->setErrorMsg("Migration 1: Failed to create FtsSongs table for FTS");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsArtists USING fts4");
+    if (!ok) {
+        this->setErrorMsg("Migration 1: Failed to create FtsArtists table for FTS");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsAlbums USING fts4");
+    if (!ok) {
+        this->setErrorMsg("Migration 1: Failed to create FtsAlbums table for FTS");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsPlaylists USING fts4");
+    if (!ok) {
+        this->setErrorMsg("Migration 1: Failed to create FtsPlaylists table for FTS");
+        return false;
+    }
+
+    // Create 'spellfix' tables (used for roughly fixing spelling mistakes per search type)
+    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE SpellfixSongs USING spellfix1");
+    if (!ok) {
+        this->setErrorMsg("Migration 1: Failed to create SpellfixSongs table for spell checking");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE SpellfixArtists USING spellfix1");
+    if (!ok) {
+        this->setErrorMsg("Migration 1: Failed to create SpellfixArtists table for spell checking");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE SpellfixAlbums USING spellfix1");
+    if (!ok) {
+        this->setErrorMsg("Migration 1: Failed to create SpellfixAlbums table for spell checking");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE SpellfixPlaylists USING spellfix1");
+    if (!ok) {
+        this->setErrorMsg("Migration 1: Failed to create SpellfixPlaylists table for spell checking");
+        return false;
+    }
+
+    // Create a 'variable' to mark if the search index needs updating
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO Variables (name, value) VALUES ('search_update', 0);");
+    if (!ok) {
+        this->setErrorMsg("Migration 1: Unable to create 'search_update' variable");
+        return false;
+    }
+
+    // Bump up version number (only done if everything passes)
+    ok = this->db->prepareAndExecuteQuery("UPDATE Variables SET value = 1 WHERE name = 'version';");
     if (!ok) {
         this->setErrorMsg("Migration 1: Unable to set version to 1");
         return false;
@@ -147,6 +200,148 @@ bool Database::migrateTo1() {
     return true;
 }
 // ========================== //
+bool Database::needsSearchUpdate() {
+    // Check if we have read permission
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[needsSearchUpdate] Database has not been opened");
+        return false;
+    }
+
+    // Return true if search_update does not equal 0
+    int val;
+    bool ok = this->db->prepareAndExecuteQuery("SELECT value FROM Variables WHERE name = 'search_update';");
+    ok = keepFalse(ok, this->db->getInt(0, val));
+    if (!ok) {
+        this->setErrorMsg("[needsSearchUpdate] Unable to query update variable");
+        return false;
+    }
+    return (val != 0);
+}
+
+bool Database::prepareSearch() {
+    // First check we have write permission
+    if (this->db->connectionType() != SQLite::Connection::ReadWrite) {
+        this->setErrorMsg("[prepareSearch] Can't perform indexing as the database is unwritable");
+        return false;
+    }
+
+    // Update fts tables
+    bool ok = this->db->prepareAndExecuteQuery("DELETE FROM FtsSongs;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Unable to empty FtsSongs");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsSongs SELECT title FROM Songs;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to populate FtsSongs");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("DELETE FROM FtsArtists;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Unable to empty FtsArtists");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsArtists SELECT name FROM Artists;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to populate FtsArtists");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("DELETE FROM FtsAlbums;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Unable to empty FtsAlbums");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsAlbums SELECT name FROM Albums;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to populate FtsAlbums");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("DELETE FROM FtsPlaylists;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Unable to empty FtsPlaylists");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsPlaylists SELECT name FROM Playlists;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to populate FtsPlaylists");
+        return false;
+    }
+
+    // Update fts4aux tables (used to populate spellfix tables)
+    this->db->prepareAndExecuteQuery("DROP TABLE IF EXISTS FtsAuxSongs;");
+    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsAuxSongs USING fts4aux(FtsSongs);");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to create FtsAuxSongs table");
+        return false;
+    }
+    this->db->prepareAndExecuteQuery("DROP TABLE IF EXISTS FtsAuxArtists;");
+    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsAuxArtists USING fts4aux(FtsArtists);");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to create FtsAuxArtists table");
+        return false;
+    }
+    this->db->prepareAndExecuteQuery("DROP TABLE IF EXISTS FtsAuxAlbums;");
+    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsAuxAlbums USING fts4aux(FtsAlbums);");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to create FtsAuxAlbums table");
+        return false;
+    }
+    this->db->prepareAndExecuteQuery("DROP TABLE IF EXISTS FtsAuxPlaylists;");
+    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsAuxPlaylists USING fts4aux(FtsPlaylists);");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to create FtsAuxPlaylists table");
+        return false;
+    }
+
+    // Now populate spellfix tables
+    ok = this->db->prepareAndExecuteQuery("DELETE FROM SpellfixSongs;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Unable to empty SpellfixSongs");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO SpellfixSongs (word, rank) SELECT term, documents FROM FtsAuxSongs WHERE col='*';");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to populate SpellfixSongs with terms");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("DELETE FROM SpellfixArtists;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Unable to empty SpellfixArtists");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO SpellfixArtists (word, rank) SELECT term, documents FROM FtsAuxArtists WHERE col='*';");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to populate SpellfixArtists with terms");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("DELETE FROM SpellfixAlbums;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Unable to empty SpellfixAlbums");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO SpellfixAlbums (word, rank) SELECT term, documents FROM FtsAuxAlbums WHERE col='*';");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to populate SpellfixAlbums with terms");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("DELETE FROM SpellfixPlaylists;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Unable to empty SpellfixPlaylists");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO SpellfixPlaylists (word, rank) SELECT term, documents FROM FtsAuxPlaylists WHERE col='*';");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to populate SpellfixPlaylists with terms");
+        return false;
+    }
+
+    // Update variable to indicate no update is needed
+    ok = this->setSearchUpdate(0);
+    if (ok) {
+        Log::writeSuccess("[DB] [prepareSearch] Search tables updated successfully!");
+    }
+    return ok;
+}
 
 void Database::setErrorMsg(const std::string & msg = "") {
     // Set error message to provided one
@@ -210,6 +405,27 @@ bool Database::getVersion(int & version) {
     return ok;
 }
 
+bool Database::setSearchUpdate(int val) {
+    // Skip if already set
+    if (this->updateMarked && val != 0) {
+        return true;
+    }
+
+    bool ok = this->db->prepareQuery("UPDATE Variables SET value = ? WHERE name = 'search_update';");
+    ok = keepFalse(ok, this->db->bindInt(0, val));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[setSearchUpdate] Updating the search_update variable failed");
+    }
+
+    // Set as marked if not 0
+    if (ok) {
+        this->updateMarked = (val != 0);
+    }
+
+    return ok;
+}
+
 // ============================ //
 //       PUBLIC FUNCTIONS       //
 // ============================ //
@@ -261,6 +477,11 @@ bool Database::addSong(SongInfo si, std::string & path, unsigned int mtime) {
         }
     }
 
+    // Mark search tables as out of date
+    if (ok) {
+        ok = this->setSearchUpdate(1);
+    }
+
     return ok;
 }
 
@@ -300,6 +521,11 @@ bool Database::updateSong(SongID id, SongInfo si, unsigned int mtime) {
         }
     }
 
+    // Mark search tables as out of date
+    if (ok) {
+        ok = this->setSearchUpdate(1);
+    }
+
     return ok;
 }
 
@@ -324,6 +550,11 @@ bool Database::removeSong(SongID id) {
         if (Log::loggingLevel() == Log::Level::Info) {
             Log::writeInfo("[DB] [removeSong] '" + std::to_string(id) + "' was deleted");
         }
+    }
+
+    // Mark search tables as out of date
+    if (ok) {
+        ok = this->setSearchUpdate(1);
     }
 
     return ok;

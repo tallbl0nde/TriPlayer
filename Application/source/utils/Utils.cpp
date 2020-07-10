@@ -27,7 +27,7 @@ namespace Utils {
         return paths;
     }
 
-    void processFileChanges(Database * db, Sysmodule * sys, std::atomic<int> & aFile, std::atomic<ProcessStage> & aStage, std::atomic<int> & aTotal) {
+    void processFileChanges(Database * db, Sysmodule * sys, std::atomic<int> & aFile, std::atomic<ProcessStage> & aStage, std::atomic<int> & aTotal, std::atomic<bool> & stop) {
         // Get list of file paths
         aStage = ProcessStage::Search;
         std::vector<std::string> paths = getFilesWithExt("/music", ".mp3");
@@ -54,46 +54,80 @@ namespace Utils {
             } else if (diskMTime[i] > dataMTime) {
                 editPos.push_back(i);
             }
+
+            // Stop if requested
+            if (stop) {
+                break;
+            }
         }
 
         // Lock Database for writing if necessary
         bool hasLock = false;
-        if (addPos.size() + editPos.size() != 0) {
-            hasLock = true;
-            sys->waitReset();
-            db->close();
-            db->openReadWrite();
+        if (!stop) {
+            if (addPos.size() + editPos.size() != 0) {
+                hasLock = true;
+                sys->waitReset();
+                db->close();
+                db->openReadWrite();
 
-            // Actually insert/update now (this is messy just so the user can get the status...)
-            aTotal = addPos.size() + editPos.size();
-            aStage = ProcessStage::Parse;
-            for (size_t i = 0; i < addPos.size(); i++) {
-                aFile++;
-                SongInfo info = Utils::MP3::getInfoFromID3(paths[addPos[i]]);
-                db->addSong(info, paths[addPos[i]], diskMTime[addPos[i]]);
-            }
-            for (size_t i = 0; i < editPos.size(); i++) {
-                aFile++;
-                SongInfo info = Utils::MP3::getInfoFromID3(paths[editPos[i]]);
-                SongID id = db->getSongIDForPath(paths[editPos[i]]);
-                db->updateSong(id, info, diskMTime[editPos[i]]);
+                // Actually insert/update now (this is messy just so the user can get the status...)
+                aTotal = addPos.size() + editPos.size();
+                aStage = ProcessStage::Parse;
+                for (size_t i = 0; i < addPos.size(); i++) {
+                    if (stop) {
+                        break;
+                    }
+
+                    aFile++;
+                    SongInfo info = Utils::MP3::getInfoFromID3(paths[addPos[i]]);
+                    db->addSong(info, paths[addPos[i]], diskMTime[addPos[i]]);
+                }
+                for (size_t i = 0; i < editPos.size(); i++) {
+                    if (stop) {
+                        break;
+                    }
+
+                    aFile++;
+                    SongInfo info = Utils::MP3::getInfoFromID3(paths[editPos[i]]);
+                    SongID id = db->getSongIDForPath(paths[editPos[i]]);
+                    db->updateSong(id, info, diskMTime[editPos[i]]);
+                }
             }
         }
 
         // Remove any deleted songs (+ lock if not already done so)
-        std::vector<std::string> dbPaths = db->getAllSongPaths();
-        for (size_t i = 0; i < dbPaths.size(); i++) {
-            // If DB's path is not present remove it!
-            if (std::find(paths.begin(), paths.end(), dbPaths[i]) == paths.end()) {
-                // Lock if not done in last step
-                if (!hasLock) {
-                    aStage = ProcessStage::Update;
-                    hasLock = true;
-                    sys->waitReset();
-                    db->openReadWrite();
+        if (!stop) {
+            std::vector<std::string> dbPaths = db->getAllSongPaths();
+            for (size_t i = 0; i < dbPaths.size(); i++) {
+                if (stop) {
+                    break;
                 }
-                db->removeSong(db->getSongIDForPath(dbPaths[i]));
+
+                // If DB's path is not present remove it!
+                if (std::find(paths.begin(), paths.end(), dbPaths[i]) == paths.end()) {
+                    // Lock if not done in last step
+                    if (!hasLock) {
+                        aStage = ProcessStage::Update;
+                        hasLock = true;
+                        sys->waitReset();
+                        db->close();
+                        db->openReadWrite();
+                    }
+                    db->removeSong(db->getSongIDForPath(dbPaths[i]));
+                }
             }
+        }
+
+        // Update search tables if needed
+        if (db->needsSearchUpdate()) {
+            if (!hasLock) {
+                aStage = ProcessStage::Update;
+                hasLock = true;
+                sys->waitReset();
+                db->close();
+                db->openReadWrite();
+            }
+            db->prepareSearch();
         }
 
         // Cleanup database (TBD)

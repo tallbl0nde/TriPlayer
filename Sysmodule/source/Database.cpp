@@ -39,7 +39,7 @@ bool Database::matchingVersion() {
     }
     if (version != DB_VERSION) {
         this->close();
-        Log::writeError("[DB] Version mismatch! Please check that the sysmodule is up to date! (Database: " + std::to_string(version) + ", Supports: " + std::to_string(DB_VERSION));
+        Log::writeError("[DB] Version mismatch! Please check that the sysmodule is up to date! (Database: " + std::to_string(version) + ", Supports: " + std::to_string(DB_VERSION) + ")");
         return false;
     }
 
