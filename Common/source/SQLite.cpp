@@ -172,6 +172,16 @@ bool SQLite::prepareQuery(const std::string & qry) {
     return true;
 }
 
+bool SQLite::bindBool(int col, bool data) {
+    // Check query status first
+    if (this->queryStatus != SQLite::Query::Ready) {
+        this->setErrorMsg("Unable to bind a boolean to an unprepared query");
+        return false;
+    }
+
+    return this->bindInt(col, (data == true ? 1 : 0));
+}
+
 bool SQLite::bindInt(int col, int data) {
     // Check query status first
     if (this->queryStatus != SQLite::Query::Ready) {
@@ -227,6 +237,19 @@ bool SQLite::executeQuery() {
     }
 
     return true;
+}
+
+bool SQLite::getBool(int col, bool & data) {
+    // Check query status first
+    if (this->queryStatus != SQLite::Query::Results) {
+        this->setErrorMsg("Unable to get a boolean as no more rows are available");
+        return false;
+    }
+
+    int tmp;
+    bool b = this->getInt(col, tmp);
+    data = (tmp == 1);
+    return b;
 }
 
 bool SQLite::getInt(int col, int & data) {

@@ -59,19 +59,19 @@ namespace Main {
         this->ovlSongMenu->setTextColour(this->theme_->FG());
 
         // Song Metadata
-        SongInfo si = this->database_->getSongInfoForID(id);
-        this->ovlSongMenu->setTitle(si.title);
-        this->ovlSongMenu->setArtist(si.artist);
+        Metadata::Song m = this->database_->getSongMetadataForID(id);
+        this->ovlSongMenu->setTitle(m.title);
+        this->ovlSongMenu->setArtist(m.artist);
 
         // Song Art
         bool hasArt = false;
         std::string path = this->database_->getPathForID(id);
         if (path.length() > 0) {
-            SongArt sa = Utils::MP3::getArtFromID3(path);
-            if (sa.data != nullptr) {
-                this->ovlSongMenu->setAlbum(new Aether::Image(0, 0, sa.data, sa.size));
+            Metadata::AlbumArt art = Utils::MP3::getArtFromID3(path);
+            if (art.data != nullptr) {
+                this->ovlSongMenu->setAlbum(new Aether::Image(0, 0, art.data, art.size));
                 hasArt = true;
-                delete[] sa.data;
+                delete[] art.data;
             }
         }
         if (!hasArt) {

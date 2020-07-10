@@ -73,6 +73,7 @@ class SQLite {
         // Functions to bind values to the given query
         // Parameters have order: (column number (starting from 0), data)
         // Returns true if successful, false on an error
+        bool bindBool(int, const bool);
         bool bindInt(int, const int);
         bool bindString(int, const std::string &);
 
@@ -82,6 +83,7 @@ class SQLite {
         // Accesses values given in the results (undefined if outside of range!)
         // Parameters have order: (column number (starting from 0), reference to fill with data)
         // Returns true if successful, false on an error
+        bool getBool(int, bool &);
         bool getInt(int, int &);
         bool getString(int, std::string &);
         // Returns true if currently viewing a row, false otherwise

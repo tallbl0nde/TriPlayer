@@ -441,7 +441,7 @@ void Database::close() {
     this->db->closeConnection();
 }
 
-bool Database::addSong(SongInfo si, std::string & path, unsigned int mtime) {
+bool Database::addSong(Metadata::Song m) {
     // First check we have write permission
     if (this->db->connectionType() != SQLite::Connection::ReadWrite) {
         this->setErrorMsg("[addSong] Can't add a song as the database is unwritable");
@@ -449,20 +449,20 @@ bool Database::addSong(SongInfo si, std::string & path, unsigned int mtime) {
     }
 
     // Add artist and album (will do nothing if they already exist)
-    bool ok = this->addArtist(si.artist);
-    ok = keepFalse(ok, this->addAlbum(si.album));
+    bool ok = this->addArtist(m.artist);
+    ok = keepFalse(ok, this->addAlbum(m.album));
     if (!ok) {
         return false;
     }
 
     // Finally add song
     ok = this->db->prepareQuery("INSERT INTO Songs (path, modified, artist_id, album_id, title, duration) VALUES (?, ?, (SELECT id FROM Artists WHERE name = ?), (SELECT id FROM Albums WHERE name = ?), ?, ?);");
-    ok = keepFalse(ok, this->db->bindString(0, path));
-    ok = keepFalse(ok, this->db->bindInt(1, mtime));
-    ok = keepFalse(ok, this->db->bindString(2, si.artist));
-    ok = keepFalse(ok, this->db->bindString(3, si.album));
-    ok = keepFalse(ok, this->db->bindString(4, si.title));
-    ok = keepFalse(ok, this->db->bindInt(5, si.duration));
+    ok = keepFalse(ok, this->db->bindString(0, m.path));
+    ok = keepFalse(ok, this->db->bindInt(1, m.modified));
+    ok = keepFalse(ok, this->db->bindString(2, m.artist));
+    ok = keepFalse(ok, this->db->bindString(3, m.album));
+    ok = keepFalse(ok, this->db->bindString(4, m.title));
+    ok = keepFalse(ok, this->db->bindInt(5, m.duration));
     if (!ok) {
         this->setErrorMsg("[addSong] An error occurred while preparing the statement");
         return false;
@@ -473,7 +473,7 @@ bool Database::addSong(SongInfo si, std::string & path, unsigned int mtime) {
         this->setErrorMsg("[addSong] An error occurred while adding the entry");
     } else {
         if (Log::loggingLevel() == Log::Level::Info) {
-            Log::writeInfo("[DB] [addSong] '" + path + "' added to the database");
+            Log::writeInfo("[DB] [addSong] '" + m.path + "' added to the database");
         }
     }
 
@@ -485,7 +485,7 @@ bool Database::addSong(SongInfo si, std::string & path, unsigned int mtime) {
     return ok;
 }
 
-bool Database::updateSong(SongID id, SongInfo si, unsigned int mtime) {
+bool Database::updateSong(Metadata::Song m) {
     // First check we have write permission
     if (this->db->connectionType() != SQLite::Connection::ReadWrite) {
         this->setErrorMsg("[updateSong] Can't update song as the database is unwritable");
@@ -493,20 +493,23 @@ bool Database::updateSong(SongID id, SongInfo si, unsigned int mtime) {
     }
 
     // Add artist and album (will do nothing if they already exist)
-    bool ok = this->addArtist(si.artist);
-    ok = keepFalse(ok, this->addAlbum(si.album));
+    bool ok = this->addArtist(m.artist);
+    ok = keepFalse(ok, this->addAlbum(m.album));
     if (!ok) {
         return false;
     }
 
     // Now update relevant fields
-    ok = this->db->prepareQuery("UPDATE Songs SET modified = ?, artist_id = (SELECT id FROM Artists WHERE name = ?), album_id = (SELECT id FROM Albums WHERE name = ?), title = ?, duration = ? WHERE id = ?;");
-    ok = keepFalse(ok, this->db->bindInt(0, mtime));
-    ok = keepFalse(ok, this->db->bindString(1, si.artist));
-    ok = keepFalse(ok, this->db->bindString(2, si.album));
-    ok = keepFalse(ok, this->db->bindString(3, si.title));
-    ok = keepFalse(ok, this->db->bindInt(4, si.duration));
-    ok = keepFalse(ok, this->db->bindInt(5, id));
+    ok = this->db->prepareQuery("UPDATE Songs SET modified = ?, artist_id = (SELECT id FROM Artists WHERE name = ?), album_id = (SELECT id FROM Albums WHERE name = ?), title = ?, duration = ?, plays = ?, favourite = ?, path = ? WHERE id = ?;");
+    ok = keepFalse(ok, this->db->bindInt(0, m.modified));
+    ok = keepFalse(ok, this->db->bindString(1, m.artist));
+    ok = keepFalse(ok, this->db->bindString(2, m.album));
+    ok = keepFalse(ok, this->db->bindString(3, m.title));
+    ok = keepFalse(ok, this->db->bindInt(4, m.duration));
+    ok = keepFalse(ok, this->db->bindInt(5, m.plays));
+    ok = keepFalse(ok, this->db->bindBool(6, m.favourite));
+    ok = keepFalse(ok, this->db->bindString(7, m.path));
+    ok = keepFalse(ok, this->db->bindInt(8, m.ID));
     if (!ok) {
         this->setErrorMsg("[updateSong] An error occurred while preparing the statement");
         return false;
@@ -517,7 +520,7 @@ bool Database::updateSong(SongID id, SongInfo si, unsigned int mtime) {
         this->setErrorMsg("[updateSong] An error occurred while adding the entry");
     } else {
         if (Log::loggingLevel() == Log::Level::Info) {
-            Log::writeInfo("[DB] [updateSong] '" + si.title + "' was updated");
+            Log::writeInfo("[DB] [updateSong] '" + m.title + "' was updated");
         }
     }
 
@@ -560,32 +563,39 @@ bool Database::removeSong(SongID id) {
     return ok;
 }
 
-std::vector<SongInfo> Database::getAllSongInfo() {
-    std::vector<SongInfo> v;
+std::vector<Metadata::Song> Database::getAllSongMetadata() {
+    std::vector<Metadata::Song> v;
     // Check we can read
     if (this->db->connectionType() == SQLite::Connection::None) {
         this->setErrorMsg("[getAllSongInfo] No open connection");
         return v;
     }
 
-    // Create a SongInfo for each entry
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.duration FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id;");
+    // Create a Metadata::Song for each entry
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id;");
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
         this->setErrorMsg("[getAllSongInfo] Unable to query for all songs");
         return v;
     }
     while (ok) {
-        SongInfo si;
+        Metadata::Song m;
         int tmp;
-        ok = this->db->getInt(0, si.ID);
-        ok = keepFalse(ok, this->db->getString(1, si.title));
-        ok = keepFalse(ok, this->db->getString(2, si.artist));
-        ok = keepFalse(ok, this->db->getString(3, si.album));
+        ok = this->db->getInt(0, m.ID);
+        ok = keepFalse(ok, this->db->getString(1, m.title));
+        ok = keepFalse(ok, this->db->getString(2, m.artist));
+        ok = keepFalse(ok, this->db->getString(3, m.album));
         ok = keepFalse(ok, this->db->getInt(4, tmp));
-        si.duration = tmp;
+        m.duration = tmp;
+        ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.plays = tmp;
+        ok = keepFalse(ok, this->db->getBool(6, m.favourite));
+        ok = keepFalse(ok, this->db->getString(7, m.path));
+        ok = keepFalse(ok, this->db->getInt(8, tmp));
+        m.modified = tmp;
+
         if (ok) {
-            v.push_back(si);
+            v.push_back(m);
         }
         ok = keepFalse(ok, this->db->nextRow());
     }
@@ -688,36 +698,42 @@ SongID Database::getSongIDForPath(std::string & path) {
     return id;
 }
 
-SongInfo Database::getSongInfoForID(SongID id) {
-    SongInfo si;
-    si.ID = -1;
+Metadata::Song Database::getSongMetadataForID(SongID id) {
+    Metadata::Song m;
+    m.ID = -1;
     // Check we can read
     if (this->db->connectionType() == SQLite::Connection::None) {
         this->setErrorMsg("[getSongInfoForID] No open connection");
-        return si;
+        return m;
     }
 
     // Query for song info
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.duration FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.ID = ?;");
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.ID = ?;");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
         this->setErrorMsg("[getSongInfoForID] An error occurred querying for info");
-        return si;
+        return m;
     }
-    ok = this->db->getInt(0, si.ID);
-    ok = keepFalse(ok, this->db->getString(1, si.title));
-    ok = keepFalse(ok, this->db->getString(2, si.artist));
-    ok = keepFalse(ok, this->db->getString(3, si.album));
     int tmp;
+    ok = this->db->getInt(0, m.ID);
+    ok = keepFalse(ok, this->db->getString(1, m.title));
+    ok = keepFalse(ok, this->db->getString(2, m.artist));
+    ok = keepFalse(ok, this->db->getString(3, m.album));
     ok = keepFalse(ok, this->db->getInt(4, tmp));
-    si.duration = tmp;
+    m.duration = tmp;
+    ok = keepFalse(ok, this->db->getInt(5, tmp));
+    m.plays = tmp;
+    ok = keepFalse(ok, this->db->getBool(6, m.favourite));
+    ok = keepFalse(ok, this->db->getString(7, m.path));
+    ok = keepFalse(ok, this->db->getInt(8, tmp));
+    m.modified = tmp;
     if (!ok) {
         this->setErrorMsg("[getSongInfoForID] An error occurred reading from the query results");
-        si.ID = -1;
+        m.ID = -1;
     }
 
-    return si;
+    return m;
 }
 
 void Database::cleanup() {

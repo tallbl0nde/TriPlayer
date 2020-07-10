@@ -79,8 +79,10 @@ namespace Utils {
                     }
 
                     aFile++;
-                    SongInfo info = Utils::MP3::getInfoFromID3(paths[addPos[i]]);
-                    db->addSong(info, paths[addPos[i]], diskMTime[addPos[i]]);
+                    Metadata::Song info = Utils::MP3::getInfoFromID3(paths[addPos[i]]);
+                    info.path = paths[addPos[i]];
+                    info.modified = diskMTime[addPos[i]];
+                    db->addSong(info);
                 }
                 for (size_t i = 0; i < editPos.size(); i++) {
                     if (stop) {
@@ -88,9 +90,17 @@ namespace Utils {
                     }
 
                     aFile++;
-                    SongInfo info = Utils::MP3::getInfoFromID3(paths[editPos[i]]);
+
+                    // Overwrite existing metadata
                     SongID id = db->getSongIDForPath(paths[editPos[i]]);
-                    db->updateSong(id, info, diskMTime[editPos[i]]);
+                    Metadata::Song info = db->getSongMetadataForID(id);
+                    Metadata::Song tmp = Utils::MP3::getInfoFromID3(paths[editPos[i]]);
+                    info.title = tmp.title;
+                    info.artist = tmp.artist;
+                    info.album = tmp.album;
+                    info.duration = tmp.duration;
+                    info.modified = diskMTime[editPos[i]];
+                    db->updateSong(info);
                 }
             }
         }

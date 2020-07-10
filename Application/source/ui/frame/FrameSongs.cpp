@@ -1,9 +1,8 @@
 #include "Application.hpp"
 #include "FrameSongs.hpp"
 #include "ListSong.hpp"
-#include "Utils.hpp"
-
 #include "SongMenu.hpp"
+#include "Utils.hpp"
 
 namespace Frame {
     Songs::Songs(Main::Application * a) : Frame(a) {
@@ -11,16 +10,16 @@ namespace Frame {
 
         // Create items for songs
         unsigned int totalSecs = 0;
-        std::vector<SongInfo> si = this->app->database()->getAllSongInfo();
-        if (si.size() > 0) {
-            for (size_t i = 0; i < si.size(); i++) {
-                this->songIDs.push_back(si[i].ID);
-                totalSecs += si[i].duration;
+        std::vector<Metadata::Song> m = this->app->database()->getAllSongMetadata();
+        if (m.size() > 0) {
+            for (size_t i = 0; i < m.size(); i++) {
+                this->songIDs.push_back(m[i].ID);
+                totalSecs += m[i].duration;
                 CustomElm::ListSong * l = new CustomElm::ListSong();
-                l->setTitleString(si[i].title);
-                l->setArtistString(si[i].artist);
-                l->setAlbumString(si[i].album);
-                l->setLengthString(Utils::secondsToHMS(si[i].duration));
+                l->setTitleString(m[i].title);
+                l->setArtistString(m[i].artist);
+                l->setAlbumString(m[i].album);
+                l->setLengthString(Utils::secondsToHMS(m[i].duration));
                 l->setDotsColour(this->app->theme()->muted());
                 l->setLineColour(this->app->theme()->muted2());
                 l->setTextColour(this->app->theme()->FG());
@@ -29,7 +28,7 @@ namespace Frame {
                     this->app->sysmodule()->sendSetSongIdx(i);
                     this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
                 });
-                SongID id = si[i].ID;
+                SongID id = m[i].ID;
                 l->setMoreCallback([this, id]() {
                     this->app->showSongMenu(id);
                 });
@@ -42,7 +41,7 @@ namespace Frame {
 
             this->subLength->setString(Utils::secondsToHoursMins(totalSecs));
             this->subLength->setX(this->x() + 885 - this->subLength->w());
-            this->subTotal->setString(std::to_string(si.size()) + (si.size() == 1 ? " track" : " tracks" ));
+            this->subTotal->setString(std::to_string(m.size()) + (m.size() == 1 ? " track" : " tracks" ));
             this->subTotal->setX(this->x() + 885 - this->subTotal->w());
 
             this->setFocussed(this->list);

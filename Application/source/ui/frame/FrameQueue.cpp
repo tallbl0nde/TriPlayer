@@ -6,16 +6,16 @@
 #include "Utils.hpp"
 
 // Helper function returning length of songs in queue in seconds
-unsigned int durationOfQueue(std::vector<SongID> & queue, std::vector<SongInfo> & songInfo) {
+unsigned int durationOfQueue(std::vector<SongID> & queue, std::vector<Metadata::Song> & songMeta) {
     unsigned int total = 0;
 
     // Get info for each song and sum up
     for (size_t i = 0; i < queue.size(); i++) {
-        // I can't think of a case where the songInfo would be in there twice
-        std::vector<SongInfo>::iterator it = std::lower_bound(songInfo.begin(), songInfo.end(), queue[i], [](const SongInfo info, const SongID id) {
+        // I can't think of a case where the same metadata would be in there twice
+        std::vector<Metadata::Song>::iterator it = std::lower_bound(songMeta.begin(), songMeta.end(), queue[i], [](const Metadata::Song info, const SongID id) {
             return info.ID < id;
         });
-        if (it == songInfo.end()) {
+        if (it == songMeta.end()) {
             // If not found don't add
             continue;
         }
@@ -28,9 +28,9 @@ unsigned int durationOfQueue(std::vector<SongID> & queue, std::vector<SongInfo> 
 
 namespace Frame {
     Queue::Queue(Main::Application * a) : Frame(a) {
-        // Get sorted list of SongInfo (faster than iterating per song)
-        this->songInfo = this->app->database()->getAllSongInfo();
-        std::sort(this->songInfo.begin(), this->songInfo.end(), [](const SongInfo lhs, const SongInfo rhs) {
+        // Get sorted list of metadata (faster than iterating per song)
+        this->songMeta = this->app->database()->getAllSongMetadata();
+        std::sort(this->songMeta.begin(), this->songMeta.end(), [](const Metadata::Song lhs, const Metadata::Song rhs) {
             return lhs.ID < rhs.ID;
         });
 
@@ -233,7 +233,7 @@ namespace Frame {
 
         // Update length + track strings
         std::vector<SongID> tmp = {this->cachedSongID};
-        unsigned int totalSecs = durationOfQueue(this->cachedQueue, this->songInfo) + durationOfQueue(this->cachedSubQueue, this->songInfo) + durationOfQueue(tmp, this->songInfo);
+        unsigned int totalSecs = durationOfQueue(this->cachedQueue, this->songMeta) + durationOfQueue(this->cachedSubQueue, this->songMeta) + durationOfQueue(tmp, this->songMeta);
         this->subLength->setString(Utils::secondsToHoursMins(totalSecs));
         this->subLength->setX(this->x() + 885 - this->subLength->w());
         unsigned int totalTracks = this->cachedQueue.size() + this->cachedSubQueue.size() + 1;  // Plus 1 for playing song
@@ -243,21 +243,21 @@ namespace Frame {
 
     CustomElm::ListSong * Queue::getListSong(size_t id, Section sec) {
         // Get info for song (will be blank if not found)
-        SongInfo si;
-        // I can't think of a case where the songInfo would be in there twice
-        std::vector<SongInfo>::iterator it = std::lower_bound(this->songInfo.begin(), this->songInfo.end(), id, [](const SongInfo info, const SongID id) {
+        Metadata::Song m;
+        // I can't think of a case where the same metadata would be in there twice
+        std::vector<Metadata::Song>::iterator it = std::lower_bound(this->songMeta.begin(), this->songMeta.end(), id, [](const Metadata::Song info, const SongID id) {
             return info.ID < id;
         });
-        if (it != this->songInfo.end()) {
-            si = *(it);
+        if (it != this->songMeta.end()) {
+            m = *(it);
         }
 
         // Create element
         CustomElm::ListSong * l = new CustomElm::ListSong();
-        l->setTitleString(si.title);
-        l->setArtistString(si.artist);
-        l->setAlbumString(si.album);
-        l->setLengthString(Utils::secondsToHMS(si.duration));
+        l->setTitleString(m.title);
+        l->setArtistString(m.artist);
+        l->setAlbumString(m.album);
+        l->setLengthString(Utils::secondsToHMS(m.duration));
         l->setDotsColour(this->app->theme()->muted());
         l->setLineColour(this->app->theme()->muted2());
         l->setTextColour(this->app->theme()->FG());

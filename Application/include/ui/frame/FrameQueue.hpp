@@ -23,8 +23,8 @@ namespace Frame {
             Aether::Element * upnext;
             std::list<CustomElm::ListSong *> upnextEls;
 
-            // Temporary vector of SongInfo
-            std::vector<SongInfo> songInfo;
+            // Temporary vector of song metadata
+            std::vector<Metadata::Song> songMeta;
 
             // Empty message
             Aether::Text * emptyMsg;

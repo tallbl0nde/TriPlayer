@@ -52,20 +52,19 @@ class Database {
         // Close a open connection (if there is one)
         void close();
 
-        // Add song into database (handles artists, etc...)
-        // Takes SongInfo, path and modified timestamp
+        // Add a song (and associated artists, etc) into database
         // Returns true if successful, false otherwise
-        bool addSong(SongInfo, std::string &, unsigned int);
-        // Update the given song's info and modified timestamp
+        bool addSong(Metadata::Song);
+        // Updates the matching song in the database
         // Returns true if successful, false otherwise
-        bool updateSong(SongID, SongInfo, unsigned int);
+        bool updateSong(Metadata::Song);
         // Remove song from database with ID
         // Returns true if successful, false otherwise
         bool removeSong(SongID);
 
-        // Returns SongInfo for all stored songs
+        // Returns metadata for all stored songs
         // Empty if no songs or an error occurred
-        std::vector<SongInfo> getAllSongInfo();
+        std::vector<Metadata::Song> getAllSongMetadata();
         // Returns vector of paths for all stored songs
         // Empty if no songs or an error occurred
         std::vector<std::string> getAllSongPaths();
@@ -76,7 +75,7 @@ class Database {
         // Return ID of song with given path (-1 if not found)
         SongID getSongIDForPath(std::string &);
         // Returns SongInfo for given ID (id will be -1 if not found!)
-        SongInfo getSongInfoForID(SongID);
+        Metadata::Song getSongMetadataForID(SongID);
 
         // Tidies up database by removing redundant entries
         void cleanup();

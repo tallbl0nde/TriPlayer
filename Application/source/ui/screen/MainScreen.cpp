@@ -46,18 +46,18 @@ namespace Screen {
         SongID id = this->app->sysmodule()->currentSong();
         if (id != this->playingID) {
             this->playingID = id;
-            SongInfo si = this->app->database()->getSongInfoForID(id);
-            if (si.ID != -1) {
-                this->player->setTrackName(si.title);
-                this->player->setTrackArtist(si.artist);
-                this->player->setDuration(si.duration);
+            Metadata::Song m = this->app->database()->getSongMetadataForID(id);
+            if (m.ID != -1) {
+                this->player->setTrackName(m.title);
+                this->player->setTrackArtist(m.artist);
+                this->player->setDuration(m.duration);
             }
 
             // Change album cover
             std::string path = this->app->database()->getPathForID(id);
-            SongArt sa = Utils::MP3::getArtFromID3(path);
-            this->player->setAlbumCover(sa.data, sa.size);
-            delete[] sa.data;
+            Metadata::AlbumArt art = Utils::MP3::getArtFromID3(path);
+            this->player->setAlbumCover(art.data, art.size);
+            delete[] art.data;
         }
 
         // Show/hide dimming element based on current state
