@@ -19,9 +19,6 @@ class Database {
         // Used to avoid repeated UPDATE queries
         bool updateMarked;
 
-        // Migrations - explanation in .cpp (all follow naming: migrateTo<version>)
-        bool migrateTo1();
-
         // Update the stored error message
         void setErrorMsg(const std::string &);
 

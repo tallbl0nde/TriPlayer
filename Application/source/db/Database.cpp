@@ -1,6 +1,7 @@
 #include "Database.hpp"
 #include "FS.hpp"
 #include "Log.hpp"
+#include "Migration.hpp"
 #include "Spellfix.h"
 #include "Utils.hpp"
 
@@ -82,125 +83,31 @@ bool Database::migrate() {
     }
 
     // Now actually migrate
+    std::string err = "";
     if (ok) {
         switch (version) {
             case 0:
-                ok = this->migrateTo1();
-                if (!ok) { break; }
+                err = Migration::migrateTo1(this->db);
+                if (!err.empty()) {
+                    err = "Migration 1: " + err;
+                    break;
+                }
                 Log::writeSuccess("[DB] Migrated to version 1");
                 version++;
         }
     }
 
     // Log outcome and close database
-    if (ok) {
+    if (err.empty()) {
         Log::writeSuccess("[DB] Migrations completed successfully!");
     } else {
+        this->setErrorMsg(err);
         this->setErrorMsg("An error occurred migrating the database");
     }
     this->close();
     return ok;
 }
 
-// ======= Migrations ======= //
-// Ver 1: Create all initial tables
-bool Database::migrateTo1() {
-    // Create Artists table
-    bool ok = this->db->prepareAndExecuteQuery("CREATE TABLE Artists (id INTEGER NOT NULL PRIMARY KEY, name TEXT UNIQUE NOT NULL);");
-    if (!ok) {
-        this->setErrorMsg("Migration 1: Unable to create the Artists table");
-        return false;
-    }
-
-    // Create Albums table
-    ok = this->db->prepareAndExecuteQuery("CREATE TABLE Albums (id INTEGER NOT NULL PRIMARY KEY, name TEXT UNIQUE NOT NULL);");
-    if (!ok) {
-        this->setErrorMsg("Migration 1: Unable to create the Albums table");
-        return false;
-    }
-
-    // Create Songs table
-    ok = this->db->prepareAndExecuteQuery("CREATE TABLE Songs (id INTEGER NOT NULL PRIMARY KEY, path TEXT UNIQUE NOT NULL, modified DATETIME NOT NULL, lastplayed DATETIME NOT NULL DEFAULT 0, artist_id INT NOT NULL, album_id INT NOT NULL, title TEXT NOT NULL, duration INT NOT NULL, plays INT NOT NULL DEFAULT 0, favourite BOOLEAN NOT NULL DEFAULT 0, FOREIGN KEY (album_id) REFERENCES Albums (id), FOREIGN KEY (artist_id) REFERENCES Artists (id));");
-    if (!ok) {
-        this->setErrorMsg("Migration 1: Unable to create the Songs table");
-        return false;
-    }
-
-    // Create Playlists table
-    ok = this->db->prepareAndExecuteQuery("CREATE TABLE Playlists (id INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL DEFAULT \"\");");
-    if (!ok) {
-        this->setErrorMsg("Migration 1: Unable to create the Playlists table");
-        return false;
-    }
-
-    // Create PlaylistSongs table
-    ok = this->db->prepareAndExecuteQuery("CREATE TABLE PlaylistSongs (playlist_id INTEGER, song_id INTEGER, FOREIGN KEY (playlist_id) REFERENCES Playlists (id) ON DELETE CASCADE, FOREIGN KEY (song_id) REFERENCES Songs (id) ON DELETE CASCADE);");
-    if (!ok) {
-        this->setErrorMsg("Migration 1: Unable to create the Playlists table");
-        return false;
-    }
-
-    // Create Full Text Search virtual tables for all main tables
-    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsSongs USING fts4");
-    if (!ok) {
-        this->setErrorMsg("Migration 1: Failed to create FtsSongs table for FTS");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsArtists USING fts4");
-    if (!ok) {
-        this->setErrorMsg("Migration 1: Failed to create FtsArtists table for FTS");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsAlbums USING fts4");
-    if (!ok) {
-        this->setErrorMsg("Migration 1: Failed to create FtsAlbums table for FTS");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsPlaylists USING fts4");
-    if (!ok) {
-        this->setErrorMsg("Migration 1: Failed to create FtsPlaylists table for FTS");
-        return false;
-    }
-
-    // Create 'spellfix' tables (used for roughly fixing spelling mistakes per search type)
-    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE SpellfixSongs USING spellfix1");
-    if (!ok) {
-        this->setErrorMsg("Migration 1: Failed to create SpellfixSongs table for spell checking");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE SpellfixArtists USING spellfix1");
-    if (!ok) {
-        this->setErrorMsg("Migration 1: Failed to create SpellfixArtists table for spell checking");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE SpellfixAlbums USING spellfix1");
-    if (!ok) {
-        this->setErrorMsg("Migration 1: Failed to create SpellfixAlbums table for spell checking");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE SpellfixPlaylists USING spellfix1");
-    if (!ok) {
-        this->setErrorMsg("Migration 1: Failed to create SpellfixPlaylists table for spell checking");
-        return false;
-    }
-
-    // Create a 'variable' to mark if the search index needs updating
-    ok = this->db->prepareAndExecuteQuery("INSERT INTO Variables (name, value) VALUES ('search_update', 0);");
-    if (!ok) {
-        this->setErrorMsg("Migration 1: Unable to create 'search_update' variable");
-        return false;
-    }
-
-    // Bump up version number (only done if everything passes)
-    ok = this->db->prepareAndExecuteQuery("UPDATE Variables SET value = 1 WHERE name = 'version';");
-    if (!ok) {
-        this->setErrorMsg("Migration 1: Unable to set version to 1");
-        return false;
-    }
-
-    return true;
-}
-// ========================== //
 bool Database::needsSearchUpdate() {
     // Check if we have read permission
     if (this->db->connectionType() == SQLite::Connection::None) {
