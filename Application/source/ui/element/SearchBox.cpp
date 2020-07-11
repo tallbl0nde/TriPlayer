@@ -1,5 +1,5 @@
-#include "NX.hpp"
-#include "SearchBox.hpp"
+#include "ui/element/SearchBox.hpp"
+#include "utils/NX.hpp"
 
 // Box corner radius
 #define BOX_CORNER_RAD 18

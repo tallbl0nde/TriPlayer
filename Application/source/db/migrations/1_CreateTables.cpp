@@ -1,4 +1,4 @@
-#include "1_CreateTables.hpp"
+#include "db/migrations/1_CreateTables.hpp"
 
 namespace Migration {
     std::string migrateTo1(SQLite * db) {

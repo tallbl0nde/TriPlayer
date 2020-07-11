@@ -1,9 +1,9 @@
 #include <cstring>
 #include <errno.h>
-#include "Log.hpp"
-#include "Socket.hpp"
 #include <switch.h>
 #include <sys/socket.h>
+#include "Log.hpp"
+#include "utils/Socket.hpp"
 
 // Number of bytes to read on one call to read()
 #define READ_BYTES 200

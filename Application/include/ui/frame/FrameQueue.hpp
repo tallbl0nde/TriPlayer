@@ -1,9 +1,9 @@
 #ifndef FRAME_QUEUE_HPP
 #define FRAME_QUEUE_HPP
 
-#include "Frame.hpp"
 #include <list>
-#include "ListSong.hpp"
+#include "ui/element/Frame.hpp"
+#include "ui/element/ListSong.hpp"
 
 namespace Frame {
     class Queue : public CustomElm::Frame {

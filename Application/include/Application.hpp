@@ -1,11 +1,11 @@
 #ifndef APPLICATION_HPP
 #define APPLICATION_HPP
 
-#include "Database.hpp"
 #include <future>
-#include "SongMenu.hpp"
-#include "Sysmodule.hpp"
-#include "Theme.hpp"
+#include "db/Database.hpp"
+#include "sysmodule/Sysmodule.hpp"
+#include "ui/overlay/SongMenu.hpp"
+#include "ui/Theme.hpp"
 
 // Forward declaration because cyclic dependency /shrug
 namespace Screen {

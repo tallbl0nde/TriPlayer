@@ -2,8 +2,8 @@
 #define MP3_HPP
 
 #include <mpg123.h>
-#include "Source.hpp"
 #include <string>
+#include "sources/Source.hpp"
 
 // Extends Source to support MP3 files
 class MP3 : public Source {

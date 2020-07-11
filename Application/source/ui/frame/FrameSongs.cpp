@@ -1,8 +1,8 @@
 #include "Application.hpp"
-#include "FrameSongs.hpp"
-#include "ListSong.hpp"
-#include "SongMenu.hpp"
-#include "Utils.hpp"
+#include "ui/element/ListSong.hpp"
+#include "ui/frame/FrameSongs.hpp"
+#include "ui/overlay/SongMenu.hpp"
+#include "utils/Utils.hpp"
 
 namespace Frame {
     Songs::Songs(Main::Application * a) : Frame(a) {

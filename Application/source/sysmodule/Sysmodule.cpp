@@ -1,10 +1,10 @@
 #include <cstring>
 #include <limits>
-#include "Log.hpp"
 #include <mutex>
+#include "Log.hpp"
 #include "Protocol.hpp"
-#include "Socket.hpp"
-#include "Sysmodule.hpp"
+#include "sysmodule/Sysmodule.hpp"
+#include "utils/Socket.hpp"
 
 // Macro for adding delimiter
 #define DELIM std::string(1, Protocol::Delimiter)

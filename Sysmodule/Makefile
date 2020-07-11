@@ -1,201 +1,118 @@
-#---------------------------------------------------------------------------------
-.SUFFIXES:
-#---------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------
+# Default target is 'all'
+#----------------------------------------------------------------------------------------------------------------------
+.DEFAULT_GOAL := all
+#----------------------------------------------------------------------------------------------------------------------
 
-ifeq ($(strip $(DEVKITPRO)),)
-$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>/devkitpro")
+#----------------------------------------------------------------------------------------------------------------------
+# Check if DEVKITPRO exists in current environment
+#----------------------------------------------------------------------------------------------------------------------
+ifndef DEVKITPRO
+$(error DEVKITPRO is not present in your environment. This can be fixed by sourcing switchvars.sh from /opt/devkitpro/)
 endif
+#----------------------------------------------------------------------------------------------------------------------
 
-TOPDIR ?= $(CURDIR)
+#----------------------------------------------------------------------------------------------------------------------
+# Include switch build toolchain file
+#----------------------------------------------------------------------------------------------------------------------
 include $(DEVKITPRO)/libnx/switch_rules
+#----------------------------------------------------------------------------------------------------------------------
 
 #---------------------------------------------------------------------------------
-# TARGET is the name of the output
-# BUILD is the directory where object files & intermediate files will be placed
-# SOURCES is a list of directories containing source code
-# INCLUDES is a list of directories containing header files
-#
-# CONFIG_JSON is the filename of the NPDM config file (.json), relative to the project folder.
-#   If not set, it attempts to use one of the following (in this order):
-#     - <Project name>.json
-#     - config.json
-#   If a JSON file is provided or autodetected, an ExeFS PFS0 (.nsp) is built instead
-#   of a homebrew executable (.nro). This is intended to be used for sysmodules.
-#   NACP building is skipped as well.
+# Options for compilation
+# TARGET: Name of the output file(s)
+# BUILD: Directory where object files & intermediate files will be placed
+# INCLUDES: List of directories containing header files
+# SOURCES: List of directories containing source code
+# ROMFS: Directory containing data to be added to RomFS
+# LIBS: Libraries to link against
+# LIBDIRS: Directories of libraries
 #---------------------------------------------------------------------------------
 TARGET		:=	sys-triplayer
 BUILD		:=	build
-SOURCES		:=	source ../Common/source ../Common/source/utils source/utils source/sources
-INCLUDES	:=	include ../Common/include ../Common/include/utils include/utils include/sources
+INCLUDES	:=	include ../Common/include
+SOURCES		:=	source 	../Common/source
+LIBS		:=	-lnx -lSQLite -lm -lmpg123 `freetype-config --libs`
+LIBDIRS		:=	$(PORTLIBS) $(LIBNX) $(CURDIR)/../Common/libs/SQLite
 
 #---------------------------------------------------------------------------------
-# options for code generation
+# Options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
-
-CFLAGS	:=	-g -Wall -O2 -ffunction-sections $(ARCH) $(DEFINES)
-
-CFLAGS	+=	$(INCLUDE) -D__SWITCH__
-
-CXXFLAGS	:= $(CFLAGS) -std=gnu++17 -fno-rtti -fno-exceptions
-
-ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
-
-LIBS	:= -lnx -lSQLite -lm -lmpg123 `freetype-config --libs`
+OBJDIR		:=	$(BUILD)/objs
+DEPDIR		:=	$(BUILD)/deps
+ARCH		:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
+INCLUDE		:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) $(foreach dir,$(LIBDIRS),-I$(dir)/include)
+ASFLAGS		:=	-g $(ARCH)
+LD			:=	$(CXX)
+LDFLAGS		:=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH)
+LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
+APP_JSON	:=	$(CURDIR)/$(TARGET).json
+OUTPUT		:=	$(CURDIR)/$(TARGET)
 
 #---------------------------------------------------------------------------------
-# list of directories containing libraries, this must be the top level containing
-# include and lib
+# Flags to pass to compiler
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(CURDIR)/../Common/libs/SQLite
+DEFINES		:=	-D__SWITCH__ -D_SYSMODULE_ -DVER_MAJOR=$(VER_MAJOR) -DVER_MINOR=$(VER_MINOR) -DVER_MICRO=$(VER_MICRO) -DVER_STRING=\"$(VER_MAJOR).$(VER_MINOR).$(VER_MICRO)\"
+CFLAGS		:=	-g -Wall -O2 -ffunction-sections $(ARCH) $(DEFINES) $(INCLUDE)
+CXXFLAGS	:=	$(CFLAGS) -fno-rtti -std=gnu++17 -fno-exceptions
 
+#----------------------------------------------------------------------------------------------------------------------
+# Definition of variables which store file locations
+#----------------------------------------------------------------------------------------------------------------------
+CFILES		:= $(foreach dir,$(SOURCES),$(shell find $(dir)/ -name "*.c"))
+CPPFILES	:= $(foreach dir,$(SOURCES),$(shell find $(dir)/ -name "*.cpp"))
+OFILES		:= $(filter %.o, $(foreach dir,$(SOURCES),$(CPPFILES:$(dir)/%.cpp=$(OBJDIR)/%.o)))
+OFILES		+= $(filter %.o, $(foreach dir,$(SOURCES),$(CFILES:$(dir)/%.c=$(OBJDIR)/%.o)))
+DEPS		:= $(filter %.d, $(foreach dir,$(SOURCES),$(CPPFILES:$(dir)/%.cpp=$(DEPDIR)/%.d)))
+TREE		:= $(sort $(patsubst %/,%,$(dir $(OFILES))))
+#----------------------------------------------------------------------------------------------------------------------
 
-#---------------------------------------------------------------------------------
-# no real need to edit anything past this point unless you need to add additional
-# rules for different file extensions
-#---------------------------------------------------------------------------------
-ifneq ($(BUILD),$(notdir $(CURDIR)))
-#---------------------------------------------------------------------------------
-
-export OUTPUT	:=	$(CURDIR)/$(TARGET)
-export TOPDIR	:=	$(CURDIR)
-
-export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
-			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
-
-export DEPSDIR	:=	$(CURDIR)/$(BUILD)
-
-CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
-CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
-SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
-
-#---------------------------------------------------------------------------------
-# use CXX for linking C++ projects, CC for standard C
-#---------------------------------------------------------------------------------
-ifeq ($(strip $(CPPFILES)),)
-#---------------------------------------------------------------------------------
-	export LD	:=	$(CC)
-#---------------------------------------------------------------------------------
-else
-#---------------------------------------------------------------------------------
-	export LD	:=	$(CXX)
-#---------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------
+# Include dependent files if they already exist
+#----------------------------------------------------------------------------------------------------------------------
+ifeq "$(MAKECMDGOALS)" ""
+-include $(DEPS)
 endif
-#---------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------
 
-export OFILES_BIN	:=	$(addsuffix .o,$(BINFILES))
-export OFILES_SRC	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
-export OFILES 	:=	$(OFILES_BIN) $(OFILES_SRC)
-export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
+#----------------------------------------------------------------------------------------------------------------------
+# Define few virtual make targets
+#----------------------------------------------------------------------------------------------------------------------
+.PHONY: all clean
+#----------------------------------------------------------------------------------------------------------------------
+all:	$(OUTPUT).nsp
+$(OUTPUT).nsp:	$(OUTPUT).nso $(OUTPUT).npdm
+$(OUTPUT).nso:	$(OUTPUT).elf
+$(OUTPUT).elf:	$(OFILES)
+	@$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
+$(OUTPUT).npdm: $(APP_JSON)
+	@npdmtool $< $@
 
-export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
-			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
-			-I$(CURDIR)/$(BUILD)
+.SECONDEXPANSION:
+define crule
+$(OBJDIR)/%.o: $(1)/%.c | $$$$(@D)
+	@echo Compiling $$*.o...
+	@$(CC) -MMD -MP -MF $$(@:$$(OBJDIR)/%.o=$$(DEPDIR)/%.d) $$(CFLAGS) -o $$@ -c $$<
+endef
+define cpprule
+$(OBJDIR)/%.o: $(1)/%.cpp | $$$$(@D)
+	@echo Compiling $$*.o...
+	@$(CXX) -MMD -MP -MF $$(@:$$(OBJDIR)/%.o=$$(DEPDIR)/%.d) $$(CXXFLAGS) -o $$@ -c $$<
+endef
 
-export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
+$(foreach source,$(SOURCES),$(eval $(call crule,$(source))))
+$(foreach source,$(SOURCES),$(eval $(call cpprule,$(source))))
 
-ifeq ($(strip $(CONFIG_JSON)),)
-	jsons := $(wildcard *.json)
-	ifneq (,$(findstring $(TARGET).json,$(jsons)))
-		export APP_JSON := $(TOPDIR)/$(TARGET).json
-	else
-		ifneq (,$(findstring config.json,$(jsons)))
-			export APP_JSON := $(TOPDIR)/config.json
-		endif
-	endif
-else
-	export APP_JSON := $(TOPDIR)/$(CONFIG_JSON)
-endif
-
-ifeq ($(strip $(ICON)),)
-	icons := $(wildcard *.jpg)
-	ifneq (,$(findstring $(TARGET).jpg,$(icons)))
-		export APP_ICON := $(TOPDIR)/$(TARGET).jpg
-	else
-		ifneq (,$(findstring icon.jpg,$(icons)))
-			export APP_ICON := $(TOPDIR)/icon.jpg
-		endif
-	endif
-else
-	export APP_ICON := $(TOPDIR)/$(ICON)
-endif
-
-ifeq ($(strip $(NO_ICON)),)
-	export NROFLAGS += --icon=$(APP_ICON)
-endif
-
-ifeq ($(strip $(NO_NACP)),)
-	export NROFLAGS += --nacp=$(CURDIR)/$(TARGET).nacp
-endif
-
-ifneq ($(APP_TITLEID),)
-	export NACPFLAGS += --titleid=$(APP_TITLEID)
-endif
-
-ifneq ($(ROMFS),)
-	export NROFLAGS += --romfsdir=$(CURDIR)/$(ROMFS)
-endif
-
-.PHONY: $(BUILD) clean all
-
-#---------------------------------------------------------------------------------
-all: $(BUILD)
-
-$(BUILD):
-	@[ -d $@ ] || mkdir -p $@
-	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
-
-#---------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------
+# 'clean' removes ALL sysmodule build files
+#----------------------------------------------------------------------------------------------------------------------
 clean:
-	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).nsp $(TARGET).nso $(TARGET).npdm $(TARGET).elf
+	@echo Cleaning Sysmodule build files...
+	@rm -rf $(BUILD) $(CURDIR)/exefs $(TARGET).nsp $(TARGET).nso $(TARGET).npdm $(TARGET).elf
 
-
-#---------------------------------------------------------------------------------
-else
-.PHONY:	all
-
-DEPENDS	:=	$(OFILES:.o=.d)
-
-#---------------------------------------------------------------------------------
-# main targets
-#---------------------------------------------------------------------------------
-ifeq ($(strip $(APP_JSON)),)
-
-all	:	$(OUTPUT).nro
-
-ifeq ($(strip $(NO_NACP)),)
-$(OUTPUT).nro	:	$(OUTPUT).elf $(OUTPUT).nacp
-else
-$(OUTPUT).nro	:	$(OUTPUT).elf
-endif
-
-else
-
-all	:	$(OUTPUT).nsp
-
-$(OUTPUT).nsp	:	$(OUTPUT).nso $(OUTPUT).npdm
-
-$(OUTPUT).nso	:	$(OUTPUT).elf
-
-endif
-
-$(OUTPUT).elf	:	$(OFILES)
-
-$(OFILES_SRC)	: $(HFILES_BIN)
-
-#---------------------------------------------------------------------------------
-# you need a rule like this for each extension you use as binary data
-#---------------------------------------------------------------------------------
-%.bin.o	%_bin.h :	%.bin
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@$(bin2o)
-
--include $(DEPENDS)
-
-#---------------------------------------------------------------------------------------
-endif
-#---------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------
+# Define rule recipe `$(TREE)` (creates directories for .o and .d files)
+#----------------------------------------------------------------------------------------------------------------------
+$(TREE): %:
+	@mkdir -p $@
+	@mkdir -p $(@:$(OBJDIR)%=$(DEPDIR)%)

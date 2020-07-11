@@ -1,9 +1,9 @@
 #include "Application.hpp"
-#include "FrameQueue.hpp"
-#include "FrameSongs.hpp"
 #include "Log.hpp"
-#include "MainScreen.hpp"
-#include "MP3.hpp"
+#include "ui/frame/FrameQueue.hpp"
+#include "ui/frame/FrameSongs.hpp"
+#include "ui/screen/MainScreen.hpp"
+#include "utils/MP3.hpp"
 
 namespace Screen {
     MainScreen::MainScreen(Main::Application * a) : Screen() {

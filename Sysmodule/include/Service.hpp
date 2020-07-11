@@ -2,15 +2,15 @@
 #define MAINSERVICE_HPP
 
 #include <atomic>
-#include "Audio.hpp"
 #include <ctime>
-#include "Database.hpp"
 #include <deque>
+#include <shared_mutex>
+#include "Audio.hpp"
+#include "Database.hpp"
 #include "PlayQueue.hpp"
 #include "Protocol.hpp"
-#include <shared_mutex>
-#include "Socket.hpp"
-#include "Source.hpp"
+#include "sources/Source.hpp"
+#include "utils/Socket.hpp"
 
 // Class which manages all actions taken when receiving a command
 // Essentially encapsulates everything

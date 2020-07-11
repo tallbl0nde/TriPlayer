@@ -1,9 +1,9 @@
+#include <sstream>
 #include "Application.hpp"
 #include "dtl.hpp"
-#include "FrameQueue.hpp"
-#include "ListSong.hpp"
-#include <sstream>
-#include "Utils.hpp"
+#include "ui/frame/FrameQueue.hpp"
+#include "ui/element/ListSong.hpp"
+#include "utils/Utils.hpp"
 
 // Helper function returning length of songs in queue in seconds
 unsigned int durationOfQueue(std::vector<SongID> & queue, std::vector<Metadata::Song> & songMeta) {

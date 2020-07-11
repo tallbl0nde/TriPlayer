@@ -1,7 +1,7 @@
 #include <future>
 #include "Log.hpp"
-#include "MP3.hpp"
 #include "Service.hpp"
+#include "sources/MP3.hpp"
 
 // Path to log file
 #define LOG_FILE "/switch/TriPlayer/sysmodule.log"

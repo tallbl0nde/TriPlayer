@@ -1,5 +1,5 @@
-#include "Player.hpp"
-#include "Utils.hpp"
+#include "ui/element/Player.hpp"
+#include "utils/Utils.hpp"
 
 // Clip if artist name is longer than this
 #define ARTIST_MAX_WIDTH 200

@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <cstring>
-#include "MP3.hpp"
 #include "Service.hpp"
+#include "sources/MP3.hpp"
 
 // Number of seconds to wait before previous becomes (back to start)
 #define PREV_WAIT 2

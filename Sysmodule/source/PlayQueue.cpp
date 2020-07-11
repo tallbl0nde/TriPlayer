@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <ctime>
-#include "PlayQueue.hpp"
 #include <random>
+#include "PlayQueue.hpp"
 
 // Maximum number of IDs (reserved at creation)
 #define MAX_SIZE 25000  // Requires 150kB (100kB for IDs, 50kB for position)

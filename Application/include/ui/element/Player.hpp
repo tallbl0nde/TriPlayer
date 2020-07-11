@@ -1,8 +1,8 @@
 #ifndef ELEMENT_PLAYER_HPP
 #define ELEMENT_PLAYER_HPP
 
-#include "RoundButton.hpp"
-#include "Slider.hpp"
+#include "ui/element/RoundButton.hpp"
+#include "ui/element/Slider.hpp"
 #include "Types.hpp"
 
 namespace CustomElm {

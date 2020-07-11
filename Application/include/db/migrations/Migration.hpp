@@ -2,6 +2,6 @@
 #define MIGRATION_HPP
 
 // This header simply includes all the other migration headers
-#include "1_CreateTables.hpp"
+#include "db/migrations/1_CreateTables.hpp"
 
 #endif

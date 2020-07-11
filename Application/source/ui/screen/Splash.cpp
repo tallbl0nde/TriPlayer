@@ -1,5 +1,5 @@
 #include "Application.hpp"
-#include "Splash.hpp"
+#include "ui/screen/Splash.hpp"
 
 namespace Screen {
     Splash::Splash(Main::Application * a) : Screen() {

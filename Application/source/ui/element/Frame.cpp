@@ -1,5 +1,5 @@
 #include "Application.hpp"
-#include "Frame.hpp"
+#include "ui/element/Frame.hpp"
 
 // Size and position of all frames
 #define X 320

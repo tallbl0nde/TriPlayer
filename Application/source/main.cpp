@@ -1,7 +1,7 @@
 #include "Application.hpp"
-#include "FS.hpp"
 #include "Log.hpp"
-#include "MP3.hpp"
+#include "utils/FS.hpp"
+#include "utils/MP3.hpp"
 
 // Main folder
 #define MAIN_FOLDER "/switch/TriPlayer/"

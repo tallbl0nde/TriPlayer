@@ -1,9 +1,9 @@
-#include "Database.hpp"
-#include "FS.hpp"
+#include "db/Database.hpp"
+#include "db/migrations/Migration.hpp"
+#include "db/Spellfix.h"
 #include "Log.hpp"
-#include "Migration.hpp"
-#include "Spellfix.h"
-#include "Utils.hpp"
+#include "utils/FS.hpp"
+#include "utils/Utils.hpp"
 
 // Location of backup file
 #define BACKUP_PATH "/switch/TriPlayer/data_old.sqlite3"

@@ -3,10 +3,10 @@
 
 #include <atomic>
 #include <ctime>
-#include "Database.hpp"
 #include <string>
-#include "Sysmodule.hpp"
 #include <vector>
+#include "db/Database.hpp"
+#include "sysmodule/Sysmodule.hpp"
 
 // Stages of update process (used to update UI)
 enum class ProcessStage {

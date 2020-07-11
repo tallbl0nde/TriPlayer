@@ -1,4 +1,4 @@
-#include "Slider.hpp"
+#include "ui/element/Slider.hpp"
 
 // Amount of pixels either side of bar to accept as touch
 #define LEEWAY 10

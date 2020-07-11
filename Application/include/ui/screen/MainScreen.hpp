@@ -1,10 +1,10 @@
 #ifndef SCREEN_MAINSCREEN_HPP
 #define SCREEN_MAINSCREEN_HPP
 
-#include "Frame.hpp"
-#include "Player.hpp"
-#include "SearchBox.hpp"
-#include "SideButton.hpp"
+#include "ui/element/Frame.hpp"
+#include "ui/element/Player.hpp"
+#include "ui/element/SearchBox.hpp"
+#include "ui/element/SideButton.hpp"
 
 namespace Main {
     class Application;

@@ -1,4 +1,4 @@
-#include "NX.hpp"
+#include "utils/NX.hpp"
 
 namespace Utils::NX {
     std::string getUserInput(unsigned int max, std::string ok, std::string hd, std::string subhd, std::string hint, std::string init) {

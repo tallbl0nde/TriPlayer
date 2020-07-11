@@ -1,7 +1,7 @@
 #include "Application.hpp"
-#include "MainScreen.hpp"
-#include "MP3.hpp"
-#include "Splash.hpp"
+#include "ui/screen/MainScreen.hpp"
+#include "ui/screen/Splash.hpp"
+#include "utils/MP3.hpp"
 
 namespace Main {
     Application::Application() {

@@ -1,9 +1,9 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
-#include "MP3.hpp"
 #include <sys/stat.h>
-#include "Utils.hpp"
+#include "utils/MP3.hpp"
+#include "utils/Utils.hpp"
 
 namespace Utils {
     time_t getModifiedTimestamp(std::string path) {

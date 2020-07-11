@@ -1,7 +1,7 @@
 #ifndef OVERLAY_SONGMENU_HPP
 #define OVERLAY_SONGMENU_HPP
 
-#include "MenuButton.hpp"
+#include "ui/element/MenuButton.hpp"
 
 namespace CustomOvl {
     // Overlay shown when pressing the dots next to a song

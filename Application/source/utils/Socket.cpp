@@ -1,10 +1,10 @@
 #include <arpa/inet.h>
 #include <cstring>
 #include <errno.h>
-#include "Log.hpp"
-#include "Socket.hpp"
 #include <sys/socket.h>
 #include <sys/time.h>
+#include "Log.hpp"
+#include "utils/Socket.hpp"
 
 // Characters to read/write in one go
 #define BUFFER_SIZE 2000

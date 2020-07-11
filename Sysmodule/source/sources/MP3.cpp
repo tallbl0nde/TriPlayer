@@ -1,6 +1,6 @@
 #include <cstring>
 #include "Log.hpp"
-#include "MP3.hpp"
+#include "sources/MP3.hpp"
 
 bool MP3::initLib() {
     // Initialize library
