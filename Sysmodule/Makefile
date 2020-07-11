@@ -25,8 +25,8 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	sys-triplayer
 BUILD		:=	build
-SOURCES		:=	source ../Common/source source/utils source/sources
-INCLUDES	:=	include ../Common/include include/utils include/sources
+SOURCES		:=	source ../Common/source ../Common/source/utils source/utils source/sources
+INCLUDES	:=	include ../Common/include ../Common/include/utils include/utils include/sources
 
 #---------------------------------------------------------------------------------
 # options for code generation

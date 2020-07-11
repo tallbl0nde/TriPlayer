@@ -27,7 +27,7 @@ namespace Utils {
         return paths;
     }
 
-    void processFileChanges(Database * db, Sysmodule * sys, std::atomic<int> & aFile, std::atomic<ProcessStage> & aStage, std::atomic<int> & aTotal) {
+    void processFileChanges(Database * db, Sysmodule * sys, std::atomic<int> & aFile, std::atomic<ProcessStage> & aStage, std::atomic<int> & aTotal, std::atomic<bool> & stop) {
         // Get list of file paths
         aStage = ProcessStage::Search;
         std::vector<std::string> paths = getFilesWithExt("/music", ".mp3");
@@ -39,6 +39,8 @@ namespace Utils {
         }
 
         // Iterate over vector(s) and get data to insert/edit
+        db->close();
+        db->openReadOnly();
         std::vector<size_t> addPos;
         std::vector<size_t> editPos;
         for (size_t i = 0; i < paths.size(); i++) {
@@ -52,51 +54,96 @@ namespace Utils {
             } else if (diskMTime[i] > dataMTime) {
                 editPos.push_back(i);
             }
+
+            // Stop if requested
+            if (stop) {
+                break;
+            }
         }
 
         // Lock Database for writing if necessary
         bool hasLock = false;
-        if (addPos.size() + editPos.size() != 0) {
-            hasLock = true;
-            sys->waitReset();
-            db->lock();
+        if (!stop) {
+            if (addPos.size() + editPos.size() != 0) {
+                hasLock = true;
+                sys->waitReset();
+                db->close();
+                db->openReadWrite();
 
-            // Actually insert/update now (this is messy just so the user can get the status...)
-            aTotal = addPos.size() + editPos.size();
-            aStage = ProcessStage::Parse;
-            for (size_t i = 0; i < addPos.size(); i++) {
-                aFile++;
-                SongInfo info = Utils::MP3::getInfoFromID3(paths[addPos[i]]);
-                db->addSong(info, paths[addPos[i]], diskMTime[addPos[i]]);
-            }
-            for (size_t i = 0; i < editPos.size(); i++) {
-                aFile++;
-                SongInfo info = Utils::MP3::getInfoFromID3(paths[editPos[i]]);
-                SongID id = db->getSongIDForPath(paths[editPos[i]]);
-                db->updateSong(id, info, diskMTime[editPos[i]]);
+                // Actually insert/update now (this is messy just so the user can get the status...)
+                aTotal = addPos.size() + editPos.size();
+                aStage = ProcessStage::Parse;
+                for (size_t i = 0; i < addPos.size(); i++) {
+                    if (stop) {
+                        break;
+                    }
+
+                    aFile++;
+                    Metadata::Song info = Utils::MP3::getInfoFromID3(paths[addPos[i]]);
+                    info.path = paths[addPos[i]];
+                    info.modified = diskMTime[addPos[i]];
+                    db->addSong(info);
+                }
+                for (size_t i = 0; i < editPos.size(); i++) {
+                    if (stop) {
+                        break;
+                    }
+
+                    aFile++;
+
+                    // Overwrite existing metadata
+                    SongID id = db->getSongIDForPath(paths[editPos[i]]);
+                    Metadata::Song info = db->getSongMetadataForID(id);
+                    Metadata::Song tmp = Utils::MP3::getInfoFromID3(paths[editPos[i]]);
+                    info.title = tmp.title;
+                    info.artist = tmp.artist;
+                    info.album = tmp.album;
+                    info.duration = tmp.duration;
+                    info.modified = diskMTime[editPos[i]];
+                    db->updateSong(info);
+                }
             }
         }
 
         // Remove any deleted songs (+ lock if not already done so)
-        std::vector<std::string> dbPaths = db->getAllSongPaths();
-        for (size_t i = 0; i < dbPaths.size(); i++) {
-            // If DB's path is not present remove it!
-            if (std::find(paths.begin(), paths.end(), dbPaths[i]) == paths.end()) {
-                // Lock if not done in last step
-                if (!hasLock) {
-                    aStage = ProcessStage::Update;
-                    hasLock = true;
-                    sys->waitReset();
-                    db->lock();
+        if (!stop) {
+            std::vector<std::string> dbPaths = db->getAllSongPaths();
+            for (size_t i = 0; i < dbPaths.size(); i++) {
+                if (stop) {
+                    break;
                 }
-                db->removeSong(db->getSongIDForPath(dbPaths[i]));
+
+                // If DB's path is not present remove it!
+                if (std::find(paths.begin(), paths.end(), dbPaths[i]) == paths.end()) {
+                    // Lock if not done in last step
+                    if (!hasLock) {
+                        aStage = ProcessStage::Update;
+                        hasLock = true;
+                        sys->waitReset();
+                        db->close();
+                        db->openReadWrite();
+                    }
+                    db->removeSong(db->getSongIDForPath(dbPaths[i]));
+                }
             }
+        }
+
+        // Update search tables if needed
+        if (db->needsSearchUpdate()) {
+            if (!hasLock) {
+                aStage = ProcessStage::Update;
+                hasLock = true;
+                sys->waitReset();
+                db->close();
+                db->openReadWrite();
+            }
+            db->prepareSearch();
         }
 
         // Cleanup database (TBD)
         if (hasLock) {
-            db->cleanup();
-            db->unlock();
+            db->close();
+            db->openReadOnly();
         }
 
         aStage = ProcessStage::Done;
@@ -166,6 +213,34 @@ namespace Utils {
         }
 
         return str;
+    }
+
+    std::vector<std::string> splitIntoWords(const std::string & str) {
+        std::vector<std::string> words;
+
+        // Iterate over each word
+        std::string word = "";
+        size_t pos = 0;
+        while (pos < str.length()) {
+            // Append chars to word until a space is reached
+            if (str[pos] != ' ') {
+                word.append(1, str[pos]);
+            } else {
+                // Don't add empty words (i.e. due to repeated spaces)
+                if (word.length() > 0) {
+                    words.push_back(word);
+                    word = "";
+                }
+            }
+            pos++;
+        }
+
+        // Check we haven't missed the last word
+        if (word.length() > 0) {
+            words.push_back(word);
+        }
+
+        return words;
     }
 
     std::string truncateToDecimalPlace(std::string str, unsigned int p) {

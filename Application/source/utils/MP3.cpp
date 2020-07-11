@@ -140,14 +140,14 @@ namespace Utils::MP3 {
     }
 
     // Parses ID3v1 tags and fills SongInfo
-    static void parseID3V1(mpg123_id3v1 * v1, SongInfo & info) {
+    static void parseID3V1(mpg123_id3v1 * v1, Metadata::Song & info) {
         info.title = arrayToString(v1->title, sizeof(v1->title));
         info.artist = arrayToString(v1->artist, sizeof(v1->artist));
         info.album = arrayToString(v1->album, sizeof(v1->album));
     }
 
     // Parses ID3v2 tags and fills SongInfo
-    static void parseID3V2(mpg123_id3v2 * v2, SongInfo & info) {
+    static void parseID3V2(mpg123_id3v2 * v2, Metadata::Song & info) {
         std::string tmp;
         if (v2->title != nullptr) {
             tmp = mpgStrToString(v2->title);
@@ -204,10 +204,10 @@ namespace Utils::MP3 {
     }
 
     // Searches and returns an appropriate image
-    SongArt getArtFromID3(std::string path) {
-        SongArt sa;
-        sa.data = nullptr;
-        sa.size = 0;
+    Metadata::AlbumArt getArtFromID3(std::string path) {
+        Metadata::AlbumArt m;
+        m.data = nullptr;
+        m.size = 0;
 
         // Use mpg123 to find images
         if (mpg != nullptr) {
@@ -234,16 +234,16 @@ namespace Utils::MP3 {
                                 if (pic->type == mpg123_id3_pic_other || pic->type == mpg123_id3_pic_front_cover) {
                                     if (mType == "image/jpg" || mType == "image/jpeg" || mType == "image/png") {
                                         // Copy image into struct
-                                        sa.data = new unsigned char[pic->size];
-                                        std::memcpy(sa.data, pic->data, pic->size);
-                                        sa.size = pic->size;
+                                        m.data = new unsigned char[pic->size];
+                                        std::memcpy(m.data, pic->data, pic->size);
+                                        m.size = pic->size;
                                         break;
                                     }
                                 }
                             }
 
                             // Log if none found
-                            if (sa.data == nullptr) {
+                            if (m.data == nullptr) {
                                 Log::writeWarning("[MP3] No suitable art found in: " + path);
                             }
 
@@ -266,17 +266,17 @@ namespace Utils::MP3 {
             Log::writeError("[MP3] Unable to open file: " + path);
         }
 
-        return sa;
+        return m;
     }
 
     // Checks for tag type and calls appropriate function
-    SongInfo getInfoFromID3(std::string path) {
+    Metadata::Song getInfoFromID3(std::string path) {
         // Default info to return
-        SongInfo si;
-        si.ID = -3;
-        si.title = std::filesystem::path(path).stem();      // Title defaults to file name
-        si.artist = "Unknown Artist";                       // Artist defaults to unknown
-        si.album = "Unknown Album";                         // Same for album
+        Metadata::Song m;
+        m.ID = -3;
+        m.title = std::filesystem::path(path).stem();      // Title defaults to file name
+        m.artist = "Unknown Artist";                       // Artist defaults to unknown
+        m.album = "Unknown Album";                         // Same for album
 
         // Use mpg123 to read ID3 tags
         if (mpg != nullptr) {
@@ -294,16 +294,16 @@ namespace Utils::MP3 {
                     if (err == MPG123_OK) {
                         // Check for ID3v2 tags first
                         if (v2 != nullptr) {
-                            si.ID = -1;
-                            parseID3V2(v2, si);
+                            m.ID = -1;
+                            parseID3V2(v2, m);
 
                         } else if (v1 != nullptr) {
-                            si.ID = -1;
-                            parseID3V1(v1, si);
+                            m.ID = -1;
+                            parseID3V1(v1, m);
 
                         } else {
                             // No tags found!
-                            si.ID = -2;
+                            m.ID = -2;
                             Log::writeWarning("[MP3] No tags were found in: " + path);
                         }
 
@@ -325,8 +325,8 @@ namespace Utils::MP3 {
         std::ifstream file;
         file.open(path, std::ios::binary | std::ios::in);
         file.seekg(0, file.beg);
-        si.duration = parseDuration(file);
+        m.duration = parseDuration(file);
 
-        return si;
+        return m;
     }
 };

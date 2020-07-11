@@ -3,8 +3,8 @@
 
 #include <string>
 
-// A songID is an int!
-typedef int SongID;
+// All IDs are integers
+typedef int ArtistID, AlbumID, PlaylistID, SongID;
 // A socket is also an int - this is for easier reading
 typedef int SockFD;
 
@@ -29,21 +29,40 @@ enum class ShuffleMode {
     On
 };
 
-// Struct storing pointer to and size of album art
-// Pointer should be deleted when no longer needed
-struct SongArt {
-    unsigned char * data;
-    size_t size;
-};
+// All strings are UTF-8 encoded
+namespace Metadata {
+    struct Album {
+        AlbumID ID;                 // Album's unique ID
+        std::string name;           // Album's name
+    };
 
-// Struct storing information about song
-// All strings are UTF-8 encoded!
-struct SongInfo {
-    SongID ID;              // unique ID
-    std::string title;      // title
-    std::string artist;     // artist name
-    std::string album;      // album name
-    unsigned int duration;  // in seconds
+    struct AlbumArt {
+        unsigned char * data;       // Pointer to COPIED data (nullptr if an error occurred)
+        size_t size;                // Size of album art in bytes
+    };
+
+    struct Artist {
+        ArtistID ID;                // Album's unique ID
+        std::string name;           // Album's name
+    };
+
+    struct Playlist {
+        PlaylistID ID;              // Playlist's unique ID
+        std::string name;           // Playlist name
+        std::string description;    // Playlist description (optional)
+    };
+
+    struct Song {
+        SongID ID;                  // Song's unique ID (negative if an error occurred or not used)
+        std::string title;          // Track title
+        std::string artist;         // Artist name
+        std::string album;          // Album name
+        unsigned int duration;      // Duration of track in seconds
+        unsigned int plays;         // Number of plays (not used)
+        bool favourite;             // Is the track favourited? (not used)
+        std::string path;           // Path of associated file
+        unsigned int modified;      // Timestamp file was last modified
+    };
 };
 
 #endif

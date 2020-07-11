@@ -28,7 +28,7 @@ namespace Utils {
 
     // Updates the provided database to reflect the state of files on the sd card in /music
     // Atomics are used to provide the current status
-    void processFileChanges(Database *, Sysmodule *, std::atomic<int> &, std::atomic<ProcessStage> &, std::atomic<int> &);
+    void processFileChanges(Database *, Sysmodule *, std::atomic<int> &, std::atomic<ProcessStage> &, std::atomic<int> &, std::atomic<bool> &);
 
     // Round the given double to the specified number of decimal places
     float roundToDecimalPlace(float, unsigned int);
@@ -38,6 +38,9 @@ namespace Utils {
 
     // Format seconds in x hours, y minutes
     std::string secondsToHoursMins(unsigned int);
+
+    // Splits the given string into words (splits on space)
+    std::vector<std::string> splitIntoWords(const std::string &);
 
     // Truncate string to given decimal places (don't use on strings without a decimal!)
     // Does nothing if outside of range or no decimal place

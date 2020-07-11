@@ -25,11 +25,11 @@ INCLUDES	:=	include
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIC -ftls-model=local-exec
 
-CFLAGS	:=	-g -w -Os -D__SWITCH__ \
-			-ffunction-sections \
-			-fdata-sections \
-			$(ARCH) \
-			-DSQLITE_OMIT_WAL -DSQLITE_OMIT_LOAD_EXTENSION # flags used so it compiles
+CFLAGS	:=	-g -w -Os -D__SWITCH__ -ffunction-sections -fdata-sections $(ARCH) \
+			-DSQLITE_OMIT_WAL -DSQLITE_CORE -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_FTS4 \
+			-DSQLITE_THREADSAFE=0
+			# devkitPro doesn't support dynamic libraries :/
+			# so they are disabled so it will compile :)
 
 CFLAGS	+=	$(INCLUDE)
 

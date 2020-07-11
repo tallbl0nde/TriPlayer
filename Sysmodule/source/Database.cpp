@@ -1,66 +1,108 @@
 #include "Database.hpp"
 #include "Log.hpp"
 
-// Database file
-#define DB_FILE "/switch/TriPlayer/music.db"
+// Location of the database file
+#define DB_PATH "/switch/TriPlayer/data.sqlite3"
+// Version of the database (database begins with zero from 'template', so this started at 1)
+#define DB_VERSION 1
 
-Database::Database() {
-    this->db = nullptr;
-    this->cmd = nullptr;
+// Custom boolean 'operator' which instead of 'keeping' true, will 'keep' false
+bool keepFalse(const bool & a, const bool & b) {
+    return !(!a || !b);
 }
 
-bool Database::openConnection() {
-    if (!this->ready()) {
-        // Open connection
-        if (sqlite3_open_v2(DB_FILE, &this->db, SQLITE_OPEN_READONLY, "unix-none") != SQLITE_OK) {
-            this->db = nullptr;
-            Log::writeError("[DB] Unable to open read-only connection to database");
-            return false;
-        }
+Database::Database() {
+    // Create the database object
+    this->db = new SQLite(DB_PATH);
+}
+
+bool Database::getVersion(int & version) {
+    bool ok = this->db->prepareQuery("SELECT value FROM Variables WHERE name = 'version';");
+    if (ok) {
+        ok = this->db->executeQuery();
+    }
+    if (ok) {
+        ok = this->db->getInt(0, version);
     }
 
-    // Note foreign keys aren't required for these operations
-    Log::writeSuccess("[DB] Prepared for queries");
+    // Update error if there was one
+    if (!ok) {
+        Log::writeError("[DB] Unable to get the database's version");
+    }
+    return ok;
+}
+
+bool Database::matchingVersion() {
+    int version;
+    if (!this->getVersion(version)) {
+        return false;
+    }
+    if (version != DB_VERSION) {
+        this->close();
+        Log::writeError("[DB] Version mismatch! Please check that the sysmodule is up to date! (Database: " + std::to_string(version) + ", Supports: " + std::to_string(DB_VERSION) + ")");
+        return false;
+    }
+
     return true;
 }
 
-void Database::dropConnection() {
-    if (this->db != nullptr) {
-        sqlite3_close(this->db);
-        this->db = nullptr;
+// ============================ //
+//       PUBLIC FUNCTIONS       //
+// ============================ //
+bool Database::openReadWrite() {
+    if (!this->db->openConnection(SQLite::Connection::ReadWrite)) {
+        return false;
     }
+
+    // Close if version is not supported
+    if (!this->matchingVersion()) {
+        this->close();
+        return false;
+    }
+
+    return true;
 }
 
-bool Database::ready() {
-    return !(this->db == nullptr);
+bool Database::openReadOnly() {
+    if (!this->db->openConnection(SQLite::Connection::ReadOnly)) {
+        return false;
+    }
+
+    // Close if version is not supported
+    if (!this->matchingVersion()) {
+        this->close();
+        return false;
+    }
+
+    return true;
+}
+
+void Database::close() {
+    this->db->closeConnection();
 }
 
 std::string Database::getPathForID(SongID id) {
-    std::string str = "";
-
-    if (this->ready()) {
-        sqlite3_prepare_v2(this->db, "SELECT path FROM Songs WHERE id = ?;", -1, &this->cmd, nullptr);
-        if (this->cmd != nullptr) {
-            sqlite3_bind_int(this->cmd, 1, id);
-            if (sqlite3_step(this->cmd) == SQLITE_ROW) {
-                const unsigned char * s = sqlite3_column_text(this->cmd, 0);
-                str = std::string((const char *)s);
-            }
-        }
-        sqlite3_finalize(cmd);
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        Log::writeError("[DB] [getPathForID] No open connection");
+        return "";
     }
 
-    // Log
-    if (str.length() == 0) {
-        Log::writeError("[DB] Unable to find path for ID: " + std::to_string(id));
-    } else {
-        Log::writeInfo("[DB] Found path: " + str + " for ID: " + std::to_string(id));
+    // Query path
+    std::string path;
+    bool ok = this->db->prepareQuery("SELECT path FROM Songs WHERE id = ?;");
+    ok = keepFalse(ok, this->db->bindInt(0, id));
+    ok = keepFalse(ok, this->db->executeQuery());
+    ok = keepFalse(ok, this->db->getString(0, path));
+    if (!ok) {
+        Log::writeError("[DB] [getPathForID] An error occurred querying the path");
+        return "";
     }
 
-    str.shrink_to_fit();
-    return str;
+    path.shrink_to_fit();
+    return path;
 }
 
 Database::~Database() {
-    this->dropConnection();
+    this->close();
 }
