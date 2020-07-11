@@ -82,9 +82,6 @@ class Database {
         std::vector<Metadata::Playlist> searchPlaylists(const std::string);
         std::vector<Metadata::Song> searchSongs(const std::string);
 
-        // Tidies up database by removing redundant entries
-        void cleanup();
-
         // Destructor closes handle
         ~Database();
 };

@@ -142,7 +142,6 @@ namespace Utils {
 
         // Cleanup database (TBD)
         if (hasLock) {
-            db->cleanup();
             db->close();
             db->openReadOnly();
         }

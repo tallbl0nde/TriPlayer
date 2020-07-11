@@ -856,10 +856,6 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str) {
     return v;
 }
 
-void Database::cleanup() {
-
-}
-
 Database::~Database() {
     this->close();
 }
