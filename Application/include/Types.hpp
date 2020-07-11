@@ -44,6 +44,8 @@ namespace Metadata {
     struct Artist {
         ArtistID ID;                // Album's unique ID
         std::string name;           // Album's name
+        unsigned int albumCount;    // Number of albums
+        unsigned int songCount;     // Number of songs
     };
 
     struct Playlist {

@@ -52,6 +52,7 @@ namespace Screen {
             void resetState();
 
             // Functions to setup screen based on chosen item
+            void setupArtists();
             void setupQueue();
             void setupSongs();
 

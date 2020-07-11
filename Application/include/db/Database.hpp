@@ -60,6 +60,9 @@ class Database {
         // Returns true if successful, false otherwise
         bool removeSong(SongID);
 
+        // Returns metadata for all stored artists
+        // Empty if no artists or an error occurred
+        std::vector<Metadata::Artist> getAllArtistMetadata();
         // Returns metadata for all stored songs
         // Empty if no songs or an error occurred
         std::vector<Metadata::Song> getAllSongMetadata();

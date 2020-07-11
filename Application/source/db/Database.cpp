@@ -503,6 +503,39 @@ bool Database::removeSong(SongID id) {
     return ok;
 }
 
+std::vector<Metadata::Artist> Database::getAllArtistMetadata() {
+    std::vector<Metadata::Artist> v;
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getAllArtists] No open connection");
+        return v;
+    }
+
+    // Create a Metadata::Artist for each entry
+    bool ok = this->db->prepareAndExecuteQuery("SELECT artist_id, Artists.name, COUNT(DISTINCT album_id), COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id GROUP BY artist_id;");
+    if (!ok) {
+        this->setErrorMsg("[getAllArtists] Unable to query for all artists");
+        return v;
+    }
+    while (ok) {
+        Metadata::Artist m;
+        ok = this->db->getInt(0, m.ID);
+        ok = keepFalse(ok, this->db->getString(1, m.name));
+        int tmp;
+        ok = keepFalse(ok, this->db->getInt(2, tmp));
+        m.albumCount = tmp;
+        ok = keepFalse(ok, this->db->getInt(3, tmp));
+        m.songCount = tmp;
+
+        if (ok) {
+            v.push_back(m);
+        }
+        ok = keepFalse(ok, this->db->nextRow());
+    }
+
+    return v;
+}
+
 std::vector<Metadata::Song> Database::getAllSongMetadata() {
     std::vector<Metadata::Song> v;
     // Check we can read

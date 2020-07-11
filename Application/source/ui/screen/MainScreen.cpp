@@ -1,5 +1,6 @@
 #include "Application.hpp"
 #include "Log.hpp"
+#include "ui/frame/FrameArtists.hpp"
 #include "ui/frame/FrameQueue.hpp"
 #include "ui/frame/FrameSongs.hpp"
 #include "ui/screen/MainScreen.hpp"
@@ -90,6 +91,13 @@ namespace Screen {
         this->playerDim = nullptr;
     }
 
+    void MainScreen::setupArtists() {
+        this->resetState();
+        this->sideArtists->setActivated(true);
+        this->frame = new Frame::Artists(this->app);
+        this->finalizeState();
+    }
+
     void MainScreen::setupQueue() {
         this->resetState();
         this->sideQueue->setActivated(true);
@@ -169,7 +177,7 @@ namespace Screen {
         this->sideArtists->setActiveColour(this->app->theme()->accent());
         this->sideArtists->setInactiveColour(this->app->theme()->FG());
         this->sideArtists->setCallback([this](){
-
+            this->setupArtists();
         });
         this->container->addElement(this->sideArtists);
         this->sideAlbums = new CustomElm::SideButton(10, this->sideArtists->y() + 60, 290);
