@@ -22,6 +22,8 @@ class Sysmodule {
 
         // === Status vars ===
         std::atomic<SongID> currentSong_;
+        std::mutex playingFromMutex;
+        std::string playingFrom_;
         std::atomic<double> position_;
         std::atomic<bool> queueChanged_;        // Set true when the whole queue has been updated (not just a single song)
         std::vector<SongID> queue_;
@@ -57,6 +59,7 @@ class Sysmodule {
 
         // === Returns private (state) variables ===
         SongID currentSong();
+        std::string playingFrom();
         double position();
         bool queueChanged();
         std::vector<SongID> queue();
@@ -114,6 +117,8 @@ class Sysmodule {
         void sendGetStatus();
         void sendGetPosition();
         void sendSetPosition(double);
+        void sendGetPlayingFrom();
+        void sendSetPlayingFrom(const std::string &);
 
         // ======
 

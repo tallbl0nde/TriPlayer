@@ -24,6 +24,7 @@ namespace Frame {
                 l->setLineColour(this->app->theme()->muted2());
                 l->setTextColour(this->app->theme()->FG());
                 l->setCallback([this, i](){
+                    this->app->sysmodule()->sendSetPlayingFrom("Your Songs");
                     this->app->sysmodule()->sendSetQueue(this->songIDs);
                     this->app->sysmodule()->sendSetSongIdx(i);
                     this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());

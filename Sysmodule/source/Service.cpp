@@ -517,6 +517,16 @@ void MainService::socketThread() {
                     break;
                 }
 
+                case Protocol::Command::GetPlayingFrom:
+                    // Replying with an empty string triggers an error
+                    reply = (this->playingFrom.empty() ? " " : this->playingFrom);
+                    break;
+
+                case Protocol::Command::SetPlayingFrom:
+                    this->playingFrom = msg.substr(0, (msg.length() > 100) ? 100 : msg.length());
+                    reply = (this->playingFrom.empty() ? " " : this->playingFrom);
+                    break;
+
                 case Protocol::Command::Reset: {
                     // Need to lock everything!!
                     std::scoped_lock<std::shared_mutex> sMtx(this->sMutex);

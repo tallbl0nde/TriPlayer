@@ -25,6 +25,7 @@ Sysmodule::Sysmodule() {
     this->error_ = true;
     this->exit_ = false;
     this->lastUpdateTime = std::chrono::steady_clock::now();
+    this->playingFrom_ = "";
     this->position_ = 0.0;
     this->queueChanged_ = false;
     this->queueSize_ = 0;
@@ -123,6 +124,7 @@ void Sysmodule::process() {
         // Check if variables need to be updated
         now = std::chrono::steady_clock::now();
         if (std::chrono::duration_cast< std::chrono::duration<double> >(now - this->lastUpdateTime).count() > UPDATE_DELAY) {
+            this->sendGetPlayingFrom();
             this->sendGetPosition();
             this->sendGetQueueSize();
             this->sendGetRepeat();
@@ -142,6 +144,12 @@ void Sysmodule::process() {
 
 SongID Sysmodule::currentSong() {
     return this->currentSong_;
+}
+
+std::string Sysmodule::playingFrom() {
+    std::scoped_lock<std::mutex> mtx(this->playingFromMutex);
+    // If the string contains a space it's "empty"
+    return (this->playingFrom_ == " " ? "" : this->playingFrom_);
 }
 
 double Sysmodule::position() {
@@ -520,6 +528,20 @@ void Sysmodule::sendSetPosition(double pos) {
     this->position_ = pos;
     this->addToWriteQueue(std::to_string((int)Protocol::Command::SetPosition) + DELIM + std::to_string(pos), [this](std::string s) {
         this->position_ = std::stod(s);
+    });
+}
+
+void Sysmodule::sendGetPlayingFrom() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetPlayingFrom), [this](std::string s) {
+        std::scoped_lock<std::mutex> mtx(this->playingFromMutex);
+        this->playingFrom_ = s;
+    });
+}
+
+void Sysmodule::sendSetPlayingFrom(const std::string & str) {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::SetPlayingFrom) + DELIM + str, [this](std::string s) {
+        std::scoped_lock<std::mutex> mtx(this->playingFromMutex);
+        this->playingFrom_ = s;
     });
 }
 

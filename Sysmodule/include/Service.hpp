@@ -39,6 +39,8 @@ class MainService {
         std::atomic<bool> exit_;
         // Volume when muted (used to unmute)
         std::atomic<double> muteLevel;
+        // String set by client indicating where the music is playing from
+        std::string playingFrom;
         // Timestamp of last previous press
         std::time_t pressTime;
         // Repeat mode

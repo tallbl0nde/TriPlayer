@@ -73,15 +73,16 @@ namespace Frame {
 
         // Up Next
         this->upnext = new Aether::Element(0, 0, 100, 80);
-        tmp = new Aether::Text(this->upnext->x(), this->upnext->y(), "Up Next", 28);
-        tmp->setY(tmp->y() + (this->upnext->h() - tmp->h())/2 + 10);
-        tmp->setColour(this->app->theme()->FG());
-        this->upnext->addElement(tmp);
+        this->upnextStr = new Aether::Text(this->upnext->x(), this->upnext->y(), "Up Next", 28);
+        this->upnextStr->setY(this->upnextStr->y() + (this->upnext->h() - this->upnextStr->h())/2 + 10);
+        this->upnextStr->setColour(this->app->theme()->FG());
+        this->upnext->addElement(this->upnextStr);
         this->list->addElement(this->upnext);
     }
 
     void Queue::updateList() {
         // Get queues
+        std::string playingFrom = this->app->sysmodule()->playingFrom();
         std::vector<SongID> queue = this->app->sysmodule()->queue();
         std::vector<SongID> subQueue = this->app->sysmodule()->subQueue();
         size_t songIdx = this->app->sysmodule()->waitSongIdx();
@@ -175,7 +176,8 @@ namespace Frame {
             }
         }
 
-        // Hide 'Up Next' heading if it's empty
+        // Hide 'Up Next' heading if it's empty (note Aether only rerenders if the string changes)
+        this->upnextStr->setString("Up Next from: " + playingFrom);
         if (queue.empty()) {
             this->upnext->setHidden(true);
         } else {
