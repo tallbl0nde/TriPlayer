@@ -13,7 +13,7 @@
 #define SIDE_PADDING 35
 
 namespace CustomElm {
-    ListArtist::ListArtist(int x, int y, std::string path) : Element(x, y, WIDTH, HEIGHT) {
+    ListArtist::ListArtist(std::string path) : Element(0, 0, WIDTH, HEIGHT) {
         this->image = new Aether::Image(this->x(), this->y(), path, 1, 1, Aether::RenderType::Deferred);
         this->addElement(this->image);
         this->image->setHidden(true);
@@ -36,6 +36,10 @@ namespace CustomElm {
     void ListArtist::setInactive() {
         Element::setInactive();
         this->callMore = false;
+    }
+
+    void ListArtist::setW(int w) {
+        // Do nothing
     }
 
     bool ListArtist::handleEvent(Aether::InputEvent * e) {

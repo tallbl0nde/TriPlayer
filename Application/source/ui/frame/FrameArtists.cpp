@@ -1,7 +1,7 @@
 #include "Application.hpp"
 #include "ui/element/ListArtist.hpp"
+#include "ui/element/ScrollableGrid.hpp"
 #include "ui/frame/FrameArtists.hpp"
-#include "ui/overlay/SongMenu.hpp"
 #include "utils/Utils.hpp"
 
 // Number of ListArtists per row
@@ -9,60 +9,54 @@
 
 namespace Frame {
     Artists::Artists(Main::Application * a) : Frame(a) {
-        this->heading->setString("Artists");
+        // Remove list + headings (I should redo Frame to avoid this)
+        this->removeElement(this->list);
+        this->removeElement(this->titleH);
+        this->removeElement(this->artistH);
+        this->removeElement(this->albumH);
+        this->removeElement(this->lengthH);
 
-        // Create items for artists
+        // Now prepare this frame
+        this->heading->setString("Artists");
+        CustomElm::ScrollableGrid * grid = new CustomElm::ScrollableGrid(this->x(), this->y() + 150, this->w() - 10, this->h() - 150, 250, 3);
+        grid->setShowScrollBar(true);
+        grid->setScrollBarColour(this->app->theme()->muted2());
+
+        // Create items for artists (note: this completely breaks how lists are supposed to be used)
         std::vector<Metadata::Artist> m = this->app->database()->getAllArtistMetadata();
         if (m.size() > 0) {
-            // Each container represents a row, which holds 3 ListArtists
-            size_t rows = m.size()/COLUMNS + (m.size() % COLUMNS > 0 ? 1 : 0);
-            for (size_t row = 0; row < rows; row++) {
-                Aether::Container * c = new Aether::Container(0, 0, 1, 250);
-                this->list->addElement(c);
-
-                // Now create appropriate number of ListArtists and insert into row
-                size_t num = (m.size() - (row * COLUMNS));
-                num = (num > 3 ? 3 : num);
-                for (size_t col = 0; col < num; col++) {
-                    // Create and position item in container
-                    CustomElm::ListArtist * l = new CustomElm::ListArtist(c->x() + (col/(float)COLUMNS)*(c->w()), c->y(), "romfs:/misc/noartist.png");
-
-                    // Set strings and callbacks
-                    size_t idx = (row * COLUMNS) + col;
-                    l->setNameString(m[idx].name);
-                    std::string str = std::to_string(m[idx].albumCount) + (m[idx].albumCount == 1 ? " album" : " albums");
-                    str += " | " + std::to_string(m[idx].songCount) + (m[idx].songCount == 1 ? " song" : " songs");
-                    l->setCountsString(str);
-                    l->setDotsColour(this->app->theme()->muted());
-                    l->setTextColour(this->app->theme()->FG());
-                    l->setMutedTextColour(this->app->theme()->muted());
-                    l->setCallback([this, idx](){
-                        // Change to artist's page
-                    });
-                    ArtistID id = m[idx].ID;
-                    l->setMoreCallback([this, id]() {
-                        // Show a menu?
-                    });
-                    c->addElement(l);
-                }
-
-                if (row == 0) {
-                    c->setY(this->list->y() + 10);
-                }
+            for (size_t i = 0; i < m.size(); i++) {
+                CustomElm::ListArtist * l = new CustomElm::ListArtist("romfs:/misc/noartist.png");
+                l->setNameString(m[i].name);
+                std::string str = std::to_string(m[i].albumCount) + (m[i].albumCount == 1 ? " album" : " albums");
+                str += " | " + std::to_string(m[i].songCount) + (m[i].songCount == 1 ? " song" : " songs");
+                l->setCountsString(str);
+                l->setDotsColour(this->app->theme()->muted());
+                l->setTextColour(this->app->theme()->FG());
+                l->setMutedTextColour(this->app->theme()->muted());
+                l->setCallback([this, i](){
+                    // Change to artist's page
+                });
+                ArtistID id = m[i].ID;
+                l->setMoreCallback([this, id]() {
+                    // Show a menu?
+                });
+                grid->addElement(l);
             }
 
             this->subLength->setHidden(true);
             this->subTotal->setString(std::to_string(m.size()) + (m.size() == 1 ? " artist" : " artists" ));
             this->subTotal->setX(this->x() + 885 - this->subTotal->w());
 
-            this->setFocussed(this->list);
+            this->addElement(grid);
+            this->setFocussed(grid);
 
         // Show message if no artists
         } else {
-            this->list->setHidden(true);
+            grid->setHidden(true);
             this->subLength->setHidden(true);
             this->subTotal->setHidden(true);
-            Aether::Text * emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "No artists found!", 24);
+            Aether::Text * emptyMsg = new Aether::Text(0, grid->y() + grid->h()*0.4, "No artists found!", 24);
             emptyMsg->setColour(this->app->theme()->FG());
             emptyMsg->setX(this->x() + (this->w() - emptyMsg->w())/2);
             this->addElement(emptyMsg);

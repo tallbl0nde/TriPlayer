@@ -32,10 +32,12 @@ namespace CustomElm {
 
         public:
             // Constructor sets up elements and takes path to image
-            ListArtist(int, int, std::string);
+            ListArtist(std::string);
 
             // Override setInactive to deactivate touch on dots
             void setInactive();
+            // Override setW to prevent list stretching out the element
+            void setW(int);
 
             // Handle button press and pressing more button first
             bool handleEvent(Aether::InputEvent *);
