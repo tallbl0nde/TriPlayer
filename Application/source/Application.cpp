@@ -67,7 +67,7 @@ namespace Main {
         bool hasArt = false;
         std::string path = this->database_->getPathForID(id);
         if (path.length() > 0) {
-            Metadata::AlbumArt art = Utils::MP3::getArtFromID3(path);
+            Metadata::Art art = Utils::MP3::getArtFromID3(path);
             if (art.data != nullptr) {
                 this->ovlSongMenu->setAlbum(new Aether::Image(0, 0, art.data, art.size));
                 hasArt = true;

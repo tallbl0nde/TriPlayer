@@ -4,6 +4,9 @@
 #include "ui/overlay/SongMenu.hpp"
 #include "utils/Utils.hpp"
 
+// Number of ListArtists per row
+#define COLUMNS 3
+
 namespace Frame {
     Artists::Artists(Main::Application * a) : Frame(a) {
         this->heading->setString("Artists");
@@ -11,27 +14,40 @@ namespace Frame {
         // Create items for artists
         std::vector<Metadata::Artist> m = this->app->database()->getAllArtistMetadata();
         if (m.size() > 0) {
-            for (size_t i = 0; i < m.size(); i++) {
-                CustomElm::ListArtist * l = new CustomElm::ListArtist();
-                l->setNameString(m[i].name);
-                std::string str = std::to_string(m[i].albumCount) + (m[i].albumCount == 1 ? " album" : " albums");
-                str += " | " + std::to_string(m[i].songCount) + (m[i].songCount == 1 ? " song" : " songs");
-                l->setCountsString(str);
-                l->setDotsColour(this->app->theme()->muted());
-                l->setLineColour(this->app->theme()->muted2());
-                l->setTextColour(this->app->theme()->FG());
-                l->setMutedTextColour(this->app->theme()->muted());
-                l->setCallback([this, i](){
-                    // Change to artist's page
-                });
-                ArtistID id = m[i].ID;
-                l->setMoreCallback([this, id]() {
-                    // Show a menu?
-                });
-                this->list->addElement(l);
+            // Each container represents a row, which holds 3 ListArtists
+            size_t rows = m.size()/COLUMNS + (m.size() % COLUMNS > 0 ? 1 : 0);
+            for (size_t row = 0; row < rows; row++) {
+                Aether::Container * c = new Aether::Container(0, 0, 1, 250);
+                this->list->addElement(c);
 
-                if (i == 0) {
-                    l->setY(this->list->y() + 10);
+                // Now create appropriate number of ListArtists and insert into row
+                size_t num = (m.size() - (row * COLUMNS));
+                num = (num > 3 ? 3 : num);
+                for (size_t col = 0; col < num; col++) {
+                    // Create and position item in container
+                    CustomElm::ListArtist * l = new CustomElm::ListArtist(c->x() + (col/(float)COLUMNS)*(c->w()), c->y(), "romfs:/misc/noartist.png");
+
+                    // Set strings and callbacks
+                    size_t idx = (row * COLUMNS) + col;
+                    l->setNameString(m[idx].name);
+                    std::string str = std::to_string(m[idx].albumCount) + (m[idx].albumCount == 1 ? " album" : " albums");
+                    str += " | " + std::to_string(m[idx].songCount) + (m[idx].songCount == 1 ? " song" : " songs");
+                    l->setCountsString(str);
+                    l->setDotsColour(this->app->theme()->muted());
+                    l->setTextColour(this->app->theme()->FG());
+                    l->setMutedTextColour(this->app->theme()->muted());
+                    l->setCallback([this, idx](){
+                        // Change to artist's page
+                    });
+                    ArtistID id = m[idx].ID;
+                    l->setMoreCallback([this, id]() {
+                        // Show a menu?
+                    });
+                    c->addElement(l);
+                }
+
+                if (row == 0) {
+                    c->setY(this->list->y() + 10);
                 }
             }
 

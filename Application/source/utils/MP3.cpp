@@ -204,8 +204,8 @@ namespace Utils::MP3 {
     }
 
     // Searches and returns an appropriate image
-    Metadata::AlbumArt getArtFromID3(std::string path) {
-        Metadata::AlbumArt m;
+    Metadata::Art getArtFromID3(std::string path) {
+        Metadata::Art m;
         m.data = nullptr;
         m.size = 0;
 

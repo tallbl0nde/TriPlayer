@@ -56,7 +56,7 @@ namespace Screen {
 
             // Change album cover
             std::string path = this->app->database()->getPathForID(id);
-            Metadata::AlbumArt art = Utils::MP3::getArtFromID3(path);
+            Metadata::Art art = Utils::MP3::getArtFromID3(path);
             this->player->setAlbumCover(art.data, art.size);
             delete[] art.data;
         }

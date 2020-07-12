@@ -36,7 +36,7 @@ namespace Metadata {
         std::string name;           // Album's name
     };
 
-    struct AlbumArt {
+    struct Art {
         unsigned char * data;       // Pointer to COPIED data (nullptr if an error occurred)
         size_t size;                // Size of album art in bytes
     };

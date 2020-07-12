@@ -3,33 +3,34 @@
 // Font sizes
 #define COUNT_FONT_SIZE 18
 #define NAME_FONT_SIZE 24
-// Height of item
-#define HEIGHT 80
-// Amount either side of list to keep textures (in pixels)
+// Dimensions
+#define IMAGE_SIZE 150
+#define WIDTH 250
+#define HEIGHT 230
+// Amount either side of screen to keep textures (in pixels)
 #define TEX_THRESHOLD 2000
-// Pixel gap between text fields
-#define TEXT_GAP 30
+// Padding either side of name
+#define SIDE_PADDING 35
 
 namespace CustomElm {
-    SDL_Texture * ListArtist::lineTexture = nullptr;
-
-    ListArtist::ListArtist() : Element(0, 0, 100, HEIGHT) {
+    ListArtist::ListArtist(int x, int y, std::string path) : Element(x, y, WIDTH, HEIGHT) {
+        this->image = new Aether::Image(this->x(), this->y(), path, 1, 1, Aether::RenderType::Deferred);
+        this->addElement(this->image);
+        this->image->setHidden(true);
         this->name = new Aether::Text(this->x(), this->y(), "", NAME_FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
         this->name->setHidden(true);
+        this->name->setScrollSpeed(35);
+        this->name->setScrollWaitTime(500);
         this->addElement(this->name);
         this->counts = new Aether::Text(this->x(), this->y(), "", COUNT_FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
         this->counts->setHidden(true);
+        this->counts->setScrollSpeed(35);
+        this->counts->setScrollWaitTime(500);
         this->addElement(this->counts);
         this->dots = new Aether::Image(this->x(), this->y(), "romfs:/icons/verticaldots.png", 1, 1, Aether::RenderType::Deferred);
         this->addElement(this->dots);
         this->dots->setHidden(true);
         this->isRendering = Waiting;
-
-        // Create line texture if it doesn't exist
-        if (this->lineTexture == nullptr) {
-            this->lineTexture = SDLHelper::renderFilledRect(this->w(), 1);
-        }
-        this->lineColour = Aether::Colour{255, 255, 255, 255};
     }
 
     void ListArtist::setInactive() {
@@ -66,10 +67,20 @@ namespace CustomElm {
     void ListArtist::update(uint32_t dt) {
         Element::update(dt);
 
+        // Scroll if this element is selected
+        if (this->highlighted() && !this->name->scroll()) {
+            this->name->setScroll(true);
+            this->counts->setScroll(true);
+        } else if (!this->highlighted() && this->name->scroll()) {
+            this->name->setScroll(false);
+            this->counts->setScroll(false);
+        }
+
         switch (this->isRendering) {
             case Waiting:
                 // Waiting to render - check position and start if within threshold
-                if (this->y() >= this->parent()->y() - TEX_THRESHOLD && this->y() <= this->parent()->y() + this->parent()->h() + TEX_THRESHOLD) {
+                if (this->y() + this->h() > -TEX_THRESHOLD && this->y() < 720 + TEX_THRESHOLD) {
+                    this->image->startRendering();
                     this->name->startRendering();
                     this->counts->startRendering();
                     this->dots->startRendering();
@@ -79,8 +90,9 @@ namespace CustomElm {
 
             case InProgress:
                 // Check if all are ready and if so move show and change to done
-                if (this->name->textureReady() && this->counts->textureReady() && this->dots->textureReady()) {
+                if (this->image->textureReady() && this->name->textureReady() && this->counts->textureReady() && this->dots->textureReady()) {
                     this->positionItems();
+                    this->image->setHidden(false);
                     this->name->setHidden(false);
                     this->counts->setHidden(false);
                     this->dots->setHidden(false);
@@ -89,24 +101,18 @@ namespace CustomElm {
 
             case Done:
                 // Check if move outside of threshold and if so remove texture to save memory
-                if (this->y() < this->parent()->y() - TEX_THRESHOLD || this->y() > this->parent()->y() + this->parent()->h() + TEX_THRESHOLD) {
+                if (this->y() + this->h() < -TEX_THRESHOLD || this->y() > 720 + TEX_THRESHOLD) {
+                    this->image->destroyTexture();
                     this->name->destroyTexture();
                     this->counts->destroyTexture();
                     this->dots->destroyTexture();
+                    this->image->setHidden(true);
                     this->name->setHidden(true);
                     this->counts->setHidden(true);
                     this->dots->setHidden(true);
                     this->isRendering = Waiting;
                 }
                 break;
-        }
-    }
-
-    void ListArtist::render() {
-        Element::render();
-        if (this->isRendering == Done && this->isVisible()) {
-            SDLHelper::drawTexture(this->lineTexture, this->lineColour, this->x(), this->y(), this->w());
-            SDLHelper::drawTexture(this->lineTexture, this->lineColour, this->x(), this->y() + this->h(), this->w());
         }
     }
 
@@ -126,10 +132,6 @@ namespace CustomElm {
         this->dots->setColour(c);
     }
 
-    void ListArtist::setLineColour(Aether::Colour c) {
-        this->lineColour = c;
-    }
-
     void ListArtist::setTextColour(Aether::Colour c) {
         this->name->setColour(c);
     }
@@ -138,16 +140,26 @@ namespace CustomElm {
         this->counts->setColour(c);
     }
 
-    void ListArtist::setW(int w) {
-        Element::setW(w);
-        this->positionItems();
-    }
-
     void ListArtist::positionItems() {
-        this->name->setX(this->x() + 15);
-        this->counts->setX(this->name->x());
-        this->dots->setXY(this->x() + this->w() - 25, this->y() + (this->h() - this->dots->h())/2 + 1);
-        this->name->setY(this->y() + 11);
-        this->counts->setY(this->name->y() + this->name->h() + 5);
+        this->image->setXY(this->x() + (this->w() - IMAGE_SIZE)/2, this->y() + 5);
+        this->image->setWH(IMAGE_SIZE, IMAGE_SIZE);
+
+        // Make text scrollable if it's too long
+        this->name->setY(this->image->y() + this->image->h() + 5);
+        if (this->name->w() > this->w() - 2*SIDE_PADDING) {
+            this->name->setX(this->x() + SIDE_PADDING);
+            this->name->setW(this->w() - 2*SIDE_PADDING);
+        } else {
+            this->name->setX(this->x() + (this->w() - this->name->w())/2);
+        }
+        this->counts->setY(this->name->y() + this->name->h() + 4);
+        if (this->counts->w() > this->w() - 2*SIDE_PADDING) {
+            this->counts->setX(this->x() + SIDE_PADDING);
+            this->counts->setW(this->w() - 2*SIDE_PADDING);
+        } else {
+            this->counts->setX(this->x() + (this->w() - this->counts->w())/2);
+        }
+
+        this->dots->setXY(this->x() + this->w() - 20, this->counts->y() - 2 - (this->dots->h())/2);
     }
 }

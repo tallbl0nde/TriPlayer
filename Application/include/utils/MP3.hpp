@@ -13,7 +13,7 @@ namespace Utils::MP3 {
 
     // Reads image(s) from ID3 tags using mpg123 and returns SongArt
     // data pointer will be nullptr and size 0 if none found
-    Metadata::AlbumArt getArtFromID3(std::string);
+    Metadata::Art getArtFromID3(std::string);
 
     // Reads ID3 tags of file using mpg123 and returns SongInfo
     // ID is -1 on success (filled), -2 on success (song has no tags), -3 on failure

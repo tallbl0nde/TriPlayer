@@ -4,7 +4,7 @@
 #define FONT_SIZE 22
 // Height of item
 #define HEIGHT 60
-// Amount either side of list to keep textures (in pixels)
+// Amount either side of screen to keep textures (in pixels)
 #define TEX_THRESHOLD 2000
 // Pixel gap between text fields
 #define TEXT_GAP 30
@@ -74,7 +74,7 @@ namespace CustomElm {
         switch (this->isRendering) {
             case Waiting:
                 // Waiting to render - check position and start if within threshold
-                if (this->y() >= this->parent()->y() - TEX_THRESHOLD && this->y() <= this->parent()->y() + this->parent()->h() + TEX_THRESHOLD) {
+                if (this->y() + this->h() > -TEX_THRESHOLD && this->y() < 720 + TEX_THRESHOLD) {
                     this->title->startRendering();
                     this->artist->startRendering();
                     this->album->startRendering();
@@ -98,7 +98,7 @@ namespace CustomElm {
 
             case Done:
                 // Check if move outside of threshold and if so remove texture to save memory
-                if (this->y() < this->parent()->y() - TEX_THRESHOLD || this->y() > this->parent()->y() + this->parent()->h() + TEX_THRESHOLD) {
+                if (this->y() + this->h() < -TEX_THRESHOLD || this->y() > 720 + TEX_THRESHOLD) {
                     this->title->destroyTexture();
                     this->artist->destroyTexture();
                     this->album->destroyTexture();

@@ -12,10 +12,8 @@ namespace CustomElm {
         };
 
         private:
-            // Static texture for top/bottom lines
-            // This works as all ListArtist's will only be in the same list
-            static SDL_Texture * lineTexture;
-            Aether::Colour lineColour;
+            // Artist image
+            Aether::Image * image;
 
             // Texts
             Aether::Text * name;
@@ -29,12 +27,12 @@ namespace CustomElm {
             // Status of threaded elements
             RenderingStatus isRendering;
 
-            // Position items on x axis
+            // Positions items after rendering
             void positionItems();
 
         public:
-            // Constructor sets up elements
-            ListArtist();
+            // Constructor sets up elements and takes path to image
+            ListArtist(int, int, std::string);
 
             // Override setInactive to deactivate touch on dots
             void setInactive();
@@ -42,11 +40,8 @@ namespace CustomElm {
             // Handle button press and pressing more button first
             bool handleEvent(Aether::InputEvent *);
 
-            // Position text once rendered
+            // Unhide once all elements have rendered
             void update(uint32_t);
-
-            // Render lineTexture as well as normal rendering
-            void render();
 
             // Set callback for "more" button
             void setMoreCallback(std::function<void()>);
@@ -57,12 +52,8 @@ namespace CustomElm {
 
             // Set colours
             void setDotsColour(Aether::Colour);
-            void setLineColour(Aether::Colour);
             void setTextColour(Aether::Colour);
             void setMutedTextColour(Aether::Colour);
-
-            // Reposition elements on width change
-            void setW(int);
     };
 };
 
