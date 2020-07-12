@@ -33,8 +33,8 @@ BUILD		:=	build
 INCLUDES	:=	include ../Common/include libs/dtl/dtl
 SOURCES		:=	source	../Common/source
 ROMFS		:=	romfs
-LIBS		:=  -lAether -lmpg123 -lnx -lSQLite `sdl2-config --libs` -lSDL2_ttf `freetype-config --libs` -lSDL2_gfx -lSDL2_image -lpng -ljpeg -lwebp
-LIBDIRS		:=	$(PORTLIBS) $(LIBNX) $(CURDIR)/libs/Aether $(CURDIR)/../Common/libs/SQLite
+LIBS		:=  -lAether -lcurl -lmbedtls -lmbedx509 -lmbedcrypto -lmpg123 -lnx -lSQLite `sdl2-config --libs` -lSDL2_ttf `freetype-config --libs` -lSDL2_gfx -lSDL2_image -lpng -ljpeg -lwebp
+LIBDIRS		:=	$(PORTLIBS) $(LIBNX) $(CURDIR)/libs/Aether $(CURDIR)/libs/json $(CURDIR)/../Common/libs/SQLite
 
 #---------------------------------------------------------------------------------
 # Application version
@@ -99,6 +99,7 @@ endif
 all: $(OUTPUT).nro
 $(OUTPUT).nro:	$(OUTPUT).elf $(OUTPUT).nacp
 $(OUTPUT).elf:	$(OFILES)
+	@echo Linking $(TARGET).elf
 	@$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
 $(OFILES): | libs
 

@@ -1,5 +1,6 @@
 #include "Application.hpp"
 #include "Log.hpp"
+#include "utils/Curl.hpp"
 #include "utils/FS.hpp"
 #include "utils/MP3.hpp"
 
@@ -19,6 +20,7 @@ int main(void) {
     // Start services
     romfsInit();
     socketInitializeDefault();
+    Utils::Curl::init();
     Utils::MP3::init();
 
     // Start actual 'app' execution
@@ -28,6 +30,7 @@ int main(void) {
 
     // Stop services
     Utils::MP3::exit();
+    Utils::Curl::exit();
     socketExit();
     romfsExit();
 

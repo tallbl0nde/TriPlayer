@@ -7,3 +7,6 @@
 [submodule "Application/libs/dtl"]
 	path = Application/libs/dtl
 	url = https://github.com/cubicdaiya/dtl
+[submodule "Application/libs/json"]
+	path = Application/libs/json
+	url = https://github.com/nlohmann/json.git

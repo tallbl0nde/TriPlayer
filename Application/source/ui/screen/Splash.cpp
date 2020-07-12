@@ -1,6 +1,9 @@
 #include "Application.hpp"
 #include "ui/screen/Splash.hpp"
 
+// #include "utils/metadata/AudioDB.hpp"
+// #include "utils/metadata/MusicBrainz.hpp"
+
 namespace Screen {
     Splash::Splash(Main::Application * a) : Screen() {
         this->app = a;
@@ -124,6 +127,15 @@ namespace Screen {
         this->currentStage = ProcessStage::Search;
         this->lastStage = ProcessStage::Search;
         this->stopSignal = false;
+
+        // auto vec = Metadata::MusicBrainz::searchForArtists("s3rl", 3);
+        // if (vec.size() > 0) {
+        //     auto data = Metadata::AudioDB::getArtistImage(vec[0].id);
+        //     if (data.size() > 0) {
+        //         Aether::Image * i = new Aether::Image(0, 0, &data[0], data.size());
+        //         this->addElement(i);
+        //     }
+        // }
 
         // Check if connected to sysmodule
         if (!this->app->sysmodule()->error()) {
