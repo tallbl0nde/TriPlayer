@@ -1,14 +1,14 @@
-#ifndef OVERLAY_SONGMENU_HPP
-#define OVERLAY_SONGMENU_HPP
+#ifndef OVERLAY_MENU_SONG_HPP
+#define OVERLAY_MENU_SONG_HPP
 
 #include "ui/element/MenuButton.hpp"
+#include "ui/overlay/menu/Menu.hpp"
 
-namespace CustomOvl {
+namespace CustomOvl::Menu {
     // Overlay shown when pressing the dots next to a song
-    class SongMenu : public Aether::Overlay {
+    class Song : public Menu {
         private:
             // Elements
-            Aether::Rectangle * bg;
             Aether::Image * album;
             Aether::Text * title;
             Aether::Text * artist;
@@ -19,13 +19,9 @@ namespace CustomOvl {
             CustomElm::MenuButton * goToAlbum;
             CustomElm::MenuButton * viewDetails;
 
-            // Separating line texture
-            SDL_Texture * line;
-            Aether::Colour lineCol;
-
         public:
             // Pass true to show 'Remove from Queue'
-            SongMenu(bool);
+            Song(bool);
 
             // Set values
             void setAlbum(Aether::Image *);
@@ -47,20 +43,12 @@ namespace CustomOvl {
             void setViewDetailsFunc(std::function<void()>);
 
             // Set colours
-            void setBackgroundColour(Aether::Colour);
             void setIconColour(Aether::Colour);
-            void setLineColour(Aether::Colour);
             void setMutedTextColour(Aether::Colour);
             void setTextColour(Aether::Colour);
 
-            // Close if tapped outside of bg
-            bool handleEvent(Aether::InputEvent *);
-
             // Draw line texture three times
             void render();
-
-            // Delete line texture
-            ~SongMenu();
     };
 };
 

@@ -99,14 +99,14 @@ namespace Main {
 
     void Application::showSongMenu(SongID id) {
         delete this->ovlSongMenu;
-        this->ovlSongMenu = new CustomOvl::SongMenu(false);
+        this->ovlSongMenu = new CustomOvl::Menu::Song(false);
         this->setupSongMenu(id);
         this->addOverlay(this->ovlSongMenu);
     }
 
     void Application::showSongMenu(SongID id, size_t pos, SongMenuType type) {
         delete this->ovlSongMenu;
-        this->ovlSongMenu = new CustomOvl::SongMenu(true);
+        this->ovlSongMenu = new CustomOvl::Menu::Song(true);
         this->setupSongMenu(id);
         if (type == SongMenuType::RemoveFromQueue) {
             this->ovlSongMenu->setRemoveFromQueueFunc([this, pos]() {

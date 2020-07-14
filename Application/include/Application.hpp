@@ -4,7 +4,7 @@
 #include <future>
 #include "db/Database.hpp"
 #include "sysmodule/Sysmodule.hpp"
-#include "ui/overlay/SongMenu.hpp"
+#include "ui/overlay/menu/Song.hpp"
 #include "ui/Theme.hpp"
 
 // Forward declaration because cyclic dependency /shrug
@@ -38,7 +38,7 @@ namespace Main {
             Screen::Splash * scSplash;
 
             // Overlays
-            CustomOvl::SongMenu * ovlSongMenu;
+            CustomOvl::Menu::Song * ovlSongMenu;
             void setupSongMenu(SongID);
 
             // Database object

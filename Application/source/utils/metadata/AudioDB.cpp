@@ -2,8 +2,10 @@
 #include "utils/Curl.hpp"
 #include "utils/metadata/AudioDB.hpp"
 
+// API key
+#define API_KEY "1"
 // Format of API request
-#define API_REQUEST "https://theaudiodb.com/api/v1/json/1/artist-mb.php?i="
+#define API_REQUEST "https://theaudiodb.com/api/v1/json/" API_KEY "/artist-mb.php?i="
 
 namespace Metadata::AudioDB {
     std::vector<unsigned char> getArtistImage(const std::string & id) {
