@@ -10,6 +10,7 @@
 namespace CustomElm {
     Frame::Frame(Main::Application * a) : Container(X, Y, W, H) {
         this->app = a;
+        this->changeFrame = nullptr;
 
         // Set up elements
         this->heading = new Aether::Text(this->x() + 65, this->y() + 40, "", 60);
@@ -38,5 +39,9 @@ namespace CustomElm {
         this->list->setScrollBarColour(this->app->theme()->muted2());
         this->list->setShowScrollBar(true);
         this->addElement(this->list);
+    }
+
+    void Frame::setChangeFrameFunc(std::function<void(::Frame::Type, ::Frame::Action, int)> f) {
+        this->changeFrame = f;
     }
 };

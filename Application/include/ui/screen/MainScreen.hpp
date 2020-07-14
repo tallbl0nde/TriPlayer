@@ -1,6 +1,7 @@
 #ifndef SCREEN_MAINSCREEN_HPP
 #define SCREEN_MAINSCREEN_HPP
 
+#include <stack>
 #include "ui/element/Frame.hpp"
 #include "ui/element/Player.hpp"
 #include "ui/element/SearchBox.hpp"
@@ -42,22 +43,23 @@ namespace Screen {
 
             // Right-hand side 'frame'
             CustomElm::Frame * frame;
+            // Stack of frames
+            std::stack<CustomElm::Frame *> frameStack;
 
             // Cached vars to avoid updating every frame
             SongID playingID;
 
             // Finalize screen state - add elements, set frame
             void finalizeState();
-            // 'Reset' screen state - deselect side items, and delete frame
+            // Undoes finalizeState()
             void resetState();
-
-            // Functions to setup screen based on chosen item
-            void setupArtists();
-            void setupQueue();
-            void setupSongs();
 
         public:
             MainScreen(Main::Application *);
+
+            // Changes to the type of frame provided
+            // Pass type, action to take and ID to pass to frame (not always used)
+            void changeFrame(Frame::Type, Frame::Action, int = -1);
 
             // Update player values
             void update(uint32_t);

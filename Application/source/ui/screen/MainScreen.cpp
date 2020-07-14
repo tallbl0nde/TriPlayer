@@ -1,5 +1,6 @@
 #include "Application.hpp"
 #include "Log.hpp"
+#include "ui/frame/Artist.hpp"
 #include "ui/frame/FrameArtists.hpp"
 #include "ui/frame/FrameQueue.hpp"
 #include "ui/frame/FrameSongs.hpp"
@@ -11,12 +12,27 @@ namespace Screen {
         this->app = a;
         this->playingID = -1;
 
-        // Either exit or unfocus player on B
+        // Attempt the following in order when B is pressed:
+        // 1. Shift focus from the player to the main frame
+        // 2. Delete the current frame and pop one from the stack
+        // 3. Show exit prompt
         this->onButtonPress(Aether::Button::B, [this]() {
-            if (this->playerDim->hidden()) {
-                this->app->exit();
-            } else {
+            if (this->focussed() == this->player) {
                 this->setFocussed(this->container);
+
+            } else if (!this->frameStack.empty()) {
+                this->container->removeElement(this->frame);
+                this->frame = this->frameStack.top();
+                this->frameStack.pop();
+
+                this->container->addElement(this->frame);
+                this->container->setHasSelectable(false);
+                this->returnElement(this->playerDim);
+                this->addElement(this->playerDim);
+
+            } else {
+                // I'll put a prompt here one day
+                this->app->exit();
             }
         });
 
@@ -29,6 +45,75 @@ namespace Screen {
                 this->setFocussed(this->container);
             }
         });
+
+        // Create dimming element
+        this->playerDim = new Aether::Rectangle(0, 0, 1280, 590);
+        this->playerDim->setColour(Aether::Colour{0, 0, 0, 130});
+    }
+
+    void MainScreen::changeFrame(Frame::Type t, Frame::Action a, int id) {
+        switch (a) {
+            // Push the current frame on the stack
+            case Frame::Action::Push:
+                // Maybe show an error if too deep?
+                this->container->returnElement(this->frame);
+                this->frameStack.push(this->frame);
+                break;
+
+            // Empty stack and delete current frame
+            case Frame::Action::Reset:
+                this->container->removeElement(this->frame);
+                while (!this->frameStack.empty()) {
+                    delete this->frameStack.top();
+                    this->frameStack.pop();
+                }
+                break;
+        }
+        this->frame = nullptr;
+
+        this->resetState();
+        switch (t) {
+            case Frame::Type::Playlists:
+                // this->sidePlaylists->setActivated(true);
+                // this->frame = new Frame::Playlists(this->app);
+                break;
+
+            case Frame::Type::Playlist:
+                // this->frame = new Frame::Playlist(this->app, id);
+                break;
+
+            case Frame::Type::Albums:
+                // this->sideAlbums->setActivated(true);
+                // this->frame = new Frame::Albums(this->app);
+                break;
+
+            case Frame::Type::Album:
+                // this->frame = new Frame::Album(this->app, id);
+                break;
+
+            case Frame::Type::Artists:
+                this->sideArtists->setActivated(true);
+                this->frame = new Frame::Artists(this->app);
+                break;
+
+            case Frame::Type::Artist:
+                this->frame = new Frame::Artist(this->app, id);
+                break;
+
+            case Frame::Type::Songs:
+                this->sideSongs->setActivated(true);
+                this->frame = new Frame::Songs(this->app);
+                break;
+
+            case Frame::Type::Queue:
+                this->sideQueue->setActivated(true);
+                this->frame = new Frame::Queue(this->app);
+                break;
+        }
+        this->frame->setChangeFrameFunc([this](Frame::Type t, Frame::Action a, int id) {
+            this->changeFrame(t, a, id);
+        });
+        this->finalizeState();
     }
 
     void MainScreen::update(uint32_t dt) {
@@ -74,42 +159,19 @@ namespace Screen {
         this->container->setHasSelectable(false);
 
         // (Re)add dimming element after frame so it's drawn on top
-        this->playerDim = new Aether::Rectangle(0, 0, 1280, 590);
-        this->playerDim->setColour(Aether::Colour{0, 0, 0, 130});
         this->addElement(this->playerDim);
     }
 
     void MainScreen::resetState() {
+        // Deselect all side buttons
         this->sideRP->setActivated(false);
         this->sideSongs->setActivated(false);
         this->sideArtists->setActivated(false);
         this->sideAlbums->setActivated(false);
         this->sideQueue->setActivated(false);
-        this->container->removeElement(this->frame);
-        this->removeElement(this->playerDim);
-        this->frame = nullptr;
-        this->playerDim = nullptr;
-    }
 
-    void MainScreen::setupArtists() {
-        this->resetState();
-        this->sideArtists->setActivated(true);
-        this->frame = new Frame::Artists(this->app);
-        this->finalizeState();
-    }
-
-    void MainScreen::setupQueue() {
-        this->resetState();
-        this->sideQueue->setActivated(true);
-        this->frame = new Frame::Queue(this->app);
-        this->finalizeState();
-    }
-
-    void MainScreen::setupSongs() {
-        this->resetState();
-        this->sideSongs->setActivated(true);
-        this->frame = new Frame::Songs(this->app);
-        this->finalizeState();
+        // Get the dimming element back so it can be added afterwards again
+        this->returnElement(this->playerDim);
     }
 
     void MainScreen::onLoad() {
@@ -168,7 +230,7 @@ namespace Screen {
         this->sideSongs->setActiveColour(this->app->theme()->accent());
         this->sideSongs->setInactiveColour(this->app->theme()->FG());
         this->sideSongs->setCallback([this](){
-            this->setupSongs();
+            this->changeFrame(Frame::Type::Songs, Frame::Action::Reset);
         });
         this->container->addElement(this->sideSongs);
         this->sideArtists = new CustomElm::SideButton(10, this->sideSongs->y() + 60, 290);
@@ -177,7 +239,7 @@ namespace Screen {
         this->sideArtists->setActiveColour(this->app->theme()->accent());
         this->sideArtists->setInactiveColour(this->app->theme()->FG());
         this->sideArtists->setCallback([this](){
-            this->setupArtists();
+            this->changeFrame(Frame::Type::Artists, Frame::Action::Reset);
         });
         this->container->addElement(this->sideArtists);
         this->sideAlbums = new CustomElm::SideButton(10, this->sideArtists->y() + 60, 290);
@@ -198,7 +260,7 @@ namespace Screen {
         this->sideQueue->setActiveColour(this->app->theme()->accent());
         this->sideQueue->setInactiveColour(this->app->theme()->FG());
         this->sideQueue->setCallback([this](){
-            this->setupQueue();
+            this->changeFrame(Frame::Type::Queue, Frame::Action::Reset);
         });
         this->container->addElement(this->sideQueue);
         this->addElement(this->container);
@@ -249,14 +311,21 @@ namespace Screen {
 
         // Set songs active
         this->frame = nullptr;
-        this->playerDim = nullptr;
-        this->setupSongs();
+        this->changeFrame(Frame::Type::Songs, Frame::Action::Reset);
         this->container->setFocussed(this->sideSongs);
     }
 
     void MainScreen::onUnload() {
-        this->resetState();
-        this->removeElement(this->container);
+        // Ensure all frames are deleted
+        this->container->removeElement(this->frame);
+        while (!this->frameStack.empty()) {
+            delete this->frameStack.top();
+            this->frameStack.pop();
+        }
+
+        // The rest of this isn't necessary in this context but it's good to do so
+        this->removeElement(this->playerDim);
         this->removeElement(this->player);
+        this->removeElement(this->container);
     }
 };

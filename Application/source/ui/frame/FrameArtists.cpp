@@ -2,6 +2,7 @@
 #include "ui/element/ListArtist.hpp"
 #include "ui/element/ScrollableGrid.hpp"
 #include "ui/frame/FrameArtists.hpp"
+#include "ui/screen/MainScreen.hpp"
 
 // Number of ListArtists per row
 #define COLUMNS 3
@@ -34,10 +35,10 @@ namespace Frame {
                 l->setDotsColour(this->app->theme()->muted());
                 l->setTextColour(this->app->theme()->FG());
                 l->setMutedTextColour(this->app->theme()->muted());
-                l->setCallback([this, i](){
-                    // Change to artist's page
-                });
                 ArtistID id = m[i].ID;
+                l->setCallback([this, id](){
+                    this->changeFrame(::Frame::Type::Artist, ::Frame::Action::Push, id);
+                });
                 l->setMoreCallback([this, id]() {
                     this->createMenu(id);
                 });
