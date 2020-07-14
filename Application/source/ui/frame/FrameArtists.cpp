@@ -26,7 +26,8 @@ namespace Frame {
         std::vector<Metadata::Artist> m = this->app->database()->getAllArtistMetadata();
         if (m.size() > 0) {
             for (size_t i = 0; i < m.size(); i++) {
-                CustomElm::ListArtist * l = new CustomElm::ListArtist("romfs:/misc/noartist.png");
+                std::string img = (m[i].imagePath.empty() ? "romfs:/misc/noartist.png" : m[i].imagePath);
+                CustomElm::ListArtist * l = new CustomElm::ListArtist(img);
                 l->setNameString(m[i].name);
                 std::string str = std::to_string(m[i].albumCount) + (m[i].albumCount == 1 ? " album" : " albums");
                 str += " | " + std::to_string(m[i].songCount) + (m[i].songCount == 1 ? " song" : " songs");

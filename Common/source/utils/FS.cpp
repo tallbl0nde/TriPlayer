@@ -44,4 +44,14 @@ namespace Utils::Fs {
         std::fclose(fp);
         return true;
     }
+
+    bool writeFile(const std::string & path, const std::vector<unsigned char> & data) {
+        std::FILE * fp = std::fopen(path.c_str(), "wb");
+        if (fp == NULL) {
+            return false;
+        }
+        bool b = (std::fwrite(&data[0], sizeof(unsigned char), data.size(), fp) == data.size()*sizeof(unsigned char));
+        std::fclose(fp);
+        return b;
+    }
 };

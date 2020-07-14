@@ -33,7 +33,7 @@ namespace Metadata::AudioDB {
         }
 
         // Download image
-        success = Utils::Curl::downloadToBuffer(url, v);
+        success = Utils::Curl::downloadToBuffer(url + "/preview", v);
         if (!success) {
             v.clear();
         }

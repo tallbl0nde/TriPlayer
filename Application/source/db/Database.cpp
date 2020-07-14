@@ -10,7 +10,7 @@
 // Location of the database file
 #define DB_PATH "/switch/TriPlayer/data.sqlite3"
 // Version of the database (database begins with zero from 'template', so this started at 1)
-#define DB_VERSION 1
+#define DB_VERSION 2
 // Location of template file
 #define TEMPLATE_DB_PATH "romfs:/db/template.sqlite3"
 
@@ -93,7 +93,14 @@ bool Database::migrate() {
                     break;
                 }
                 Log::writeSuccess("[DB] Migrated to version 1");
-                version++;
+
+            case 1:
+                err = Migration::migrateTo2(this->db);
+                if (!err.empty()) {
+                    err = "Migration 2: " + err;
+                    break;
+                }
+                Log::writeSuccess("[DB] Migrated to version 2");
         }
     }
 
@@ -503,6 +510,41 @@ bool Database::removeSong(SongID id) {
     return ok;
 }
 
+bool Database::updateArtist(Metadata::Artist m) {
+    // First check we have write permission
+    if (this->db->connectionType() != SQLite::Connection::ReadWrite) {
+        this->setErrorMsg("[updateArtist] Can't update song as the database is unwritable");
+        return false;
+    }
+
+    // Now update relevant fields
+    bool ok = this->db->prepareQuery("UPDATE Artists SET name = ?, musicbrainz_id = ?, image_path = ? WHERE id = ?;");
+    ok = keepFalse(ok, this->db->bindString(0, m.name));
+    ok = keepFalse(ok, this->db->bindString(1, m.musicbrainzID));
+    ok = keepFalse(ok, this->db->bindString(2, m.imagePath));
+    ok = keepFalse(ok, this->db->bindInt(3, m.ID));
+    if (!ok) {
+        this->setErrorMsg("[updateArtist] An error occurred while preparing the statement");
+        return false;
+    }
+
+    ok = this->db->executeQuery();
+    if (!ok) {
+        this->setErrorMsg("[updateArtist] An error occurred while updating the entry");
+    } else {
+        if (Log::loggingLevel() == Log::Level::Info) {
+            Log::writeInfo("[DB] [updateArtist] '" + m.name + "' was updated");
+        }
+    }
+
+    // Mark search tables as out of date
+    if (ok) {
+        ok = this->setSearchUpdate(1);
+    }
+
+    return ok;
+}
+
 std::vector<Metadata::Artist> Database::getAllArtistMetadata() {
     std::vector<Metadata::Artist> v;
     // Check we can read
@@ -512,7 +554,7 @@ std::vector<Metadata::Artist> Database::getAllArtistMetadata() {
     }
 
     // Create a Metadata::Artist for each entry
-    bool ok = this->db->prepareAndExecuteQuery("SELECT artist_id, Artists.name, COUNT(DISTINCT album_id), COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id GROUP BY artist_id;");
+    bool ok = this->db->prepareAndExecuteQuery("SELECT artist_id, Artists.name, Artists.musicbrainz_id, Artists.image_path, COUNT(DISTINCT album_id), COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id GROUP BY artist_id;");
     if (!ok) {
         this->setErrorMsg("[getAllArtists] Unable to query for all artists");
         return v;
@@ -521,10 +563,12 @@ std::vector<Metadata::Artist> Database::getAllArtistMetadata() {
         Metadata::Artist m;
         ok = this->db->getInt(0, m.ID);
         ok = keepFalse(ok, this->db->getString(1, m.name));
+        ok = keepFalse(ok, this->db->getString(2, m.musicbrainzID));
+        ok = keepFalse(ok, this->db->getString(3, m.imagePath));
         int tmp;
-        ok = keepFalse(ok, this->db->getInt(2, tmp));
+        ok = keepFalse(ok, this->db->getInt(4, tmp));
         m.albumCount = tmp;
-        ok = keepFalse(ok, this->db->getInt(3, tmp));
+        ok = keepFalse(ok, this->db->getInt(5, tmp));
         m.songCount = tmp;
 
         if (ok) {
@@ -766,7 +810,7 @@ std::vector<Metadata::Artist> Database::searchArtists(std::string str) {
     }
 
     // Perform search
-    bool ok = this->db->prepareQuery("SELECT id, name FROM Artists WHERE name IN (SELECT * FROM FtsArtists WHERE FtsArtists MATCH ?);");
+    bool ok = this->db->prepareQuery("SELECT id, name, musicbrainz_id, image_path FROM Artists WHERE name IN (SELECT * FROM FtsArtists WHERE FtsArtists MATCH ?);");
     ok = keepFalse(ok, this->db->bindString(0, str));
     if (!ok) {
         this->setErrorMsg("[searchArtists] Unable to prepare search query");
@@ -783,6 +827,10 @@ std::vector<Metadata::Artist> Database::searchArtists(std::string str) {
         Metadata::Artist m;
         ok = this->db->getInt(0, m.ID);
         ok = keepFalse(ok, this->db->getString(1, m.name));
+        ok = keepFalse(ok, this->db->getString(2, m.musicbrainzID));
+        ok = keepFalse(ok, this->db->getString(3, m.imagePath));
+        m.songCount = 0;    // These should probably be implemented here?
+        m.albumCount = 0;
 
         if (ok) {
             v.push_back(m);
