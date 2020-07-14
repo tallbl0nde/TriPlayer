@@ -1,10 +1,10 @@
 #ifndef FRAME_SONGS_HPP
 #define FRAME_SONGS_HPP
 
-#include "ui/element/Frame.hpp"
+#include "ui/frame/Frame.hpp"
 
 namespace Frame {
-    class Songs : public CustomElm::Frame {
+    class Songs : public Frame {
         private:
             std::vector<SongID> songIDs;
 

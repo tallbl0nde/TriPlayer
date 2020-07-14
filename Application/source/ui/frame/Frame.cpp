@@ -1,5 +1,5 @@
 #include "Application.hpp"
-#include "ui/element/Frame.hpp"
+#include "ui/frame/Frame.hpp"
 
 // Size and position of all frames
 #define X 320
@@ -7,8 +7,8 @@
 #define W 960
 #define H 590
 
-namespace CustomElm {
-    Frame::Frame(Main::Application * a) : Container(X, Y, W, H) {
+namespace Frame {
+    Frame::Frame(Main::Application * a) : Aether::Container(X, Y, W, H) {
         this->app = a;
         this->changeFrame = nullptr;
 
@@ -41,7 +41,7 @@ namespace CustomElm {
         this->addElement(this->list);
     }
 
-    void Frame::setChangeFrameFunc(std::function<void(::Frame::Type, ::Frame::Action, int)> f) {
+    void Frame::setChangeFrameFunc(std::function<void(Type, Action, int)> f) {
         this->changeFrame = f;
     }
 };

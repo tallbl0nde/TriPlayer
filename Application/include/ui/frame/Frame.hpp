@@ -1,5 +1,5 @@
-#ifndef ELEMENT_FRAME_HPP
-#define ELEMENT_FRAME_HPP
+#ifndef FRAME_FRAME_HPP
+#define FRAME_FRAME_HPP
 
 #include "Aether/Aether.hpp"
 
@@ -25,9 +25,7 @@ namespace Frame {
         Songs,
         Queue
     };
-};
 
-namespace CustomElm {
     // A frame is a container that is 'swapped out' on the right hand side
     // of the main screen. The constructor prepares all elements.
     class Frame : public Aether::Container {
@@ -45,14 +43,14 @@ namespace CustomElm {
             // Pointer to app to access shared objects
             Main::Application * app;
             // Pointer to function set below
-            std::function<void(::Frame::Type, ::Frame::Action, int)> changeFrame;
+            std::function<void(Type, Action, int)> changeFrame;
 
         public:
             // Passed app pointer for sysmodule + theme
             Frame(Main::Application *);
 
             // Passed a function to call when wanting to add a frame
-            void setChangeFrameFunc(std::function<void(::Frame::Type, ::Frame::Action, int)>);
+            void setChangeFrameFunc(std::function<void(Type, Action, int)>);
     };
 };
 

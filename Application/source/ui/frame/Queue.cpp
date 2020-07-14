@@ -1,8 +1,8 @@
 #include <sstream>
 #include "Application.hpp"
 #include "dtl.hpp"
-#include "ui/frame/FrameQueue.hpp"
 #include "ui/element/ListSong.hpp"
+#include "ui/frame/Queue.hpp"
 #include "utils/Utils.hpp"
 
 // Helper function returning length of songs in queue in seconds

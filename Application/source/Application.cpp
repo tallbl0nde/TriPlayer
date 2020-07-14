@@ -1,5 +1,5 @@
 #include "Application.hpp"
-#include "ui/screen/MainScreen.hpp"
+#include "ui/screen/Home.hpp"
 #include "ui/screen/Splash.hpp"
 #include "utils/MP3.hpp"
 
@@ -29,7 +29,7 @@ namespace Main {
 
         // Setup screens
         this->scSplash = new Screen::Splash(this);
-        this->scMain = new Screen::MainScreen(this);
+        this->scHome = new Screen::Home(this);
         this->setScreen(ScreenID::Splash);
 
         // Create overlays
@@ -129,8 +129,8 @@ namespace Main {
                 this->display->setScreen(this->scSplash);
                 break;
 
-            case Main:
-                this->display->setScreen(this->scMain);
+            case Home:
+                this->display->setScreen(this->scHome);
                 break;
         }
     }
@@ -171,7 +171,7 @@ namespace Main {
         delete this->ovlSongMenu;
 
         // Delete screens
-        delete this->scMain;
+        delete this->scHome;
         delete this->scSplash;
 
         // Cleanup Aether after screens are deleted

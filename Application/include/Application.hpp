@@ -9,7 +9,7 @@
 
 // Forward declaration because cyclic dependency /shrug
 namespace Screen {
-    class MainScreen;
+    class Home;
     class Splash;
 };
 
@@ -22,7 +22,7 @@ enum class SongMenuType {
 namespace Main {
     // Enumeration for screens (allows for easy switching)
     enum ScreenID {
-        Main,
+        Home,
         Splash
     };
 
@@ -34,7 +34,7 @@ namespace Main {
             Aether::Display * display;
 
             // Screens of the app
-            Screen::MainScreen * scMain;
+            Screen::Home * scHome;
             Screen::Splash * scSplash;
 
             // Overlays

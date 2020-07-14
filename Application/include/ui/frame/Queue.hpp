@@ -2,11 +2,11 @@
 #define FRAME_QUEUE_HPP
 
 #include <list>
-#include "ui/element/Frame.hpp"
 #include "ui/element/ListSong.hpp"
+#include "ui/frame/Frame.hpp"
 
 namespace Frame {
-    class Queue : public CustomElm::Frame {
+    class Queue : public Frame {
         // Section in list
         enum class Section {
             Playing,

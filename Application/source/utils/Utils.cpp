@@ -140,6 +140,26 @@ namespace Utils {
             db->prepareSearch();
         }
 
+        // aStage = ProcessStage::Update;
+        // db->close();
+        // db->openReadWrite();
+        // auto as = db->searchArtists("Hilltop Hoods");
+        // if (as[0].musicbrainzID.empty()) {
+        //     auto vec = Metadata::MusicBrainz::searchForArtists(as[0].name, 1);
+        //     if (vec.size() > 0) {
+        //         auto data = Metadata::AudioDB::getArtistImage(vec[0].id);
+        //         if (data.size() > 0) {
+        //             as[0].musicbrainzID = vec[0].id;
+        //             as[0].imagePath = "/switch/TriPlayer/data/artist/images/" + as[0].musicbrainzID + ".png";
+        //             if (Utils::Fs::writeFile(as[0].imagePath, data)) {
+        //                 db->updateArtist(as[0]);
+        //             }
+        //         }
+        //     }
+        // }
+        // db->close();
+        // db->openReadOnly();
+
         // Cleanup database (TBD)
         if (hasLock) {
             db->close();

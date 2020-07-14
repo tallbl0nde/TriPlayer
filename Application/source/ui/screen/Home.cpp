@@ -1,14 +1,14 @@
 #include "Application.hpp"
 #include "Log.hpp"
 #include "ui/frame/Artist.hpp"
-#include "ui/frame/FrameArtists.hpp"
-#include "ui/frame/FrameQueue.hpp"
-#include "ui/frame/FrameSongs.hpp"
-#include "ui/screen/MainScreen.hpp"
+#include "ui/frame/Artists.hpp"
+#include "ui/frame/Queue.hpp"
+#include "ui/frame/Songs.hpp"
+#include "ui/screen/Home.hpp"
 #include "utils/MP3.hpp"
 
 namespace Screen {
-    MainScreen::MainScreen(Main::Application * a) : Screen() {
+    Home::Home(Main::Application * a) : Screen() {
         this->app = a;
         this->playingID = -1;
 
@@ -51,7 +51,7 @@ namespace Screen {
         this->playerDim->setColour(Aether::Colour{0, 0, 0, 130});
     }
 
-    void MainScreen::changeFrame(Frame::Type t, Frame::Action a, int id) {
+    void Home::changeFrame(Frame::Type t, Frame::Action a, int id) {
         switch (a) {
             // Push the current frame on the stack
             case Frame::Action::Push:
@@ -116,7 +116,7 @@ namespace Screen {
         this->finalizeState();
     }
 
-    void MainScreen::update(uint32_t dt) {
+    void Home::update(uint32_t dt) {
         // Update the player elements
         PlaybackStatus ps = this->app->sysmodule()->status();
         if (ps == PlaybackStatus::Error) {
@@ -153,7 +153,7 @@ namespace Screen {
         Screen::update(dt);
     }
 
-    void MainScreen::finalizeState() {
+    void Home::finalizeState() {
         // Mark the container non-selectable so the highlight won't jump to it
         this->container->addElement(this->frame);
         this->container->setHasSelectable(false);
@@ -162,7 +162,7 @@ namespace Screen {
         this->addElement(this->playerDim);
     }
 
-    void MainScreen::resetState() {
+    void Home::resetState() {
         // Deselect all side buttons
         this->sideRP->setActivated(false);
         this->sideSongs->setActivated(false);
@@ -174,7 +174,7 @@ namespace Screen {
         this->returnElement(this->playerDim);
     }
 
-    void MainScreen::onLoad() {
+    void Home::onLoad() {
         // Add background images
         this->bg = new Aether::Image(0, 0, "romfs:/bg/main.png");
         this->addElement(this->bg);
@@ -315,7 +315,7 @@ namespace Screen {
         this->container->setFocussed(this->sideSongs);
     }
 
-    void MainScreen::onUnload() {
+    void Home::onUnload() {
         // Ensure all frames are deleted
         this->container->removeElement(this->frame);
         while (!this->frameStack.empty()) {

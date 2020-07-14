@@ -1,11 +1,11 @@
 #ifndef FRAME_ARTISTS_HPP
 #define FRAME_ARTISTS_HPP
 
-#include "ui/element/Frame.hpp"
+#include "ui/frame/Frame.hpp"
 #include "ui/overlay/menu/Artist.hpp"
 
 namespace Frame {
-    class Artists : public CustomElm::Frame {
+    class Artists : public Frame {
         private:
             // Menu displayed when the dots are pressed
             CustomOvl::Menu::Artist * menu;
