@@ -11,7 +11,7 @@ namespace Metadata::MusicBrainz {
         std::vector<Artist> v;
 
         // The url will be escaped/encoded by curl
-        std::string url = API_REQUEST + name;
+        std::string url = API_REQUEST + Utils::Curl::encodeString(name);
         std::string response = "";
         bool success = Utils::Curl::downloadToString(url, response);
         if (!success || response.empty()) {
@@ -20,24 +20,26 @@ namespace Metadata::MusicBrainz {
 
         // Convert to JSON object
         nlohmann::json j = nlohmann::json::parse(response);
-        if (j["artists"] != nullptr) {
-            // Iterate over each artist to populate an Artist struct
-            for (size_t i = 0; i < j["artists"].size(); i++) {
-                if (v.size() >= limit) {
-                    break;
-                }
+        if (j != nullptr) {
+            if (j["artists"] != nullptr) {
+                // Iterate over each artist to populate an Artist struct
+                for (size_t i = 0; i < j["artists"].size(); i++) {
+                    if (v.size() >= limit) {
+                        break;
+                    }
 
-                Artist a;
-                if (j["artists"][i]["id"] != nullptr) {
-                    a.id = j["artists"][i]["id"].get<std::string>();
+                    Artist a;
+                    if (j["artists"][i]["id"] != nullptr) {
+                        a.id = j["artists"][i]["id"].get<std::string>();
+                    }
+                    if (j["artists"][i]["name"] != nullptr) {
+                        a.name = j["artists"][i]["name"].get<std::string>();
+                    }
+                    if (j["artists"][i]["score"] != nullptr) {
+                        a.score = j["artists"][i]["score"].get<unsigned short>();
+                    }
+                    v.push_back(a);
                 }
-                if (j["artists"][i]["name"] != nullptr) {
-                    a.name = j["artists"][i]["name"].get<std::string>();
-                }
-                if (j["artists"][i]["score"] != nullptr) {
-                    a.score = j["artists"][i]["score"].get<unsigned short>();
-                }
-                v.push_back(a);
             }
         }
 

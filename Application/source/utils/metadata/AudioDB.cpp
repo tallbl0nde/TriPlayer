@@ -9,7 +9,6 @@ namespace Metadata::AudioDB {
     std::vector<unsigned char> getArtistImage(const std::string & id) {
         std::vector<unsigned char> v;
 
-        // The url will be escaped/encoded by curl
         std::string url = API_REQUEST + id;
         std::string response = "";
         bool success = Utils::Curl::downloadToString(url, response);
@@ -20,9 +19,13 @@ namespace Metadata::AudioDB {
         // Convert to JSON object and get image URL
         url = "";
         nlohmann::json j = nlohmann::json::parse(response);
-        if (j["artists"] != nullptr) {
-            if (j["artists"]["strArtistThumb"] != nullptr) {
-                url = j["artists"]["strArtistThumb"].get<std::string>();
+        if (j != nullptr) {
+            if (j["artists"] != nullptr) {
+                if (j["artists"].size() > 0) {
+                    if (j["artists"][0]["strArtistThumb"] != nullptr) {
+                        url = j["artists"][0]["strArtistThumb"].get<std::string>();
+                    }
+                }
             }
         }
         if (url.empty()) {

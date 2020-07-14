@@ -33,7 +33,7 @@ BUILD		:=	build
 INCLUDES	:=	include ../Common/include libs/dtl/dtl
 SOURCES		:=	source	../Common/source
 ROMFS		:=	romfs
-LIBS		:=  -lAether -lcurl -lmbedtls -lmbedx509 -lmbedcrypto -lmpg123 -lnx -lSQLite `sdl2-config --libs` -lSDL2_ttf `freetype-config --libs` -lSDL2_gfx -lSDL2_image -lpng -ljpeg -lwebp
+LIBS		:=  -lAether -lcurl -lmpg123 -lnx -lSQLite `sdl2-config --libs` -lSDL2_ttf `freetype-config --libs` -lSDL2_gfx -lSDL2_image -lpng -ljpeg -lwebp
 LIBDIRS		:=	$(PORTLIBS) $(LIBNX) $(CURDIR)/libs/Aether $(CURDIR)/libs/json $(CURDIR)/../Common/libs/SQLite
 
 #---------------------------------------------------------------------------------

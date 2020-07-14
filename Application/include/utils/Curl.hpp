@@ -20,6 +20,9 @@ namespace Utils::Curl {
     bool downloadToFile(const std::string &, const std::string &);
     // Return the response in the provided string
     bool downloadToString(const std::string &, std::string &);
+
+    // Returns the encoded version of the passed string (not changed if an error occurred)
+    std::string encodeString(const std::string &);
 };
 
 #endif
