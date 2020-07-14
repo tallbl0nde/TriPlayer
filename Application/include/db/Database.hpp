@@ -63,9 +63,16 @@ class Database {
         // Update an artist's metadata (grabs ID from struct)
         bool updateArtist(Metadata::Artist);
 
+        // Return metadata for the given ArtistID
+        // ID will be negative if not found
+        Metadata::Artist getArtistMetadataForID(ArtistID);
         // Returns metadata for all stored artists
         // Empty if no artists or an error occurred
         std::vector<Metadata::Artist> getAllArtistMetadata();
+        // Returns an artist's songs
+        // Empty if there are none or an error occurred
+        std::vector<Metadata::Song> getSongMetadataForArtist(ArtistID);
+
         // Returns metadata for all stored songs
         // Empty if no songs or an error occurred
         std::vector<Metadata::Song> getAllSongMetadata();

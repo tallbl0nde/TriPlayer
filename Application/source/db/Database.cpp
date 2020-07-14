@@ -545,6 +545,41 @@ bool Database::updateArtist(Metadata::Artist m) {
     return ok;
 }
 
+Metadata::Artist Database::getArtistMetadataForID(ArtistID id) {
+    Metadata::Artist m;
+    m.ID = -1;
+
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getArtistMetadataForID] No open connection");
+        return m;
+    }
+
+    // Create a Metadata::Artist for each entry
+    bool ok = this->db->prepareQuery("SELECT artist_id, Artists.name, Artists.musicbrainz_id, Artists.image_path, COUNT(DISTINCT album_id), COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id WHERE Songs.artist_id = ?;");
+    ok = keepFalse(ok, this->db->bindInt(0, id));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[getArtistMetadataForID] An error occurred querying for info");
+        return m;
+    }
+    int tmp;
+    ok = this->db->getInt(0, m.ID);
+    ok = keepFalse(ok, this->db->getString(1, m.name));
+    ok = keepFalse(ok, this->db->getString(2, m.musicbrainzID));
+    ok = keepFalse(ok, this->db->getString(3, m.imagePath));
+    ok = keepFalse(ok, this->db->getInt(4, tmp));
+    m.albumCount = tmp;
+    ok = keepFalse(ok, this->db->getInt(5, tmp));
+    m.songCount = tmp;
+    if (!ok) {
+        this->setErrorMsg("[getArtistMetadataForID] An error occurred reading from the query results");
+        m.ID = -1;
+    }
+
+    return m;
+}
+
 std::vector<Metadata::Artist> Database::getAllArtistMetadata() {
     std::vector<Metadata::Artist> v;
     // Check we can read
@@ -577,6 +612,48 @@ std::vector<Metadata::Artist> Database::getAllArtistMetadata() {
         ok = keepFalse(ok, this->db->nextRow());
     }
 
+    return v;
+}
+
+std::vector<Metadata::Song> Database::getSongMetadataForArtist(ArtistID id) {
+    std::vector<Metadata::Song> v;
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getSongMetadataForArtist] No open connection");
+        return v;
+    }
+
+    // Create a Metadata::Song for each entry given the artist
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.artist_id = ?;");
+    ok = keepFalse(ok, this->db->bindInt(0, id));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[getSongMetadataForArtist] Unable to query for matching songs");
+        return v;
+    }
+    while (ok) {
+        Metadata::Song m;
+        int tmp;
+        ok = this->db->getInt(0, m.ID);
+        ok = keepFalse(ok, this->db->getString(1, m.title));
+        ok = keepFalse(ok, this->db->getString(2, m.artist));
+        ok = keepFalse(ok, this->db->getString(3, m.album));
+        ok = keepFalse(ok, this->db->getInt(4, tmp));
+        m.duration = tmp;
+        ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.plays = tmp;
+        ok = keepFalse(ok, this->db->getBool(6, m.favourite));
+        ok = keepFalse(ok, this->db->getString(7, m.path));
+        ok = keepFalse(ok, this->db->getInt(8, tmp));
+        m.modified = tmp;
+
+        if (ok) {
+            v.push_back(m);
+        }
+        ok = keepFalse(ok, this->db->nextRow());
+    }
+
+    v.shrink_to_fit();
     return v;
 }
 

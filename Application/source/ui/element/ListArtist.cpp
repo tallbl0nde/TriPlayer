@@ -52,18 +52,18 @@ namespace CustomElm {
         }
 
         // Check if pressed over dots
-        // if (e->touchX() >= this->length->x() + this->length->w() && e->touchY() >= this->y() && e->touchX() <= this->x() + this->w() && e->touchY() <= this->y() + this->h()) {
-        //     if (e->type() == Aether::EventType::TouchPressed) {
-        //         // Do nothing when dots pressed
-        //         this->callMore = true;
-        //         return true;
+        if (e->touchX() >= this->dots->x() - 15 && e->touchY() >= this->dots->y() - 20 && e->touchX() <= this->x() + this->w() && e->touchY() <= this->y() + this->h()) {
+            if (e->type() == Aether::EventType::TouchPressed) {
+                // Do nothing when dots pressed
+                this->callMore = true;
+                return true;
 
-        //     } else if (e->type() == Aether::EventType::TouchReleased && this->callMore) {
-        //         this->moreCallback();
-        //         this->callMore = false;
-        //         return true;
-        //     }
-        // }
+            } else if (e->type() == Aether::EventType::TouchReleased && this->callMore) {
+                this->moreCallback();
+                this->callMore = false;
+                return true;
+            }
+        }
 
         return Element::handleEvent(e);
     }

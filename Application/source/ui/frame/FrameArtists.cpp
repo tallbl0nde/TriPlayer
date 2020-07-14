@@ -2,7 +2,6 @@
 #include "ui/element/ListArtist.hpp"
 #include "ui/element/ScrollableGrid.hpp"
 #include "ui/frame/FrameArtists.hpp"
-#include "utils/Utils.hpp"
 
 // Number of ListArtists per row
 #define COLUMNS 3
@@ -40,7 +39,7 @@ namespace Frame {
                 });
                 ArtistID id = m[i].ID;
                 l->setMoreCallback([this, id]() {
-                    // Show a menu?
+                    this->createMenu(id);
                 });
                 grid->addElement(l);
             }
@@ -62,5 +61,65 @@ namespace Frame {
             emptyMsg->setX(this->x() + (this->w() - emptyMsg->w())/2);
             this->addElement(emptyMsg);
         }
+
+        this->menu = nullptr;
+    }
+
+    void Artists::createMenu(ArtistID id) {
+        // Query database first
+        Metadata::Artist m = this->app->database()->getArtistMetadataForID(id);
+        if (m.ID < 0) {
+            return;
+        }
+
+        // Don't create another menu if one exists
+        if (this->menu == nullptr) {
+            this->menu = new CustomOvl::Menu::Artist();
+            this->menu->setPlayAllText("Play All");
+            this->menu->setAddToQueueText("Add to Queue");
+            this->menu->setAddToPlaylistText("Add to Playlist");
+            this->menu->setViewInformationText("View Information");
+            this->menu->setBackgroundColour(this->app->theme()->popupBG());
+            this->menu->setIconColour(this->app->theme()->muted());
+            this->menu->setLineColour(this->app->theme()->muted2());
+            this->menu->setMutedTextColour(this->app->theme()->muted());
+            this->menu->setTextColour(this->app->theme()->FG());
+        }
+
+        // Set artist specific things
+        this->menu->setImage(new Aether::Image(0, 0, m.imagePath.empty() ? "romfs:/misc/noartist.png" : m.imagePath));
+        this->menu->setName(m.name);
+        std::string str = std::to_string(m.albumCount) + (m.albumCount == 1 ? " album" : " albums");
+        str += " | " + std::to_string(m.songCount) + (m.songCount == 1 ? " song" : " songs");
+        this->menu->setStats(str);
+
+        this->menu->setPlayAllFunc([this, m]() {
+            std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForArtist(m.ID);
+            std::vector<SongID> ids;
+            for (size_t i = 0; i < v.size(); i++) {
+                ids.push_back(v[i].ID);
+            }
+            this->app->sysmodule()->sendSetPlayingFrom(m.name);
+            this->app->sysmodule()->sendSetQueue(ids);
+            this->app->sysmodule()->sendSetSongIdx(0);
+            this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+            this->menu->close();
+        });
+
+        this->menu->setAddToQueueFunc([this, m]() {
+            std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForArtist(m.ID);
+            for (size_t i = 0; i < v.size(); i++) {
+                this->app->sysmodule()->sendAddToSubQueue(v[i].ID);
+            }
+            this->menu->close();
+        });
+        this->menu->setAddToPlaylistFunc(nullptr);
+        this->menu->setViewInformationFunc(nullptr);
+
+        this->app->addOverlay(menu);
+    }
+
+    Artists::~Artists() {
+        delete this->menu;
     }
 };
