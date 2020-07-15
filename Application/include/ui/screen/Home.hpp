@@ -18,12 +18,14 @@ namespace Screen {
             Main::Application * app;
 
             // Misc
+            Aether::Element * back;
             Aether::Container * container;
             Aether::Image * bg;
             Aether::Image * sidegrad;
             Aether::Rectangle * playerDim;
 
             // Sidebar
+            Aether::Container * sideContainer;
             Aether::Rectangle * sideBg;
             Aether::Rectangle * userBg;
             Aether::Image * userIcon;
