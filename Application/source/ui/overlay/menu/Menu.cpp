@@ -4,7 +4,9 @@
 #define WIDTH 380
 
 namespace CustomOvl::Menu {
-    Menu::Menu() : Aether::Overlay() {
+    Menu::Menu(Type t) : Aether::Overlay() {
+        this->type = t;
+
         // Close if B pressed
         this->onButtonPress(Aether::Button::B, [this]() {
             this->close();

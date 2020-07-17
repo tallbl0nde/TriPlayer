@@ -62,10 +62,10 @@ namespace Frame {
         });
         playButton->setFillColour(this->app->theme()->accent());
         playButton->setTextColour(Aether::Colour{0, 0, 0, 255});
-        this->addElement(playButton);
 
         Aether::BorderButton * moreButton = new Aether::BorderButton(playButton->x() + playButton->w() + 20, playButton->y(), BUTTON_H, BUTTON_H, 2, "", BUTTON_F, [this, id]() {
-            // this->createArtistMenu(id);
+            this->menu->resetHighlight();
+            this->app->addOverlay(this->menu);
         });
         moreButton->setBorderColour(this->app->theme()->FG());
         moreButton->setTextColour(this->app->theme()->FG());
@@ -73,7 +73,11 @@ namespace Frame {
         dots->setXY(dots->x() - dots->w()/2, dots->y() - dots->h()/2);
         dots->setColour(this->app->theme()->FG());
         moreButton->addElement(dots);
-        this->addElement(moreButton);
+
+        Aether::Container * c = new Aether::Container(playButton->x(), playButton->y(), moreButton->x() + moreButton->w() - playButton->x(), playButton->h());
+        c->addElement(playButton);
+        c->addElement(moreButton);
+        this->addElement(c);
 
         // Get a list of the artist's albums
         std::vector<Metadata::Album> md = this->app->database()->getAlbumMetadataForArtist(m.ID);
@@ -105,5 +109,42 @@ namespace Frame {
 
             this->addElement(grid);
         }
+
+        // Create menu which is shown when the dots are pressed
+        this->menu = new CustomOvl::Menu::Artist(CustomOvl::Menu::Type::HideTop);
+        this->menu->setPlayAllText("Play All");
+        this->menu->setAddToQueueText("Add to Queue");
+        this->menu->setAddToPlaylistText("Add to Playlist");
+        this->menu->setViewInformationText("View Information");
+        this->menu->setBackgroundColour(this->app->theme()->popupBG());
+        this->menu->setIconColour(this->app->theme()->muted());
+        this->menu->setLineColour(this->app->theme()->muted2());
+        this->menu->setTextColour(this->app->theme()->FG());
+        this->menu->setPlayAllFunc([this, m]() {
+            std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForArtist(m.ID);
+            std::vector<SongID> ids;
+            for (size_t i = 0; i < v.size(); i++) {
+                ids.push_back(v[i].ID);
+            }
+            this->app->sysmodule()->sendSetPlayingFrom(m.name);
+            this->app->sysmodule()->sendSetQueue(ids);
+            this->app->sysmodule()->sendSetSongIdx(0);
+            this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+            this->menu->close();
+        });
+
+        this->menu->setAddToQueueFunc([this, m]() {
+            std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForArtist(m.ID);
+            for (size_t i = 0; i < v.size(); i++) {
+                this->app->sysmodule()->sendAddToSubQueue(v[i].ID);
+            }
+            this->menu->close();
+        });
+        this->menu->setAddToPlaylistFunc(nullptr);
+        this->menu->setViewInformationFunc(nullptr);
+    }
+
+    Artist::~Artist() {
+        delete this->menu;
     }
 };

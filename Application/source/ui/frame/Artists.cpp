@@ -75,7 +75,7 @@ namespace Frame {
 
         // Don't create another menu if one exists
         if (this->menu == nullptr) {
-            this->menu = new CustomOvl::Menu::Artist();
+            this->menu = new CustomOvl::Menu::Artist(CustomOvl::Menu::Type::Normal);
             this->menu->setPlayAllText("Play All");
             this->menu->setAddToQueueText("Add to Queue");
             this->menu->setAddToPlaylistText("Add to Playlist");
@@ -117,7 +117,8 @@ namespace Frame {
         this->menu->setAddToPlaylistFunc(nullptr);
         this->menu->setViewInformationFunc(nullptr);
 
-        this->app->addOverlay(menu);
+        this->menu->resetHighlight();
+        this->app->addOverlay(this->menu);
     }
 
     Artists::~Artists() {

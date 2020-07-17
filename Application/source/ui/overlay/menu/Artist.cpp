@@ -5,19 +5,27 @@
 #define ITEM_INDENT 20
 
 namespace CustomOvl::Menu {
-    Artist::Artist() : Menu() {
-        // Top section (song)
+    Artist::Artist(Type t) : Menu(t) {
+        // Top section
         this->image = nullptr;
-        this->name = new Aether::Text(this->bg->x() + 130, this->bg->y() + 33, "", 24);
-        this->name->setScroll(true);
-        this->name->setScrollSpeed(35);
-        this->name->setScrollWaitTime(1200);
-        this->bg->addElement(this->name);
-        this->stats = new Aether::Text(this->name->x(), this->name->y() + 34, "", 18);
-        this->bg->addElement(this->stats);
+        int offsetY = 5;
+        if (this->type == Type::Normal) {
+            this->name = new Aether::Text(this->bg->x() + 130, this->bg->y() + 33, "", 24);
+            this->name->setScroll(true);
+            this->name->setScrollSpeed(35);
+            this->name->setScrollWaitTime(1200);
+            this->bg->addElement(this->name);
+            this->stats = new Aether::Text(this->name->x(), this->name->y() + 34, "", 18);
+            this->bg->addElement(this->stats);
+            offsetY = 120;
+
+        } else {
+            this->name = nullptr;
+            this->stats = nullptr;
+        }
 
         // Buttons are placed in a container for easy moving
-        this->btns = new Aether::Container(this->bg->x(), this->bg->y() + 120 + 5, this->bg->w(), 720);
+        this->btns = new Aether::Container(this->bg->x(), this->bg->y() + offsetY + 5, this->bg->w(), 720);
 
         // Play All
         int h = this->btns->y();
@@ -55,14 +63,19 @@ namespace CustomOvl::Menu {
         this->bg->setXY(640 - this->bg->w()/2, 360 - this->bg->h()/2);
 
         // Position buttons
-        this->btns->setXY(this->bg->x(), this->bg->y() + 120 + 5);
+        this->btns->setXY(this->bg->x(), this->bg->y() + offsetY + 5);
         this->btns->setH(h - this->btns->y());
         this->addElement(this->btns);
     }
 
-    void Artist::setImage(Aether::Image * i) {
-        // Also move focus as this will be called every time it's set
+    void Artist::resetHighlight() {
         this->btns->setFocussed(this->playAll);
+    }
+
+    void Artist::setImage(Aether::Image * i) {
+        if (this->type == Type::HideTop) {
+            return;
+        }
 
         if (this->image != nullptr) {
             this->removeElement(this->image);
@@ -74,6 +87,10 @@ namespace CustomOvl::Menu {
     }
 
     void Artist::setName(std::string s) {
+        if (this->type == Type::HideTop) {
+            return;
+        }
+
         this->name->setString(s);
         if (this->name->w() > (this->bg->x() + this->bg->w()) - this->name->x() - ITEM_INDENT) {
             this->name->setW((this->bg->x() + this->bg->w()) - this->name->x() - ITEM_INDENT);
@@ -81,6 +98,10 @@ namespace CustomOvl::Menu {
     }
 
     void Artist::setStats(std::string s) {
+        if (this->type == Type::HideTop) {
+            return;
+        }
+
         this->stats->setString(s);
         if (this->stats->w() > (this->bg->x() + this->bg->w()) - this->stats->x() - ITEM_INDENT) {
             this->stats->setW((this->bg->x() + this->bg->w()) - this->stats->x() - ITEM_INDENT);
@@ -127,6 +148,10 @@ namespace CustomOvl::Menu {
     }
 
     void Artist::setMutedTextColour(Aether::Colour c) {
+        if (this->type == Type::HideTop) {
+            return;
+        }
+
         this->stats->setColour(c);
     }
 
@@ -140,8 +165,10 @@ namespace CustomOvl::Menu {
     void Artist::render() {
         Menu::render();
 
-        if (this->isTouch || !this->playAll->highlighted()) {
-            SDLHelper::drawTexture(this->line, this->lineColour, this->bg->x() + 20, this->playAll->y() - 5);
+        if (this->type == Type::Normal) {
+            if (this->isTouch || !this->playAll->highlighted()) {
+                SDLHelper::drawTexture(this->line, this->lineColour, this->bg->x() + 20, this->playAll->y() - 5);
+            }
         }
         if (this->isTouch || (!this->playAll->highlighted() && !this->addToQueue->highlighted())) {
             SDLHelper::drawTexture(this->line, this->lineColour, this->bg->x() + 20, this->addToQueue->y() - 5);

@@ -20,10 +20,10 @@ namespace CustomOvl::Menu {
 
         public:
             // Renders + positions elements
-            Artist();
+            Artist(Type);
 
-            // Move highlight back to top when reused
-            void reuse();
+            // Resets highlight to top button
+            void resetHighlight();
 
             // Set values
             void setImage(Aether::Image *);

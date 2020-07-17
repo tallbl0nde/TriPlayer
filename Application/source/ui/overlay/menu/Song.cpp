@@ -5,7 +5,7 @@
 #define ITEM_INDENT 20
 
 namespace CustomOvl::Menu {
-    Song::Song(bool showRemove) : Menu() {
+    Song::Song(bool showRemove) : Menu(Type::Normal) {
         // Top section (song)
         this->album = nullptr;
         this->title = new Aether::Text(this->bg->x() + 130, this->bg->y() + 33, "", 24);
