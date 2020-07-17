@@ -545,6 +545,37 @@ bool Database::updateArtist(Metadata::Artist m) {
     return ok;
 }
 
+std::vector<Metadata::Album> Database::getAlbumMetadataForArtist(ArtistID id) {
+    std::vector<Metadata::Album> v;
+
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getAlbumMetadataForArtist] No open connection");
+        return v;
+    }
+
+    // Create a Metadata::Album for each entry
+    bool ok = this->db->prepareQuery("SELECT DISTINCT Albums.id, Albums.name FROM Songs JOIN Albums ON Songs.album_id = Albums.id WHERE Songs.artist_id = ? ORDER BY Albums.name;");
+    ok = keepFalse(ok, this->db->bindInt(0, id));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[getAlbumMetadataForArtist] Unable to query for artist's albums");
+        return v;
+    }
+    while (ok) {
+        Metadata::Album m;
+        ok = this->db->getInt(0, m.ID);
+        ok = keepFalse(ok, this->db->getString(1, m.name));
+
+        if (ok) {
+            v.push_back(m);
+        }
+        ok = keepFalse(ok, this->db->nextRow());
+    }
+
+    return v;
+}
+
 Metadata::Artist Database::getArtistMetadataForID(ArtistID id) {
     Metadata::Artist m;
     m.ID = -1;
@@ -589,7 +620,7 @@ std::vector<Metadata::Artist> Database::getAllArtistMetadata() {
     }
 
     // Create a Metadata::Artist for each entry
-    bool ok = this->db->prepareAndExecuteQuery("SELECT artist_id, Artists.name, Artists.musicbrainz_id, Artists.image_path, COUNT(DISTINCT album_id), COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id GROUP BY artist_id;");
+    bool ok = this->db->prepareAndExecuteQuery("SELECT artist_id, Artists.name, Artists.musicbrainz_id, Artists.image_path, COUNT(DISTINCT album_id), COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id GROUP BY artist_id ORDER BY Artists.name;");
     if (!ok) {
         this->setErrorMsg("[getAllArtists] Unable to query for all artists");
         return v;

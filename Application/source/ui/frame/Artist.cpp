@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "ui/element/ListArtist.hpp"
 #include "ui/element/ScrollableGrid.hpp"
 #include "ui/frame/Artist.hpp"
 
@@ -27,12 +28,7 @@ namespace Frame {
             return;
         }
 
-        // Grid will hold albums
-        CustomElm::ScrollableGrid * grid = new CustomElm::ScrollableGrid(this->x(), this->y() + 150, this->w() - 10, this->h() - 150, 250, 3);
-        grid->setShowScrollBar(true);
-        grid->setScrollBarColour(this->app->theme()->muted2());
-
-        // Otherwise populate with Artist's data
+        // Populate with Artist's data
         Aether::Image * image = new Aether::Image(this->x() + 50, this->y() + 50, m.imagePath.empty() ? "romfs:/misc/noartist.png" : m.imagePath);
         image->setWH(IMAGE_SIZE, IMAGE_SIZE);
         this->addElement(image);
@@ -68,8 +64,8 @@ namespace Frame {
         playButton->setTextColour(Aether::Colour{0, 0, 0, 255});
         this->addElement(playButton);
 
-        Aether::BorderButton * moreButton = new Aether::BorderButton(playButton->x() + playButton->w() + 20, playButton->y(), BUTTON_H, BUTTON_H, 2, "", BUTTON_F, [this]() {
-            // Do something
+        Aether::BorderButton * moreButton = new Aether::BorderButton(playButton->x() + playButton->w() + 20, playButton->y(), BUTTON_H, BUTTON_H, 2, "", BUTTON_F, [this, id]() {
+            // this->createArtistMenu(id);
         });
         moreButton->setBorderColour(this->app->theme()->FG());
         moreButton->setTextColour(this->app->theme()->FG());
@@ -78,5 +74,36 @@ namespace Frame {
         dots->setColour(this->app->theme()->FG());
         moreButton->addElement(dots);
         this->addElement(moreButton);
+
+        // Get a list of the artist's albums
+        std::vector<Metadata::Album> md = this->app->database()->getAlbumMetadataForArtist(m.ID);
+
+        // Create grid if there are albums
+        if (md.size() > 0) {
+            int gridY = image->y() + image->h() + 20;
+            CustomElm::ScrollableGrid * grid = new CustomElm::ScrollableGrid(this->x(), gridY, this->w() - 10, this->h() - gridY, 250, 3);
+            grid->setShowScrollBar(true);
+            grid->setScrollBarColour(this->app->theme()->muted2());
+
+            // Populate grid with albums
+            for (size_t i = 0; i < md.size(); i++) {
+                CustomElm::ListArtist * l = new CustomElm::ListArtist("romfs:/misc/noalbum.png");
+                l->setNameString(md[i].name);
+                l->setCountsString("? songs");
+                l->setDotsColour(this->app->theme()->muted());
+                l->setTextColour(this->app->theme()->FG());
+                l->setMutedTextColour(this->app->theme()->muted());
+                AlbumID id = md[i].ID;
+                l->setCallback([this, id](){
+                    // this->changeFrame(Type::Album, Action::Push, id);
+                });
+                l->setMoreCallback([this, id]() {
+                    // this->createAlbumMenu(id);
+                });
+                grid->addElement(l);
+            }
+
+            this->addElement(grid);
+        }
     }
 };

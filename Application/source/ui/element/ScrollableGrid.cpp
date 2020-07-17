@@ -94,13 +94,16 @@ namespace CustomElm {
     void ScrollableGrid::updateMaxScrollPos() {
         // The maximum scroll position is simple
         size_t rows = this->children.size()/this->cols + (this->children.size() % this->cols > 0 ? 1 : 0);
-        this->maxScrollPos = 2 * PADDING + (rows * rowHeight) - this->h();
+        this->maxScrollPos = 2 * PADDING + (rows * rowHeight);
 
         // If children don't take up enough space don't scroll!
         if (this->maxScrollPos <= this->h()) {
             this->maxScrollPos = 0;
             return;
         }
+
+        // Subtract height as it wasn't accounted for earlier
+        this->maxScrollPos -= this->h();
 
         // Delete scroll bar due to new height
         SDLHelper::destroyTexture(this->scrollBar);
