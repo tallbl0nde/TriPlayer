@@ -18,13 +18,15 @@ namespace Screen {
             Main::Application * app;
 
             // Misc
-            Aether::Element * back;
             Aether::Container * container;
             Aether::Image * bg;
             Aether::Image * sidegrad;
             Aether::Rectangle * playerDim;
 
             // Sidebar
+            Aether::Image * backIcon;
+            Aether::Text * backText;
+            Aether::Element * backButton;
             Aether::Container * sideContainer;
             Aether::Rectangle * sideBg;
             Aether::Rectangle * userBg;
@@ -50,6 +52,9 @@ namespace Screen {
 
             // Cached vars to avoid updating every frame
             SongID playingID;
+
+            // Function called to go 'back'
+            void backCallback();
 
             // Finalize screen state - add elements, set frame
             void finalizeState();

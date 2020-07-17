@@ -7,9 +7,6 @@
 #include "ui/screen/Home.hpp"
 #include "utils/MP3.hpp"
 
-// Padding around back button elements
-#define BACK_PADDING 20
-
 namespace Screen {
     Home::Home(Main::Application * a) : Screen() {
         this->app = a;
@@ -24,14 +21,7 @@ namespace Screen {
                 this->setFocussed(this->container);
 
             } else if (!this->frameStack.empty()) {
-                this->container->removeElement(this->frame);
-                this->frame = this->frameStack.top();
-                this->frameStack.pop();
-
-                this->container->addElement(this->frame);
-                this->container->setHasSelectable(false);
-                this->returnElement(this->playerDim);
-                this->addElement(this->playerDim);
+                this->backCallback();
 
             } else {
                 // I'll put a prompt here one day
@@ -52,6 +42,19 @@ namespace Screen {
         // Create dimming element
         this->playerDim = new Aether::Rectangle(0, 0, 1280, 590);
         this->playerDim->setColour(Aether::Colour{0, 0, 0, 130});
+    }
+
+    void Home::backCallback() {
+        if (!this->frameStack.empty()) {
+            this->container->removeElement(this->frame);
+            this->frame = this->frameStack.top();
+            this->frameStack.pop();
+
+            this->container->addElement(this->frame);
+            this->container->setHasSelectable(false);
+            this->returnElement(this->playerDim);
+            this->addElement(this->playerDim);
+        }
     }
 
     void Home::changeFrame(Frame::Type t, Frame::Action a, int id) {
@@ -153,8 +156,17 @@ namespace Screen {
         // Show/hide dimming element based on current state
         this->playerDim->setHidden(!(this->focussed() == this->player && !this->isTouch));
 
-        // Show/hide back button based on the stack
-        this->back->setHidden(this->frameStack.empty());
+        // Set back button colour and behaviour based on the stack
+        if (this->frameStack.empty()) {
+            this->backIcon->setColour(this->app->theme()->muted());
+            this->backText->setColour(this->app->theme()->muted());
+            this->backButton->setTouchable(false);
+
+        } else {
+            this->backIcon->setColour(this->app->theme()->FG());
+            this->backText->setColour(this->app->theme()->FG());
+            this->backButton->setTouchable(true);
+        }
 
         // Now update elements
         Screen::update(dt);
@@ -197,8 +209,47 @@ namespace Screen {
 
         // === SIDEBAR ===
         this->sideContainer = new Aether::Container(0, 0, 310, 590);
+
+        // Navigation outlines
+        Aether::Rectangle * r = new Aether::Rectangle(15, 65, 280, 1);
+        r->setColour(this->app->theme()->muted2());
+        this->sideContainer->addElement(r);
+        r = new Aether::Rectangle(155, 10, 1, 45);
+        r->setColour(this->app->theme()->muted2());
+        this->sideContainer->addElement(r);
+
+        // Back
+        this->backButton = new Aether::Element(0, 0, 155, 65);
+        this->backIcon = new Aether::Image(this->backButton->x() + 30, 17, "romfs:/icons/back.png");
+        this->backIcon->setColour(this->app->theme()->FG());
+        this->backButton->addElement(this->backIcon);
+        this->backText = new Aether::Text(this->backIcon->x() + this->backIcon->w() + 20, 32, "Back", 26);
+        this->backText->setY(this->backText->y() - this->backText->h()/2);
+        this->backText->setColour(this->app->theme()->FG());
+        this->backButton->addElement(this->backText);
+        this->backButton->setCallback([this]() {
+            this->backCallback();
+        });
+        this->backButton->setSelectable(false);
+        this->sideContainer->addElement(this->backButton);
+
+        // Quit
+        Aether::Element * quitButton = new Aether::Element(155, 0, 155, 65);
+        Aether::Text * quitText = new Aether::Text(quitButton->x() + 30, 32, "Quit", 26);
+        quitText->setY(quitText->y() - quitText->h()/2);
+        quitText->setColour(this->app->theme()->FG());
+        quitButton->addElement(quitText);
+        Aether::Image * quitIcon = new Aether::Image(quitText->x() + quitText->w() + 20, 22, "romfs:/icons/quit.png");
+        quitIcon->setColour(this->app->theme()->FG());
+        quitButton->addElement(quitIcon);
+        quitButton->setCallback([this]() {
+            // Have a prompt
+            this->app->exit();
+        });
+        this->sideContainer->addElement(quitButton);
+
         // User
-        this->userBg = new Aether::Rectangle(25, 30, 200, 50, 10);
+        this->userBg = new Aether::Rectangle(25, 90, 200, 50, 10);
         this->userBg->setColour(this->app->theme()->muted2());
         this->sideContainer->addElement(this->userBg);
         this->userIcon = new Aether::Image(this->userBg->x(), this->userBg->y(), "romfs:/user.png");
@@ -210,20 +261,20 @@ namespace Screen {
         this->sideContainer->addElement(this->userText);
 
         // Settings
-        this->settingsBg = new Aether::Rectangle(235, 30, 50, 50, 10);
+        this->settingsBg = new Aether::Rectangle(235, 90, 50, 50, 10);
         this->settingsBg->setColour(this->app->theme()->muted2());
         this->sideContainer->addElement(this->settingsBg);
         this->settingsIcon = new Aether::Image(this->settingsBg->x() + 10, this->settingsBg->y() + 10, "romfs:/icons/settings.png");
         this->sideContainer->addElement(this->settingsIcon);
 
         // Search bar
-        this->search = new CustomElm::SearchBox(25, 130, 260);
+        this->search = new CustomElm::SearchBox(25, 170, 260);
         this->search->setBoxColour(this->app->theme()->muted2());
         this->search->setIconColour(this->app->theme()->FG());
         this->sideContainer->addElement(this->search);
 
         // Navigation list
-        this->sideRP = new CustomElm::SideButton(10, 210, 290);
+        this->sideRP = new CustomElm::SideButton(10, 230, 290);
         this->sideRP->setIcon(new Aether::Image(0, 0, "romfs:/icons/clock.png"));
         this->sideRP->setText("Recently Played");
         this->sideRP->setActiveColour(this->app->theme()->accent());
@@ -318,19 +369,6 @@ namespace Screen {
         });
         this->addElement(this->player);
         this->player->setHasSelectable(false);
-
-        // Create back button
-        Aether::Text * text = new Aether::Text(BACK_PADDING, 0, "<", 26);
-        text->setColour(this->app->theme()->FG());
-        Aether::Text * text2 = new Aether::Text(text->x() + text->w() + 10, 0, "Back", 30);
-        text2->setColour(this->app->theme()->FG());
-        this->back = new Aether::Element(0, 0, 2*BACK_PADDING + text->w() + 10 + text2->w(), text2->h() + 2*BACK_PADDING);
-        this->back->addElement(text);
-        this->back->addElement(text2);
-        this->back->setCallback(nullptr);
-        this->back->setSelectable(false);
-        this->container->addElement(this->back);
-        this->back->setXY(500, 500);
 
         // Set songs active
         this->frame = nullptr;
