@@ -184,11 +184,14 @@ namespace CustomElm {
                 this->isScrolling = true;
                 return true;
             }
-        }
 
         // Not a touch event, so let the container handle it
-        this->stopScrolling();
-        return Container::handleEvent(e);
+        } else {
+            this->stopScrolling();
+            return Container::handleEvent(e);
+        }
+
+        return false;
     }
 
 

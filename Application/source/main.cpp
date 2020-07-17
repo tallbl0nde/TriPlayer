@@ -6,14 +6,14 @@
 
 // Main folder
 #define MAIN_FOLDER "/switch/TriPlayer/"
-#define DATA_ARTIST_IMAGE MAIN_FOLDER "data/artist/images/"
+#define ARTIST_IMAGES MAIN_FOLDER "images/artist"
 // Log name
 #define LOG_FILE "application.log"
 
 int main(void) {
     // Ensure directories exist
     Utils::Fs::createPath(MAIN_FOLDER);
-    Utils::Fs::createPath(DATA_ARTIST_IMAGE);
+    Utils::Fs::createPath(ARTIST_IMAGES);
 
     // Start logging
     Log::openFile(MAIN_FOLDER LOG_FILE, Log::Level::Success);

@@ -518,9 +518,9 @@ bool Database::updateArtist(Metadata::Artist m) {
     }
 
     // Now update relevant fields
-    bool ok = this->db->prepareQuery("UPDATE Artists SET name = ?, musicbrainz_id = ?, image_path = ? WHERE id = ?;");
+    bool ok = this->db->prepareQuery("UPDATE Artists SET name = ?, tadb_id = ?, image_path = ? WHERE id = ?;");
     ok = keepFalse(ok, this->db->bindString(0, m.name));
-    ok = keepFalse(ok, this->db->bindString(1, m.musicbrainzID));
+    ok = keepFalse(ok, this->db->bindInt(1, m.tadbID));
     ok = keepFalse(ok, this->db->bindString(2, m.imagePath));
     ok = keepFalse(ok, this->db->bindInt(3, m.ID));
     if (!ok) {
@@ -587,7 +587,7 @@ Metadata::Artist Database::getArtistMetadataForID(ArtistID id) {
     }
 
     // Create a Metadata::Artist for each entry
-    bool ok = this->db->prepareQuery("SELECT artist_id, Artists.name, Artists.musicbrainz_id, Artists.image_path, COUNT(DISTINCT album_id), COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id WHERE Songs.artist_id = ?;");
+    bool ok = this->db->prepareQuery("SELECT artist_id, Artists.name, Artists.tadb_id, Artists.image_path, COUNT(DISTINCT album_id), COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id WHERE Songs.artist_id = ?;");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
@@ -597,7 +597,7 @@ Metadata::Artist Database::getArtistMetadataForID(ArtistID id) {
     int tmp;
     ok = this->db->getInt(0, m.ID);
     ok = keepFalse(ok, this->db->getString(1, m.name));
-    ok = keepFalse(ok, this->db->getString(2, m.musicbrainzID));
+    ok = keepFalse(ok, this->db->getInt(2, m.tadbID));
     ok = keepFalse(ok, this->db->getString(3, m.imagePath));
     ok = keepFalse(ok, this->db->getInt(4, tmp));
     m.albumCount = tmp;
@@ -620,7 +620,7 @@ std::vector<Metadata::Artist> Database::getAllArtistMetadata() {
     }
 
     // Create a Metadata::Artist for each entry
-    bool ok = this->db->prepareAndExecuteQuery("SELECT artist_id, Artists.name, Artists.musicbrainz_id, Artists.image_path, COUNT(DISTINCT album_id), COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id GROUP BY artist_id ORDER BY Artists.name;");
+    bool ok = this->db->prepareAndExecuteQuery("SELECT artist_id, Artists.name, Artists.tadb_id, Artists.image_path, COUNT(DISTINCT album_id), COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id GROUP BY artist_id ORDER BY Artists.name;");
     if (!ok) {
         this->setErrorMsg("[getAllArtists] Unable to query for all artists");
         return v;
@@ -629,7 +629,7 @@ std::vector<Metadata::Artist> Database::getAllArtistMetadata() {
         Metadata::Artist m;
         ok = this->db->getInt(0, m.ID);
         ok = keepFalse(ok, this->db->getString(1, m.name));
-        ok = keepFalse(ok, this->db->getString(2, m.musicbrainzID));
+        ok = keepFalse(ok, this->db->getInt(2, m.tadbID));
         ok = keepFalse(ok, this->db->getString(3, m.imagePath));
         int tmp;
         ok = keepFalse(ok, this->db->getInt(4, tmp));
@@ -918,7 +918,7 @@ std::vector<Metadata::Artist> Database::searchArtists(std::string str) {
     }
 
     // Perform search
-    bool ok = this->db->prepareQuery("SELECT id, name, musicbrainz_id, image_path FROM Artists WHERE name IN (SELECT * FROM FtsArtists WHERE FtsArtists MATCH ?);");
+    bool ok = this->db->prepareQuery("SELECT id, name, tadb_id, image_path FROM Artists WHERE name IN (SELECT * FROM FtsArtists WHERE FtsArtists MATCH ?);");
     ok = keepFalse(ok, this->db->bindString(0, str));
     if (!ok) {
         this->setErrorMsg("[searchArtists] Unable to prepare search query");
@@ -935,7 +935,7 @@ std::vector<Metadata::Artist> Database::searchArtists(std::string str) {
         Metadata::Artist m;
         ok = this->db->getInt(0, m.ID);
         ok = keepFalse(ok, this->db->getString(1, m.name));
-        ok = keepFalse(ok, this->db->getString(2, m.musicbrainzID));
+        ok = keepFalse(ok, this->db->getInt(2, m.tadbID));
         ok = keepFalse(ok, this->db->getString(3, m.imagePath));
         m.songCount = 0;    // These should probably be implemented here?
         m.albumCount = 0;

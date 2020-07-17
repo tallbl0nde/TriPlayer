@@ -3,9 +3,9 @@
 namespace Migration {
     std::string migrateTo2(SQLite * db) {
         // Add MusicBrainz ID column (starts with empty string)
-        bool ok = db->prepareAndExecuteQuery("ALTER TABLE Artists ADD COLUMN musicbrainz_id TEXT NOT NULL DEFAULT '';");
+        bool ok = db->prepareAndExecuteQuery("ALTER TABLE Artists ADD COLUMN tadb_id INTEGER NOT NULL DEFAULT -1;");
         if (!ok) {
-            return "Unable to add musicbrainz_id column to Artists";
+            return "Unable to add tadb_id column to Artists";
         }
 
         // Add image path column (also starts empty)

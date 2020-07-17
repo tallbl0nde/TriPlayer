@@ -9,7 +9,7 @@
 // Timeout for connecting (3 seconds)
 #define TIMEOUT 3000L
 // User agent (concatenation of name, version and github link)
-#define USER_AGENT "TriPlayer/" VER_STRING " (http://github.com/tallbl0nde/TriPlayer)"
+#define USER_AGENT "TriPlayer/" VER_STRING
 
 // Stores the last error that occurred
 static std::string error_ = "";

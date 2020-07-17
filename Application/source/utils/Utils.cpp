@@ -5,6 +5,10 @@
 #include "utils/MP3.hpp"
 #include "utils/Utils.hpp"
 
+#include "utils/FS.hpp"
+#include "utils/metadata/AudioDB.hpp"
+#include "Log.hpp"
+
 namespace Utils {
     time_t getModifiedTimestamp(std::string path) {
         struct stat st;
@@ -140,21 +144,33 @@ namespace Utils {
             db->prepareSearch();
         }
 
-        // aStage = ProcessStage::Update;
+        // aStage = ProcessStage::Parse;
         // db->close();
         // db->openReadWrite();
-        // auto as = db->searchArtists("Hilltop Hoods");
-        // if (as[0].musicbrainzID.empty()) {
-        //     auto vec = Metadata::MusicBrainz::searchForArtists(as[0].name, 1);
-        //     if (vec.size() > 0) {
-        //         auto data = Metadata::AudioDB::getArtistImage(vec[0].id);
-        //         if (data.size() > 0) {
-        //             as[0].musicbrainzID = vec[0].id;
-        //             as[0].imagePath = "/switch/TriPlayer/data/artist/images/" + as[0].musicbrainzID + ".png";
-        //             if (Utils::Fs::writeFile(as[0].imagePath, data)) {
-        //                 db->updateArtist(as[0]);
+        // auto as = db->getAllArtistMetadata();
+        // aTotal = as.size();
+        // for (size_t i = 0; i < as.size(); i++) {
+        //     aFile = i;
+        //     Log::writeError("AA");
+        //     if (as[i].tadbID < 0) {
+        //         Log::writeError("AA");
+        //         auto vec = Metadata::AudioDB::getArtistInfo(as[i].name);
+        //         if (vec.tadbID > 0) {
+        //             Log::writeError("AA");
+        //             as[i].tadbID = vec.tadbID;
+        //             auto data = Metadata::AudioDB::getArtistImage(vec);
+        //             if (data.size() > 0) {
+        //                 Log::writeError("AA");
+        //                 as[i].imagePath = "/switch/TriPlayer/images/artist/" + std::to_string(as[i].tadbID) + ".png";
+        //                 Utils::Fs::writeFile(as[i].imagePath, data);
         //             }
+        //             db->updateArtist(as[i]);
         //         }
+        //     }
+
+
+        //     if (stop) {
+        //         break;
         //     }
         // }
         // db->close();
