@@ -1,5 +1,5 @@
 #include "Application.hpp"
-#include "ui/element/ListArtist.hpp"
+#include "ui/element/GridItem.hpp"
 #include "ui/element/ScrollableGrid.hpp"
 #include "ui/frame/Artist.hpp"
 
@@ -87,9 +87,9 @@ namespace Frame {
 
             // Populate grid with albums
             for (size_t i = 0; i < md.size(); i++) {
-                CustomElm::ListArtist * l = new CustomElm::ListArtist("romfs:/misc/noalbum.png");
-                l->setNameString(md[i].name);
-                l->setCountsString("? songs");
+                CustomElm::GridItem * l = new CustomElm::GridItem("romfs:/misc/noalbum.png");
+                l->setMainString(md[i].name);
+                l->setSubString("? songs");
                 l->setDotsColour(this->app->theme()->muted());
                 l->setTextColour(this->app->theme()->FG());
                 l->setMutedTextColour(this->app->theme()->muted());

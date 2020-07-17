@@ -1,10 +1,10 @@
-#ifndef ELEMENT_LISTSONG_HPP
-#define ELEMENT_LISTSONG_HPP
+#ifndef ELEMENT_GRIDITEM_HPP
+#define ELEMENT_GRIDITEM_HPP
 
 #include "Aether/Aether.hpp"
 
 namespace CustomElm {
-    class ListArtist : public Aether::Element {
+    class GridItem : public Aether::Element {
         enum RenderingStatus {
             Waiting,        // Not rendering and no textures
             InProgress,     // Rendering but no textures
@@ -16,8 +16,8 @@ namespace CustomElm {
             Aether::Image * image;
 
             // Texts
-            Aether::Text * name;
-            Aether::Text * counts;
+            Aether::Text * main;
+            Aether::Text * sub;
             Aether::Image * dots;
 
             // Callback when dots pressed
@@ -32,7 +32,7 @@ namespace CustomElm {
 
         public:
             // Constructor sets up elements and takes path to image
-            ListArtist(std::string);
+            GridItem(std::string);
 
             // Override setInactive to deactivate touch on dots
             void setInactive();
@@ -49,8 +49,8 @@ namespace CustomElm {
             void setMoreCallback(std::function<void()>);
 
             // Set strings
-            void setNameString(std::string);
-            void setCountsString(std::string);
+            void setMainString(std::string);
+            void setSubString(std::string);
 
             // Set colours
             void setDotsColour(Aether::Colour);

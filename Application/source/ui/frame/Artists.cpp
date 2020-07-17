@@ -1,10 +1,10 @@
 #include "Application.hpp"
-#include "ui/element/ListArtist.hpp"
+#include "ui/element/GridItem.hpp"
 #include "ui/element/ScrollableGrid.hpp"
 #include "ui/frame/Artists.hpp"
 #include "ui/screen/Home.hpp"
 
-// Number of ListArtists per row
+// Number of GridItems per row
 #define COLUMNS 3
 
 namespace Frame {
@@ -27,11 +27,11 @@ namespace Frame {
         if (m.size() > 0) {
             for (size_t i = 0; i < m.size(); i++) {
                 std::string img = (m[i].imagePath.empty() ? "romfs:/misc/noartist.png" : m[i].imagePath);
-                CustomElm::ListArtist * l = new CustomElm::ListArtist(img);
-                l->setNameString(m[i].name);
+                CustomElm::GridItem * l = new CustomElm::GridItem(img);
+                l->setMainString(m[i].name);
                 std::string str = std::to_string(m[i].albumCount) + (m[i].albumCount == 1 ? " album" : " albums");
                 str += " | " + std::to_string(m[i].songCount) + (m[i].songCount == 1 ? " song" : " songs");
-                l->setCountsString(str);
+                l->setSubString(str);
                 l->setDotsColour(this->app->theme()->muted());
                 l->setTextColour(this->app->theme()->FG());
                 l->setMutedTextColour(this->app->theme()->muted());
