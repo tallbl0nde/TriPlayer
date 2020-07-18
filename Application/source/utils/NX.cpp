@@ -1,37 +1,45 @@
+#include <switch.h>
 #include "utils/NX.hpp"
 
 namespace Utils::NX {
-    std::string getUserInput(unsigned int max, std::string ok, std::string hd, std::string subhd, std::string hint, std::string init) {
+    bool getUserInput(Keyboard & k) {
         SwkbdConfig kb;
-        char * out = new char[max + 1];
+        char * out = new char[k.maxLength + 1];
         bool success = false;
 
+        // Create initial object
         if (R_SUCCEEDED(swkbdCreate(&kb, 0))) {
             swkbdConfigMakePresetDefault(&kb);
-            swkbdConfigSetStringLenMax(&kb, max);
+            swkbdConfigSetType(&kb, SwkbdType_Normal);
+            swkbdConfigSetDicFlag(&kb, 1);
+            swkbdConfigSetInitialText(&kb, k.buffer.c_str());
+            swkbdConfigSetOkButtonText(&kb, k.ok.c_str());
             swkbdConfigSetReturnButtonFlag(&kb, 0);
-            swkbdConfigSetOkButtonText(&kb, ok.c_str());
-            swkbdConfigSetHeaderText(&kb, hd.c_str());
-            swkbdConfigSetSubText(&kb, subhd.c_str());
-            if (hint != "") {
-                swkbdConfigSetGuideText(&kb, hint.c_str());
-            }
-            if (init != "") {
-                swkbdConfigSetInitialText(&kb, init.c_str());
-            }
-            if (max <= 32) {
+            swkbdConfigSetStringLenMax(&kb, (k.showLine ? (k.maxLength > 32 ? 32 : k.maxLength) : k.maxLength));
+
+            // Set config to show line
+            if (k.showLine) {
                 swkbdConfigSetTextDrawType(&kb, SwkbdTextDrawType_Line);
+                swkbdConfigSetHeaderText(&kb, k.heading.c_str());
+                swkbdConfigSetSubText(&kb, k.subHeading.c_str());
+
+            // Set config to show box
+            } else {
+                swkbdConfigSetTextDrawType(&kb, SwkbdTextDrawType_Box);
+                swkbdConfigSetGuideText(&kb, k.hint.c_str());
             }
-            swkbdShow(&kb, out, max + 1);
+
+            // Show keyboard
+            if (R_SUCCEEDED(swkbdShow(&kb, out, k.maxLength + 1))) {
+                success = true;
+            }
             swkbdClose(&kb);
-            success = true;
         }
 
-        std::string tmp(out);
-        delete[] out;
         if (success) {
-            return tmp;
+            k.buffer = std::string(out);
         }
-        return "";
+        delete[] out;
+        return success;
     }
 };

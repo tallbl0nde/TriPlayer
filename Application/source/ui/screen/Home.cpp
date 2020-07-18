@@ -1,6 +1,7 @@
 #include "Application.hpp"
 #include "ui/frame/Artist.hpp"
 #include "ui/frame/Artists.hpp"
+#include "ui/frame/ArtistInfo.hpp"
 #include "ui/frame/Queue.hpp"
 #include "ui/frame/Songs.hpp"
 #include "ui/screen/Home.hpp"
@@ -104,6 +105,10 @@ namespace Screen {
 
             case Frame::Type::Artist:
                 this->frame = new Frame::Artist(this->app, id);
+                break;
+
+            case Frame::Type::ArtistInfo:
+                this->frame = new Frame::ArtistInfo(this->app, id);
                 break;
 
             case Frame::Type::Songs:

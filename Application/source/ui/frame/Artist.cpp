@@ -141,7 +141,10 @@ namespace Frame {
             this->menu->close();
         });
         this->menu->setAddToPlaylistFunc(nullptr);
-        this->menu->setViewInformationFunc(nullptr);
+        this->menu->setViewInformationFunc([this, m]() {
+            this->changeFrame(Type::ArtistInfo, Action::Push, m.ID);
+            this->menu->close();
+        });
     }
 
     Artist::~Artist() {

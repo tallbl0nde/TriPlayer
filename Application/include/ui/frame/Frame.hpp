@@ -22,6 +22,7 @@ namespace Frame {
         Album,
         Artists,
         Artist,
+        ArtistInfo,
         Songs,
         Queue
     };
