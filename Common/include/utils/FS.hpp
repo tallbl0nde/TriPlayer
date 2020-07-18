@@ -19,6 +19,12 @@ namespace Utils::Fs {
     bool fileReadable(const std::string &);
     bool fileWritable(const std::string &);
 
+    // Returns contents of directory
+    // First element in pair is path, second is set true if directory
+    std::vector< std::pair<std::string, bool> > getDirectoryContents(const std::string &);
+    // Returns parent directory
+    std::string getParentDirectory(const std::string &);
+
     // Delete a file
     void deleteFile(const std::string &);
     // Write entire contents of buffer to file

@@ -45,6 +45,18 @@ namespace Utils::Fs {
         return true;
     }
 
+    std::vector< std::pair<std::string, bool> > getDirectoryContents(const std::string & path) {
+        std::vector< std::pair<std::string, bool> > items;
+        for (auto & p: std::filesystem::directory_iterator(path)) {
+            items.push_back(std::make_pair(p.path().filename(), p.is_directory()));
+        }
+        return items;
+    }
+
+    std::string getParentDirectory(const std::string & path) {
+        return std::filesystem::path(path).parent_path();
+    }
+
     void deleteFile(const std::string & path) {
         std::filesystem::remove(path);
     }
