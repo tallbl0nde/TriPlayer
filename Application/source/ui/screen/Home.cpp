@@ -1,5 +1,4 @@
 #include "Application.hpp"
-#include "Log.hpp"
 #include "ui/frame/Artist.hpp"
 #include "ui/frame/Artists.hpp"
 #include "ui/frame/Queue.hpp"
@@ -246,6 +245,7 @@ namespace Screen {
             // Have a prompt
             this->app->exit();
         });
+        quitButton->setSelectable(false);
         this->sideContainer->addElement(quitButton);
 
         // User

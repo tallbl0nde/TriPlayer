@@ -3,6 +3,7 @@
 #include "dtl.hpp"
 #include "ui/element/ListSong.hpp"
 #include "ui/frame/Queue.hpp"
+#include "utils/MP3.hpp"
 #include "utils/Utils.hpp"
 
 // Helper function returning length of songs in queue in seconds
@@ -43,6 +44,7 @@ namespace Frame {
         this->updateList();
         this->setFocussed(this->list);
         this->songPressed = false;
+        this->menu = nullptr;
     }
 
     void Queue::initEmpty() {
@@ -109,7 +111,7 @@ namespace Frame {
             this->playingElm->setTextColour(this->app->theme()->accent());
             this->playingElm->setMoreCallback([this, currentID]() {
                 // Show normal song menu (can't remove from queue!)
-                this->app->showSongMenu(currentID);
+                this->createMenu(currentID, 0, Section::Playing);
             });
             this->list->addElementAfter(this->playingElm, this->playing);
         }
@@ -158,7 +160,7 @@ namespace Frame {
                         // Need to find current position
                         std::list<CustomElm::ListSong *>::iterator it = std::find(this->queueEls.begin(), this->queueEls.end(), l);
                         size_t pos = std::distance(this->queueEls.begin(), it);
-                        this->app->showSongMenu(id, pos, SongMenuType::RemoveFromSubQueue);
+                        this->createMenu(id, pos, Section::Queue);
                     });
                     if (it == this->queueEls.begin()) {
                         this->list->addElementAfter(l, this->queue);
@@ -209,7 +211,7 @@ namespace Frame {
                         // Need to find current position
                         std::list<CustomElm::ListSong *>::iterator it = std::find(this->upnextEls.begin(), this->upnextEls.end(), l);
                         size_t pos = std::distance(this->upnextEls.begin(), it) + this->cachedSongIdx + 1;
-                        this->app->showSongMenu(id, pos, SongMenuType::RemoveFromQueue);
+                        this->createMenu(id, pos, Section::UpNext);
                     });
                     if (it == this->upnextEls.begin()) {
                         this->list->addElementAfter(l, this->upnext);
@@ -311,5 +313,92 @@ namespace Frame {
         }
 
         Frame::update(dt);
+    }
+
+    void Queue::createMenu(SongID id, size_t pos, Section sec) {
+        delete this->menu;
+
+        // Want to show the 'Remove from Queue' based on section invoked from
+        switch (sec) {
+            case Section::Playing:
+                this->menu = new CustomOvl::Menu::Song(CustomOvl::Menu::Song::Type::HideRemove);
+                break;
+
+            case Section::Queue:
+                this->menu = new CustomOvl::Menu::Song(CustomOvl::Menu::Song::Type::ShowRemove);
+                this->menu->setRemoveFromQueueText("Remove from Queue");
+                this->menu->setRemoveFromQueueFunc([this, pos]() {
+                    this->app->sysmodule()->sendRemoveFromSubQueue(pos);
+                    this->menu->close();
+                });
+                break;
+
+            case Section::UpNext:
+                this->menu = new CustomOvl::Menu::Song(CustomOvl::Menu::Song::Type::ShowRemove);
+                this->menu->setRemoveFromQueueText("Remove from Queue");
+                this->menu->setRemoveFromQueueFunc([this, pos]() {
+                    this->app->sysmodule()->sendRemoveFromQueue(pos);
+                    this->menu->close();
+                });
+                break;
+        }
+        this->menu->setAddToQueueText("Add to Queue");
+        this->menu->setAddToPlaylistText("Add to Playlist");
+        this->menu->setGoToArtistText("Go to Artist");
+        this->menu->setGoToAlbumText("Go to Album");
+        this->menu->setViewInformationText("View Information");
+        this->menu->setBackgroundColour(this->app->theme()->popupBG());
+        this->menu->setIconColour(this->app->theme()->muted());
+        this->menu->setLineColour(this->app->theme()->muted2());
+        this->menu->setMutedTextColour(this->app->theme()->muted());
+        this->menu->setTextColour(this->app->theme()->FG());
+
+        // Song metadata
+        Metadata::Song m = this->app->database()->getSongMetadataForID(id);
+        this->menu->setTitle(m.title);
+        this->menu->setArtist(m.artist);
+
+        // Album art (this will likely be improved at some point)
+        bool hasArt = false;
+        if (m.path.length() > 0) {
+            Metadata::Art art = Utils::MP3::getArtFromID3(m.path);
+            if (art.data != nullptr) {
+                this->menu->setAlbum(new Aether::Image(0, 0, art.data, art.size));
+                hasArt = true;
+                delete[] art.data;
+            }
+        }
+        if (!hasArt) {
+            this->menu->setAlbum(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
+        }
+
+        // Callbacks
+        this->menu->setAddToQueueFunc([this, id]() {
+            this->app->sysmodule()->sendAddToSubQueue(id);
+            this->menu->close();
+        });
+        this->menu->setAddToPlaylistFunc([this, id]() {
+            // add to playlist
+        });
+        this->menu->setGoToArtistFunc([this, id]() {
+            ArtistID a = this->app->database()->getArtistIDForSong(id);
+            if (a >= 0) {
+                this->changeFrame(Type::Artist, Action::Push, a);
+            }
+            this->menu->close();
+        });
+        this->menu->setGoToAlbumFunc([this, id]() {
+            // go to album
+        });
+        this->menu->setViewInformationFunc([this, id]() {
+            // view information
+        });
+
+        this->menu->resetHighlight();
+        this->app->addOverlay(this->menu);
+    }
+
+    Queue::~Queue() {
+        delete this->menu;
     }
 };

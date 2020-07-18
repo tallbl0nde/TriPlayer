@@ -7,21 +7,32 @@
 namespace CustomOvl::Menu {
     // Overlay shown when pressing the dots next to a song
     class Song : public Menu {
+        public:
+            // Type of song menu to create
+            enum class Type {
+                HideRemove,     // Don't show the 'Remove from Queue' button
+                ShowRemove      // Show the 'Remove from Queue' button
+            };
+
         private:
             // Elements
             Aether::Image * album;
             Aether::Text * title;
             Aether::Text * artist;
+            Aether::Container * btns;
             CustomElm::MenuButton * removeFromQueue;
             CustomElm::MenuButton * addToQueue;
             CustomElm::MenuButton * addToPlaylist;
             CustomElm::MenuButton * goToArtist;
             CustomElm::MenuButton * goToAlbum;
-            CustomElm::MenuButton * viewDetails;
+            CustomElm::MenuButton * viewInformation;
 
         public:
             // Pass true to show 'Remove from Queue'
-            Song(bool);
+            Song(Type);
+
+            // Move the highlight back to the top element
+            void resetHighlight();
 
             // Set values
             void setAlbum(Aether::Image *);
@@ -32,7 +43,7 @@ namespace CustomOvl::Menu {
             void setAddToPlaylistText(std::string);
             void setGoToArtistText(std::string);
             void setGoToAlbumText(std::string);
-            void setViewDetailsText(std::string);
+            void setViewInformationText(std::string);
 
             // Set callbacks
             void setRemoveFromQueueFunc(std::function<void()>);
@@ -40,7 +51,7 @@ namespace CustomOvl::Menu {
             void setAddToPlaylistFunc(std::function<void()>);
             void setGoToArtistFunc(std::function<void()>);
             void setGoToAlbumFunc(std::function<void()>);
-            void setViewDetailsFunc(std::function<void()>);
+            void setViewInformationFunc(std::function<void()>);
 
             // Set colours
             void setIconColour(Aether::Colour);

@@ -13,12 +13,6 @@ namespace Screen {
     class Splash;
 };
 
-// Type of SongMenu to create (only needed for remove type)
-enum class SongMenuType {
-    RemoveFromQueue,
-    RemoveFromSubQueue
-};
-
 namespace Main {
     // Enumeration for screens (allows for easy switching)
     enum ScreenID {
@@ -36,10 +30,6 @@ namespace Main {
             // Screens of the app
             Screen::Home * scHome;
             Screen::Splash * scSplash;
-
-            // Overlays
-            CustomOvl::Menu::Song * ovlSongMenu;
-            void setupSongMenu(SongID);
 
             // Database object
             Database * database_;
@@ -63,10 +53,6 @@ namespace Main {
             // Pass an overlay element in order to render
             // Element is not deleted when closed!
             void addOverlay(Aether::Overlay *);
-
-            // Sets up and shows the "SongMenu" overlay using given SongID
-            void showSongMenu(SongID);
-            void showSongMenu(SongID, size_t, SongMenuType);  // Also shows remove from queue given position
 
             // Pass screen enum to change to it
             void setScreen(ScreenID);

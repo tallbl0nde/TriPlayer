@@ -1,6 +1,7 @@
 #include "Application.hpp"
 #include "ui/element/ListSong.hpp"
 #include "ui/frame/Songs.hpp"
+#include "utils/MP3.hpp"
 #include "utils/Utils.hpp"
 
 namespace Frame {
@@ -30,7 +31,7 @@ namespace Frame {
                 });
                 SongID id = m[i].ID;
                 l->setMoreCallback([this, id]() {
-                    this->app->showSongMenu(id);
+                    this->createMenu(id);
                 });
                 this->list->addElement(l);
 
@@ -56,5 +57,73 @@ namespace Frame {
             emptyMsg->setX(this->x() + (this->w() - emptyMsg->w())/2);
             this->addElement(emptyMsg);
         }
+
+        this->menu = nullptr;
+    }
+
+    void Songs::createMenu(SongID id) {
+        // Create the base elements if they don't already exist
+        if (this->menu == nullptr) {
+            // Don't need to show the 'Remove from Queue' option here
+            this->menu = new CustomOvl::Menu::Song(CustomOvl::Menu::Song::Type::HideRemove);
+            this->menu->setAddToQueueText("Add to Queue");
+            this->menu->setAddToPlaylistText("Add to Playlist");
+            this->menu->setGoToArtistText("Go to Artist");
+            this->menu->setGoToAlbumText("Go to Album");
+            this->menu->setViewInformationText("View Information");
+            this->menu->setBackgroundColour(this->app->theme()->popupBG());
+            this->menu->setIconColour(this->app->theme()->muted());
+            this->menu->setLineColour(this->app->theme()->muted2());
+            this->menu->setMutedTextColour(this->app->theme()->muted());
+            this->menu->setTextColour(this->app->theme()->FG());
+        }
+
+        // Song metadata
+        Metadata::Song m = this->app->database()->getSongMetadataForID(id);
+        this->menu->setTitle(m.title);
+        this->menu->setArtist(m.artist);
+
+        // Album art (this will likely be improved at some point)
+        bool hasArt = false;
+        if (m.path.length() > 0) {
+            Metadata::Art art = Utils::MP3::getArtFromID3(m.path);
+            if (art.data != nullptr) {
+                this->menu->setAlbum(new Aether::Image(0, 0, art.data, art.size));
+                hasArt = true;
+                delete[] art.data;
+            }
+        }
+        if (!hasArt) {
+            this->menu->setAlbum(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
+        }
+
+        // Callbacks
+        this->menu->setAddToQueueFunc([this, id]() {
+            this->app->sysmodule()->sendAddToSubQueue(id);
+            this->menu->close();
+        });
+        this->menu->setAddToPlaylistFunc([this, id]() {
+            // add to playlist
+        });
+        this->menu->setGoToArtistFunc([this, id]() {
+            ArtistID a = this->app->database()->getArtistIDForSong(id);
+            if (a >= 0) {
+                this->changeFrame(Type::Artist, Action::Push, a);
+            }
+            this->menu->close();
+        });
+        this->menu->setGoToAlbumFunc([this, id]() {
+            // go to album
+        });
+        this->menu->setViewInformationFunc([this, id]() {
+            // view information
+        });
+
+        this->menu->resetHighlight();
+        this->app->addOverlay(this->menu);
+    }
+
+    Songs::~Songs() {
+        delete this->menu;
     }
 };

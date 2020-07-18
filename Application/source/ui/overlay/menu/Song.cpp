@@ -5,7 +5,7 @@
 #define ITEM_INDENT 20
 
 namespace CustomOvl::Menu {
-    Song::Song(bool showRemove) : Menu(Type::Normal) {
+    Song::Song(Song::Type t) : Menu(::CustomOvl::Menu::Type::Normal) {
         // Top section (song)
         this->album = nullptr;
         this->title = new Aether::Text(this->bg->x() + 130, this->bg->y() + 33, "", 24);
@@ -17,15 +17,15 @@ namespace CustomOvl::Menu {
         this->bg->addElement(this->artist);
 
         // Buttons are placed in a container for easy moving
-        Aether::Container * btns = new Aether::Container(this->bg->x(), this->bg->y() + 120 + 5, this->bg->w(), 720);
+       this->btns = new Aether::Container(this->bg->x(), this->bg->y() + 120 + 5, this->bg->w(), 720);
 
         // Queue/Playlist section
-        int h = btns->y();
-        if (showRemove) {
+        int h = this->btns->y();
+        if (t == Song::Type::ShowRemove) {
             this->removeFromQueue = new CustomElm::MenuButton(this->bg->x() + ITEM_INDENT, h, this->bg->w() - 2*ITEM_INDENT, ITEM_HEIGHT);
             this->removeFromQueue->setIcon(new Aether::Image(0, 0, "romfs:/icons/removefromqueue.png"));
             this->removeFromQueue->setCallback(nullptr);
-            btns->addElement(this->removeFromQueue);
+            this->btns->addElement(this->removeFromQueue);
             h += ITEM_HEIGHT;
         } else {
             this->removeFromQueue = nullptr;
@@ -34,13 +34,13 @@ namespace CustomOvl::Menu {
         this->addToQueue = new CustomElm::MenuButton(this->bg->x() + ITEM_INDENT, h, this->bg->w() - 2*ITEM_INDENT, ITEM_HEIGHT);
         this->addToQueue->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
         this->addToQueue->setCallback(nullptr);
-        btns->addElement(this->addToQueue);
+        this->btns->addElement(this->addToQueue);
         h += ITEM_HEIGHT;
 
         this->addToPlaylist = new CustomElm::MenuButton(this->bg->x() + ITEM_INDENT, h, this->bg->w() - 2*ITEM_INDENT, ITEM_HEIGHT);
         this->addToPlaylist->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoplaylist.png"));
         this->addToPlaylist->setCallback(nullptr);
-        btns->addElement(this->addToPlaylist);
+        this->btns->addElement(this->addToPlaylist);
         h += ITEM_HEIGHT;
 
         // Go to section
@@ -48,21 +48,21 @@ namespace CustomOvl::Menu {
         this->goToArtist = new CustomElm::MenuButton(this->bg->x() + ITEM_INDENT, h, this->bg->w() - 2*ITEM_INDENT, ITEM_HEIGHT);
         this->goToArtist->setIcon(new Aether::Image(0, 0, "romfs:/icons/user.png"));
         this->goToArtist->setCallback(nullptr);
-        btns->addElement(this->goToArtist);
+        this->btns->addElement(this->goToArtist);
         h += ITEM_HEIGHT;
 
         this->goToAlbum = new CustomElm::MenuButton(this->bg->x() + ITEM_INDENT, h, this->bg->w() - 2*ITEM_INDENT, ITEM_HEIGHT);
         this->goToAlbum->setIcon(new Aether::Image(0, 0, "romfs:/icons/disc.png"));
         this->goToAlbum->setCallback(nullptr);
-        btns->addElement(this->goToAlbum);
+        this->btns->addElement(this->goToAlbum);
         h += ITEM_HEIGHT;
 
         // Details
         h += 10;
-        this->viewDetails = new CustomElm::MenuButton(this->bg->x() + ITEM_INDENT, h, this->bg->w() - 2*ITEM_INDENT, ITEM_HEIGHT);
-        this->viewDetails->setIcon(new Aether::Image(0, 0, "romfs:/icons/info.png"));
-        this->viewDetails->setCallback(nullptr);
-        btns->addElement(this->viewDetails);
+        this->viewInformation = new CustomElm::MenuButton(this->bg->x() + ITEM_INDENT, h, this->bg->w() - 2*ITEM_INDENT, ITEM_HEIGHT);
+        this->viewInformation->setIcon(new Aether::Image(0, 0, "romfs:/icons/info.png"));
+        this->viewInformation->setCallback(nullptr);
+        this->btns->addElement(this->viewInformation);
         h += ITEM_HEIGHT;
 
         // Set background properly now
@@ -70,9 +70,17 @@ namespace CustomOvl::Menu {
         this->bg->setXY(640 - this->bg->w()/2, 360 - this->bg->h()/2);
 
         // Position buttons
-        btns->setXY(this->bg->x(), this->bg->y() + 120 + 5);
-        btns->setH(h - btns->y());
-        this->addElement(btns);
+        this->btns->setXY(this->bg->x(), this->bg->y() + 120 + 5);
+        this->btns->setH(h - this->btns->y());
+        this->addElement(this->btns);
+    }
+
+    void Song::resetHighlight() {
+        if (this->removeFromQueue == nullptr) {
+            this->btns->setFocussed(this->addToQueue);
+        } else {
+            this->btns->setFocussed(this->removeFromQueue);
+        }
     }
 
     void Song::setAlbum(Aether::Image * i) {
@@ -121,12 +129,14 @@ namespace CustomOvl::Menu {
         this->goToAlbum->setText(s);
     }
 
-    void Song::setViewDetailsText(std::string s) {
-        this->viewDetails->setText(s);
+    void Song::setViewInformationText(std::string s) {
+        this->viewInformation->setText(s);
     }
 
     void Song::setRemoveFromQueueFunc(std::function<void()> f) {
-        this->removeFromQueue->setCallback(f);
+        if (this->removeFromQueue != nullptr) {
+            this->removeFromQueue->setCallback(f);
+        }
     }
 
     void Song::setAddToQueueFunc(std::function<void()> f) {
@@ -145,8 +155,8 @@ namespace CustomOvl::Menu {
         this->goToAlbum->setCallback(f);
     }
 
-    void Song::setViewDetailsFunc(std::function<void()> f) {
-        this->viewDetails->setCallback(f);
+    void Song::setViewInformationFunc(std::function<void()> f) {
+        this->viewInformation->setCallback(f);
     }
 
     void Song::setIconColour(Aether::Colour c) {
@@ -157,7 +167,7 @@ namespace CustomOvl::Menu {
         this->addToPlaylist->setIconColour(c);
         this->goToArtist->setIconColour(c);
         this->goToAlbum->setIconColour(c);
-        this->viewDetails->setIconColour(c);
+        this->viewInformation->setIconColour(c);
     }
 
     void Song::setMutedTextColour(Aether::Colour c) {
@@ -173,7 +183,7 @@ namespace CustomOvl::Menu {
         this->addToPlaylist->setTextColour(c);
         this->goToArtist->setTextColour(c);
         this->goToAlbum->setTextColour(c);
-        this->viewDetails->setTextColour(c);
+        this->viewInformation->setTextColour(c);
     }
 
     void Song::render() {
@@ -190,8 +200,8 @@ namespace CustomOvl::Menu {
         if (this->isTouch || (!this->addToPlaylist->highlighted() && !this->goToArtist->highlighted())) {
             SDLHelper::drawTexture(this->line, this->lineColour, this->bg->x() + 20, this->goToArtist->y() - 5);
         }
-        if (this->isTouch || (!this->goToAlbum->highlighted() && !this->viewDetails->highlighted())) {
-            SDLHelper::drawTexture(this->line, this->lineColour, this->bg->x() + 20, this->viewDetails->y() - 5);
+        if (this->isTouch || (!this->goToAlbum->highlighted() && !this->viewInformation->highlighted())) {
+            SDLHelper::drawTexture(this->line, this->lineColour, this->bg->x() + 20, this->viewInformation->y() - 5);
         }
     }
 };
