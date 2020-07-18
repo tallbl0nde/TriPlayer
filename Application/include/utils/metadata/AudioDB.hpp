@@ -6,9 +6,9 @@
 
 namespace Metadata::AudioDB {
     struct Artist {
-        int tadbID;                 // The AudioDB ID
+        int tadbID;                 // The AudioDB ID (-1 on parse error, -2 on download error)
         std::string name;           // Name
-        std::string imageURL;       // URL to download artist image (preview size)
+        std::string imageURL;       // URL to download artist image
     };
 
     // Returns AudioDB info of the artist matching the provided name (ID negative if not found/error)

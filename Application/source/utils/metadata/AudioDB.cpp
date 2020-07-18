@@ -35,6 +35,9 @@ namespace Metadata::AudioDB {
                     }
                 }
             }
+
+        } else {
+            a.tadbID = -2;
         }
 
         return a;

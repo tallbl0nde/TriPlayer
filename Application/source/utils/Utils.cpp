@@ -5,10 +5,6 @@
 #include "utils/MP3.hpp"
 #include "utils/Utils.hpp"
 
-#include "utils/FS.hpp"
-#include "utils/metadata/AudioDB.hpp"
-#include "Log.hpp"
-
 namespace Utils {
     time_t getModifiedTimestamp(std::string path) {
         struct stat st;
@@ -143,38 +139,6 @@ namespace Utils {
             }
             db->prepareSearch();
         }
-
-        // aStage = ProcessStage::Parse;
-        // db->close();
-        // db->openReadWrite();
-        // auto as = db->getAllArtistMetadata();
-        // aTotal = as.size();
-        // for (size_t i = 0; i < as.size(); i++) {
-        //     aFile = i;
-        //     Log::writeError("AA");
-        //     if (as[i].tadbID < 0) {
-        //         Log::writeError("AA");
-        //         auto vec = Metadata::AudioDB::getArtistInfo(as[i].name);
-        //         if (vec.tadbID > 0) {
-        //             Log::writeError("AA");
-        //             as[i].tadbID = vec.tadbID;
-        //             auto data = Metadata::AudioDB::getArtistImage(vec);
-        //             if (data.size() > 0) {
-        //                 Log::writeError("AA");
-        //                 as[i].imagePath = "/switch/TriPlayer/images/artist/" + std::to_string(as[i].tadbID) + ".png";
-        //                 Utils::Fs::writeFile(as[i].imagePath, data);
-        //             }
-        //             db->updateArtist(as[i]);
-        //         }
-        //     }
-
-
-        //     if (stop) {
-        //         break;
-        //     }
-        // }
-        // db->close();
-        // db->openReadOnly();
 
         // Cleanup database (TBD)
         if (hasLock) {
