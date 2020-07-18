@@ -45,6 +45,10 @@ namespace Utils::Fs {
         return true;
     }
 
+    void deleteFile(const std::string & path) {
+        std::filesystem::remove(path);
+    }
+
     bool writeFile(const std::string & path, const std::vector<unsigned char> & data) {
         std::FILE * fp = std::fopen(path.c_str(), "wb");
         if (fp == NULL) {

@@ -19,6 +19,8 @@ namespace Utils::Fs {
     bool fileReadable(const std::string &);
     bool fileWritable(const std::string &);
 
+    // Delete a file
+    void deleteFile(const std::string &);
     // Write entire contents of buffer to file
     bool writeFile(const std::string &, const std::vector<unsigned char> &);
 };

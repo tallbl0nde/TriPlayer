@@ -12,8 +12,11 @@ namespace Frame {
         private:
             // 'Cached' metadata which is updated before being saved/discarded
             Metadata::Artist metadata;
+            bool deleteImage;
+            bool saveImage;
 
             // Pointers to elements that get updated
+            CustomElm::TextBox * name;
             CustomElm::TextBox * imagePath;
             Aether::Image * image;
             Aether::MessageBox * oldmsgbox;
@@ -32,6 +35,9 @@ namespace Frame {
             void createAudioDBOverlay();
             void updateAudioDBOverlay1();
             void updateAudioDBOverlay2(const std::string &);
+
+            // Function which actually saves changes
+            void saveChanges();
 
         public:
             // The constructor takes the ID of the artist to show

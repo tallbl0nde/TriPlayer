@@ -296,6 +296,8 @@ bool Database::updateArtist(Metadata::Artist m) {
         return false;
     }
 
+    // We don't want to ignore constraints for this query
+    this->db->ignoreConstraints(false);
     ok = this->db->executeQuery();
     if (!ok) {
         this->setErrorMsg("[updateArtist] An error occurred while updating the entry");
@@ -304,6 +306,7 @@ bool Database::updateArtist(Metadata::Artist m) {
             Log::writeInfo("[DB] [updateArtist] '" + m.name + "' was updated");
         }
     }
+    this->db->ignoreConstraints(true);
 
     // Mark search tables as out of date
     if (ok) {
