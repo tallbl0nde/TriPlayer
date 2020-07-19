@@ -22,6 +22,8 @@ namespace Utils::Fs {
     // Returns contents of directory
     // First element in pair is path, second is set true if directory
     std::vector< std::pair<std::string, bool> > getDirectoryContents(const std::string &);
+    // Returns extension of path (empty if not a file or no extension)
+    std::string getExtension(const std::string &);
     // Returns parent directory
     std::string getParentDirectory(const std::string &);
 

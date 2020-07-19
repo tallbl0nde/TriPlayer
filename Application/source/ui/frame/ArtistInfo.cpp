@@ -2,6 +2,16 @@
 #include "ui/frame/ArtistInfo.hpp"
 #include "ui/element/TextBox.hpp"
 #include "utils/FS.hpp"
+#include "utils/Utils.hpp"
+
+// Location of default image
+#define DEFAULT_IMAGE "romfs:/misc/noartist.png"
+// Default path for file browser
+#define FILE_BROWSER_ROOT "/"
+// Accepted image extensions
+static const std::vector<std::string> FILE_EXTENSIONS = {".jpg", ".jpeg", ".jfif", ".png", ".JPG", ".JPEG", ".JFIF", ".PNG"};
+// Save location of images
+#define SAVE_LOCATION "/switch/TriPlayer/images/artist/"
 
 // This whole file/frame is a mess behind the scenes :P
 namespace Frame {
@@ -39,7 +49,15 @@ namespace Frame {
         this->name->setKeyboardLimit(100);
         this->name->setString(this->metadata.name);
         this->name->setKeyboardCallback([this]() {
-            this->metadata.name = this->name->string();
+            std::string str = this->name->string();
+
+            // Remove trailing spaces
+            while (!str.empty() && str[str.length() - 1] == ' ') {
+                str.erase(str.length() - 1);
+            }
+
+            this->metadata.name = str;
+            this->name->setString(str);
         });
         this->addElement(this->name);
 
@@ -64,20 +82,20 @@ namespace Frame {
         this->imagePath = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.62, 50);
         this->imagePath->setBoxColour(this->app->theme()->muted2());
         this->imagePath->setTextColour(this->app->theme()->muted());
-        this->imagePath->setString(this->metadata.imagePath.empty() ? "romfs:/misc/noartist.png" : this->metadata.imagePath);
+        this->imagePath->setString(this->metadata.imagePath.empty() ? DEFAULT_IMAGE : this->metadata.imagePath);
         this->imagePath->setSelectable(false);
         this->imagePath->setTouchable(false);
         this->addElement(this->imagePath);
 
         // Image
-        this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), (this->metadata.imagePath.empty() ? "romfs:/misc/noartist.png" : this->metadata.imagePath));
+        this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), (this->metadata.imagePath.empty() ? DEFAULT_IMAGE : this->metadata.imagePath));
         this->image->setWH(this->w()*0.18, this->w()*0.18);
         this->addElement(this->image);
 
         // Fetch image (local)
         Aether::Container * c = new Aether::Container(txt->x(), this->imagePath->y() + this->imagePath->h() + 20, this->w()*0.62, 50);
         Aether::BorderButton * button = new Aether::BorderButton(c->x(), c->y(), this->w() * 0.3, 50, 2, "", 20, [this]() {
-            // open file chooser or something
+            this->createFileBrowser();
         });
         button->setString("Replace from SD Card");
         button->setBorderColour(this->app->theme()->FG());
@@ -96,16 +114,7 @@ namespace Frame {
 
         // Remove image
         button = new Aether::BorderButton(txt->x() + this->w()*0.16, button->y() + button->h() + 20, this->w() * 0.3, 50, 2, "", 20, [this]() {
-            if (this->imagePath->string().empty()) {
-                return;
-            }
-            // 'Fake' remove for now
-            this->deleteImage = true;
-            this->removeElement(this->image);
-            this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), "romfs:/misc/noartist.png");
-            this->image->setWH(this->w()*0.18, this->w()*0.18);
-            this->addElement(this->image);
-            this->imagePath->setString("romfs:/misc/noartist.png");
+            this->removeImage();
         });
         button->setString("Remove Image");
         button->setBorderColour(this->app->theme()->FG());
@@ -120,8 +129,9 @@ namespace Frame {
         save->setTextColour(Aether::Colour{0, 0, 0, 255});
         this->addElement(save);
 
-        this->deleteImage = false;
-        this->saveImage = false;
+        this->checkFB = false;
+        this->browser = nullptr;
+        this->updateImage = false;
         this->oldmsgbox = nullptr;
         this->msgbox = nullptr;
         this->threadRunning = false;
@@ -136,7 +146,7 @@ namespace Frame {
             this->msgbox->close();
         });
         this->msgbox->addRightButton("OK", [this]() {
-            this->updateAudioDBOverlay1();
+            this->updateAudioDBOverlay();
             this->dlBuffer.clear();
             this->dlThread = std::async(std::launch::async, [this]() -> Metadata::DownloadResult {
                 return Metadata::downloadArtistImage(this->metadata.name, this->dlBuffer, this->metadata.tadbID);
@@ -160,7 +170,7 @@ namespace Frame {
         this->app->addOverlay(this->msgbox);
     }
 
-    void ArtistInfo::updateAudioDBOverlay1() {
+    void ArtistInfo::updateAudioDBOverlay() {
         // Remove old msgbox
         this->msgbox->close();
         this->oldmsgbox = this->msgbox;
@@ -181,9 +191,15 @@ namespace Frame {
         this->app->addOverlay(this->msgbox);
     }
 
-    void ArtistInfo::updateAudioDBOverlay2(const std::string & msg) {
-        // Now remove old body and add OK button
-        this->msgbox->emptyBody();
+    void ArtistInfo::createInfoOverlay(const std::string & msg) {
+        // Remove old msgbox
+        if (this->msgbox != nullptr) {
+            this->msgbox->close();
+        }
+        this->oldmsgbox = this->msgbox;
+
+        // Now create new one
+        this->msgbox = new Aether::MessageBox();
         this->msgbox->addTopButton("OK", [this]() {
             this->msgbox->close();
         });
@@ -201,20 +217,54 @@ namespace Frame {
         this->app->addOverlay(this->msgbox);
     }
 
-    void ArtistInfo::saveChanges() {
-        // First delete old image if needed
-        if (this->deleteImage) {
-            Utils::Fs::deleteFile(this->metadata.imagePath);
-            this->metadata.imagePath = "";
+    void ArtistInfo::createFileBrowser() {
+        // Create if doesn't exist
+        if (this->browser == nullptr) {
+            this->browser = new CustomOvl::FileBrowser(700, 600);
+            this->browser->setAccentColour(this->app->theme()->accent());
+            this->browser->setMutedLineColour(this->app->theme()->muted2());
+            this->browser->setMutedTextColour(this->app->theme()->muted());
+            this->browser->setRectangleColour(this->app->theme()->popupBG());
+            this->browser->setTextColour(this->app->theme()->FG());
+            this->browser->setCancelText("Cancel");
+            this->browser->setHeadingText("Select an Image");
+            this->browser->setExtensions(FILE_EXTENSIONS);
         }
 
-        // Save new image
-        if (this->saveImage) {
-            Utils::Fs::writeFile(this->imagePath->string(), this->dlBuffer);
-            this->metadata.imagePath = this->imagePath->string();
+        // Set path and show
+        this->checkFB = true;
+        this->browser->setPath(FILE_BROWSER_ROOT);
+        this->app->addOverlay(this->browser);
+    }
+
+    void ArtistInfo::saveChanges() {
+        // Don't permit blank name
+        if (this->metadata.name.empty()) {
+            this->createInfoOverlay("You can't set a blank name. Nice try ;)");
+            return;
         }
+
+        if (this->updateImage) {
+            // First delete old image if needed
+            if (!this->metadata.imagePath.empty()) {
+                Utils::Fs::deleteFile(this->metadata.imagePath);
+                this->metadata.imagePath = "";
+            }
+
+            // Save new image if there is one
+            if (!this->newImagePath.empty()) {
+                Utils::Fs::copyFile(this->newImagePath, this->imagePath->string());
+                this->metadata.imagePath = this->imagePath->string();
+            } else if (!this->dlBuffer.empty()) {
+                Utils::Fs::writeFile(this->imagePath->string(), this->dlBuffer);
+                this->metadata.imagePath = this->imagePath->string();
+            }
+        }
+
+
 
         // Commit changes to db (this needs to be done a LOT better - it fails if sysmodule has database open)
+        // Also only copy file if successful?
         this->app->database()->close();
         this->app->database()->openReadWrite();
         bool ok = this->app->database()->updateArtist(this->metadata);
@@ -222,9 +272,7 @@ namespace Frame {
         this->app->database()->openReadOnly();
 
         // Show message box indicating result
-        this->oldmsgbox = this->msgbox;
-        this->msgbox = new Aether::MessageBox();
-        this->updateAudioDBOverlay2((ok ? "Your changes have been saved. You may need to restart the application for any changes to take complete effect." : "Unable to update the database, see the logs for more information!"));
+        this->createInfoOverlay((ok ? "Your changes have been saved. You may need to restart the application for any changes to take complete effect." : "Unable to update the database, see the logs for more information!"));
     }
 
     void ArtistInfo::update(uint32_t dt) {
@@ -236,37 +284,94 @@ namespace Frame {
             this->oldmsgbox = nullptr;
         }
 
+        // Once the thread is done, update the msgbox to indicate the result
         if (this->threadRunning) {
-            // Once the thread is done, update the msgbox to indicate the result
             if (this->dlThread.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
                 switch (this->dlThread.get()) {
                     case Metadata::DownloadResult::Error:
-                        this->updateAudioDBOverlay2("An unknown error occurred during downloading. This could be due to:\n- A poor internet connection\n- The server is overloaded\n- An issue with this application\n\nPlease try again later.");
+                        this->createInfoOverlay("An unknown error occurred during downloading. This could be due to:\n- A poor internet connection\n- The server is overloaded\n- An issue with this application\n\nPlease try again later.");
                         break;
 
                     case Metadata::DownloadResult::NotFound:
-                        this->updateAudioDBOverlay2("An artist could not be found with the name '" + this->metadata.name + "'. Please check your spelling or set an image manually.");
+                        this->createInfoOverlay("An artist could not be found with the name '" + this->metadata.name + "'. Please check your spelling or set an image manually.");
                         break;
 
                     case Metadata::DownloadResult::NoImage:
-                        this->updateAudioDBOverlay2("'" + this->metadata.name + "' was found on TheAudioDB but has no image associated with them.");
+                        this->createInfoOverlay("'" + this->metadata.name + "' was found on TheAudioDB but has no image associated with them.");
                         break;
 
                     case Metadata::DownloadResult::Success:
                         this->msgbox->close();
-                        // Remove old image and replace with new one
-                        this->removeElement(this->image);
-                        this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), &this->dlBuffer[0], this->dlBuffer.size());
-                        this->image->setWH(this->w()*0.18, this->w()*0.18);
-                        this->addElement(this->image);
-
-                        // Update new image path
-                        this->saveImage = true;
-                        this->imagePath->setString("/switch/TriPlayer/images/artist/" + std::to_string(this->metadata.tadbID) + ".png");
+                        this->updateImageFromDL();
                         break;
                 }
                 this->threadRunning = false;
             }
+        }
+
+        // Check the file browser result and create popup/image
+        if (this->checkFB) {
+            if (this->browser->shouldClose()) {
+                std::string path = this->browser->chosenFile();
+                if (!path.empty()) {
+                    this->updateImageFromPath(path);
+                }
+                this->checkFB = false;
+            }
+        }
+    }
+
+    void ArtistInfo::removeImage() {
+        // 'Fake' remove
+        this->updateImage = true;
+        this->dlBuffer.clear();
+        this->newImagePath.clear();
+        this->removeElement(this->image);
+        this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), DEFAULT_IMAGE);
+        this->image->setWH(this->w()*0.18, this->w()*0.18);
+        this->addElement(this->image);
+        this->imagePath->setString(DEFAULT_IMAGE);
+    }
+
+    void ArtistInfo::updateImageFromDL() {
+        // Remove old image and replace with new one
+        this->removeElement(this->image);
+        this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), &this->dlBuffer[0], this->dlBuffer.size());
+        this->image->setWH(this->w()*0.18, this->w()*0.18);
+        this->addElement(this->image);
+
+        // Update new image path (everything just has extension .png)
+        this->updateImage = true;
+        this->newImagePath.clear();
+        this->imagePath->setString(SAVE_LOCATION + std::to_string(this->metadata.tadbID) + ".png");
+    }
+
+    void ArtistInfo::updateImageFromPath(const std::string & path) {
+        // Attempt to create new image
+        Aether::Image * tmpImage = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), path);
+        tmpImage->setWH(this->w()*0.18, this->w()*0.18);
+
+        // Show error if image wasn't created
+        if (tmpImage->texW() == 0 || tmpImage->texH() == 0) {
+            this->createInfoOverlay("An error occurred reading the selected image. This may be due to a corrupted image or incorrect file extension.");
+            delete tmpImage;
+
+        // Otherwise replace image
+        } else {
+            this->removeElement(this->image);
+            this->image = tmpImage;
+            this->addElement(this->image);
+            this->updateImage = true;
+
+            // Generate unique path (if you're really unlucky this could run indefinitely - but with 62^10 combinations we should be right :P)
+            std::string ext = Utils::Fs::getExtension(path);
+            std::string rand;
+            do {
+                rand = Utils::randomString(10);
+            } while (Utils::Fs::fileExists(SAVE_LOCATION + rand + ext));
+            this->imagePath->setString(SAVE_LOCATION + rand + ext);
+            this->newImagePath = path;
+            this->dlBuffer.clear();
         }
     }
 
@@ -276,5 +381,6 @@ namespace Frame {
         }
         delete this->oldmsgbox;
         delete this->msgbox;
+        delete this->browser;
     }
 };

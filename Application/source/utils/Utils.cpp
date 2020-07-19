@@ -149,6 +149,25 @@ namespace Utils {
         aStage = ProcessStage::Done;
     }
 
+    // From: https://stackoverflow.com/questions/440133/how-do-i-create-a-random-alpha-numeric-string-in-c/12468109#12468109
+    static bool seedSet = false;
+    std::string randomString(size_t length) {
+        // Set seed if not already set
+        if (!seedSet) {
+            srand(time(NULL));
+            seedSet = true;
+        }
+
+        auto randchar = []() -> char {
+            const char charset[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+            const size_t max_index = (sizeof(charset) - 1);
+            return charset[rand() % max_index];
+        };
+        std::string str(length, 0);
+        std::generate_n(str.begin(), length, randchar);
+        return str;
+    }
+
     float roundToDecimalPlace(float val, unsigned int p) {
         for (unsigned int i = 0; i < p; i++) {
             val *= 10.0;

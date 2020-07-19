@@ -7,6 +7,8 @@
 #include "ui/screen/Home.hpp"
 #include "utils/MP3.hpp"
 
+#include "ui/overlay/FileBrowser.hpp"
+
 namespace Screen {
     Home::Home(Main::Application * a) : Screen() {
         this->app = a;

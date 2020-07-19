@@ -2,7 +2,7 @@
 #define OVERLAY_FILEBROWSER_HPP
 
 #include "Aether/Aether.hpp"
-#include "ui/element/Listfile.hpp"
+#include "ui/element/ListFile.hpp"
 
 namespace CustomOvl {
     // The FileBrowser overlay presents a basic file explorer which is
@@ -20,6 +20,8 @@ namespace CustomOvl {
 
             // Path to chosen file
             std::string file;
+            // Allowed extensions
+            std::vector<std::string> exts;
 
             // Colours
             Aether::Colour text;
@@ -35,7 +37,12 @@ namespace CustomOvl {
 
             // Returns path to selected file (empty if cancelled)
             std::string chosenFile();
+            // Reset the chosen file
+            void resetFile();
 
+            // Set allowed extensions (call before setting path!)
+            // Include . in extension (eg. '.mp3')
+            void setExtensions(const std::vector<std::string>);
             // Set path
             void setPath(const std::string &);
 

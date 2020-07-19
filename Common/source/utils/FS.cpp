@@ -53,9 +53,14 @@ namespace Utils::Fs {
         return items;
     }
 
+    std::string getExtension(const std::string & path) {
+        return std::filesystem::path(path).extension();
+    }
+
     std::string getParentDirectory(const std::string & path) {
         return std::filesystem::path(path).parent_path();
     }
+
 
     void deleteFile(const std::string & path) {
         std::filesystem::remove(path);

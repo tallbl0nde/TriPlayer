@@ -4,6 +4,7 @@
 #include <future>
 #include "ui/element/TextBox.hpp"
 #include "ui/frame/Frame.hpp"
+#include "ui/overlay/FileBrowser.hpp"
 #include "utils/metadata/Metadata.hpp"
 #include "Types.hpp"
 
@@ -12,8 +13,6 @@ namespace Frame {
         private:
             // 'Cached' metadata which is updated before being saved/discarded
             Metadata::Artist metadata;
-            bool deleteImage;
-            bool saveImage;
 
             // Pointers to elements that get updated
             CustomElm::TextBox * name;
@@ -21,20 +20,27 @@ namespace Frame {
             Aether::Image * image;
             Aether::MessageBox * oldmsgbox;
             Aether::MessageBox * msgbox;
+            CustomOvl::FileBrowser * browser;
 
-            // Buffer to fill with image
+            // Variables used for caching/saving images
+            bool checkFB;
             std::vector<unsigned char> dlBuffer;
-            // ID of downloaded image
             int dlID;
-            // Future for running download thread
+            bool updateImage;
             std::future<Metadata::DownloadResult> dlThread;
-            // Set true if the thread is started
             bool threadRunning;
+            std::string newImagePath;
 
             // Functions which create/update popups
             void createAudioDBOverlay();
-            void updateAudioDBOverlay1();
-            void updateAudioDBOverlay2(const std::string &);
+            void updateAudioDBOverlay();
+            void createFileBrowser();
+            void createInfoOverlay(const std::string &);
+
+            // Functions to update frame based on type of image
+            void removeImage();
+            void updateImageFromDL();
+            void updateImageFromPath(const std::string &);
 
             // Function which actually saves changes
             void saveChanges();

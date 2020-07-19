@@ -44,8 +44,24 @@ namespace CustomOvl {
         // Make sure list is empty first
         this->list->removeAllElements();
 
-        // Get list of files and sort
+        // Get list of files and filter based on extension
         auto contents = Utils::Fs::getDirectoryContents(this->path->string());
+        contents.erase(std::remove_if(contents.begin(), contents.end(), [this](const std::pair<std::string, bool> e) {
+            // Don't remove directories
+            if (e.second || this->exts.empty()) {
+                return false;
+            }
+
+            // Check if file extension is in list
+            for (size_t i = 0; i < this->exts.size(); i++) {
+                if (Utils::Fs::getExtension(e.first) == this->exts[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }), contents.end());
+
+        // Sort to have directories first
         std::sort(contents.begin(), contents.end(), [](const std::pair<std::string, bool> lhs, const std::pair<std::string, bool> rhs) {
             return lhs.second > rhs.second;
         });
@@ -97,6 +113,14 @@ namespace CustomOvl {
 
     std::string FileBrowser::chosenFile() {
         return this->file;
+    }
+
+    void FileBrowser::resetFile() {
+        this->file.clear();
+    }
+
+    void FileBrowser::setExtensions(const std::vector<std::string> e) {
+        this->exts = e;
     }
 
     void FileBrowser::setPath(const std::string & p) {
