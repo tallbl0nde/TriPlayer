@@ -73,10 +73,9 @@ class Sysmodule {
         PlaybackStatus status();
         double volume();
 
-        // Blocks calling thread until the sysmodule has reset it's state
+        // The following commands block the calling thread until a response is received
+        void waitRequestDBLock();
         void waitReset();
-        // Blocks calling thread until it is guaranteed songIdx has been updated
-        // Returns max size_t on error (e.g. not connected)
         size_t waitSongIdx();
 
         // === Send command to sysmodule ===
@@ -119,6 +118,7 @@ class Sysmodule {
         void sendSetPosition(double);
         void sendGetPlayingFrom();
         void sendSetPlayingFrom(const std::string &);
+        void sendReleaseDBLock();
 
         // ======
 

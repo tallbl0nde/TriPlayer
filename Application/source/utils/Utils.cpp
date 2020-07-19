@@ -66,8 +66,9 @@ namespace Utils {
         if (!stop) {
             if (addPos.size() + editPos.size() != 0) {
                 hasLock = true;
-                sys->waitReset();
                 db->close();
+                sys->waitReset();
+                sys->waitRequestDBLock();
                 db->openReadWrite();
 
                 // Actually insert/update now (this is messy just so the user can get the status...)
@@ -119,8 +120,9 @@ namespace Utils {
                     if (!hasLock) {
                         aStage = ProcessStage::Update;
                         hasLock = true;
-                        sys->waitReset();
                         db->close();
+                        sys->waitReset();
+                        sys->waitRequestDBLock();
                         db->openReadWrite();
                     }
                     db->removeSong(db->getSongIDForPath(dbPaths[i]));
@@ -133,8 +135,9 @@ namespace Utils {
             if (!hasLock) {
                 aStage = ProcessStage::Update;
                 hasLock = true;
-                sys->waitReset();
                 db->close();
+                sys->waitReset();
+                sys->waitRequestDBLock();
                 db->openReadWrite();
             }
             db->prepareSearch();
@@ -143,6 +146,7 @@ namespace Utils {
         // Cleanup database (TBD)
         if (hasLock) {
             db->close();
+            sys->sendReleaseDBLock();
             db->openReadOnly();
         }
 

@@ -212,6 +212,22 @@ double Sysmodule::volume() {
     return this->volume_;
 }
 
+void Sysmodule::waitRequestDBLock() {
+    std::atomic<bool> done = false;
+
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::RequestDBLock), [&done](std::string s) {
+        if (std::stoi(s) != 0) {
+            // throw error
+        }
+        done = true;
+    });
+
+    // Block until done
+    while (!done) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+}
+
 void Sysmodule::waitReset() {
     std::atomic<bool> done = false;
 
@@ -542,6 +558,14 @@ void Sysmodule::sendSetPlayingFrom(const std::string & str) {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::SetPlayingFrom) + DELIM + str, [this](std::string s) {
         std::scoped_lock<std::mutex> mtx(this->playingFromMutex);
         this->playingFrom_ = s;
+    });
+}
+
+void Sysmodule::sendReleaseDBLock() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::ReleaseDBLock), [this](std::string s) {
+        if (std::stoi(s) != 0) {
+            // throw error
+        }
     });
 }
 

@@ -244,7 +244,17 @@ namespace Frame {
             return;
         }
 
-        if (this->updateImage) {
+        // Commit changes to db (acquires lock and then writes)
+        this->app->database()->close();
+        this->app->sysmodule()->waitRequestDBLock();
+        this->app->database()->openReadWrite();
+        bool ok = this->app->database()->updateArtist(this->metadata);
+        this->app->database()->prepareSearch();
+        this->app->database()->close();
+        this->app->sysmodule()->sendReleaseDBLock();
+        this->app->database()->openReadOnly();
+
+        if (ok && this->updateImage) {
             // First delete old image if needed
             if (!this->metadata.imagePath.empty()) {
                 Utils::Fs::deleteFile(this->metadata.imagePath);
@@ -260,16 +270,6 @@ namespace Frame {
                 this->metadata.imagePath = this->imagePath->string();
             }
         }
-
-
-
-        // Commit changes to db (this needs to be done a LOT better - it fails if sysmodule has database open)
-        // Also only copy file if successful?
-        this->app->database()->close();
-        this->app->database()->openReadWrite();
-        bool ok = this->app->database()->updateArtist(this->metadata);
-        this->app->database()->close();
-        this->app->database()->openReadOnly();
 
         // Show message box indicating result
         this->createInfoOverlay((ok ? "Your changes have been saved. You may need to restart the application for any changes to take complete effect." : "Unable to update the database, see the logs for more information!"));
