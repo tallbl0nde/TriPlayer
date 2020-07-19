@@ -21,18 +21,18 @@ namespace CustomElm {
 
         // Set callback to open keyboard
         this->setCallback([this](){
-            std::string s = Utils::NX::getUserInput(32, "Search", "Search", "Search for songs, artists or albums...", "", this->text->string());
-            if (s != "") {
-                this->text->setString(s);
-                this->text->setY(this->y() + (this->h() - this->text->h())/2);
-                int wid = (this->rect->x() + this->rect->w()) - this->text->x() - 10;
-                if (this->text->texW() > wid) {
-                    this->text->setMask(0, 0, wid, this->text->texH());
-                    this->text->setW(wid);
-                } else {
-                    this->text->setMask(0, 0, this->text->texW(), this->text->texH());
-                }
-            }
+            // std::string s = Utils::NX::getUserInput(32, "Search", "Search", "Search for songs, artists or albums...", "", this->text->string());
+            // if (s != "") {
+            //     this->text->setString(s);
+            //     this->text->setY(this->y() + (this->h() - this->text->h())/2);
+            //     int wid = (this->rect->x() + this->rect->w()) - this->text->x() - 10;
+            //     if (this->text->texW() > wid) {
+            //         this->text->setMask(0, 0, wid, this->text->texH());
+            //         this->text->setW(wid);
+            //     } else {
+            //         this->text->setMask(0, 0, this->text->texW(), this->text->texH());
+            //     }
+            // }
         });
     }
 

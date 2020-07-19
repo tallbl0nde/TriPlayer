@@ -44,4 +44,35 @@ namespace Utils::Fs {
         std::fclose(fp);
         return true;
     }
+
+    std::vector< std::pair<std::string, bool> > getDirectoryContents(const std::string & path) {
+        std::vector< std::pair<std::string, bool> > items;
+        for (auto & p: std::filesystem::directory_iterator(path)) {
+            items.push_back(std::make_pair(p.path().filename(), p.is_directory()));
+        }
+        return items;
+    }
+
+    std::string getExtension(const std::string & path) {
+        return std::filesystem::path(path).extension();
+    }
+
+    std::string getParentDirectory(const std::string & path) {
+        return std::filesystem::path(path).parent_path();
+    }
+
+
+    void deleteFile(const std::string & path) {
+        std::filesystem::remove(path);
+    }
+
+    bool writeFile(const std::string & path, const std::vector<unsigned char> & data) {
+        std::FILE * fp = std::fopen(path.c_str(), "wb");
+        if (fp == NULL) {
+            return false;
+        }
+        bool b = (std::fwrite(&data[0], sizeof(unsigned char), data.size(), fp) == data.size()*sizeof(unsigned char));
+        std::fclose(fp);
+        return b;
+    }
 };

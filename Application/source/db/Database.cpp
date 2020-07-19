@@ -10,7 +10,7 @@
 // Location of the database file
 #define DB_PATH "/switch/TriPlayer/data.sqlite3"
 // Version of the database (database begins with zero from 'template', so this started at 1)
-#define DB_VERSION 1
+#define DB_VERSION 2
 // Location of template file
 #define TEMPLATE_DB_PATH "romfs:/db/template.sqlite3"
 
@@ -19,6 +19,7 @@ bool keepFalse(const bool & a, const bool & b) {
     return !(!a || !b);
 }
 
+// ===== Housekeeping ===== //
 Database::Database() {
     // Copy the template if the database doesn't exist
     // Needed as SQLite spits IO errors otherwise
@@ -93,7 +94,14 @@ bool Database::migrate() {
                     break;
                 }
                 Log::writeSuccess("[DB] Migrated to version 1");
-                version++;
+
+            case 1:
+                err = Migration::migrateTo2(this->db);
+                if (!err.empty()) {
+                    err = "Migration 2: " + err;
+                    break;
+                }
+                Log::writeSuccess("[DB] Migrated to version 2");
         }
     }
 
@@ -105,149 +113,6 @@ bool Database::migrate() {
         this->setErrorMsg("An error occurred migrating the database");
     }
     this->close();
-    return ok;
-}
-
-bool Database::needsSearchUpdate() {
-    // Check if we have read permission
-    if (this->db->connectionType() == SQLite::Connection::None) {
-        this->setErrorMsg("[needsSearchUpdate] Database has not been opened");
-        return false;
-    }
-
-    // Return true if search_update does not equal 0
-    int val;
-    bool ok = this->db->prepareAndExecuteQuery("SELECT value FROM Variables WHERE name = 'search_update';");
-    ok = keepFalse(ok, this->db->getInt(0, val));
-    if (!ok) {
-        this->setErrorMsg("[needsSearchUpdate] Unable to query update variable");
-        return false;
-    }
-    return (val != 0);
-}
-
-bool Database::prepareSearch() {
-    // First check we have write permission
-    if (this->db->connectionType() != SQLite::Connection::ReadWrite) {
-        this->setErrorMsg("[prepareSearch] Can't perform indexing as the database is unwritable");
-        return false;
-    }
-
-    // Update fts tables
-    bool ok = this->db->prepareAndExecuteQuery("DELETE FROM FtsSongs;");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Unable to empty FtsSongs");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsSongs SELECT title FROM Songs;");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Failed to populate FtsSongs");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("DELETE FROM FtsArtists;");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Unable to empty FtsArtists");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsArtists SELECT name FROM Artists;");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Failed to populate FtsArtists");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("DELETE FROM FtsAlbums;");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Unable to empty FtsAlbums");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsAlbums SELECT name FROM Albums;");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Failed to populate FtsAlbums");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("DELETE FROM FtsPlaylists;");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Unable to empty FtsPlaylists");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsPlaylists SELECT name FROM Playlists;");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Failed to populate FtsPlaylists");
-        return false;
-    }
-
-    // Update fts4aux tables (used to populate spellfix tables)
-    this->db->prepareAndExecuteQuery("DROP TABLE IF EXISTS FtsAuxSongs;");
-    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsAuxSongs USING fts4aux(FtsSongs);");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Failed to create FtsAuxSongs table");
-        return false;
-    }
-    this->db->prepareAndExecuteQuery("DROP TABLE IF EXISTS FtsAuxArtists;");
-    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsAuxArtists USING fts4aux(FtsArtists);");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Failed to create FtsAuxArtists table");
-        return false;
-    }
-    this->db->prepareAndExecuteQuery("DROP TABLE IF EXISTS FtsAuxAlbums;");
-    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsAuxAlbums USING fts4aux(FtsAlbums);");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Failed to create FtsAuxAlbums table");
-        return false;
-    }
-    this->db->prepareAndExecuteQuery("DROP TABLE IF EXISTS FtsAuxPlaylists;");
-    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsAuxPlaylists USING fts4aux(FtsPlaylists);");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Failed to create FtsAuxPlaylists table");
-        return false;
-    }
-
-    // Now populate spellfix tables
-    ok = this->db->prepareAndExecuteQuery("DELETE FROM SpellfixSongs;");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Unable to empty SpellfixSongs");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("INSERT INTO SpellfixSongs (word, rank) SELECT term, documents FROM FtsAuxSongs WHERE col='*';");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Failed to populate SpellfixSongs with terms");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("DELETE FROM SpellfixArtists;");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Unable to empty SpellfixArtists");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("INSERT INTO SpellfixArtists (word, rank) SELECT term, documents FROM FtsAuxArtists WHERE col='*';");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Failed to populate SpellfixArtists with terms");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("DELETE FROM SpellfixAlbums;");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Unable to empty SpellfixAlbums");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("INSERT INTO SpellfixAlbums (word, rank) SELECT term, documents FROM FtsAuxAlbums WHERE col='*';");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Failed to populate SpellfixAlbums with terms");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("DELETE FROM SpellfixPlaylists;");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Unable to empty SpellfixPlaylists");
-        return false;
-    }
-    ok = this->db->prepareAndExecuteQuery("INSERT INTO SpellfixPlaylists (word, rank) SELECT term, documents FROM FtsAuxPlaylists WHERE col='*';");
-    if (!ok) {
-        this->setErrorMsg("[prepareSearch] Failed to populate SpellfixPlaylists with terms");
-        return false;
-    }
-
-    // Update variable to indicate no update is needed
-    ok = this->setSearchUpdate(0);
-    if (ok) {
-        Log::writeSuccess("[DB] [prepareSearch] Search tables updated successfully!");
-    }
     return ok;
 }
 
@@ -263,6 +128,7 @@ void Database::setErrorMsg(const std::string & msg = "") {
     }
 }
 
+// ===== Private Queries ===== //
 bool Database::addArtist(std::string & name) {
     // Don't need to check for R/W as the callee will have done that
     bool ok = this->db->prepareQuery("INSERT INTO Artists (name) VALUES (?);");
@@ -366,9 +232,7 @@ bool Database::spellfixString(const std::string & table, std::string & str) {
     return true;
 }
 
-// ============================ //
-//       PUBLIC FUNCTIONS       //
-// ============================ //
+// ===== Connection Management ===== //
 bool Database::openReadWrite() {
     return this->db->openConnection(SQLite::Connection::ReadWrite);
 }
@@ -381,6 +245,148 @@ void Database::close() {
     this->db->closeConnection();
 }
 
+// ===== Album Metadata ===== //
+std::vector<Metadata::Album> Database::getAlbumMetadataForArtist(ArtistID id) {
+    std::vector<Metadata::Album> v;
+
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getAlbumMetadataForArtist] No open connection");
+        return v;
+    }
+
+    // Create a Metadata::Album for each entry
+    bool ok = this->db->prepareQuery("SELECT DISTINCT Albums.id, Albums.name FROM Songs JOIN Albums ON Songs.album_id = Albums.id WHERE Songs.artist_id = ? ORDER BY Albums.name;");
+    ok = keepFalse(ok, this->db->bindInt(0, id));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[getAlbumMetadataForArtist] Unable to query for artist's albums");
+        return v;
+    }
+    while (ok) {
+        Metadata::Album m;
+        ok = this->db->getInt(0, m.ID);
+        ok = keepFalse(ok, this->db->getString(1, m.name));
+
+        if (ok) {
+            v.push_back(m);
+        }
+        ok = keepFalse(ok, this->db->nextRow());
+    }
+
+    return v;
+}
+
+// ===== Artist Metadata ===== //
+bool Database::updateArtist(Metadata::Artist m) {
+    // First check we have write permission
+    if (this->db->connectionType() != SQLite::Connection::ReadWrite) {
+        this->setErrorMsg("[updateArtist] Can't update song as the database is unwritable");
+        return false;
+    }
+
+    // Now update relevant fields
+    bool ok = this->db->prepareQuery("UPDATE Artists SET name = ?, tadb_id = ?, image_path = ? WHERE id = ?;");
+    ok = keepFalse(ok, this->db->bindString(0, m.name));
+    ok = keepFalse(ok, this->db->bindInt(1, m.tadbID));
+    ok = keepFalse(ok, this->db->bindString(2, m.imagePath));
+    ok = keepFalse(ok, this->db->bindInt(3, m.ID));
+    if (!ok) {
+        this->setErrorMsg("[updateArtist] An error occurred while preparing the statement");
+        return false;
+    }
+
+    // We don't want to ignore constraints for this query
+    this->db->ignoreConstraints(false);
+    ok = this->db->executeQuery();
+    if (!ok) {
+        this->setErrorMsg("[updateArtist] An error occurred while updating the entry");
+    } else {
+        if (Log::loggingLevel() == Log::Level::Info) {
+            Log::writeInfo("[DB] [updateArtist] '" + m.name + "' was updated");
+        }
+    }
+    this->db->ignoreConstraints(true);
+
+    // Mark search tables as out of date
+    if (ok) {
+        ok = this->setSearchUpdate(1);
+    }
+
+    return ok;
+}
+
+std::vector<Metadata::Artist> Database::getAllArtistMetadata() {
+    std::vector<Metadata::Artist> v;
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getAllArtists] No open connection");
+        return v;
+    }
+
+    // Create a Metadata::Artist for each entry
+    bool ok = this->db->prepareAndExecuteQuery("SELECT artist_id, Artists.name, Artists.tadb_id, Artists.image_path, COUNT(DISTINCT album_id), COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id GROUP BY artist_id ORDER BY Artists.name;");
+    if (!ok) {
+        this->setErrorMsg("[getAllArtists] Unable to query for all artists");
+        return v;
+    }
+    while (ok) {
+        Metadata::Artist m;
+        ok = this->db->getInt(0, m.ID);
+        ok = keepFalse(ok, this->db->getString(1, m.name));
+        ok = keepFalse(ok, this->db->getInt(2, m.tadbID));
+        ok = keepFalse(ok, this->db->getString(3, m.imagePath));
+        int tmp;
+        ok = keepFalse(ok, this->db->getInt(4, tmp));
+        m.albumCount = tmp;
+        ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.songCount = tmp;
+
+        if (ok) {
+            v.push_back(m);
+        }
+        ok = keepFalse(ok, this->db->nextRow());
+    }
+
+    return v;
+}
+
+Metadata::Artist Database::getArtistMetadataForID(ArtistID id) {
+    Metadata::Artist m;
+    m.ID = -1;
+
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getArtistMetadataForID] No open connection");
+        return m;
+    }
+
+    // Create a Metadata::Artist for each entry
+    bool ok = this->db->prepareQuery("SELECT artist_id, Artists.name, Artists.tadb_id, Artists.image_path, COUNT(DISTINCT album_id), COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id WHERE Songs.artist_id = ?;");
+    ok = keepFalse(ok, this->db->bindInt(0, id));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[getArtistMetadataForID] An error occurred querying for info");
+        return m;
+    }
+    int tmp;
+    ok = this->db->getInt(0, m.ID);
+    ok = keepFalse(ok, this->db->getString(1, m.name));
+    ok = keepFalse(ok, this->db->getInt(2, m.tadbID));
+    ok = keepFalse(ok, this->db->getString(3, m.imagePath));
+    ok = keepFalse(ok, this->db->getInt(4, tmp));
+    m.albumCount = tmp;
+    ok = keepFalse(ok, this->db->getInt(5, tmp));
+    m.songCount = tmp;
+    if (!ok) {
+        this->setErrorMsg("[getArtistMetadataForID] An error occurred reading from the query results");
+        m.ID = -1;
+    }
+
+    return m;
+}
+
+// ===== Song Metadata ===== //
 bool Database::addSong(Metadata::Song m) {
     // First check we have write permission
     if (this->db->connectionType() != SQLite::Connection::ReadWrite) {
@@ -544,98 +550,46 @@ std::vector<Metadata::Song> Database::getAllSongMetadata() {
     return v;
 }
 
-std::vector<std::string> Database::getAllSongPaths() {
-    std::vector<std::string> v;
+std::vector<Metadata::Song> Database::getSongMetadataForArtist(ArtistID id) {
+    std::vector<Metadata::Song> v;
     // Check we can read
     if (this->db->connectionType() == SQLite::Connection::None) {
-        this->setErrorMsg("[getAllSongPaths] No open connection");
+        this->setErrorMsg("[getSongMetadataForArtist] No open connection");
         return v;
     }
 
-    // Create a SongInfo for each entry
-    bool ok = this->db->prepareQuery("SELECT path FROM Songs;");
+    // Create a Metadata::Song for each entry given the artist
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.artist_id = ?;");
+    ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
-        this->setErrorMsg("[getAllSongPaths] Unable to query for all songs");
+        this->setErrorMsg("[getSongMetadataForArtist] Unable to query for matching songs");
         return v;
     }
     while (ok) {
-        std::string path;
-        ok = this->db->getString(0, path);
+        Metadata::Song m;
+        int tmp;
+        ok = this->db->getInt(0, m.ID);
+        ok = keepFalse(ok, this->db->getString(1, m.title));
+        ok = keepFalse(ok, this->db->getString(2, m.artist));
+        ok = keepFalse(ok, this->db->getString(3, m.album));
+        ok = keepFalse(ok, this->db->getInt(4, tmp));
+        m.duration = tmp;
+        ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.plays = tmp;
+        ok = keepFalse(ok, this->db->getBool(6, m.favourite));
+        ok = keepFalse(ok, this->db->getString(7, m.path));
+        ok = keepFalse(ok, this->db->getInt(8, tmp));
+        m.modified = tmp;
+
         if (ok) {
-            v.push_back(path);
+            v.push_back(m);
         }
         ok = keepFalse(ok, this->db->nextRow());
     }
 
     v.shrink_to_fit();
     return v;
-}
-
-unsigned int Database::getModifiedTimeForPath(std::string & path) {
-    // Check we can read
-    if (this->db->connectionType() == SQLite::Connection::None) {
-        this->setErrorMsg("[getModifiedTimeForPath] No open connection");
-        return 0;
-    }
-
-    // Query modified time
-    int time = 0;
-    bool ok = this->db->prepareQuery("SELECT modified FROM Songs WHERE path = ?;");
-    ok = keepFalse(ok, this->db->bindString(0, path));
-    ok = keepFalse(ok, this->db->executeQuery());
-    if (ok && this->db->hasRow()) {
-        ok = this->db->getInt(0, time);
-    }
-    if (!ok) {
-        this->setErrorMsg("[getModifiedTimeForPath] An error occurred querying modified time");
-        return 0;
-    }
-
-    return time;
-}
-
-std::string Database::getPathForID(SongID id) {
-    // Check we can read
-    if (this->db->connectionType() == SQLite::Connection::None) {
-        this->setErrorMsg("[getPathForID] No open connection");
-        return "";
-    }
-
-    // Query path
-    std::string path;
-    bool ok = this->db->prepareQuery("SELECT path FROM Songs WHERE id = ?;");
-    ok = keepFalse(ok, this->db->bindInt(0, id));
-    ok = keepFalse(ok, this->db->executeQuery());
-    ok = keepFalse(ok, this->db->getString(0, path));
-    if (!ok) {
-        this->setErrorMsg("[getPathForID] An error occurred querying the path");
-        return "";
-    }
-
-    path.shrink_to_fit();
-    return path;
-}
-
-SongID Database::getSongIDForPath(std::string & path) {
-    // Check we can read
-    if (this->db->connectionType() == SQLite::Connection::None) {
-        this->setErrorMsg("[getSongIDForPath] No open connection");
-        return -1;
-    }
-
-    // Query ID
-    SongID id;
-    bool ok = this->db->prepareQuery("SELECT id FROM Songs WHERE path = ?;");
-    ok = keepFalse(ok, this->db->bindString(0, path));
-    ok = keepFalse(ok, this->db->executeQuery());
-    ok = keepFalse(ok, this->db->getInt(0, id));
-    if (!ok) {
-        this->setErrorMsg("[getSongIDForPath] An error occurred querying path");
-        return -1;
-    }
-
-    return id;
 }
 
 Metadata::Song Database::getSongMetadataForID(SongID id) {
@@ -674,6 +628,150 @@ Metadata::Song Database::getSongMetadataForID(SongID id) {
     }
 
     return m;
+}
+
+// ===== Search Queries ===== //
+bool Database::needsSearchUpdate() {
+    // Check if we have read permission
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[needsSearchUpdate] Database has not been opened");
+        return false;
+    }
+
+    // Return true if search_update does not equal 0
+    int val;
+    bool ok = this->db->prepareAndExecuteQuery("SELECT value FROM Variables WHERE name = 'search_update';");
+    ok = keepFalse(ok, this->db->getInt(0, val));
+    if (!ok) {
+        this->setErrorMsg("[needsSearchUpdate] Unable to query update variable");
+        return false;
+    }
+    return (val != 0);
+}
+
+bool Database::prepareSearch() {
+    // First check we have write permission
+    if (this->db->connectionType() != SQLite::Connection::ReadWrite) {
+        this->setErrorMsg("[prepareSearch] Can't perform indexing as the database is unwritable");
+        return false;
+    }
+
+    // Update fts tables
+    bool ok = this->db->prepareAndExecuteQuery("DELETE FROM FtsSongs;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Unable to empty FtsSongs");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsSongs SELECT title FROM Songs;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to populate FtsSongs");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("DELETE FROM FtsArtists;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Unable to empty FtsArtists");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsArtists SELECT name FROM Artists;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to populate FtsArtists");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("DELETE FROM FtsAlbums;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Unable to empty FtsAlbums");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsAlbums SELECT name FROM Albums;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to populate FtsAlbums");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("DELETE FROM FtsPlaylists;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Unable to empty FtsPlaylists");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsPlaylists SELECT name FROM Playlists;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to populate FtsPlaylists");
+        return false;
+    }
+
+    // Update fts4aux tables (used to populate spellfix tables)
+    this->db->prepareAndExecuteQuery("DROP TABLE IF EXISTS FtsAuxSongs;");
+    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsAuxSongs USING fts4aux(FtsSongs);");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to create FtsAuxSongs table");
+        return false;
+    }
+    this->db->prepareAndExecuteQuery("DROP TABLE IF EXISTS FtsAuxArtists;");
+    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsAuxArtists USING fts4aux(FtsArtists);");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to create FtsAuxArtists table");
+        return false;
+    }
+    this->db->prepareAndExecuteQuery("DROP TABLE IF EXISTS FtsAuxAlbums;");
+    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsAuxAlbums USING fts4aux(FtsAlbums);");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to create FtsAuxAlbums table");
+        return false;
+    }
+    this->db->prepareAndExecuteQuery("DROP TABLE IF EXISTS FtsAuxPlaylists;");
+    ok = this->db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsAuxPlaylists USING fts4aux(FtsPlaylists);");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to create FtsAuxPlaylists table");
+        return false;
+    }
+
+    // Now populate spellfix tables
+    ok = this->db->prepareAndExecuteQuery("DELETE FROM SpellfixSongs;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Unable to empty SpellfixSongs");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO SpellfixSongs (word, rank) SELECT term, documents FROM FtsAuxSongs WHERE col='*';");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to populate SpellfixSongs with terms");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("DELETE FROM SpellfixArtists;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Unable to empty SpellfixArtists");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO SpellfixArtists (word, rank) SELECT term, documents FROM FtsAuxArtists WHERE col='*';");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to populate SpellfixArtists with terms");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("DELETE FROM SpellfixAlbums;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Unable to empty SpellfixAlbums");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO SpellfixAlbums (word, rank) SELECT term, documents FROM FtsAuxAlbums WHERE col='*';");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to populate SpellfixAlbums with terms");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("DELETE FROM SpellfixPlaylists;");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Unable to empty SpellfixPlaylists");
+        return false;
+    }
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO SpellfixPlaylists (word, rank) SELECT term, documents FROM FtsAuxPlaylists WHERE col='*';");
+    if (!ok) {
+        this->setErrorMsg("[prepareSearch] Failed to populate SpellfixPlaylists with terms");
+        return false;
+    }
+
+    // Update variable to indicate no update is needed
+    ok = this->setSearchUpdate(0);
+    if (ok) {
+        Log::writeSuccess("[DB] [prepareSearch] Search tables updated successfully!");
+    }
+    return ok;
 }
 
 std::vector<Metadata::Album> Database::searchAlbums(std::string str) {
@@ -733,7 +831,7 @@ std::vector<Metadata::Artist> Database::searchArtists(std::string str) {
     }
 
     // Perform search
-    bool ok = this->db->prepareQuery("SELECT id, name FROM Artists WHERE name IN (SELECT * FROM FtsArtists WHERE FtsArtists MATCH ?);");
+    bool ok = this->db->prepareQuery("SELECT id, name, tadb_id, image_path FROM Artists WHERE name IN (SELECT * FROM FtsArtists WHERE FtsArtists MATCH ?);");
     ok = keepFalse(ok, this->db->bindString(0, str));
     if (!ok) {
         this->setErrorMsg("[searchArtists] Unable to prepare search query");
@@ -750,6 +848,10 @@ std::vector<Metadata::Artist> Database::searchArtists(std::string str) {
         Metadata::Artist m;
         ok = this->db->getInt(0, m.ID);
         ok = keepFalse(ok, this->db->getString(1, m.name));
+        ok = keepFalse(ok, this->db->getInt(2, m.tadbID));
+        ok = keepFalse(ok, this->db->getString(3, m.imagePath));
+        m.songCount = 0;    // These should probably be implemented here?
+        m.albumCount = 0;
 
         if (ok) {
             v.push_back(m);
@@ -856,6 +958,125 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str) {
     return v;
 }
 
+// ===== Misc. Queries ===== //
+std::vector<std::string> Database::getAllSongPaths() {
+    std::vector<std::string> v;
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getAllSongPaths] No open connection");
+        return v;
+    }
+
+    // Create a SongInfo for each entry
+    bool ok = this->db->prepareQuery("SELECT path FROM Songs;");
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[getAllSongPaths] Unable to query for all songs");
+        return v;
+    }
+    while (ok) {
+        std::string path;
+        ok = this->db->getString(0, path);
+        if (ok) {
+            v.push_back(path);
+        }
+        ok = keepFalse(ok, this->db->nextRow());
+    }
+
+    v.shrink_to_fit();
+    return v;
+}
+
+ArtistID Database::getArtistIDForSong(SongID id) {
+    int aID = -1;
+
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getArtistIDForSong] No open connection");
+        return aID;
+    }
+
+    // Get ArtistID first
+    bool ok = this->db->prepareQuery("SELECT artist_id FROM Songs WHERE id = ?;");
+    ok = keepFalse(ok, this->db->bindInt(0, id));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[getArtistIDForSong] An error occurred querying for info");
+        return aID;
+    }
+    if (!this->db->getInt(0, aID)) {
+        this->setErrorMsg("[getArtistIDForSong] An error occurred reading the id");
+    }
+    return aID;
+}
+
+unsigned int Database::getModifiedTimeForPath(std::string & path) {
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getModifiedTimeForPath] No open connection");
+        return 0;
+    }
+
+    // Query modified time
+    int time = 0;
+    bool ok = this->db->prepareQuery("SELECT modified FROM Songs WHERE path = ?;");
+    ok = keepFalse(ok, this->db->bindString(0, path));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (ok && this->db->hasRow()) {
+        ok = this->db->getInt(0, time);
+    }
+    if (!ok) {
+        this->setErrorMsg("[getModifiedTimeForPath] An error occurred querying modified time");
+        return 0;
+    }
+
+    return time;
+}
+
+std::string Database::getPathForID(SongID id) {
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getPathForID] No open connection");
+        return "";
+    }
+
+    // Query path
+    std::string path;
+    bool ok = this->db->prepareQuery("SELECT path FROM Songs WHERE id = ?;");
+    ok = keepFalse(ok, this->db->bindInt(0, id));
+    ok = keepFalse(ok, this->db->executeQuery());
+    ok = keepFalse(ok, this->db->getString(0, path));
+    if (!ok) {
+        this->setErrorMsg("[getPathForID] An error occurred querying the path");
+        return "";
+    }
+
+    path.shrink_to_fit();
+    return path;
+}
+
+SongID Database::getSongIDForPath(std::string & path) {
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getSongIDForPath] No open connection");
+        return -1;
+    }
+
+    // Query ID
+    SongID id;
+    bool ok = this->db->prepareQuery("SELECT id FROM Songs WHERE path = ?;");
+    ok = keepFalse(ok, this->db->bindString(0, path));
+    ok = keepFalse(ok, this->db->executeQuery());
+    ok = keepFalse(ok, this->db->getInt(0, id));
+    if (!ok) {
+        this->setErrorMsg("[getSongIDForPath] An error occurred querying path");
+        return -1;
+    }
+
+    return id;
+}
+
+// ===== Destructor ===== //
 Database::~Database() {
     this->close();
 }

@@ -1,31 +1,38 @@
-#ifndef OVERLAY_SONGMENU_HPP
-#define OVERLAY_SONGMENU_HPP
+#ifndef OVERLAY_MENU_SONG_HPP
+#define OVERLAY_MENU_SONG_HPP
 
 #include "ui/element/MenuButton.hpp"
+#include "ui/overlay/menu/Menu.hpp"
 
-namespace CustomOvl {
+namespace CustomOvl::Menu {
     // Overlay shown when pressing the dots next to a song
-    class SongMenu : public Aether::Overlay {
+    class Song : public Menu {
+        public:
+            // Type of song menu to create
+            enum class Type {
+                HideRemove,     // Don't show the 'Remove from Queue' button
+                ShowRemove      // Show the 'Remove from Queue' button
+            };
+
         private:
             // Elements
-            Aether::Rectangle * bg;
             Aether::Image * album;
             Aether::Text * title;
             Aether::Text * artist;
+            Aether::Container * btns;
             CustomElm::MenuButton * removeFromQueue;
             CustomElm::MenuButton * addToQueue;
             CustomElm::MenuButton * addToPlaylist;
             CustomElm::MenuButton * goToArtist;
             CustomElm::MenuButton * goToAlbum;
-            CustomElm::MenuButton * viewDetails;
-
-            // Separating line texture
-            SDL_Texture * line;
-            Aether::Colour lineCol;
+            CustomElm::MenuButton * viewInformation;
 
         public:
             // Pass true to show 'Remove from Queue'
-            SongMenu(bool);
+            Song(Type);
+
+            // Move the highlight back to the top element
+            void resetHighlight();
 
             // Set values
             void setAlbum(Aether::Image *);
@@ -36,7 +43,7 @@ namespace CustomOvl {
             void setAddToPlaylistText(std::string);
             void setGoToArtistText(std::string);
             void setGoToAlbumText(std::string);
-            void setViewDetailsText(std::string);
+            void setViewInformationText(std::string);
 
             // Set callbacks
             void setRemoveFromQueueFunc(std::function<void()>);
@@ -44,23 +51,15 @@ namespace CustomOvl {
             void setAddToPlaylistFunc(std::function<void()>);
             void setGoToArtistFunc(std::function<void()>);
             void setGoToAlbumFunc(std::function<void()>);
-            void setViewDetailsFunc(std::function<void()>);
+            void setViewInformationFunc(std::function<void()>);
 
             // Set colours
-            void setBackgroundColour(Aether::Colour);
             void setIconColour(Aether::Colour);
-            void setLineColour(Aether::Colour);
             void setMutedTextColour(Aether::Colour);
             void setTextColour(Aether::Colour);
 
-            // Close if tapped outside of bg
-            bool handleEvent(Aether::InputEvent *);
-
             // Draw line texture three times
             void render();
-
-            // Delete line texture
-            ~SongMenu();
     };
 };
 

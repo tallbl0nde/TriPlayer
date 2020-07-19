@@ -2,19 +2,20 @@
 #define FRAME_QUEUE_HPP
 
 #include <list>
-#include "ui/element/Frame.hpp"
 #include "ui/element/ListSong.hpp"
+#include "ui/frame/Frame.hpp"
+#include "ui/overlay/menu/Song.hpp"
 
 namespace Frame {
-    class Queue : public CustomElm::Frame {
-        // Section in list
-        enum class Section {
-            Playing,
-            Queue,
-            UpNext
-        };
-
+    class Queue : public Frame {
         private:
+            // Section in list
+            enum class Section {
+                Playing,
+                Queue,
+                UpNext
+            };
+
             // Elements in list
             Aether::Element * playing;
             CustomElm::ListSong * playingElm;
@@ -39,6 +40,12 @@ namespace Frame {
             std::vector<SongID> cachedQueue;
             std::vector<SongID> cachedSubQueue;
 
+            // Menu displayed when a song's "dots" are pressed
+            CustomOvl::Menu::Song * menu;
+
+            // Helper function to create song menu
+            void createMenu(SongID, size_t, Section);
+
             // Prepare empty list
             void createList();
             // Hide list element and show empty message
@@ -55,6 +62,9 @@ namespace Frame {
 
             // Update the list when the queue changes
             void update(uint32_t);
+
+            // Delete created menu
+            ~Queue();
     };
 };
 

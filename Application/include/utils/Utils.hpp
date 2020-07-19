@@ -30,6 +30,9 @@ namespace Utils {
     // Atomics are used to provide the current status
     void processFileChanges(Database *, Sysmodule *, std::atomic<int> &, std::atomic<ProcessStage> &, std::atomic<int> &, std::atomic<bool> &);
 
+    // Return a random alpha-numeric string with given length
+    std::string randomString(size_t);
+
     // Round the given double to the specified number of decimal places
     float roundToDecimalPlace(float, unsigned int);
 

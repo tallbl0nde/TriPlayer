@@ -36,7 +36,7 @@ namespace Metadata {
         std::string name;           // Album's name
     };
 
-    struct AlbumArt {
+    struct Art {
         unsigned char * data;       // Pointer to COPIED data (nullptr if an error occurred)
         size_t size;                // Size of album art in bytes
     };
@@ -44,6 +44,10 @@ namespace Metadata {
     struct Artist {
         ArtistID ID;                // Album's unique ID
         std::string name;           // Album's name
+        int tadbID;                 // TheAudioDB ID of artist (negative if not set)
+        std::string imagePath;      // Path to artist's image (can be blank)
+        unsigned int albumCount;    // Number of albums
+        unsigned int songCount;     // Number of songs
     };
 
     struct Playlist {

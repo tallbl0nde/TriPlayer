@@ -48,7 +48,7 @@ namespace Screen {
                     this->anim->setHidden(true);
                     this->hint->setHidden(true);
                     this->status->setHidden(true);
-                    this->app->setScreen(Main::ScreenID::Main);
+                    this->app->setScreen(Main::ScreenID::Home);
                     break;
             }
             this->lastStage = curr;

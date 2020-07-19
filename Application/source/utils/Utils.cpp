@@ -66,8 +66,9 @@ namespace Utils {
         if (!stop) {
             if (addPos.size() + editPos.size() != 0) {
                 hasLock = true;
-                sys->waitReset();
                 db->close();
+                sys->waitReset();
+                sys->waitRequestDBLock();
                 db->openReadWrite();
 
                 // Actually insert/update now (this is messy just so the user can get the status...)
@@ -119,8 +120,9 @@ namespace Utils {
                     if (!hasLock) {
                         aStage = ProcessStage::Update;
                         hasLock = true;
-                        sys->waitReset();
                         db->close();
+                        sys->waitReset();
+                        sys->waitRequestDBLock();
                         db->openReadWrite();
                     }
                     db->removeSong(db->getSongIDForPath(dbPaths[i]));
@@ -133,8 +135,9 @@ namespace Utils {
             if (!hasLock) {
                 aStage = ProcessStage::Update;
                 hasLock = true;
-                sys->waitReset();
                 db->close();
+                sys->waitReset();
+                sys->waitRequestDBLock();
                 db->openReadWrite();
             }
             db->prepareSearch();
@@ -143,10 +146,30 @@ namespace Utils {
         // Cleanup database (TBD)
         if (hasLock) {
             db->close();
+            sys->sendReleaseDBLock();
             db->openReadOnly();
         }
 
         aStage = ProcessStage::Done;
+    }
+
+    // From: https://stackoverflow.com/questions/440133/how-do-i-create-a-random-alpha-numeric-string-in-c/12468109#12468109
+    static bool seedSet = false;
+    std::string randomString(size_t length) {
+        // Set seed if not already set
+        if (!seedSet) {
+            srand(time(NULL));
+            seedSet = true;
+        }
+
+        auto randchar = []() -> char {
+            const char charset[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+            const size_t max_index = (sizeof(charset) - 1);
+            return charset[rand() % max_index];
+        };
+        std::string str(length, 0);
+        std::generate_n(str.begin(), length, randchar);
+        return str;
     }
 
     float roundToDecimalPlace(float val, unsigned int p) {
