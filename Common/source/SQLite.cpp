@@ -100,21 +100,21 @@ bool SQLite::openConnection(Connection type) {
     if (this->connectionType_ != SQLite::Connection::None || type == SQLite::Connection::None) {
         return true;
     }
-    this->connectionType_ = type;
+
+    // Check if file is accessible
+    // Note: This needs to be done as attempting to open the file while it's open in another process
+    // crashes the switch (must be a SQLite vfs issue?)
+    // Note 2: This also introduces a race condition; where the file could be opened between the check
+    // and the actual SQLite call (however sysmodule communication is used to cover this)... if the user
+    // opens the file somehow in another process that's their problem :P
+    if (!Utils::Fs::fileAccessible(this->path)) {
+        return false;
+    }
 
     // Open correct type of connection
+    this->connectionType_ = type;
     int result;
     if (type == SQLite::Connection::ReadOnly) {
-        // Wait until file is readable
-        // bool logged = false;
-        // while (!Utils::Fs::fileReadable(this->path)) {
-        //     if (!logged) {
-        //         this->setErrorMsg("Database file is not readable");
-        //         logged = true;
-        //     }
-        //     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        // }
-
         result = sqlite3_open_v2(this->path.c_str(), &this->db, SQLITE_OPEN_READONLY, "unix-none");
         if (result != SQLITE_OK) {
             this->setErrorMsg();
@@ -124,16 +124,6 @@ bool SQLite::openConnection(Connection type) {
         }
 
     } else if (type == SQLite::Connection::ReadWrite) {
-        // Wait until file is writable
-        // bool logged = false;
-        // while (!Utils::Fs::fileWritable(this->path)) {
-        //     if (!logged) {
-        //         this->setErrorMsg("Database file is not writable");
-        //         logged = true;
-        //     }
-        //     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        // }
-
         result = sqlite3_open_v2(this->path.c_str(), &this->db, SQLITE_OPEN_READWRITE, "unix-none");
         if (result != SQLITE_OK) {
             this->setErrorMsg();

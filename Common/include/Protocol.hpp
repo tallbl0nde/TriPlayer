@@ -45,6 +45,8 @@ namespace Protocol {
         SetPosition,        // Seeks to a spot in the song                  // Percentage to seek to [double (0.0 - 100.0)]     // Percentage seeked to [double (between 0.0 and 100.0)]
         GetPlayingFrom,     // Returns text saying what's in the queue      // Nothing                                          // 'Playing from' string
         SetPlayingFrom,     // Set 'playing from' text (allows 100 chars)   // String to set                                    // Set string (maybe be substring if too long)
+        RequestDBLock,      // Requests exclusive access to DB (blocks)     // Nothing                                          // Result code (0 = success)
+        ReleaseDBLock,      // Releases exclusive access to DB              // Nothing                                          // Result code (0 = success)
         Reset               // Reinitialize sysmodule (except socket)       // Nothing                                          // Version of sysmodule
     };
 

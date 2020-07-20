@@ -2,7 +2,10 @@
 #include <cstring>
 #include "Service.hpp"
 #include "sources/MP3.hpp"
+#include "utils/FS.hpp"
 
+// Interval (in seconds) to test if DB file is accessible
+#define DB_TEST_INTERVAL 1
 // Number of seconds to wait before previous becomes (back to start)
 #define PREV_WAIT 2
 // Max size of sub-queue (requires 20kB)
@@ -10,6 +13,8 @@
 
 MainService::MainService() {
     this->audio = Audio::getInstance();
+    this->dbAppLock = false;
+    this->dbLock = false;
     this->muteLevel = 0.0;
     this->pressTime = std::time(nullptr);
     this->queue = new PlayQueue();
@@ -25,6 +30,29 @@ MainService::MainService() {
     // Create database
     if (!this->exit_) {
         this->db = new Database();
+    }
+}
+
+// Thread calls this function to 'hog' the mutex for the App
+void MainService::dbFunc() {
+    std::scoped_lock<std::mutex> mtx(this->dbMutex);
+
+    // Confirm the socket thread we have the mutex
+    this->dbAppLock = true;
+
+    // Loop indefinitely
+    std::chrono::steady_clock::time_point last = std::chrono::steady_clock::now();
+    while (this->dbLock) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+        // Also periodically check if file is accessible (in case releaseDBLock is never received due to a crash)
+        std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+        if (std::chrono::duration_cast< std::chrono::duration<double> >(now - last).count() > DB_TEST_INTERVAL) {
+            if (Utils::Fs::fileAccessible("/switch/TriPlayer/data.sqlite3")) {
+                this->dbLock = false;
+            }
+            last = now;
+        }
     }
 }
 
@@ -81,6 +109,7 @@ void MainService::playbackThread() {
                 }
 
                 // Stop the sysmodule if the database is unreadable
+                std::scoped_lock<std::mutex> mtx(this->dbMutex);
                 if (!this->db->openReadOnly()) {
                     this->exit_ = true;
                 }
@@ -89,6 +118,9 @@ void MainService::playbackThread() {
                 delete this->source;
                 this->source = new MP3(this->db->getPathForID(this->queue->currentID()));
                 this->audio->newSong(this->source->sampleRate(), this->source->channels());
+
+                // Close DB
+                this->db->close();
             }
             this->songAction = SongAction::Nothing;
         }
@@ -527,13 +559,43 @@ void MainService::socketThread() {
                     reply = (this->playingFrom.empty() ? " " : this->playingFrom);
                     break;
 
+                case Protocol::Command::RequestDBLock: {
+                    // Spawn a thread to 'hog' the mutex
+                    std::unique_lock<std::mutex> mtx(this->dbMutex);
+                    this->dbAppLock = false;
+                    this->dbThread = std::async(std::launch::async, [this]() {
+                        this->dbFunc();
+                    });
+                    mtx.unlock();
+
+                    // Wait for 'hog' thread to specify it has control before replying
+                    // (just in case decode thread requests mutex before the 'hog' thread does)
+                    while (!this->dbAppLock) {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                    }
+
+                    reply = std::to_string(0);
+                    break;
+                }
+
+                case Protocol::Command::ReleaseDBLock:
+                    // Tell 'hog' thread to release it's mutex
+                    if (this->dbLock) {
+                        this->dbLock = false;
+                        this->dbThread.get();
+                    }
+
+                    reply = std::to_string(0);
+                    break;
+
                 case Protocol::Command::Reset: {
                     // Need to lock everything!!
                     std::scoped_lock<std::shared_mutex> sMtx(this->sMutex);
                     std::scoped_lock<std::shared_mutex> sqMtx(this->sqMutex);
                     std::scoped_lock<std::shared_mutex> qMtx(this->qMutex);
+                    std::scoped_lock<std::mutex> mtx(this->dbMutex);
 
-                    // Disconnect from database so it can be written to
+                    // Ensure we're disconnected from the DB
                     this->db->close();
 
                     // Stop playback and empty queues

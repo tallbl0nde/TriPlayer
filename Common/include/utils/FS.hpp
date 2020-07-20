@@ -15,9 +15,8 @@ namespace Utils::Fs {
     bool copyFile(const std::string &, const std::string &);
 
     // All return true based on condition
+    bool fileAccessible(const std::string &);
     bool fileExists(const std::string &);
-    bool fileReadable(const std::string &);
-    bool fileWritable(const std::string &);
 
     // Returns contents of directory
     // First element in pair is path, second is set true if directory

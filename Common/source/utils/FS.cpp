@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <sys/stat.h>
 #include "utils/FS.hpp"
 
 namespace Utils::Fs {
@@ -16,33 +17,14 @@ namespace Utils::Fs {
         return true;
     }
 
+    bool fileAccessible(const std::string & file) {
+        // Use stat to determine if the file can be accessed
+        struct stat st;
+        return (stat(file.c_str(), &st) == 0);
+    }
+
     bool fileExists(const std::string & file) {
         return std::filesystem::exists(file);
-    }
-
-    // Fix these functions eventually
-    bool fileReadable(const std::string & file) {
-        std::FILE * fp = std::fopen(file.c_str(), "rb");
-        if (fp == NULL) {
-            return false;
-        }
-        std::fclose(fp);
-        return true;
-    }
-
-    bool fileWritable(const std::string & file) {
-        // Check that the file exists first
-        if (!fileExists(file)) {
-            return false;
-        }
-
-        // Now check if writable
-        std::FILE * fp = std::fopen(file.c_str(), "a+b");
-        if (fp == NULL) {
-            return false;
-        }
-        std::fclose(fp);
-        return true;
     }
 
     std::vector< std::pair<std::string, bool> > getDirectoryContents(const std::string & path) {
