@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "ui/frame/Albums.hpp"
 #include "ui/frame/Artist.hpp"
 #include "ui/frame/Artists.hpp"
 #include "ui/frame/ArtistInfo.hpp"
@@ -92,8 +93,8 @@ namespace Screen {
                 break;
 
             case Frame::Type::Albums:
-                // this->sideAlbums->setActivated(true);
-                // this->frame = new Frame::Albums(this->app);
+                this->sideAlbums->setActivated(true);
+                this->frame = new Frame::Albums(this->app);
                 break;
 
             case Frame::Type::Album:
@@ -314,7 +315,7 @@ namespace Screen {
         this->sideAlbums->setActiveColour(this->app->theme()->accent());
         this->sideAlbums->setInactiveColour(this->app->theme()->FG());
         this->sideAlbums->setCallback([this](){
-
+            this->changeFrame(Frame::Type::Albums, Frame::Action::Reset);
         });
         this->sideContainer->addElement(this->sideAlbums);
         this->sideSeparator = new Aether::Rectangle(30, this->sideAlbums->y() + 70, 250, 1);

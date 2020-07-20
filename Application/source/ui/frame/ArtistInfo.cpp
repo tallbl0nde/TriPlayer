@@ -262,6 +262,7 @@ namespace Frame {
             }
 
             // Save new image if there is one
+            // Need to set metadata before commit! :P
             if (!this->newImagePath.empty()) {
                 Utils::Fs::copyFile(this->newImagePath, this->imagePath->string());
                 this->metadata.imagePath = this->imagePath->string();

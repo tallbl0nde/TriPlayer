@@ -1,13 +1,13 @@
 #include "Application.hpp"
 #include "ui/element/GridItem.hpp"
 #include "ui/element/ScrollableGrid.hpp"
-#include "ui/frame/Artists.hpp"
+#include "ui/frame/Albums.hpp"
 
 // Number of GridItems per row
 #define COLUMNS 3
 
 namespace Frame {
-    Artists::Artists(Main::Application * a) : Frame(a) {
+    Albums::Albums(Main::Application * a) : Frame(a) {
         // Remove list + headings (I should redo Frame to avoid this)
         this->removeElement(this->list);
         this->removeElement(this->titleH);
@@ -16,27 +16,25 @@ namespace Frame {
         this->removeElement(this->lengthH);
 
         // Now prepare this frame
-        this->heading->setString("Artists");
+        this->heading->setString("Albums");
         CustomElm::ScrollableGrid * grid = new CustomElm::ScrollableGrid(this->x(), this->y() + 150, this->w() - 10, this->h() - 150, 250, 3);
         grid->setShowScrollBar(true);
         grid->setScrollBarColour(this->app->theme()->muted2());
 
-        // Create items for artists
-        std::vector<Metadata::Artist> m = this->app->database()->getAllArtistMetadata();
+        // Create items for albums
+        std::vector<Metadata::Album> m = this->app->database()->getAllAlbumMetadata();
         if (m.size() > 0) {
             for (size_t i = 0; i < m.size(); i++) {
-                std::string img = (m[i].imagePath.empty() ? "romfs:/misc/noartist.png" : m[i].imagePath);
+                std::string img = (m[i].imagePath.empty() ? "romfs:/misc/noalbum.png" : m[i].imagePath);
                 CustomElm::GridItem * l = new CustomElm::GridItem(img);
                 l->setMainString(m[i].name);
-                std::string str = std::to_string(m[i].albumCount) + (m[i].albumCount == 1 ? " album" : " albums");
-                str += " | " + std::to_string(m[i].songCount) + (m[i].songCount == 1 ? " song" : " songs");
-                l->setSubString(str);
+                l->setSubString(m[i].artist);
                 l->setDotsColour(this->app->theme()->muted());
                 l->setTextColour(this->app->theme()->FG());
                 l->setMutedTextColour(this->app->theme()->muted());
                 ArtistID id = m[i].ID;
                 l->setCallback([this, id](){
-                    this->changeFrame(Type::Artist, Action::Push, id);
+                    // this->changeFrame(Type::Album, Action::Push, id);
                 });
                 l->setMoreCallback([this, id]() {
                     this->createMenu(id);
@@ -45,18 +43,18 @@ namespace Frame {
             }
 
             this->subLength->setHidden(true);
-            this->subTotal->setString(std::to_string(m.size()) + (m.size() == 1 ? " artist" : " artists" ));
+            this->subTotal->setString(std::to_string(m.size()) + (m.size() == 1 ? " album" : " albums" ));
             this->subTotal->setX(this->x() + 885 - this->subTotal->w());
 
             this->addElement(grid);
             this->setFocussed(grid);
 
-        // Show message if no artists
+        // Show message if no albums
         } else {
             grid->setHidden(true);
             this->subLength->setHidden(true);
             this->subTotal->setHidden(true);
-            Aether::Text * emptyMsg = new Aether::Text(0, grid->y() + grid->h()*0.4, "No artists found!", 24);
+            Aether::Text * emptyMsg = new Aether::Text(0, grid->y() + grid->h()*0.4, "No albums found!", 24);
             emptyMsg->setColour(this->app->theme()->FG());
             emptyMsg->setX(this->x() + (this->w() - emptyMsg->w())/2);
             this->addElement(emptyMsg);
@@ -65,9 +63,9 @@ namespace Frame {
         this->menu = nullptr;
     }
 
-    void Artists::createMenu(ArtistID id) {
+    void Albums::createMenu(AlbumID id) {
         // Query database first
-        Metadata::Artist m = this->app->database()->getArtistMetadataForID(id);
+        Metadata::Album m = this->app->database()->getAlbumMetadataForID(id);
         if (m.ID < 0) {
             return;
         }
@@ -75,7 +73,7 @@ namespace Frame {
         // Don't create another menu if one exists
         if (this->menu == nullptr) {
             this->menu = new CustomOvl::Menu::Artist(CustomOvl::Menu::Type::Normal);
-            this->menu->setPlayAllText("Play All");
+            this->menu->setPlayAllText("Play");
             this->menu->setAddToQueueText("Add to Queue");
             this->menu->setAddToPlaylistText("Add to Playlist");
             this->menu->setViewInformationText("View Information");
@@ -86,15 +84,13 @@ namespace Frame {
             this->menu->setTextColour(this->app->theme()->FG());
         }
 
-        // Set artist specific things
-        this->menu->setImage(new Aether::Image(0, 0, m.imagePath.empty() ? "romfs:/misc/noartist.png" : m.imagePath));
+        // Set album specific things
+        this->menu->setImage(new Aether::Image(0, 0, m.imagePath.empty() ? "romfs:/misc/noalbum.png" : m.imagePath));
         this->menu->setName(m.name);
-        std::string str = std::to_string(m.albumCount) + (m.albumCount == 1 ? " album" : " albums");
-        str += " | " + std::to_string(m.songCount) + (m.songCount == 1 ? " song" : " songs");
-        this->menu->setStats(str);
+        this->menu->setStats(m.artist);
 
         this->menu->setPlayAllFunc([this, m]() {
-            std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForArtist(m.ID);
+            std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForAlbum(m.ID);
             std::vector<SongID> ids;
             for (size_t i = 0; i < v.size(); i++) {
                 ids.push_back(v[i].ID);
@@ -107,7 +103,7 @@ namespace Frame {
         });
 
         this->menu->setAddToQueueFunc([this, m]() {
-            std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForArtist(m.ID);
+            std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForAlbum(m.ID);
             for (size_t i = 0; i < v.size(); i++) {
                 this->app->sysmodule()->sendAddToSubQueue(v[i].ID);
             }
@@ -115,15 +111,15 @@ namespace Frame {
         });
         this->menu->setAddToPlaylistFunc(nullptr);
         this->menu->setViewInformationFunc([this, m]() {
-            this->changeFrame(Type::ArtistInfo, Action::Push, m.ID);
-            this->menu->close();
+            // this->changeFrame(Type::AlbumInfo, Action::Push, m.ID);
+            // this->menu->close();
         });
 
         this->menu->resetHighlight();
         this->app->addOverlay(this->menu);
     }
 
-    Artists::~Artists() {
+    Albums::~Albums() {
         delete this->menu;
     }
 };

@@ -91,9 +91,10 @@ namespace Frame {
 
             // Populate grid with albums
             for (size_t i = 0; i < md.size(); i++) {
-                CustomElm::GridItem * l = new CustomElm::GridItem("romfs:/misc/noalbum.png");
+                CustomElm::GridItem * l = new CustomElm::GridItem(md[i].imagePath.empty() ? "romfs:/misc/noalbum.png" : md[i].imagePath);
                 l->setMainString(md[i].name);
-                l->setSubString("? songs");
+                std::string str = std::to_string(md[i].songCount) + (md[i].songCount == 1 ? " song" : " songs");
+                l->setSubString(str);
                 l->setDotsColour(this->app->theme()->muted());
                 l->setTextColour(this->app->theme()->FG());
                 l->setMutedTextColour(this->app->theme()->muted());
