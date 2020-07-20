@@ -47,6 +47,12 @@ class Database {
         void close();
 
         // ===== Album Metadata ===== //
+        // Returns metadata for all stored albums
+        // Empty if no albums or an error occurred
+        std::vector<Metadata::Album> getAllAlbumMetadata();
+        // Return metadata for the given AlbumID
+        // ID will be negative if not found
+        Metadata::Album getAlbumMetadataForID(AlbumID);
         // Return metadata for all albums an artist is a part of
         // Empty if none found or an error occurred
         std::vector<Metadata::Album> getAlbumMetadataForArtist(ArtistID);
@@ -74,6 +80,9 @@ class Database {
         // Returns metadata for all stored songs
         // Empty if no songs or an error occurred
         std::vector<Metadata::Song> getAllSongMetadata();
+        // Returns an album's songs
+        // Empty if there are none or an error occurred
+        std::vector<Metadata::Song> getSongMetadataForAlbum(AlbumID);
         // Returns an artist's songs
         // Empty if there are none or an error occurred
         std::vector<Metadata::Song> getSongMetadataForArtist(ArtistID);

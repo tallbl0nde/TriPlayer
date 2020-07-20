@@ -34,6 +34,10 @@ namespace Metadata {
     struct Album {
         AlbumID ID;                 // Album's unique ID
         std::string name;           // Album's name
+        std::string artist;         // Artist's name
+        int tadbID;                 // TheAudioDB ID of album (negative if not set)
+        std::string imagePath;      // Path to album's image (can be blank)
+        unsigned int songCount;     // Number of songs on album
     };
 
     struct Art {
