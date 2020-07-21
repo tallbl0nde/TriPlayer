@@ -32,7 +32,7 @@ namespace Frame {
                 l->setDotsColour(this->app->theme()->muted());
                 l->setTextColour(this->app->theme()->FG());
                 l->setMutedTextColour(this->app->theme()->muted());
-                ArtistID id = m[i].ID;
+                AlbumID id = m[i].ID;
                 l->setCallback([this, id](){
                     // this->changeFrame(Type::Album, Action::Push, id);
                 });
@@ -71,8 +71,9 @@ namespace Frame {
         }
 
         // Don't create another menu if one exists
+        bool oneArtist = (m.artist != "Various Artists");
         if (this->menu == nullptr) {
-            this->menu = new CustomOvl::Menu::Artist(CustomOvl::Menu::Type::Normal);
+            this->menu = new CustomOvl::Menu::Album(CustomOvl::Menu::Type::Normal);
             this->menu->setPlayAllText("Play");
             this->menu->setAddToQueueText("Add to Queue");
             this->menu->setAddToPlaylistText("Add to Playlist");
@@ -85,6 +86,7 @@ namespace Frame {
         }
 
         // Set album specific things
+        this->menu->setGoToArtistText(oneArtist ? "Go to Artist" : "View Artists");
         this->menu->setImage(new Aether::Image(0, 0, m.imagePath.empty() ? "romfs:/misc/noalbum.png" : m.imagePath));
         this->menu->setName(m.name);
         this->menu->setStats(m.artist);
@@ -110,6 +112,20 @@ namespace Frame {
             this->menu->close();
         });
         this->menu->setAddToPlaylistFunc(nullptr);
+
+        // Set callback based on number of artists
+        if (oneArtist) {
+            ArtistID id = this->app->database()->getArtistIDForName(m.artist);
+            this->menu->setGoToArtistFunc([this, id]() {
+                this->changeFrame(Type::Artist, Action::Push, id);
+                this->menu->close();
+            });
+        } else {
+            this->menu->setGoToArtistFunc([this]() {
+                // this->changeFrame(Type::AlbumArtists, Action::Push, m.ID);
+            });
+        }
+
         this->menu->setViewInformationFunc([this, m]() {
             // this->changeFrame(Type::AlbumInfo, Action::Push, m.ID);
             // this->menu->close();

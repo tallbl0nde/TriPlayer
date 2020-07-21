@@ -2,13 +2,13 @@
 #define FRAME_ALBUMS_HPP
 
 #include "ui/frame/Frame.hpp"
-#include "ui/overlay/menu/Artist.hpp"
+#include "ui/overlay/menu/Album.hpp"
 
 namespace Frame {
     class Albums : public Frame {
         private:
             // Menu displayed when the dots are pressed
-            CustomOvl::Menu::Artist * menu;
+            CustomOvl::Menu::Album * menu;
 
             // Helper function to prepare menu
             void createMenu(AlbumID);

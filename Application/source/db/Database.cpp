@@ -263,7 +263,7 @@ std::vector<Metadata::Album> Database::getAllAlbumMetadata() {
     }
 
     // Create a Metadata::Album for each entry
-    bool ok = this->db->prepareAndExecuteQuery("SELECT album_id, Albums.name, Artists.name, Albums.tadb_id, Albums.image_path, COUNT(*) FROM Songs JOIN Albums ON Songs.album_id = Albums.id JOIN Artists ON Songs.artist_id = Artists.id GROUP BY album_id ORDER BY Albums.name;");
+    bool ok = this->db->prepareAndExecuteQuery("SELECT album_id, Albums.name, CASE WHEN COUNT(DISTINCT artist_id) > 1 THEN 'Various Artists' ELSE Artists.name END, Albums.tadb_id, Albums.image_path, COUNT(*) FROM Songs JOIN Albums ON Songs.album_id = Albums.id JOIN Artists ON Songs.artist_id = Artists.id GROUP BY album_id ORDER BY Albums.name;");
     if (!ok) {
         this->setErrorMsg("[getAllAlbumMetadata] Unable to query for all albums");
         return v;
@@ -299,7 +299,7 @@ Metadata::Album Database::getAlbumMetadataForID(AlbumID id) {
     }
 
     // Create a Metadata::Album
-    bool ok = this->db->prepareQuery("SELECT album_id, Albums.name, Artists.name, Albums.tadb_id, Albums.image_path, COUNT(*) FROM Songs JOIN Albums ON Songs.album_id = Albums.id JOIN Artists ON Songs.artist_id = Artists.id WHERE Songs.album_id = ? GROUP BY Songs.album_id;");
+    bool ok = this->db->prepareQuery("SELECT album_id, Albums.name, CASE WHEN COUNT(DISTINCT artist_id) > 1 THEN 'Various Artists' ELSE Artists.name END, Albums.tadb_id, Albums.image_path, COUNT(*) FROM Songs JOIN Albums ON Songs.album_id = Albums.id JOIN Artists ON Songs.artist_id = Artists.id WHERE Songs.album_id = ? GROUP BY Songs.album_id;");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
@@ -314,6 +314,7 @@ Metadata::Album Database::getAlbumMetadataForID(AlbumID id) {
     ok = keepFalse(ok, this->db->getString(4, m.imagePath));
     ok = keepFalse(ok, this->db->getInt(5, tmp));
     m.songCount = tmp;
+
     if (!ok) {
         this->setErrorMsg("[getAlbumMetadataForID] An error occurred reading from the query results");
         m.ID = -1;
@@ -331,8 +332,8 @@ std::vector<Metadata::Album> Database::getAlbumMetadataForArtist(ArtistID id) {
         return v;
     }
 
-    // Create a Metadata::Album
-    bool ok = this->db->prepareQuery("SELECT album_id, Albums.name, Artists.name, Albums.tadb_id, Albums.image_path, COUNT(*) FROM Songs JOIN Albums ON Songs.album_id = Albums.id JOIN Artists ON Songs.artist_id = Artists.id WHERE Songs.artist_id = ? GROUP BY Songs.album_id;");
+    // Create a Metadata::Album (note this query won't ever return 'Various Artists' as the artist but that's alright seeing how we're querying for an artist)
+    bool ok = this->db->prepareQuery("SELECT album_id, Albums.name, Artists.name, Albums.tadb_id, Albums.image_path, COUNT(*) FROM Songs JOIN Albums ON Songs.album_id = Albums.id JOIN Artists ON Songs.artist_id = Artists.id WHERE Songs.artist_id = ? GROUP BY Songs.album_id ORDER BY Albums.name;");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
@@ -1109,6 +1110,29 @@ std::vector<std::string> Database::getAllSongPaths() {
 
     v.shrink_to_fit();
     return v;
+}
+
+ArtistID Database::getArtistIDForName(const std::string & name) {
+    int aID = -1;
+
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getArtistIDForName] No open connection");
+        return aID;
+    }
+
+    // Get ArtistID first
+    bool ok = this->db->prepareQuery("SELECT id FROM Artists WHERE name = ?;");
+    ok = keepFalse(ok, this->db->bindString(0, name));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[getArtistIDForName] An error occurred querying for info");
+        return aID;
+    }
+    if (!this->db->getInt(0, aID)) {
+        this->setErrorMsg("[getArtistIDForName] An error occurred reading the id");
+    }
+    return aID;
 }
 
 ArtistID Database::getArtistIDForSong(SongID id) {
