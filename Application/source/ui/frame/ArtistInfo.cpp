@@ -244,6 +244,16 @@ namespace Frame {
             return;
         }
 
+        // Set image path if needed
+        if (this->updateImage) {
+            if (!this->metadata.imagePath.empty()) {
+                this->metadata.imagePath = "";
+            }
+            if (!this->newImagePath.empty() || !this->dlBuffer.empty()) {
+                this->metadata.imagePath = this->imagePath->string();
+            }
+        }
+
         // Commit changes to db (acquires lock and then writes)
         this->app->database()->close();
         this->app->sysmodule()->waitRequestDBLock();
@@ -254,21 +264,18 @@ namespace Frame {
         this->app->sysmodule()->sendReleaseDBLock();
         this->app->database()->openReadOnly();
 
+        // If updated ok actually manipulate image file(s)
         if (ok && this->updateImage) {
             // First delete old image if needed
             if (!this->metadata.imagePath.empty()) {
                 Utils::Fs::deleteFile(this->metadata.imagePath);
-                this->metadata.imagePath = "";
             }
 
             // Save new image if there is one
-            // Need to set metadata before commit! :P
             if (!this->newImagePath.empty()) {
                 Utils::Fs::copyFile(this->newImagePath, this->imagePath->string());
-                this->metadata.imagePath = this->imagePath->string();
             } else if (!this->dlBuffer.empty()) {
                 Utils::Fs::writeFile(this->imagePath->string(), this->dlBuffer);
-                this->metadata.imagePath = this->imagePath->string();
             }
         }
 

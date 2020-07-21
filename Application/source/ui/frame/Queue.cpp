@@ -114,6 +114,7 @@ namespace Frame {
                 this->createMenu(currentID, 0, Section::Playing);
             });
             this->list->addElementAfter(this->playingElm, this->playing);
+            this->songPressed = true;
         }
 
         // Diff each type of queue
@@ -306,10 +307,8 @@ namespace Frame {
         // Jump to start if list if a song is pressed
         if (this->songPressed) {
             this->songPressed = false;
-            if (this->upnextEls.size() > 0) {
-                this->list->setFocussed(*(this->upnextEls.begin()));
-                this->list->setScrollPos(0);
-            }
+            this->list->setScrollPos(0);
+            this->list->setFocussed(this->playingElm);
         }
 
         Frame::update(dt);
