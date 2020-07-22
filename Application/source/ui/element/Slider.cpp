@@ -98,17 +98,24 @@ namespace CustomElm {
             return;
         }
 
-        // Draw children
+        // Render children next
         for (size_t i = 0; i < this->children.size(); i++) {
             this->children[i]->render();
         }
 
-        if (this->highlighted() && !this->isTouch) {
-            this->renderHighlight();
+        // Render selected/held layer
+        int w, h;
+        if (this->selected()) {
+            this->renderSelectionTexture();
+            SDLHelper::getDimensions(this->selTex, &w, &h);
+            SDLHelper::drawTexture(this->selTex, this->selColour, this->knob->x() + (this->knob->xDiameter() - w)/2, this->knob->y() + (this->knob->yDiameter() - h)/2);
         }
 
-        if (this->selected()) {
-            this->renderSelection();
+        // Finally render highlight border if needed
+        if (this->highlighted() && !this->isTouch) {
+            this->renderHighlightTextures();
+            SDLHelper::getDimensions(this->hiBorderTex, &w, &h);
+            SDLHelper::drawTexture(this->hiBorderTex, this->hiBorderColour, this->knob->x() + ((int)this->knob->xDiameter() - w)/2, this->knob->y() + ((int)this->knob->yDiameter() - h)/2);
         }
     }
 
@@ -156,16 +163,16 @@ namespace CustomElm {
         this->bar->setY(this->y() + (this->h() - this->bar->h())/2);
     }
 
-    void Slider::renderHighlightBG() {
-        // Nothing
+    SDL_Texture * Slider::renderHighlightBG() {
+        // No background needed
+        return nullptr;
     }
 
-    void Slider::renderHighlight() {
-        // Outline knob
-        SDLHelper::drawEllipse(this->hiBorder, this->knob->x() + this->knob->xDiameter()/2, this->knob->y() + this->knob->yDiameter()/2, this->knob->xDiameter()/2, this->knob->yDiameter()/2, this->hiSize);
+    SDL_Texture * Slider::renderHighlight() {
+        return SDLHelper::renderEllipse(this->knob->xDiameter()/2, this->knob->yDiameter()/2, this->hiSize);
     }
 
-    void Slider::renderSelection() {
-        SDLHelper::drawFilledEllipse(this->hiSel, this->knob->x() + this->knob->xDiameter()/2, this->knob->y() + this->knob->yDiameter()/2, this->knob->xDiameter()/2, this->knob->yDiameter()/2);
+    SDL_Texture * Slider::renderSelection() {
+        return SDLHelper::renderFilledEllipse(this->knob->xDiameter()/2, this->knob->yDiameter()/2);
     }
 };

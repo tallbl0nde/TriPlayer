@@ -1,5 +1,6 @@
 #include "Application.hpp"
 #include "ui/element/GridItem.hpp"
+#include "ui/element/ListArtist.hpp"
 #include "ui/element/ScrollableGrid.hpp"
 #include "ui/frame/Albums.hpp"
 
@@ -60,7 +61,35 @@ namespace Frame {
             this->addElement(emptyMsg);
         }
 
+        this->artistsMenu = nullptr;
         this->menu = nullptr;
+    }
+
+    void Albums::createArtistsMenu(AlbumID id) {
+        // Query database for artists first
+        std::vector<Metadata::Artist> m = this->app->database()->getArtistMetadataForAlbum(id);
+
+        // Create menu
+        if (this->artistsMenu != nullptr) {
+            delete this->artistsMenu;
+        }
+        this->artistsMenu = new CustomOvl::Menu::ArtistList();
+        this->artistsMenu->setBackgroundColour(this->app->theme()->popupBG());
+
+        // Populate with artists
+        for (size_t i = 0; i < m.size(); i++) {
+            CustomElm::ListArtist * l = new CustomElm::ListArtist(m[i].imagePath.empty() ? "romfs:/misc/noartist.png" : m[i].imagePath);
+            l->setName(m[i].name);
+            l->setTextColour(this->app->theme()->FG());
+            ArtistID aID = m[i].ID;
+            l->setCallback([this, aID]() {
+                this->changeFrame(Type::Artist, Action::Push, aID);
+                this->artistsMenu->close();
+            });
+            this->artistsMenu->addArtist(l);
+        }
+
+        this->app->addOverlay(this->artistsMenu);
     }
 
     void Albums::createMenu(AlbumID id) {
@@ -121,8 +150,9 @@ namespace Frame {
                 this->menu->close();
             });
         } else {
-            this->menu->setGoToArtistFunc([this]() {
-                // this->changeFrame(Type::AlbumArtists, Action::Push, m.ID);
+            this->menu->setGoToArtistFunc([this, m]() {
+                this->createArtistsMenu(m.ID);
+                this->menu->close();
             });
         }
 
@@ -136,6 +166,7 @@ namespace Frame {
     }
 
     Albums::~Albums() {
+        delete this->artistsMenu;
         delete this->menu;
     }
 };

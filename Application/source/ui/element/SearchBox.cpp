@@ -49,15 +49,16 @@ namespace CustomElm {
         return this->text->string();
     }
 
-    void SearchBox::renderHighlightBG() {
-        // Nothing
+    SDL_Texture * SearchBox::renderHighlightBG() {
+        // No highlight background needed
+        return nullptr;
     }
 
-    void SearchBox::renderHighlight() {
-        SDLHelper::drawRoundRect(this->hiBorder, this->x() - this->hiSize, this->y() - this->hiSize, this->w() + 2*(this->hiSize), this->h() + 2*(this->hiSize), HI_CORNER_RAD, this->hiSize);
+    SDL_Texture * SearchBox::renderHighlight() {
+        return SDLHelper::renderRoundRect(this->w() + 2*(this->hiSize), this->h() + 2*(this->hiSize), HI_CORNER_RAD, this->hiSize);
     }
 
-    void SearchBox::renderSelection() {
-        SDLHelper::drawFilledRoundRect(this->hiSel, this->x(), this->y(), this->w(), this->h(), BOX_CORNER_RAD);
+    SDL_Texture * SearchBox::renderSelection() {
+        return SDLHelper::renderFilledRoundRect(this->w(), this->h(), BOX_CORNER_RAD);
     }
 };

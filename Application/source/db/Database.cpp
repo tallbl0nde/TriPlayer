@@ -434,6 +434,43 @@ std::vector<Metadata::Artist> Database::getAllArtistMetadata() {
     return v;
 }
 
+std::vector<Metadata::Artist> Database::getArtistMetadataForAlbum(AlbumID id) {
+    std::vector<Metadata::Artist> v;
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getArtistMetadataForAlbum] No open connection");
+        return v;
+    }
+
+    // Create a Metadata::Artist for each entry (note this query won't ever return more than '1' as the number of albums as we're querying for a single album)
+    bool ok = this->db->prepareQuery("SELECT artist_id, Artists.name, Artists.tadb_id, Artists.image_path, COUNT(DISTINCT album_id), COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id WHERE Songs.album_id = ? GROUP BY artist_id ORDER BY Artists.name;");
+    ok = keepFalse(ok, this->db->bindInt(0, id));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[getArtistMetadataForAlbum] Unable to query for an album's artists");
+        return v;
+    }
+    while (ok) {
+        Metadata::Artist m;
+        ok = this->db->getInt(0, m.ID);
+        ok = keepFalse(ok, this->db->getString(1, m.name));
+        ok = keepFalse(ok, this->db->getInt(2, m.tadbID));
+        ok = keepFalse(ok, this->db->getString(3, m.imagePath));
+        int tmp;
+        ok = keepFalse(ok, this->db->getInt(4, tmp));
+        m.albumCount = tmp;
+        ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.songCount = tmp;
+
+        if (ok) {
+            v.push_back(m);
+        }
+        ok = keepFalse(ok, this->db->nextRow());
+    }
+
+    return v;
+}
+
 Metadata::Artist Database::getArtistMetadataForID(ArtistID id) {
     Metadata::Artist m;
     m.ID = -1;

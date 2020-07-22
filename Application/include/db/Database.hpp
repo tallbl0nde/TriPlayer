@@ -63,6 +63,9 @@ class Database {
         // Returns metadata for all stored artists
         // Empty if no artists or an error occurred
         std::vector<Metadata::Artist> getAllArtistMetadata();
+        // Returns a list of artists for a given AlbumID
+        // Empty if no artists or an error occurred
+        std::vector<Metadata::Artist> getArtistMetadataForAlbum(AlbumID);
         // Return metadata for the given ArtistID
         // ID will be negative if not found
         Metadata::Artist getArtistMetadataForID(ArtistID);
