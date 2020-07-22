@@ -686,8 +686,9 @@ std::vector<Metadata::Song> Database::getSongMetadataForAlbum(AlbumID id) {
         return v;
     }
 
-    // Create a Metadata::Song for each entry given the album
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.album_id = ?;");
+    // Create a Metadata::Song for each entry given the album (sorted)
+    // Note that 0's are treated as 9999's so they are at the end (yes this means it won't always be at the end but no album has 9999 discs or 9999 tracks)
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.album_id = ? ORDER BY CASE disc WHEN 0 THEN 9999 ELSE disc END, CASE track WHEN 0 THEN 9999 ELSE track END, title;");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {

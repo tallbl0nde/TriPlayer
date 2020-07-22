@@ -101,7 +101,7 @@ namespace Frame {
                 l->setMutedTextColour(this->app->theme()->muted());
                 AlbumID id = md[i].ID;
                 l->setCallback([this, id](){
-                    // this->changeFrame(Type::Album, Action::Push, id);
+                    this->changeFrame(Type::Album, Action::Push, id);
                 });
                 l->setMoreCallback([this, id]() {
                     this->createAlbumMenu(id);

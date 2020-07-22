@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "ui/frame/Album.hpp"
 #include "ui/frame/Albums.hpp"
 #include "ui/frame/Artist.hpp"
 #include "ui/frame/Artists.hpp"
@@ -7,8 +8,6 @@
 #include "ui/frame/Songs.hpp"
 #include "ui/screen/Home.hpp"
 #include "utils/MP3.hpp"
-
-#include "ui/overlay/FileBrowser.hpp"
 
 namespace Screen {
     Home::Home(Main::Application * a) : Screen() {
@@ -98,7 +97,7 @@ namespace Screen {
                 break;
 
             case Frame::Type::Album:
-                // this->frame = new Frame::Album(this->app, id);
+                this->frame = new Frame::Album(this->app, id);
                 break;
 
             case Frame::Type::Artists:
