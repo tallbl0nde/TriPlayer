@@ -14,6 +14,18 @@ namespace Migration {
             return "Unable to add image_path column to Albums";
         }
 
+        // Add track number to Songs (0 indicates it's not set)
+        ok = db->prepareAndExecuteQuery("ALTER TABLE Songs ADD COLUMN track INTEGER NOT NULL DEFAULT 0;");
+        if (!ok) {
+            return "Unable to add track column to Songs";
+        }
+
+        // Add disc number to Songs (0 indicates it's not set)
+        ok = db->prepareAndExecuteQuery("ALTER TABLE Songs ADD COLUMN disc INTEGER NOT NULL DEFAULT 0;");
+        if (!ok) {
+            return "Unable to add disc column to Songs";
+        }
+
         // Bump up version number (only done if everything passes)
         ok = db->prepareAndExecuteQuery("UPDATE Variables SET value = 3 WHERE name = 'version';");
         if (!ok) {

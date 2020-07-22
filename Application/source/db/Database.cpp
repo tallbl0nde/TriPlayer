@@ -522,13 +522,15 @@ bool Database::addSong(Metadata::Song m) {
     }
 
     // Finally add song
-    ok = this->db->prepareQuery("INSERT INTO Songs (path, modified, artist_id, album_id, title, duration) VALUES (?, ?, (SELECT id FROM Artists WHERE name = ?), (SELECT id FROM Albums WHERE name = ?), ?, ?);");
+    ok = this->db->prepareQuery("INSERT INTO Songs (path, modified, artist_id, album_id, title, duration, track, disc) VALUES (?, ?, (SELECT id FROM Artists WHERE name = ?), (SELECT id FROM Albums WHERE name = ?), ?, ?, ?, ?);");
     ok = keepFalse(ok, this->db->bindString(0, m.path));
     ok = keepFalse(ok, this->db->bindInt(1, m.modified));
     ok = keepFalse(ok, this->db->bindString(2, m.artist));
     ok = keepFalse(ok, this->db->bindString(3, m.album));
     ok = keepFalse(ok, this->db->bindString(4, m.title));
     ok = keepFalse(ok, this->db->bindInt(5, m.duration));
+    ok = keepFalse(ok, this->db->bindInt(6, m.trackNumber));
+    ok = keepFalse(ok, this->db->bindInt(7, m.discNumber));
     if (!ok) {
         this->setErrorMsg("[addSong] An error occurred while preparing the statement");
         return false;
@@ -566,16 +568,18 @@ bool Database::updateSong(Metadata::Song m) {
     }
 
     // Now update relevant fields
-    ok = this->db->prepareQuery("UPDATE Songs SET modified = ?, artist_id = (SELECT id FROM Artists WHERE name = ?), album_id = (SELECT id FROM Albums WHERE name = ?), title = ?, duration = ?, plays = ?, favourite = ?, path = ? WHERE id = ?;");
+    ok = this->db->prepareQuery("UPDATE Songs SET modified = ?, artist_id = (SELECT id FROM Artists WHERE name = ?), album_id = (SELECT id FROM Albums WHERE name = ?), title = ?, track = ?, disc = ?, duration = ?, plays = ?, favourite = ?, path = ? WHERE id = ?;");
     ok = keepFalse(ok, this->db->bindInt(0, m.modified));
     ok = keepFalse(ok, this->db->bindString(1, m.artist));
     ok = keepFalse(ok, this->db->bindString(2, m.album));
     ok = keepFalse(ok, this->db->bindString(3, m.title));
-    ok = keepFalse(ok, this->db->bindInt(4, m.duration));
-    ok = keepFalse(ok, this->db->bindInt(5, m.plays));
-    ok = keepFalse(ok, this->db->bindBool(6, m.favourite));
-    ok = keepFalse(ok, this->db->bindString(7, m.path));
-    ok = keepFalse(ok, this->db->bindInt(8, m.ID));
+    ok = keepFalse(ok, this->db->bindInt(4, m.trackNumber));
+    ok = keepFalse(ok, this->db->bindInt(5, m.discNumber));
+    ok = keepFalse(ok, this->db->bindInt(6, m.duration));
+    ok = keepFalse(ok, this->db->bindInt(7, m.plays));
+    ok = keepFalse(ok, this->db->bindBool(8, m.favourite));
+    ok = keepFalse(ok, this->db->bindString(9, m.path));
+    ok = keepFalse(ok, this->db->bindInt(10, m.ID));
     if (!ok) {
         this->setErrorMsg("[updateSong] An error occurred while preparing the statement");
         return false;
@@ -638,7 +642,7 @@ std::vector<Metadata::Song> Database::getAllSongMetadata() {
     }
 
     // Create a Metadata::Song for each entry
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id;");
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id;");
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
         this->setErrorMsg("[getAllSongInfo] Unable to query for all songs");
@@ -652,12 +656,16 @@ std::vector<Metadata::Song> Database::getAllSongMetadata() {
         ok = keepFalse(ok, this->db->getString(2, m.artist));
         ok = keepFalse(ok, this->db->getString(3, m.album));
         ok = keepFalse(ok, this->db->getInt(4, tmp));
-        m.duration = tmp;
+        m.trackNumber = tmp;
         ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.discNumber = tmp;
+        ok = keepFalse(ok, this->db->getInt(6, tmp));
+        m.duration = tmp;
+        ok = keepFalse(ok, this->db->getInt(7, tmp));
         m.plays = tmp;
-        ok = keepFalse(ok, this->db->getBool(6, m.favourite));
-        ok = keepFalse(ok, this->db->getString(7, m.path));
-        ok = keepFalse(ok, this->db->getInt(8, tmp));
+        ok = keepFalse(ok, this->db->getBool(8, m.favourite));
+        ok = keepFalse(ok, this->db->getString(9, m.path));
+        ok = keepFalse(ok, this->db->getInt(10, tmp));
         m.modified = tmp;
 
         if (ok) {
@@ -679,7 +687,7 @@ std::vector<Metadata::Song> Database::getSongMetadataForAlbum(AlbumID id) {
     }
 
     // Create a Metadata::Song for each entry given the album
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.album_id = ?;");
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.album_id = ?;");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
@@ -694,12 +702,16 @@ std::vector<Metadata::Song> Database::getSongMetadataForAlbum(AlbumID id) {
         ok = keepFalse(ok, this->db->getString(2, m.artist));
         ok = keepFalse(ok, this->db->getString(3, m.album));
         ok = keepFalse(ok, this->db->getInt(4, tmp));
-        m.duration = tmp;
+        m.trackNumber = tmp;
         ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.discNumber = tmp;
+        ok = keepFalse(ok, this->db->getInt(6, tmp));
+        m.duration = tmp;
+        ok = keepFalse(ok, this->db->getInt(7, tmp));
         m.plays = tmp;
-        ok = keepFalse(ok, this->db->getBool(6, m.favourite));
-        ok = keepFalse(ok, this->db->getString(7, m.path));
-        ok = keepFalse(ok, this->db->getInt(8, tmp));
+        ok = keepFalse(ok, this->db->getBool(8, m.favourite));
+        ok = keepFalse(ok, this->db->getString(9, m.path));
+        ok = keepFalse(ok, this->db->getInt(10, tmp));
         m.modified = tmp;
 
         if (ok) {
@@ -721,7 +733,7 @@ std::vector<Metadata::Song> Database::getSongMetadataForArtist(ArtistID id) {
     }
 
     // Create a Metadata::Song for each entry given the artist
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.artist_id = ?;");
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.artist_id = ?;");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
@@ -736,12 +748,16 @@ std::vector<Metadata::Song> Database::getSongMetadataForArtist(ArtistID id) {
         ok = keepFalse(ok, this->db->getString(2, m.artist));
         ok = keepFalse(ok, this->db->getString(3, m.album));
         ok = keepFalse(ok, this->db->getInt(4, tmp));
-        m.duration = tmp;
+        m.trackNumber = tmp;
         ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.discNumber = tmp;
+        ok = keepFalse(ok, this->db->getInt(6, tmp));
+        m.duration = tmp;
+        ok = keepFalse(ok, this->db->getInt(7, tmp));
         m.plays = tmp;
-        ok = keepFalse(ok, this->db->getBool(6, m.favourite));
-        ok = keepFalse(ok, this->db->getString(7, m.path));
-        ok = keepFalse(ok, this->db->getInt(8, tmp));
+        ok = keepFalse(ok, this->db->getBool(8, m.favourite));
+        ok = keepFalse(ok, this->db->getString(9, m.path));
+        ok = keepFalse(ok, this->db->getInt(10, tmp));
         m.modified = tmp;
 
         if (ok) {
@@ -764,7 +780,7 @@ Metadata::Song Database::getSongMetadataForID(SongID id) {
     }
 
     // Query for song info
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.ID = ?;");
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.ID = ?;");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
@@ -777,13 +793,18 @@ Metadata::Song Database::getSongMetadataForID(SongID id) {
     ok = keepFalse(ok, this->db->getString(2, m.artist));
     ok = keepFalse(ok, this->db->getString(3, m.album));
     ok = keepFalse(ok, this->db->getInt(4, tmp));
-    m.duration = tmp;
+    m.trackNumber = tmp;
     ok = keepFalse(ok, this->db->getInt(5, tmp));
+    m.discNumber = tmp;
+    ok = keepFalse(ok, this->db->getInt(6, tmp));
+    m.duration = tmp;
+    ok = keepFalse(ok, this->db->getInt(7, tmp));
     m.plays = tmp;
-    ok = keepFalse(ok, this->db->getBool(6, m.favourite));
-    ok = keepFalse(ok, this->db->getString(7, m.path));
-    ok = keepFalse(ok, this->db->getInt(8, tmp));
+    ok = keepFalse(ok, this->db->getBool(8, m.favourite));
+    ok = keepFalse(ok, this->db->getString(9, m.path));
+    ok = keepFalse(ok, this->db->getInt(10, tmp));
     m.modified = tmp;
+
     if (!ok) {
         this->setErrorMsg("[getSongInfoForID] An error occurred reading from the query results");
         m.ID = -1;
@@ -1082,7 +1103,7 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str) {
     }
 
     // Perform search
-    bool ok = this->db->prepareQuery("SELECT Songs.id, Songs.title, Artists.name, Albums.name, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.title IN (SELECT * FROM FtsSongs WHERE FtsSongs MATCH ?);");
+    bool ok = this->db->prepareQuery("SELECT Songs.id, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.title IN (SELECT * FROM FtsSongs WHERE FtsSongs MATCH ?);");
     ok = keepFalse(ok, this->db->bindString(0, str));
     if (!ok) {
         this->setErrorMsg("[searchSongs] Unable to prepare search query");
@@ -1103,12 +1124,16 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str) {
         ok = keepFalse(ok, this->db->getString(2, m.artist));
         ok = keepFalse(ok, this->db->getString(3, m.album));
         ok = keepFalse(ok, this->db->getInt(4, tmp));
-        m.duration = tmp;
+        m.trackNumber = tmp;
         ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.discNumber = tmp;
+        ok = keepFalse(ok, this->db->getInt(6, tmp));
+        m.duration = tmp;
+        ok = keepFalse(ok, this->db->getInt(7, tmp));
         m.plays = tmp;
-        ok = keepFalse(ok, this->db->getBool(6, m.favourite));
-        ok = keepFalse(ok, this->db->getString(7, m.path));
-        ok = keepFalse(ok, this->db->getInt(8, tmp));
+        ok = keepFalse(ok, this->db->getBool(8, m.favourite));
+        ok = keepFalse(ok, this->db->getString(9, m.path));
+        ok = keepFalse(ok, this->db->getInt(10, tmp));
         m.modified = tmp;
 
         if (ok) {

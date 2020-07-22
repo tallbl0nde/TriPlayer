@@ -65,6 +65,8 @@ namespace Metadata {
         std::string title;          // Track title
         std::string artist;         // Artist name
         std::string album;          // Album name
+        int trackNumber;            // Track number of song (0 if not set)
+        int discNumber;             // Song's disc number on album
         unsigned int duration;      // Duration of track in seconds
         unsigned int plays;         // Number of plays (not used)
         bool favourite;             // Is the track favourited? (not used)

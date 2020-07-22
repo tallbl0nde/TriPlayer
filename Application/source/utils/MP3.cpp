@@ -139,14 +139,14 @@ namespace Utils::MP3 {
         return (unsigned int)std::round(seconds);
     }
 
-    // Parses ID3v1 tags and fills SongInfo
+    // Parses ID3v1 tags and fills Metadata struct
     static void parseID3V1(mpg123_id3v1 * v1, Metadata::Song & info) {
         info.title = arrayToString(v1->title, sizeof(v1->title));
         info.artist = arrayToString(v1->artist, sizeof(v1->artist));
         info.album = arrayToString(v1->album, sizeof(v1->album));
     }
 
-    // Parses ID3v2 tags and fills SongInfo
+    // Parses ID3v2 tags and fills Metadata struct
     static void parseID3V2(mpg123_id3v2 * v2, Metadata::Song & info) {
         std::string tmp;
         if (v2->title != nullptr) {
@@ -165,6 +165,39 @@ namespace Utils::MP3 {
             tmp = mpgStrToString(v2->album);
             if (tmp.length() > 0) {
                 info.album = tmp;
+            }
+        }
+
+        // To find other metadata we need to iterate over each field
+        char done = 0x0;
+        for (size_t i = 0; i < v2->texts; i++) {
+            mpg123_text t = v2->text[i];
+
+            // Track number
+            if (t.id[0] == 'T' && t.id[1] == 'R' && t.id[2] == 'C' && t.id[3] == 'K') {
+                done |= 0x01;
+                errno = 0;
+                int tmp = std::atoi(t.text.p);
+                if (errno == 0) {
+                    info.trackNumber = tmp;
+                }
+                continue;
+            }
+
+            // Disc number
+            if (t.id[0] == 'T' && t.id[1] == 'P' && t.id[2] == 'O' && t.id[3] == 'S') {
+                done |= 0x10;
+                errno = 0;
+                int tmp = std::atoi(t.text.p);
+                if (errno == 0) {
+                    info.discNumber = tmp;
+                }
+                continue;
+            }
+
+            // Stop when all are found
+            if (done == 0x11) {
+                break;
             }
         }
     }
@@ -277,6 +310,8 @@ namespace Utils::MP3 {
         m.title = std::filesystem::path(path).stem();      // Title defaults to file name
         m.artist = "Unknown Artist";                       // Artist defaults to unknown
         m.album = "Unknown Album";                         // Same for album
+        m.trackNumber = 0;                                 // Initially 0 to indicate not set
+        m.discNumber = 0;                                  // Initially 0 to indicate not set
 
         // Use mpg123 to read ID3 tags
         if (mpg != nullptr) {
