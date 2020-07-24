@@ -72,28 +72,28 @@ namespace Frame {
             return;
         }
 
-        // Don't create another menu if one exists
-        if (this->menu == nullptr) {
-            this->menu = new CustomOvl::Menu::Artist(CustomOvl::Menu::Type::Normal);
-            this->menu->setPlayAllText("Play All");
-            this->menu->setAddToQueueText("Add to Queue");
-            this->menu->setAddToPlaylistText("Add to Playlist");
-            this->menu->setViewInformationText("View Information");
-            this->menu->setBackgroundColour(this->app->theme()->popupBG());
-            this->menu->setIconColour(this->app->theme()->muted());
-            this->menu->setLineColour(this->app->theme()->muted2());
-            this->menu->setMutedTextColour(this->app->theme()->muted());
-            this->menu->setTextColour(this->app->theme()->FG());
-        }
+        // Create menu
+        delete this->menu;
+        this->menu = new CustomOvl::ItemMenu();
+        this->menu->setBackgroundColour(this->app->theme()->popupBG());
+        this->menu->setMainTextColour(this->app->theme()->FG());
+        this->menu->setSubTextColour(this->app->theme()->muted());
+        this->menu->addSeparator(this->app->theme()->muted2());
 
         // Set artist specific things
         this->menu->setImage(new Aether::Image(0, 0, m.imagePath.empty() ? "romfs:/misc/noartist.png" : m.imagePath));
-        this->menu->setName(m.name);
+        this->menu->setMainText(m.name);
         std::string str = std::to_string(m.albumCount) + (m.albumCount == 1 ? " album" : " albums");
         str += " | " + std::to_string(m.songCount) + (m.songCount == 1 ? " song" : " songs");
-        this->menu->setStats(str);
+        this->menu->setSubText(str);
 
-        this->menu->setPlayAllFunc([this, m]() {
+        // Play All
+        CustomElm::MenuButton * b = new CustomElm::MenuButton();
+        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/playsmall.png"));
+        b->setIconColour(this->app->theme()->muted());
+        b->setText("Play All");
+        b->setTextColour(this->app->theme()->FG());
+        b->setCallback([this, m]() {
             std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForArtist(m.ID);
             std::vector<SongID> ids;
             for (size_t i = 0; i < v.size(); i++) {
@@ -105,21 +105,50 @@ namespace Frame {
             this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
             this->menu->close();
         });
+        this->menu->addButton(b);
+        this->menu->addSeparator(this->app->theme()->muted2());
 
-        this->menu->setAddToQueueFunc([this, m]() {
-            std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForArtist(m.ID);
+        // Add to Queue
+        b = new CustomElm::MenuButton();
+        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
+        b->setIconColour(this->app->theme()->muted());
+        b->setText("Add to Queue");
+        b->setTextColour(this->app->theme()->FG());
+        b->setCallback([this, id]() {
+            std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForArtist(id);
             for (size_t i = 0; i < v.size(); i++) {
                 this->app->sysmodule()->sendAddToSubQueue(v[i].ID);
             }
             this->menu->close();
         });
-        this->menu->setAddToPlaylistFunc(nullptr);
-        this->menu->setViewInformationFunc([this, m]() {
-            this->changeFrame(Type::ArtistInfo, Action::Push, m.ID);
+        this->menu->addButton(b);
+
+        // Add to Playlist
+        b = new CustomElm::MenuButton();
+        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoplaylist.png"));
+        b->setIconColour(this->app->theme()->muted());
+        b->setText("Add to Playlist");
+        b->setTextColour(this->app->theme()->FG());
+        b->setCallback([this, id]() {
+            // Do something
+        });
+        this->menu->addButton(b);
+        this->menu->addSeparator(this->app->theme()->muted2());
+
+        // View Information
+        b = new CustomElm::MenuButton();
+        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/info.png"));
+        b->setIconColour(this->app->theme()->muted());
+        b->setText("View Information");
+        b->setTextColour(this->app->theme()->FG());
+        b->setCallback([this, id]() {
+            this->changeFrame(Type::ArtistInfo, Action::Push, id);
             this->menu->close();
         });
+        this->menu->addButton(b);
 
-        this->menu->resetHighlight();
+        // Finalize the menu
+        this->menu->addButton(nullptr);
         this->app->addOverlay(this->menu);
     }
 

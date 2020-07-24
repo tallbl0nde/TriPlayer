@@ -62,64 +62,99 @@ namespace Frame {
     }
 
     void Songs::createMenu(SongID id) {
-        // Create the base elements if they don't already exist
-        if (this->menu == nullptr) {
-            // Don't need to show the 'Remove from Queue' option here
-            this->menu = new CustomOvl::Menu::Song(CustomOvl::Menu::Song::Type::HideRemove);
-            this->menu->setAddToQueueText("Add to Queue");
-            this->menu->setAddToPlaylistText("Add to Playlist");
-            this->menu->setGoToArtistText("Go to Artist");
-            this->menu->setGoToAlbumText("Go to Album");
-            this->menu->setViewInformationText("View Information");
-            this->menu->setBackgroundColour(this->app->theme()->popupBG());
-            this->menu->setIconColour(this->app->theme()->muted());
-            this->menu->setLineColour(this->app->theme()->muted2());
-            this->menu->setMutedTextColour(this->app->theme()->muted());
-            this->menu->setTextColour(this->app->theme()->FG());
-        }
+        // Create menu
+        delete this->menu;
+        this->menu = new CustomOvl::ItemMenu();
+        this->menu->setBackgroundColour(this->app->theme()->popupBG());
+        this->menu->setMainTextColour(this->app->theme()->FG());
+        this->menu->setSubTextColour(this->app->theme()->muted());
+        this->menu->addSeparator(this->app->theme()->muted2());
 
         // Song metadata
         Metadata::Song m = this->app->database()->getSongMetadataForID(id);
-        this->menu->setTitle(m.title);
-        this->menu->setArtist(m.artist);
-
-        // Album art (this will likely be improved at some point)
+        this->menu->setMainText(m.title);
+        this->menu->setSubText(m.artist);
         bool hasArt = false;
         if (m.path.length() > 0) {
             Metadata::Art art = Utils::MP3::getArtFromID3(m.path);
             if (art.data != nullptr) {
-                this->menu->setAlbum(new Aether::Image(0, 0, art.data, art.size));
+                this->menu->setImage(new Aether::Image(0, 0, art.data, art.size));
                 hasArt = true;
                 delete[] art.data;
             }
         }
         if (!hasArt) {
-            this->menu->setAlbum(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
+            this->menu->setImage(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
         }
 
-        // Callbacks
-        this->menu->setAddToQueueFunc([this, id]() {
+        // Add to Queue
+        CustomElm::MenuButton * b = new CustomElm::MenuButton();
+        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
+        b->setIconColour(this->app->theme()->muted());
+        b->setText("Add to Queue");
+        b->setTextColour(this->app->theme()->FG());
+        b->setCallback([this, id]() {
             this->app->sysmodule()->sendAddToSubQueue(id);
             this->menu->close();
         });
-        this->menu->setAddToPlaylistFunc([this, id]() {
-            // add to playlist
+        this->menu->addButton(b);
+
+        // Add to Playlist
+        b = new CustomElm::MenuButton();
+        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoplaylist.png"));
+        b->setIconColour(this->app->theme()->muted());
+        b->setText("Add to Playlist");
+        b->setTextColour(this->app->theme()->FG());
+        b->setCallback([this, id]() {
+            // Do something
         });
-        this->menu->setGoToArtistFunc([this, id]() {
+        this->menu->addButton(b);
+        this->menu->addSeparator(this->app->theme()->muted2());
+
+        // Go to Artist
+        b = new CustomElm::MenuButton();
+        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/user.png"));
+        b->setIconColour(this->app->theme()->muted());
+        b->setText("Go to Artist");
+        b->setTextColour(this->app->theme()->FG());
+        b->setCallback([this, id]() {
             ArtistID a = this->app->database()->getArtistIDForSong(id);
             if (a >= 0) {
                 this->changeFrame(Type::Artist, Action::Push, a);
             }
             this->menu->close();
         });
-        this->menu->setGoToAlbumFunc([this, id]() {
-            // go to album
-        });
-        this->menu->setViewInformationFunc([this, id]() {
-            // view information
-        });
+        this->menu->addButton(b);
 
-        this->menu->resetHighlight();
+        // Go to Album
+        b = new CustomElm::MenuButton();
+        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/disc.png"));
+        b->setIconColour(this->app->theme()->muted());
+        b->setText("Go to Album");
+        b->setTextColour(this->app->theme()->FG());
+        b->setCallback([this, id]() {
+            AlbumID a = this->app->database()->getAlbumIDForSong(id);
+            if (a >= 0) {
+                this->changeFrame(Type::Album, Action::Push, a);
+            }
+            this->menu->close();
+        });
+        this->menu->addButton(b);
+        this->menu->addSeparator(this->app->theme()->muted2());
+
+        // View Information
+        b = new CustomElm::MenuButton();
+        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/info.png"));
+        b->setIconColour(this->app->theme()->muted());
+        b->setText("View Information");
+        b->setTextColour(this->app->theme()->FG());
+        b->setCallback([this, id]() {
+            // this->changeFrame(Type::SongInfo, Action::Push, id);
+        });
+        this->menu->addButton(b);
+
+        // Finalize the menu
+        this->menu->addButton(nullptr);
         this->app->addOverlay(this->menu);
     }
 

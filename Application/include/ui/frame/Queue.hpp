@@ -4,7 +4,7 @@
 #include <list>
 #include "ui/element/ListSong.hpp"
 #include "ui/frame/Frame.hpp"
-#include "ui/overlay/menu/Song.hpp"
+#include "ui/overlay/ItemMenu.hpp"
 
 namespace Frame {
     class Queue : public Frame {
@@ -41,7 +41,7 @@ namespace Frame {
             std::vector<SongID> cachedSubQueue;
 
             // Menu displayed when a song's "dots" are pressed
-            CustomOvl::Menu::Song * menu;
+            CustomOvl::ItemMenu * menu;
 
             // Helper function to create song menu
             void createMenu(SongID, size_t, Section);

@@ -1198,6 +1198,29 @@ ArtistID Database::getArtistIDForName(const std::string & name) {
     return aID;
 }
 
+AlbumID Database::getAlbumIDForSong(SongID id) {
+    int aID = -1;
+
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getAlbumIDForSong] No open connection");
+        return aID;
+    }
+
+    // Get AlbumID first
+    bool ok = this->db->prepareQuery("SELECT album_id FROM Songs WHERE id = ?;");
+    ok = keepFalse(ok, this->db->bindInt(0, id));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[getAlbumIDForSong] An error occurred querying for info");
+        return aID;
+    }
+    if (!this->db->getInt(0, aID)) {
+        this->setErrorMsg("[getAlbumIDForSong] An error occurred reading the id");
+    }
+    return aID;
+}
+
 ArtistID Database::getArtistIDForSong(SongID id) {
     int aID = -1;
 

@@ -110,6 +110,9 @@ class Database {
         std::vector<std::string> getAllSongPaths();
         // Returns the id of the artist with the given name (-1 if not found)
         ArtistID getArtistIDForName(const std::string &);
+        // Return the id of a song's album
+        // ID will be negative on an error
+        AlbumID getAlbumIDForSong(SongID);
         // Return the id of a song's artist
         // ID will be negative on an error
         ArtistID getArtistIDForSong(SongID);

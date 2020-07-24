@@ -61,20 +61,18 @@ namespace Frame {
             this->addElement(emptyMsg);
         }
 
-        this->artistsMenu = nullptr;
-        this->menu = nullptr;
+        this->artistsList = nullptr;
+        this->albumMenu = nullptr;
     }
 
-    void Albums::createArtistsMenu(AlbumID id) {
+    void Albums::createArtistsList(AlbumID id) {
         // Query database for artists first
         std::vector<Metadata::Artist> m = this->app->database()->getArtistMetadataForAlbum(id);
 
         // Create menu
-        if (this->artistsMenu != nullptr) {
-            delete this->artistsMenu;
-        }
-        this->artistsMenu = new CustomOvl::Menu::ArtistList();
-        this->artistsMenu->setBackgroundColour(this->app->theme()->popupBG());
+        delete this->artistsList;
+        this->artistsList = new CustomOvl::ArtistList();
+        this->artistsList->setBackgroundColour(this->app->theme()->popupBG());
 
         // Populate with artists
         for (size_t i = 0; i < m.size(); i++) {
@@ -84,12 +82,12 @@ namespace Frame {
             ArtistID aID = m[i].ID;
             l->setCallback([this, aID]() {
                 this->changeFrame(Type::Artist, Action::Push, aID);
-                this->artistsMenu->close();
+                this->artistsList->close();
             });
-            this->artistsMenu->addArtist(l);
+            this->artistsList->addArtist(l);
         }
 
-        this->app->addOverlay(this->artistsMenu);
+        this->app->addOverlay(this->artistsList);
     }
 
     void Albums::createMenu(AlbumID id) {
@@ -99,28 +97,26 @@ namespace Frame {
             return;
         }
 
-        // Don't create another menu if one exists
-        bool oneArtist = (m.artist != "Various Artists");
-        if (this->menu == nullptr) {
-            this->menu = new CustomOvl::Menu::Album(CustomOvl::Menu::Type::Normal);
-            this->menu->setPlayAllText("Play");
-            this->menu->setAddToQueueText("Add to Queue");
-            this->menu->setAddToPlaylistText("Add to Playlist");
-            this->menu->setViewInformationText("View Information");
-            this->menu->setBackgroundColour(this->app->theme()->popupBG());
-            this->menu->setIconColour(this->app->theme()->muted());
-            this->menu->setLineColour(this->app->theme()->muted2());
-            this->menu->setMutedTextColour(this->app->theme()->muted());
-            this->menu->setTextColour(this->app->theme()->FG());
-        }
+        // Create menu
+        delete this->albumMenu;
+        this->albumMenu = new CustomOvl::ItemMenu();
+        this->albumMenu->setBackgroundColour(this->app->theme()->popupBG());
+        this->albumMenu->setMainTextColour(this->app->theme()->FG());
+        this->albumMenu->setSubTextColour(this->app->theme()->muted());
+        this->albumMenu->addSeparator(this->app->theme()->muted2());
 
-        // Set album specific things
-        this->menu->setGoToArtistText(oneArtist ? "Go to Artist" : "View Artists");
-        this->menu->setImage(new Aether::Image(0, 0, m.imagePath.empty() ? "romfs:/misc/noalbum.png" : m.imagePath));
-        this->menu->setName(m.name);
-        this->menu->setStats(m.artist);
+        // Album metadata
+        this->albumMenu->setImage(new Aether::Image(0, 0, m.imagePath.empty() ? "romfs:/misc/noalbum.png" : m.imagePath));
+        this->albumMenu->setMainText(m.name);
+        this->albumMenu->setSubText(m.artist);
 
-        this->menu->setPlayAllFunc([this, m]() {
+        // Play Album
+        CustomElm::MenuButton * b = new CustomElm::MenuButton();
+        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/playsmall.png"));
+        b->setIconColour(this->app->theme()->muted());
+        b->setText("Play");
+        b->setTextColour(this->app->theme()->FG());
+        b->setCallback([this, m]() {
             std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForAlbum(m.ID);
             std::vector<SongID> ids;
             for (size_t i = 0; i < v.size(); i++) {
@@ -130,43 +126,79 @@ namespace Frame {
             this->app->sysmodule()->sendSetQueue(ids);
             this->app->sysmodule()->sendSetSongIdx(0);
             this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
-            this->menu->close();
+            this->albumMenu->close();
         });
+        this->albumMenu->addButton(b);
+        this->albumMenu->addSeparator(this->app->theme()->muted2());
 
-        this->menu->setAddToQueueFunc([this, m]() {
-            std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForAlbum(m.ID);
+        // Add to Queue
+        b = new CustomElm::MenuButton();
+        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
+        b->setIconColour(this->app->theme()->muted());
+        b->setText("Add to Queue");
+        b->setTextColour(this->app->theme()->FG());
+        b->setCallback([this, id]() {
+            std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForAlbum(id);
             for (size_t i = 0; i < v.size(); i++) {
                 this->app->sysmodule()->sendAddToSubQueue(v[i].ID);
             }
-            this->menu->close();
+            this->albumMenu->close();
         });
-        this->menu->setAddToPlaylistFunc(nullptr);
+        this->albumMenu->addButton(b);
 
-        // Set callback based on number of artists
-        if (oneArtist) {
-            ArtistID id = this->app->database()->getArtistIDForName(m.artist);
-            this->menu->setGoToArtistFunc([this, id]() {
-                this->changeFrame(Type::Artist, Action::Push, id);
-                this->menu->close();
+        // Add to Playlist
+        b = new CustomElm::MenuButton();
+        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoplaylist.png"));
+        b->setIconColour(this->app->theme()->muted());
+        b->setText("Add to Playlist");
+        b->setTextColour(this->app->theme()->FG());
+        b->setCallback([this, id]() {
+            // Do something
+        });
+        this->albumMenu->addButton(b);
+        this->albumMenu->addSeparator(this->app->theme()->muted2());
+
+        // View Artist(s)
+        b = new CustomElm::MenuButton();
+        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/user.png"));
+        b->setIconColour(this->app->theme()->muted());
+        b->setTextColour(this->app->theme()->FG());
+        if (m.artist != "Various Artists") {
+            b->setText("Go to Artist");
+            ArtistID aID = this->app->database()->getArtistIDForName(m.artist);
+            b->setCallback([this, aID]() {
+                this->changeFrame(Type::Artist, Action::Push, aID);
+                this->albumMenu->close();
             });
+
         } else {
-            this->menu->setGoToArtistFunc([this, m]() {
-                this->createArtistsMenu(m.ID);
-                this->menu->close();
+            b->setText("View Artists");
+            b->setCallback([this, id]() {
+                this->createArtistsList(id);
+                this->albumMenu->close();
             });
         }
+        this->albumMenu->addButton(b);
+        this->albumMenu->addSeparator(this->app->theme()->muted2());
 
-        this->menu->setViewInformationFunc([this, m]() {
-            // this->changeFrame(Type::AlbumInfo, Action::Push, m.ID);
-            // this->menu->close();
+        // View Information
+        b = new CustomElm::MenuButton();
+        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/info.png"));
+        b->setIconColour(this->app->theme()->muted());
+        b->setText("View Information");
+        b->setTextColour(this->app->theme()->FG());
+        b->setCallback([this, id]() {
+            // this->changeFrame(Type::AlbumInfo, Action::Push, id);
         });
+        this->albumMenu->addButton(b);
 
-        this->menu->resetHighlight();
-        this->app->addOverlay(this->menu);
+        // Finalize the menu
+        this->albumMenu->addButton(nullptr);
+        this->app->addOverlay(this->albumMenu);
     }
 
     Albums::~Albums() {
-        delete this->artistsMenu;
-        delete this->menu;
+        delete this->artistsList;
+        delete this->albumMenu;
     }
 };

@@ -3,20 +3,21 @@
 
 #include "Types.hpp"
 #include "ui/frame/Frame.hpp"
-
-// Forward declaration cause we don't need the include here
-namespace CustomOvl::Menu {
-    class Album;
-};
+#include "ui/overlay/ArtistList.hpp"
+#include "ui/overlay/ItemMenu.hpp"
 
 namespace Frame {
     class Album : public Frame {
         private:
             // Menu shown when 'more' is pressed
-            CustomOvl::Menu::Album * menu;
+            CustomOvl::Menu * albumMenu;
+            CustomOvl::ArtistList * artistsList;
+            CustomOvl::ItemMenu * songMenu;
 
             // Functions to create menus
             void createAlbumMenu(AlbumID);
+            void createArtistsList(AlbumID);
+            void createSongMenu(SongID);
 
             // Helper function to play album
             void playAlbum(Metadata::Album);
