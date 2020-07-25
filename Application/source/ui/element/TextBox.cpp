@@ -83,15 +83,16 @@ namespace CustomElm {
         return this->text->string();
     }
 
-    void TextBox::renderHighlightBG() {
-        // Nothing
+    SDL_Texture * TextBox::renderHighlightBG() {
+        // No background
+        return nullptr;
     }
 
-    void TextBox::renderHighlight() {
-        SDLHelper::drawRoundRect(this->hiBorder, this->x() - this->hiSize, this->y() - this->hiSize, this->w() + 2*(this->hiSize), this->h() + 2*(this->hiSize), HI_CORNER_RAD, this->hiSize);
+    SDL_Texture * TextBox::renderHighlight() {
+        return SDLHelper::renderRoundRect(this->w() + 2*(this->hiSize), this->h() + 2*(this->hiSize), HI_CORNER_RAD, this->hiSize);
     }
 
-    void TextBox::renderSelection() {
-        SDLHelper::drawFilledRoundRect(this->hiSel, this->x(), this->y(), this->w(), this->h(), BOX_CORNER_RAD);
+    SDL_Texture * TextBox::renderSelection() {
+        return SDLHelper::renderFilledRoundRect(this->w(), this->h(), BOX_CORNER_RAD);
     }
 };

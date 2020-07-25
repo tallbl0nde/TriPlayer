@@ -13,6 +13,10 @@ namespace Metadata {
         Success     // Artist and image found/downloaded
     };
 
+    // Searches for an album image given the album's name
+    // Accepts name, buffer to fill with image, int to fill with ID
+    DownloadResult downloadAlbumImage(const std::string &, std::vector<unsigned char> &, int &);
+
     // Searches for an artist image given the artist's name
     // Accepts name, buffer to fill with image, int to fill with ID
     DownloadResult downloadArtistImage(const std::string &, std::vector<unsigned char> &, int &);

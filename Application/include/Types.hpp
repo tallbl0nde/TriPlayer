@@ -34,11 +34,10 @@ namespace Metadata {
     struct Album {
         AlbumID ID;                 // Album's unique ID
         std::string name;           // Album's name
-    };
-
-    struct Art {
-        unsigned char * data;       // Pointer to COPIED data (nullptr if an error occurred)
-        size_t size;                // Size of album art in bytes
+        std::string artist;         // Artist's name
+        int tadbID;                 // TheAudioDB ID of album (negative if not set)
+        std::string imagePath;      // Path to album's image (can be blank)
+        unsigned int songCount;     // Number of songs on album
     };
 
     struct Artist {
@@ -61,6 +60,8 @@ namespace Metadata {
         std::string title;          // Track title
         std::string artist;         // Artist name
         std::string album;          // Album name
+        int trackNumber;            // Track number of song (0 if not set)
+        int discNumber;             // Song's disc number on album
         unsigned int duration;      // Duration of track in seconds
         unsigned int plays;         // Number of plays (not used)
         bool favourite;             // Is the track favourited? (not used)

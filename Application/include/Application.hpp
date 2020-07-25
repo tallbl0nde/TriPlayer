@@ -4,7 +4,6 @@
 #include <future>
 #include "db/Database.hpp"
 #include "sysmodule/Sysmodule.hpp"
-#include "ui/overlay/menu/Song.hpp"
 #include "ui/Theme.hpp"
 
 // Forward declaration because cyclic dependency /shrug

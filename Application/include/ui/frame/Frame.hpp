@@ -18,12 +18,15 @@ namespace Frame {
     enum class Type {
         Playlists,
         Playlist,
+        PlaylistInfo,
         Albums,
         Album,
+        AlbumInfo,
         Artists,
         Artist,
         ArtistInfo,
         Songs,
+        SongInfo,
         Queue
     };
 

@@ -29,9 +29,9 @@ namespace CustomElm {
             void setH(int);
 
             // Override rendering selection and highlight to make it round
-            void renderHighlightBG();
-            void renderHighlight();
-            void renderSelection();
+            SDL_Texture * renderHighlightBG();
+            SDL_Texture * renderHighlight();
+            SDL_Texture * renderSelection();
     };
 };
 

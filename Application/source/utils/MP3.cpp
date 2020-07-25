@@ -139,14 +139,14 @@ namespace Utils::MP3 {
         return (unsigned int)std::round(seconds);
     }
 
-    // Parses ID3v1 tags and fills SongInfo
+    // Parses ID3v1 tags and fills Metadata struct
     static void parseID3V1(mpg123_id3v1 * v1, Metadata::Song & info) {
         info.title = arrayToString(v1->title, sizeof(v1->title));
         info.artist = arrayToString(v1->artist, sizeof(v1->artist));
         info.album = arrayToString(v1->album, sizeof(v1->album));
     }
 
-    // Parses ID3v2 tags and fills SongInfo
+    // Parses ID3v2 tags and fills Metadata struct
     static void parseID3V2(mpg123_id3v2 * v2, Metadata::Song & info) {
         std::string tmp;
         if (v2->title != nullptr) {
@@ -165,6 +165,39 @@ namespace Utils::MP3 {
             tmp = mpgStrToString(v2->album);
             if (tmp.length() > 0) {
                 info.album = tmp;
+            }
+        }
+
+        // To find other metadata we need to iterate over each field
+        char done = 0x0;
+        for (size_t i = 0; i < v2->texts; i++) {
+            mpg123_text t = v2->text[i];
+
+            // Track number
+            if (t.id[0] == 'T' && t.id[1] == 'R' && t.id[2] == 'C' && t.id[3] == 'K') {
+                done |= 0x01;
+                errno = 0;
+                int tmp = std::atoi(t.text.p);
+                if (errno == 0) {
+                    info.trackNumber = tmp;
+                }
+                continue;
+            }
+
+            // Disc number
+            if (t.id[0] == 'T' && t.id[1] == 'P' && t.id[2] == 'O' && t.id[3] == 'S') {
+                done |= 0x10;
+                errno = 0;
+                int tmp = std::atoi(t.text.p);
+                if (errno == 0) {
+                    info.discNumber = tmp;
+                }
+                continue;
+            }
+
+            // Stop when all are found
+            if (done == 0x11) {
+                break;
             }
         }
     }
@@ -204,10 +237,8 @@ namespace Utils::MP3 {
     }
 
     // Searches and returns an appropriate image
-    Metadata::Art getArtFromID3(std::string path) {
-        Metadata::Art m;
-        m.data = nullptr;
-        m.size = 0;
+    std::vector<unsigned char> getArtFromID3(std::string path) {
+        std::vector<unsigned char> v;
 
         // Use mpg123 to find images
         if (mpg != nullptr) {
@@ -233,18 +264,18 @@ namespace Utils::MP3 {
                                 // Need matching type and mime type
                                 if (pic->type == mpg123_id3_pic_other || pic->type == mpg123_id3_pic_front_cover) {
                                     if (mType == "image/jpg" || mType == "image/jpeg" || mType == "image/png") {
-                                        // Copy image into struct
-                                        m.data = new unsigned char[pic->size];
-                                        std::memcpy(m.data, pic->data, pic->size);
-                                        m.size = pic->size;
+                                        // Copy image into vector
+                                        for (size_t i = 0; i < pic->size; i++) {
+                                            v.push_back(*(pic->data + i));
+                                        }
                                         break;
                                     }
                                 }
                             }
 
                             // Log if none found
-                            if (m.data == nullptr) {
-                                Log::writeWarning("[MP3] No suitable art found in: " + path);
+                            if (v.empty()) {
+                                Log::writeInfo("[MP3] No suitable art found in: " + path);
                             }
 
                         } else {
@@ -266,7 +297,7 @@ namespace Utils::MP3 {
             Log::writeError("[MP3] Unable to open file: " + path);
         }
 
-        return m;
+        return v;
     }
 
     // Checks for tag type and calls appropriate function
@@ -277,6 +308,8 @@ namespace Utils::MP3 {
         m.title = std::filesystem::path(path).stem();      // Title defaults to file name
         m.artist = "Unknown Artist";                       // Artist defaults to unknown
         m.album = "Unknown Album";                         // Same for album
+        m.trackNumber = 0;                                 // Initially 0 to indicate not set
+        m.discNumber = 0;                                  // Initially 0 to indicate not set
 
         // Use mpg123 to read ID3 tags
         if (mpg != nullptr) {

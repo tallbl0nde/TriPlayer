@@ -1,10 +1,24 @@
 #include "ui/element/MenuButton.hpp"
 
+// Height of a button
+#define HEIGHT 60
+// Size of image
+#define IMAGE_SIZE 26
+
 namespace CustomElm {
-    MenuButton::MenuButton(int x, int y, int w, int h) : Element(x, y, w, h) {
+    MenuButton::MenuButton() : Element(0, 0, 100, HEIGHT) {
         this->icon = nullptr;
         this->text = new Aether::Text(this->x() + 55, this->y() + this->h()/2, "", 24);
         this->addElement(this->text);
+    }
+
+    void MenuButton::positionItems() {
+        int maxW = (this->x() + this->w()) - this->text->x();
+        if (this->text->w() > maxW) {
+            this->text->setW(maxW);
+        } else {
+            this->text->setW(this->text->texW());
+        }
     }
 
     void MenuButton::setIconColour(Aether::Colour c) {
@@ -18,20 +32,21 @@ namespace CustomElm {
     }
 
     void MenuButton::setIcon(Aether::Image * i) {
-        if (this->icon != nullptr) {
-            this->removeElement(this->icon);
-        }
+        this->removeElement(this->icon);
         this->icon = i;
-        this->icon->setWH(26, 26);
-        this->icon->setXY(this->x() + 15, this->y() + (this->h() - this->icon->h())/2);
+        this->icon->setWH(IMAGE_SIZE, IMAGE_SIZE);
+        this->icon->setXY(this->x() + HEIGHT/4, this->y() + (this->h() - this->icon->h())/2);
         this->addElement(this->icon);
     }
 
     void MenuButton::setText(std::string s) {
         this->text->setString(s);
-        if (this->text->w() > (this->x() + this->w()) - this->text->x()) {
-            this->text->setW((this->x() + this->w()) - this->text->x());
-        }
         this->text->setY(this->y() + (this->h() - this->text->h())/2);
+        this->positionItems();
+    }
+
+    void MenuButton::setW(int w) {
+        Element::setW(w);
+        this->positionItems();
     }
 };

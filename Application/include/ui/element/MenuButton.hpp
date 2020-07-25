@@ -11,9 +11,11 @@ namespace CustomElm {
             Aether::Image * icon;
             Aether::Text * text;
 
+            // Position children
+            void positionItems();
+
         public:
-            // X, Y, W, H
-            MenuButton(int, int, int, int);
+            MenuButton();
 
             // Set colours
             void setIconColour(Aether::Colour);
@@ -22,6 +24,9 @@ namespace CustomElm {
             // Set icon (pass image pointer) and text
             void setIcon(Aether::Image *);
             void setText(std::string);
+
+            // Changing the width needs the elements to be repositioned
+            void setW(int);
     };
 };
 

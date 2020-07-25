@@ -1,21 +1,22 @@
 #include "Application.hpp"
-#include "ui/frame/ArtistInfo.hpp"
-#include "ui/element/TextBox.hpp"
+#include "ui/frame/AlbumInfo.hpp"
 #include "utils/FS.hpp"
+#include "utils/MP3.hpp"
 #include "utils/Utils.hpp"
 
 // Location of default image
-#define DEFAULT_IMAGE "romfs:/misc/noartist.png"
+#define DEFAULT_IMAGE "romfs:/misc/noalbum.png"
 // Default path for file browser
 #define FILE_BROWSER_ROOT "/"
 // Accepted image extensions
-static const std::vector<std::string> FILE_EXTENSIONS = {".jpg", ".jpeg", ".jfif", ".png", ".JPG", ".JPEG", ".JFIF", ".PNG"};
+static const std::vector<std::string> FILE_EXTENSIONS_AUD = {".mp3", ".MP3"};
+static const std::vector<std::string> FILE_EXTENSIONS_IMG = {".jpg", ".jpeg", ".jfif", ".png", ".JPG", ".JPEG", ".JFIF", ".PNG"};
 // Save location of images
-#define SAVE_LOCATION "/switch/TriPlayer/images/artist/"
+#define SAVE_LOCATION "/switch/TriPlayer/images/album/"
 
 // This whole file/frame is a mess behind the scenes :P
 namespace Frame {
-    ArtistInfo::ArtistInfo(Main::Application * a, ArtistID id) : Frame(a) {
+    AlbumInfo::AlbumInfo(Main::Application * a, AlbumID id) : Frame(a) {
         // Remove list + headings (I should redo Frame to avoid this)
         this->removeElement(this->list);
         this->removeElement(this->titleH);
@@ -23,8 +24,8 @@ namespace Frame {
         this->removeElement(this->albumH);
         this->removeElement(this->lengthH);
 
-        // Get artist metadata from ID
-        this->metadata = this->app->database()->getArtistMetadataForID(id);
+        // Get album metadata from ID
+        this->metadata = this->app->database()->getAlbumMetadataForID(id);
         if (this->metadata.ID < 0) {
             // Error message
             Aether::Text * t = new Aether::Text(this->x() + this->w()/2, this->y() + this->h()/2, "An error occurred fetching the data. Please restart the app and try again.", 20);
@@ -36,7 +37,7 @@ namespace Frame {
         }
 
         // Create and position all elements next
-        this->heading->setString("Artist Information");
+        this->heading->setString("Album Information");
 
         // Name
         Aether::Text * txt = new Aether::Text(this->heading->x(), this->heading->y() + this->heading->h() + 20, "Name", 30);
@@ -92,28 +93,35 @@ namespace Frame {
         this->image->setWH(this->w()*0.18, this->w()*0.18);
         this->addElement(this->image);
 
-        // Fetch image (local)
-        Aether::Container * c = new Aether::Container(txt->x(), this->imagePath->y() + this->imagePath->h() + 20, this->w()*0.62, 50);
-        Aether::BorderButton * button = new Aether::BorderButton(c->x(), c->y(), this->w() * 0.3, 50, 2, "", 20, [this]() {
-            this->createFileBrowser();
+        // Fetch image (id3 tags)
+        Aether::BorderButton * button = new Aether::BorderButton(txt->x(), this->imagePath->y() + this->imagePath->h() + 20, this->w() * 0.3, 50, 2, "", 20, [this]() {
+            this->createFileBrowser(FBType::Audio);
+        });
+        button->setString("Replace from Audio File");
+        button->setBorderColour(this->app->theme()->FG());
+        button->setTextColour(this->app->theme()->FG());
+        this->addElement(button);
+
+        // Fetch image (local image)
+        button = new Aether::BorderButton(button->x() + button->w() + this->w()*0.02, button->y(), this->w() * 0.3, 50, 2, "", 20, [this]() {
+            this->createFileBrowser(FBType::Image);
         });
         button->setString("Replace from SD Card");
         button->setBorderColour(this->app->theme()->FG());
         button->setTextColour(this->app->theme()->FG());
-        c->addElement(button);
+        this->addElement(button);
 
         // Fetch image (TheAudioDB)
-        button = new Aether::BorderButton(button->x() + button->w() + this->w()*0.02, button->y(), this->w() * 0.3, 50, 2, "", 20, [this]() {
+        button = new Aether::BorderButton(txt->x(), button->y() + button->h() + 20, this->w() * 0.3, 50, 2, "", 20, [this]() {
             this->createAudioDBOverlay();
         });
         button->setString("Replace from TheAudioDB");
         button->setBorderColour(this->app->theme()->FG());
         button->setTextColour(this->app->theme()->FG());
-        c->addElement(button);
-        this->addElement(c);
+        this->addElement(button);
 
         // Remove image
-        button = new Aether::BorderButton(txt->x() + this->w()*0.16, button->y() + button->h() + 20, this->w() * 0.3, 50, 2, "", 20, [this]() {
+        button = new Aether::BorderButton(button->x() + button->w() + this->w()*0.02, button->y(), this->w() * 0.3, 50, 2, "", 20, [this]() {
             this->removeImage();
         });
         button->setString("Remove Image");
@@ -122,7 +130,7 @@ namespace Frame {
         this->addElement(button);
 
         // Save button
-        Aether::FilledButton * save = new Aether::FilledButton(button->x() + button->w()/2 - 75, button->y() + button->h() + 25, 150, 50, "Save", 26, [this]() {
+        Aether::FilledButton * save = new Aether::FilledButton(button->x() - this->w()*0.01 - 75, button->y() + button->h() + 25, 150, 50, "Save", 26, [this]() {
             this->saveChanges();
         });
         save->setFillColour(this->app->theme()->accent());
@@ -137,7 +145,7 @@ namespace Frame {
         this->threadRunning = false;
     }
 
-    void ArtistInfo::createAudioDBOverlay() {
+    void AlbumInfo::createAudioDBOverlay() {
         delete this->msgbox;
 
         // Create message box
@@ -149,7 +157,7 @@ namespace Frame {
             this->updateAudioDBOverlay();
             this->dlBuffer.clear();
             this->dlThread = std::async(std::launch::async, [this]() -> Metadata::DownloadResult {
-                return Metadata::downloadArtistImage(this->metadata.name, this->dlBuffer, this->metadata.tadbID);
+                return Metadata::downloadAlbumImage(this->metadata.name, this->dlBuffer, this->metadata.tadbID);
             });
             this->threadRunning = true;
         });
@@ -160,7 +168,7 @@ namespace Frame {
         // Create tip text and set as body
         Aether::Element * body = new Aether::Element(0, 0, 700);
         Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "", 24, 620);
-        tips->setString("An artist image will be searched for and downloaded using TheAudioDB.\n\nFor best results:\n- Ensure the artist's name is correct\n- Make sure you have a stable internet connection\n\nYou will be unable to control playback while the image is downloading.");
+        tips->setString("An album image will be searched for and downloaded using TheAudioDB.\n\nFor best results:\n- Ensure the album's name is correct\n- Make sure you have a stable internet connection\n\nYou will be unable to control playback while the image is downloading.");
         tips->setColour(this->app->theme()->FG());
         body->addElement(tips);
         body->setH(tips->h() + 80);
@@ -170,7 +178,7 @@ namespace Frame {
         this->app->addOverlay(this->msgbox);
     }
 
-    void ArtistInfo::updateAudioDBOverlay() {
+    void AlbumInfo::updateAudioDBOverlay() {
         // Remove old msgbox
         this->msgbox->close();
         this->oldmsgbox = this->msgbox;
@@ -191,7 +199,7 @@ namespace Frame {
         this->app->addOverlay(this->msgbox);
     }
 
-    void ArtistInfo::createInfoOverlay(const std::string & msg) {
+    void AlbumInfo::createInfoOverlay(const std::string & msg) {
         // Remove old msgbox
         if (this->msgbox != nullptr) {
             this->msgbox->close();
@@ -217,18 +225,27 @@ namespace Frame {
         this->app->addOverlay(this->msgbox);
     }
 
-    void ArtistInfo::createFileBrowser() {
-        // Create if doesn't exist
-        if (this->browser == nullptr) {
-            this->browser = new CustomOvl::FileBrowser(700, 600);
-            this->browser->setAccentColour(this->app->theme()->accent());
-            this->browser->setMutedLineColour(this->app->theme()->muted2());
-            this->browser->setMutedTextColour(this->app->theme()->muted());
-            this->browser->setRectangleColour(this->app->theme()->popupBG());
-            this->browser->setTextColour(this->app->theme()->FG());
-            this->browser->setCancelText("Cancel");
-            this->browser->setHeadingText("Select an Image");
-            this->browser->setExtensions(FILE_EXTENSIONS);
+    void AlbumInfo::createFileBrowser(FBType t) {
+        this->fileType = t;
+
+        delete this->browser;
+        this->browser = new CustomOvl::FileBrowser(700, 600);
+        this->browser->setAccentColour(this->app->theme()->accent());
+        this->browser->setMutedLineColour(this->app->theme()->muted2());
+        this->browser->setMutedTextColour(this->app->theme()->muted());
+        this->browser->setRectangleColour(this->app->theme()->popupBG());
+        this->browser->setTextColour(this->app->theme()->FG());
+        this->browser->setCancelText("Cancel");
+        switch (t) {
+            case FBType::Audio:
+                this->browser->setHeadingText("Select an Audio file");
+                this->browser->setExtensions(FILE_EXTENSIONS_AUD);
+                break;
+
+            case FBType::Image:
+                this->browser->setHeadingText("Select an Image");
+                this->browser->setExtensions(FILE_EXTENSIONS_IMG);
+                break;
         }
 
         // Set path and show
@@ -237,7 +254,7 @@ namespace Frame {
         this->app->addOverlay(this->browser);
     }
 
-    void ArtistInfo::saveChanges() {
+    void AlbumInfo::saveChanges() {
         // Don't permit blank name
         if (this->metadata.name.empty()) {
             this->createInfoOverlay("You can't set a blank name. Nice try ;)");
@@ -258,11 +275,11 @@ namespace Frame {
         this->app->database()->close();
         this->app->sysmodule()->waitRequestDBLock();
         this->app->database()->openReadWrite();
-        bool ok = this->app->database()->updateArtist(this->metadata);
+        bool ok = this->app->database()->updateAlbum(this->metadata);
         this->app->database()->prepareSearch();
         this->app->database()->close();
-        this->app->sysmodule()->sendReleaseDBLock();
         this->app->database()->openReadOnly();
+        this->app->sysmodule()->sendReleaseDBLock();
 
         // If updated ok actually manipulate image file(s)
         if (ok && this->updateImage) {
@@ -283,7 +300,7 @@ namespace Frame {
         this->createInfoOverlay((ok ? "Your changes have been saved. You may need to restart the application for any changes to take complete effect." : "Unable to update the database, see the logs for more information!"));
     }
 
-    void ArtistInfo::update(uint32_t dt) {
+    void AlbumInfo::update(uint32_t dt) {
         Frame::update(dt);
 
         // Delete any old message boxes (needed as Aether::update has to be called on it before it can be deleted)
@@ -301,11 +318,11 @@ namespace Frame {
                         break;
 
                     case Metadata::DownloadResult::NotFound:
-                        this->createInfoOverlay("An artist could not be found with the name '" + this->metadata.name + "'. Please check your spelling or set an image manually.");
+                        this->createInfoOverlay("An album could not be found with the name '" + this->metadata.name + "'. Please check your spelling or set an image manually.");
                         break;
 
                     case Metadata::DownloadResult::NoImage:
-                        this->createInfoOverlay("'" + this->metadata.name + "' was found on TheAudioDB but has no image associated with them.");
+                        this->createInfoOverlay("'" + this->metadata.name + "' was found on TheAudioDB but has no image associated with it.");
                         break;
 
                     case Metadata::DownloadResult::Success:
@@ -322,14 +339,22 @@ namespace Frame {
             if (this->browser->shouldClose()) {
                 std::string path = this->browser->chosenFile();
                 if (!path.empty()) {
-                    this->updateImageFromPath(path);
+                    switch (this->fileType) {
+                        case FBType::Audio:
+                            this->updateImageFromID3(path);
+                            break;
+
+                        case FBType::Image:
+                            this->updateImageFromPath(path);
+                            break;
+                    }
                 }
                 this->checkFB = false;
             }
         }
     }
 
-    void ArtistInfo::removeImage() {
+    void AlbumInfo::removeImage() {
         // 'Fake' remove
         this->updateImage = true;
         this->dlBuffer.clear();
@@ -341,7 +366,7 @@ namespace Frame {
         this->imagePath->setString(DEFAULT_IMAGE);
     }
 
-    void ArtistInfo::updateImageFromDL() {
+    void AlbumInfo::updateImageFromDL() {
         // Remove old image and replace with new one
         this->removeElement(this->image);
         this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), &this->dlBuffer[0], this->dlBuffer.size());
@@ -354,7 +379,41 @@ namespace Frame {
         this->imagePath->setString(SAVE_LOCATION + std::to_string(this->metadata.tadbID) + ".png");
     }
 
-    void ArtistInfo::updateImageFromPath(const std::string & path) {
+    void AlbumInfo::updateImageFromID3(const std::string & path) {
+        // Extract image
+        this->dlBuffer = Utils::MP3::getArtFromID3(path);
+        if (this->dlBuffer.empty()) {
+            this->createInfoOverlay("No album art was found in the selected file.");
+            return;
+        }
+
+        // Attempt to create new image
+        Aether::Image * tmpImage = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), &this->dlBuffer[0], this->dlBuffer.size());
+        tmpImage->setWH(this->w()*0.18, this->w()*0.18);
+
+        // Show error if image wasn't created
+        if (tmpImage->texW() == 0 || tmpImage->texH() == 0) {
+            this->createInfoOverlay("An error occurred processing the file. This may mean the file is corrupt or the stored album art is not supported.");
+            delete tmpImage;
+
+        // Otherwise replace image
+        } else {
+            this->removeElement(this->image);
+            this->image = tmpImage;
+            this->addElement(this->image);
+            this->updateImage = true;
+
+            // Generate unique path (if you're really unlucky this could run indefinitely - but with 62^10 combinations we should be right :P)
+            std::string rand;
+            do {
+                rand = Utils::randomString(10);
+            } while (Utils::Fs::fileExists(SAVE_LOCATION + rand + ".png"));
+            this->newImagePath.clear();
+            this->imagePath->setString(SAVE_LOCATION + rand + ".png");
+        }
+    }
+
+    void AlbumInfo::updateImageFromPath(const std::string & path) {
         // Attempt to create new image
         Aether::Image * tmpImage = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), path);
         tmpImage->setWH(this->w()*0.18, this->w()*0.18);
@@ -383,7 +442,7 @@ namespace Frame {
         }
     }
 
-    ArtistInfo::~ArtistInfo() {
+    AlbumInfo::~AlbumInfo() {
         if (this->msgbox) {
             this->msgbox->close();
         }

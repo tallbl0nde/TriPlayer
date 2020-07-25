@@ -10,7 +10,7 @@
 // Location of the database file
 #define DB_PATH "/switch/TriPlayer/data.sqlite3"
 // Version of the database (database begins with zero from 'template', so this started at 1)
-#define DB_VERSION 2
+#define DB_VERSION 3
 // Location of template file
 #define TEMPLATE_DB_PATH "romfs:/db/template.sqlite3"
 
@@ -102,6 +102,14 @@ bool Database::migrate() {
                     break;
                 }
                 Log::writeSuccess("[DB] Migrated to version 2");
+
+            case 2:
+                err = Migration::migrateTo3(this->db);
+                if (!err.empty()) {
+                    err = "Migration 3: " + err;
+                    break;
+                }
+                Log::writeSuccess("[DB] Migrated to version 3");
         }
     }
 
@@ -246,6 +254,113 @@ void Database::close() {
 }
 
 // ===== Album Metadata ===== //
+bool Database::updateAlbum(Metadata::Album m) {
+    // First check we have write permission
+    if (this->db->connectionType() != SQLite::Connection::ReadWrite) {
+        this->setErrorMsg("[updateAlbum] Can't update song as the database is unwritable");
+        return false;
+    }
+
+    // Now update relevant fields
+    bool ok = this->db->prepareQuery("UPDATE Albums SET name = ?, tadb_id = ?, image_path = ? WHERE id = ?;");
+    ok = keepFalse(ok, this->db->bindString(0, m.name));
+    ok = keepFalse(ok, this->db->bindInt(1, m.tadbID));
+    ok = keepFalse(ok, this->db->bindString(2, m.imagePath));
+    ok = keepFalse(ok, this->db->bindInt(3, m.ID));
+    if (!ok) {
+        this->setErrorMsg("[updateAlbum] An error occurred while preparing the statement");
+        return false;
+    }
+
+    // We don't want to ignore constraints for this query
+    this->db->ignoreConstraints(false);
+    ok = this->db->executeQuery();
+    if (!ok) {
+        this->setErrorMsg("[updateAlbum] An error occurred while updating the entry");
+    } else {
+        if (Log::loggingLevel() == Log::Level::Info) {
+            Log::writeInfo("[DB] [updateAlbum] '" + m.name + "' was updated");
+        }
+    }
+    this->db->ignoreConstraints(true);
+
+    // Mark search tables as out of date
+    if (ok) {
+        ok = this->setSearchUpdate(1);
+    }
+
+    return ok;
+}
+
+std::vector<Metadata::Album> Database::getAllAlbumMetadata() {
+    std::vector<Metadata::Album> v;
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getAllAlbumMetadata] No open connection");
+        return v;
+    }
+
+    // Create a Metadata::Album for each entry
+    bool ok = this->db->prepareAndExecuteQuery("SELECT album_id, Albums.name, CASE WHEN COUNT(DISTINCT artist_id) > 1 THEN 'Various Artists' ELSE Artists.name END, Albums.tadb_id, Albums.image_path, COUNT(*) FROM Songs JOIN Albums ON Songs.album_id = Albums.id JOIN Artists ON Songs.artist_id = Artists.id GROUP BY album_id ORDER BY Albums.name;");
+    if (!ok) {
+        this->setErrorMsg("[getAllAlbumMetadata] Unable to query for all albums");
+        return v;
+    }
+    while (ok) {
+        Metadata::Album m;
+        ok = this->db->getInt(0, m.ID);
+        ok = keepFalse(ok, this->db->getString(1, m.name));
+        ok = keepFalse(ok, this->db->getString(2, m.artist));
+        ok = keepFalse(ok, this->db->getInt(3, m.tadbID));
+        ok = keepFalse(ok, this->db->getString(4, m.imagePath));
+        int tmp;
+        ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.songCount = tmp;
+
+        if (ok) {
+            v.push_back(m);
+        }
+        ok = keepFalse(ok, this->db->nextRow());
+    }
+
+    return v;
+}
+
+Metadata::Album Database::getAlbumMetadataForID(AlbumID id) {
+    Metadata::Album m;
+    m.ID = -1;
+
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getAlbumMetadataForID] No open connection");
+        return m;
+    }
+
+    // Create a Metadata::Album
+    bool ok = this->db->prepareQuery("SELECT album_id, Albums.name, CASE WHEN COUNT(DISTINCT artist_id) > 1 THEN 'Various Artists' ELSE Artists.name END, Albums.tadb_id, Albums.image_path, COUNT(*) FROM Songs JOIN Albums ON Songs.album_id = Albums.id JOIN Artists ON Songs.artist_id = Artists.id WHERE Songs.album_id = ? GROUP BY Songs.album_id;");
+    ok = keepFalse(ok, this->db->bindInt(0, id));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[getAlbumMetadataForID] An error occurred querying for info");
+        return m;
+    }
+    int tmp;
+    ok = this->db->getInt(0, m.ID);
+    ok = keepFalse(ok, this->db->getString(1, m.name));
+    ok = keepFalse(ok, this->db->getString(2, m.artist));
+    ok = keepFalse(ok, this->db->getInt(3, m.tadbID));
+    ok = keepFalse(ok, this->db->getString(4, m.imagePath));
+    ok = keepFalse(ok, this->db->getInt(5, tmp));
+    m.songCount = tmp;
+
+    if (!ok) {
+        this->setErrorMsg("[getAlbumMetadataForID] An error occurred reading from the query results");
+        m.ID = -1;
+    }
+
+    return m;
+}
+
 std::vector<Metadata::Album> Database::getAlbumMetadataForArtist(ArtistID id) {
     std::vector<Metadata::Album> v;
 
@@ -255,8 +370,8 @@ std::vector<Metadata::Album> Database::getAlbumMetadataForArtist(ArtistID id) {
         return v;
     }
 
-    // Create a Metadata::Album for each entry
-    bool ok = this->db->prepareQuery("SELECT DISTINCT Albums.id, Albums.name FROM Songs JOIN Albums ON Songs.album_id = Albums.id WHERE Songs.artist_id = ? ORDER BY Albums.name;");
+    // Create a Metadata::Album (note this query won't ever return 'Various Artists' as the artist but that's alright seeing how we're querying for an artist)
+    bool ok = this->db->prepareQuery("SELECT album_id, Albums.name, Artists.name, Albums.tadb_id, Albums.image_path, COUNT(*) FROM Songs JOIN Albums ON Songs.album_id = Albums.id JOIN Artists ON Songs.artist_id = Artists.id WHERE Songs.artist_id = ? GROUP BY Songs.album_id ORDER BY Albums.name;");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
@@ -265,8 +380,14 @@ std::vector<Metadata::Album> Database::getAlbumMetadataForArtist(ArtistID id) {
     }
     while (ok) {
         Metadata::Album m;
+        int tmp;
         ok = this->db->getInt(0, m.ID);
         ok = keepFalse(ok, this->db->getString(1, m.name));
+        ok = keepFalse(ok, this->db->getString(2, m.artist));
+        ok = keepFalse(ok, this->db->getInt(3, m.tadbID));
+        ok = keepFalse(ok, this->db->getString(4, m.imagePath));
+        ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.songCount = tmp;
 
         if (ok) {
             v.push_back(m);
@@ -351,6 +472,43 @@ std::vector<Metadata::Artist> Database::getAllArtistMetadata() {
     return v;
 }
 
+std::vector<Metadata::Artist> Database::getArtistMetadataForAlbum(AlbumID id) {
+    std::vector<Metadata::Artist> v;
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getArtistMetadataForAlbum] No open connection");
+        return v;
+    }
+
+    // Create a Metadata::Artist for each entry (note this query won't ever return more than '1' as the number of albums as we're querying for a single album)
+    bool ok = this->db->prepareQuery("SELECT artist_id, Artists.name, Artists.tadb_id, Artists.image_path, COUNT(DISTINCT album_id), COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id WHERE Songs.album_id = ? GROUP BY artist_id ORDER BY Artists.name;");
+    ok = keepFalse(ok, this->db->bindInt(0, id));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[getArtistMetadataForAlbum] Unable to query for an album's artists");
+        return v;
+    }
+    while (ok) {
+        Metadata::Artist m;
+        ok = this->db->getInt(0, m.ID);
+        ok = keepFalse(ok, this->db->getString(1, m.name));
+        ok = keepFalse(ok, this->db->getInt(2, m.tadbID));
+        ok = keepFalse(ok, this->db->getString(3, m.imagePath));
+        int tmp;
+        ok = keepFalse(ok, this->db->getInt(4, tmp));
+        m.albumCount = tmp;
+        ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.songCount = tmp;
+
+        if (ok) {
+            v.push_back(m);
+        }
+        ok = keepFalse(ok, this->db->nextRow());
+    }
+
+    return v;
+}
+
 Metadata::Artist Database::getArtistMetadataForID(ArtistID id) {
     Metadata::Artist m;
     m.ID = -1;
@@ -402,13 +560,15 @@ bool Database::addSong(Metadata::Song m) {
     }
 
     // Finally add song
-    ok = this->db->prepareQuery("INSERT INTO Songs (path, modified, artist_id, album_id, title, duration) VALUES (?, ?, (SELECT id FROM Artists WHERE name = ?), (SELECT id FROM Albums WHERE name = ?), ?, ?);");
+    ok = this->db->prepareQuery("INSERT INTO Songs (path, modified, artist_id, album_id, title, duration, track, disc) VALUES (?, ?, (SELECT id FROM Artists WHERE name = ?), (SELECT id FROM Albums WHERE name = ?), ?, ?, ?, ?);");
     ok = keepFalse(ok, this->db->bindString(0, m.path));
     ok = keepFalse(ok, this->db->bindInt(1, m.modified));
     ok = keepFalse(ok, this->db->bindString(2, m.artist));
     ok = keepFalse(ok, this->db->bindString(3, m.album));
     ok = keepFalse(ok, this->db->bindString(4, m.title));
     ok = keepFalse(ok, this->db->bindInt(5, m.duration));
+    ok = keepFalse(ok, this->db->bindInt(6, m.trackNumber));
+    ok = keepFalse(ok, this->db->bindInt(7, m.discNumber));
     if (!ok) {
         this->setErrorMsg("[addSong] An error occurred while preparing the statement");
         return false;
@@ -446,16 +606,18 @@ bool Database::updateSong(Metadata::Song m) {
     }
 
     // Now update relevant fields
-    ok = this->db->prepareQuery("UPDATE Songs SET modified = ?, artist_id = (SELECT id FROM Artists WHERE name = ?), album_id = (SELECT id FROM Albums WHERE name = ?), title = ?, duration = ?, plays = ?, favourite = ?, path = ? WHERE id = ?;");
+    ok = this->db->prepareQuery("UPDATE Songs SET modified = ?, artist_id = (SELECT id FROM Artists WHERE name = ?), album_id = (SELECT id FROM Albums WHERE name = ?), title = ?, track = ?, disc = ?, duration = ?, plays = ?, favourite = ?, path = ? WHERE id = ?;");
     ok = keepFalse(ok, this->db->bindInt(0, m.modified));
     ok = keepFalse(ok, this->db->bindString(1, m.artist));
     ok = keepFalse(ok, this->db->bindString(2, m.album));
     ok = keepFalse(ok, this->db->bindString(3, m.title));
-    ok = keepFalse(ok, this->db->bindInt(4, m.duration));
-    ok = keepFalse(ok, this->db->bindInt(5, m.plays));
-    ok = keepFalse(ok, this->db->bindBool(6, m.favourite));
-    ok = keepFalse(ok, this->db->bindString(7, m.path));
-    ok = keepFalse(ok, this->db->bindInt(8, m.ID));
+    ok = keepFalse(ok, this->db->bindInt(4, m.trackNumber));
+    ok = keepFalse(ok, this->db->bindInt(5, m.discNumber));
+    ok = keepFalse(ok, this->db->bindInt(6, m.duration));
+    ok = keepFalse(ok, this->db->bindInt(7, m.plays));
+    ok = keepFalse(ok, this->db->bindBool(8, m.favourite));
+    ok = keepFalse(ok, this->db->bindString(9, m.path));
+    ok = keepFalse(ok, this->db->bindInt(10, m.ID));
     if (!ok) {
         this->setErrorMsg("[updateSong] An error occurred while preparing the statement");
         return false;
@@ -518,7 +680,7 @@ std::vector<Metadata::Song> Database::getAllSongMetadata() {
     }
 
     // Create a Metadata::Song for each entry
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id;");
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id;");
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
         this->setErrorMsg("[getAllSongInfo] Unable to query for all songs");
@@ -532,12 +694,63 @@ std::vector<Metadata::Song> Database::getAllSongMetadata() {
         ok = keepFalse(ok, this->db->getString(2, m.artist));
         ok = keepFalse(ok, this->db->getString(3, m.album));
         ok = keepFalse(ok, this->db->getInt(4, tmp));
-        m.duration = tmp;
+        m.trackNumber = tmp;
         ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.discNumber = tmp;
+        ok = keepFalse(ok, this->db->getInt(6, tmp));
+        m.duration = tmp;
+        ok = keepFalse(ok, this->db->getInt(7, tmp));
         m.plays = tmp;
-        ok = keepFalse(ok, this->db->getBool(6, m.favourite));
-        ok = keepFalse(ok, this->db->getString(7, m.path));
-        ok = keepFalse(ok, this->db->getInt(8, tmp));
+        ok = keepFalse(ok, this->db->getBool(8, m.favourite));
+        ok = keepFalse(ok, this->db->getString(9, m.path));
+        ok = keepFalse(ok, this->db->getInt(10, tmp));
+        m.modified = tmp;
+
+        if (ok) {
+            v.push_back(m);
+        }
+        ok = keepFalse(ok, this->db->nextRow());
+    }
+
+    v.shrink_to_fit();
+    return v;
+}
+
+std::vector<Metadata::Song> Database::getSongMetadataForAlbum(AlbumID id) {
+    std::vector<Metadata::Song> v;
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getSongMetadataForAlbum] No open connection");
+        return v;
+    }
+
+    // Create a Metadata::Song for each entry given the album (sorted)
+    // Note that 0's are treated as 9999's so they are at the end (yes this means it won't always be at the end but no album has 9999 discs or 9999 tracks)
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.album_id = ? ORDER BY CASE disc WHEN 0 THEN 9999 ELSE disc END, CASE track WHEN 0 THEN 9999 ELSE track END, title;");
+    ok = keepFalse(ok, this->db->bindInt(0, id));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[getSongMetadataForAlbum] Unable to query for matching songs");
+        return v;
+    }
+    while (ok) {
+        Metadata::Song m;
+        int tmp;
+        ok = this->db->getInt(0, m.ID);
+        ok = keepFalse(ok, this->db->getString(1, m.title));
+        ok = keepFalse(ok, this->db->getString(2, m.artist));
+        ok = keepFalse(ok, this->db->getString(3, m.album));
+        ok = keepFalse(ok, this->db->getInt(4, tmp));
+        m.trackNumber = tmp;
+        ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.discNumber = tmp;
+        ok = keepFalse(ok, this->db->getInt(6, tmp));
+        m.duration = tmp;
+        ok = keepFalse(ok, this->db->getInt(7, tmp));
+        m.plays = tmp;
+        ok = keepFalse(ok, this->db->getBool(8, m.favourite));
+        ok = keepFalse(ok, this->db->getString(9, m.path));
+        ok = keepFalse(ok, this->db->getInt(10, tmp));
         m.modified = tmp;
 
         if (ok) {
@@ -559,7 +772,7 @@ std::vector<Metadata::Song> Database::getSongMetadataForArtist(ArtistID id) {
     }
 
     // Create a Metadata::Song for each entry given the artist
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.artist_id = ?;");
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.artist_id = ?;");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
@@ -574,12 +787,16 @@ std::vector<Metadata::Song> Database::getSongMetadataForArtist(ArtistID id) {
         ok = keepFalse(ok, this->db->getString(2, m.artist));
         ok = keepFalse(ok, this->db->getString(3, m.album));
         ok = keepFalse(ok, this->db->getInt(4, tmp));
-        m.duration = tmp;
+        m.trackNumber = tmp;
         ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.discNumber = tmp;
+        ok = keepFalse(ok, this->db->getInt(6, tmp));
+        m.duration = tmp;
+        ok = keepFalse(ok, this->db->getInt(7, tmp));
         m.plays = tmp;
-        ok = keepFalse(ok, this->db->getBool(6, m.favourite));
-        ok = keepFalse(ok, this->db->getString(7, m.path));
-        ok = keepFalse(ok, this->db->getInt(8, tmp));
+        ok = keepFalse(ok, this->db->getBool(8, m.favourite));
+        ok = keepFalse(ok, this->db->getString(9, m.path));
+        ok = keepFalse(ok, this->db->getInt(10, tmp));
         m.modified = tmp;
 
         if (ok) {
@@ -602,7 +819,7 @@ Metadata::Song Database::getSongMetadataForID(SongID id) {
     }
 
     // Query for song info
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.ID = ?;");
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.ID = ?;");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
@@ -615,13 +832,18 @@ Metadata::Song Database::getSongMetadataForID(SongID id) {
     ok = keepFalse(ok, this->db->getString(2, m.artist));
     ok = keepFalse(ok, this->db->getString(3, m.album));
     ok = keepFalse(ok, this->db->getInt(4, tmp));
-    m.duration = tmp;
+    m.trackNumber = tmp;
     ok = keepFalse(ok, this->db->getInt(5, tmp));
+    m.discNumber = tmp;
+    ok = keepFalse(ok, this->db->getInt(6, tmp));
+    m.duration = tmp;
+    ok = keepFalse(ok, this->db->getInt(7, tmp));
     m.plays = tmp;
-    ok = keepFalse(ok, this->db->getBool(6, m.favourite));
-    ok = keepFalse(ok, this->db->getString(7, m.path));
-    ok = keepFalse(ok, this->db->getInt(8, tmp));
+    ok = keepFalse(ok, this->db->getBool(8, m.favourite));
+    ok = keepFalse(ok, this->db->getString(9, m.path));
+    ok = keepFalse(ok, this->db->getInt(10, tmp));
     m.modified = tmp;
+
     if (!ok) {
         this->setErrorMsg("[getSongInfoForID] An error occurred reading from the query results");
         m.ID = -1;
@@ -920,7 +1142,7 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str) {
     }
 
     // Perform search
-    bool ok = this->db->prepareQuery("SELECT Songs.id, Songs.title, Artists.name, Albums.name, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.title IN (SELECT * FROM FtsSongs WHERE FtsSongs MATCH ?);");
+    bool ok = this->db->prepareQuery("SELECT Songs.id, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.title IN (SELECT * FROM FtsSongs WHERE FtsSongs MATCH ?);");
     ok = keepFalse(ok, this->db->bindString(0, str));
     if (!ok) {
         this->setErrorMsg("[searchSongs] Unable to prepare search query");
@@ -941,12 +1163,16 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str) {
         ok = keepFalse(ok, this->db->getString(2, m.artist));
         ok = keepFalse(ok, this->db->getString(3, m.album));
         ok = keepFalse(ok, this->db->getInt(4, tmp));
-        m.duration = tmp;
+        m.trackNumber = tmp;
         ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.discNumber = tmp;
+        ok = keepFalse(ok, this->db->getInt(6, tmp));
+        m.duration = tmp;
+        ok = keepFalse(ok, this->db->getInt(7, tmp));
         m.plays = tmp;
-        ok = keepFalse(ok, this->db->getBool(6, m.favourite));
-        ok = keepFalse(ok, this->db->getString(7, m.path));
-        ok = keepFalse(ok, this->db->getInt(8, tmp));
+        ok = keepFalse(ok, this->db->getBool(8, m.favourite));
+        ok = keepFalse(ok, this->db->getString(9, m.path));
+        ok = keepFalse(ok, this->db->getInt(10, tmp));
         m.modified = tmp;
 
         if (ok) {
@@ -985,6 +1211,52 @@ std::vector<std::string> Database::getAllSongPaths() {
 
     v.shrink_to_fit();
     return v;
+}
+
+ArtistID Database::getArtistIDForName(const std::string & name) {
+    int aID = -1;
+
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getArtistIDForName] No open connection");
+        return aID;
+    }
+
+    // Get ArtistID first
+    bool ok = this->db->prepareQuery("SELECT id FROM Artists WHERE name = ?;");
+    ok = keepFalse(ok, this->db->bindString(0, name));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[getArtistIDForName] An error occurred querying for info");
+        return aID;
+    }
+    if (!this->db->getInt(0, aID)) {
+        this->setErrorMsg("[getArtistIDForName] An error occurred reading the id");
+    }
+    return aID;
+}
+
+AlbumID Database::getAlbumIDForSong(SongID id) {
+    int aID = -1;
+
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getAlbumIDForSong] No open connection");
+        return aID;
+    }
+
+    // Get AlbumID first
+    bool ok = this->db->prepareQuery("SELECT album_id FROM Songs WHERE id = ?;");
+    ok = keepFalse(ok, this->db->bindInt(0, id));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[getAlbumIDForSong] An error occurred querying for info");
+        return aID;
+    }
+    if (!this->db->getInt(0, aID)) {
+        this->setErrorMsg("[getAlbumIDForSong] An error occurred reading the id");
+    }
+    return aID;
 }
 
 ArtistID Database::getArtistIDForSong(SongID id) {

@@ -47,6 +47,14 @@ class Database {
         void close();
 
         // ===== Album Metadata ===== //
+        // Update an album's metadata (grabs ID from struct)
+        bool updateAlbum(Metadata::Album);
+        // Returns metadata for all stored albums
+        // Empty if no albums or an error occurred
+        std::vector<Metadata::Album> getAllAlbumMetadata();
+        // Return metadata for the given AlbumID
+        // ID will be negative if not found
+        Metadata::Album getAlbumMetadataForID(AlbumID);
         // Return metadata for all albums an artist is a part of
         // Empty if none found or an error occurred
         std::vector<Metadata::Album> getAlbumMetadataForArtist(ArtistID);
@@ -57,6 +65,9 @@ class Database {
         // Returns metadata for all stored artists
         // Empty if no artists or an error occurred
         std::vector<Metadata::Artist> getAllArtistMetadata();
+        // Returns a list of artists for a given AlbumID
+        // Empty if no artists or an error occurred
+        std::vector<Metadata::Artist> getArtistMetadataForAlbum(AlbumID);
         // Return metadata for the given ArtistID
         // ID will be negative if not found
         Metadata::Artist getArtistMetadataForID(ArtistID);
@@ -74,6 +85,9 @@ class Database {
         // Returns metadata for all stored songs
         // Empty if no songs or an error occurred
         std::vector<Metadata::Song> getAllSongMetadata();
+        // Returns an album's songs
+        // Empty if there are none or an error occurred
+        std::vector<Metadata::Song> getSongMetadataForAlbum(AlbumID);
         // Returns an artist's songs
         // Empty if there are none or an error occurred
         std::vector<Metadata::Song> getSongMetadataForArtist(ArtistID);
@@ -96,6 +110,11 @@ class Database {
         // Returns vector of paths for all stored songs
         // Empty if no songs or an error occurred
         std::vector<std::string> getAllSongPaths();
+        // Returns the id of the artist with the given name (-1 if not found)
+        ArtistID getArtistIDForName(const std::string &);
+        // Return the id of a song's album
+        // ID will be negative on an error
+        AlbumID getAlbumIDForSong(SongID);
         // Return the id of a song's artist
         // ID will be negative on an error
         ArtistID getArtistIDForSong(SongID);

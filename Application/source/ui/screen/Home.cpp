@@ -1,13 +1,13 @@
 #include "Application.hpp"
+#include "ui/frame/Album.hpp"
+#include "ui/frame/Albums.hpp"
+#include "ui/frame/AlbumInfo.hpp"
 #include "ui/frame/Artist.hpp"
 #include "ui/frame/Artists.hpp"
 #include "ui/frame/ArtistInfo.hpp"
 #include "ui/frame/Queue.hpp"
 #include "ui/frame/Songs.hpp"
 #include "ui/screen/Home.hpp"
-#include "utils/MP3.hpp"
-
-#include "ui/overlay/FileBrowser.hpp"
 
 namespace Screen {
     Home::Home(Main::Application * a) : Screen() {
@@ -91,13 +91,21 @@ namespace Screen {
                 // this->frame = new Frame::Playlist(this->app, id);
                 break;
 
+            case Frame::Type::PlaylistInfo:
+                // this->frame = new Frame::PlaylistInfo(this->app, id);
+                break;
+
             case Frame::Type::Albums:
-                // this->sideAlbums->setActivated(true);
-                // this->frame = new Frame::Albums(this->app);
+                this->sideAlbums->setActivated(true);
+                this->frame = new Frame::Albums(this->app);
                 break;
 
             case Frame::Type::Album:
-                // this->frame = new Frame::Album(this->app, id);
+                this->frame = new Frame::Album(this->app, id);
+                break;
+
+            case Frame::Type::AlbumInfo:
+                this->frame = new Frame::AlbumInfo(this->app, id);
                 break;
 
             case Frame::Type::Artists:
@@ -116,6 +124,10 @@ namespace Screen {
             case Frame::Type::Songs:
                 this->sideSongs->setActivated(true);
                 this->frame = new Frame::Songs(this->app);
+                break;
+
+            case Frame::Type::SongInfo:
+                // this->frame = new Frame::SongInfo(this->app, id);
                 break;
 
             case Frame::Type::Queue:
@@ -153,10 +165,8 @@ namespace Screen {
             }
 
             // Change album cover
-            std::string path = this->app->database()->getPathForID(id);
-            Metadata::Art art = Utils::MP3::getArtFromID3(path);
-            this->player->setAlbumCover(art.data, art.size);
-            delete[] art.data;
+            Metadata::Album md = this->app->database()->getAlbumMetadataForID(this->app->database()->getAlbumIDForSong(m.ID));
+            this->player->setAlbumCover(new Aether::Image(0, 0, md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath));
         }
 
         // Show/hide dimming element based on current state
@@ -314,7 +324,7 @@ namespace Screen {
         this->sideAlbums->setActiveColour(this->app->theme()->accent());
         this->sideAlbums->setInactiveColour(this->app->theme()->FG());
         this->sideAlbums->setCallback([this](){
-
+            this->changeFrame(Frame::Type::Albums, Frame::Action::Reset);
         });
         this->sideContainer->addElement(this->sideAlbums);
         this->sideSeparator = new Aether::Rectangle(30, this->sideAlbums->y() + 70, 250, 1);
