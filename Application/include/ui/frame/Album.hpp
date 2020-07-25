@@ -14,13 +14,18 @@ namespace Frame {
             CustomOvl::ArtistList * artistsList;
             CustomOvl::ItemMenu * songMenu;
 
-            // Functions to create menus
-            void createAlbumMenu(AlbumID);
-            void createArtistsList(AlbumID);
-            void createSongMenu(SongID);
+            // Cached data
+            Metadata::Album metadata;
+            bool oneArtist;
+            std::vector<Metadata::Song> songs;
 
-            // Helper function to play album
-            void playAlbum(Metadata::Album);
+            // Functions to create menus
+            void createAlbumMenu();
+            void createArtistsList();
+            void createSongMenu(size_t);
+
+            // Helper function to play album from position
+            void playAlbum(size_t);
 
         public:
             // The constructor takes the ID of the artist to show
