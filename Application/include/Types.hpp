@@ -53,6 +53,8 @@ namespace Metadata {
         PlaylistID ID;              // Playlist's unique ID
         std::string name;           // Playlist name
         std::string description;    // Playlist description (optional)
+        std::string imagePath;      // Path to playlist's image (can be blank)
+        unsigned int songCount;     // Number of songs in the playlist
     };
 
     struct Song {
