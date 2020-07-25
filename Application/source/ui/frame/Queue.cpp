@@ -325,7 +325,8 @@ namespace Frame {
         Metadata::Song m = this->app->database()->getSongMetadataForID(id);
         this->menu->setMainText(m.title);
         this->menu->setSubText(m.artist);
-        this->menu->setImage(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
+        Metadata::Album md = this->app->database()->getAlbumMetadataForID(this->app->database()->getAlbumIDForSong(m.ID));
+        this->menu->setImage(new Aether::Image(0, 0, md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath));
 
         // Remove from Queue (if not playing)
         CustomElm::MenuButton * b;

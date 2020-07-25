@@ -19,10 +19,9 @@ namespace CustomElm {
         this->addElement(this->playerBg);
 
         // Album/song playing
-        this->albumCover = nullptr;
-        this->albumCoverDefault = new Aether::Image(10, 600, "romfs:/misc/noalbum.png");
-        this->albumCoverDefault->setWH(110, 110);
-        this->addElement(this->albumCoverDefault);
+        this->albumCover = new Aether::Image(10, 600, "romfs:/misc/noalbum.png");
+        this->albumCover->setWH(110, 110);
+        this->addElement(this->albumCover);
         this->trackName = new Aether::Text(140, 625, "Nothing playing!", 24);
         this->trackName->setScroll(true);
         this->trackName->setScrollSpeed(35);
@@ -112,12 +111,12 @@ namespace CustomElm {
         this->addElement(this->fullscreenC);
     }
 
-    void Player::setAlbumCover(unsigned char * data, size_t size) {
+    void Player::setAlbumCover(Aether::Image * i) {
         this->removeElement(this->albumCover);
-        this->albumCover = nullptr;
-        if (data != nullptr) {
-            this->albumCover = new Aether::Image(this->albumCoverDefault->x(), this->albumCoverDefault->y(), data, size);
-            this->albumCover->setWH(this->albumCoverDefault->w(), this->albumCoverDefault->h());
+        this->albumCover = i;
+        if (i != nullptr) {
+            this->albumCover->setXY(10, 600);
+            this->albumCover->setWH(110, 110);
             this->addElement(this->albumCover);
         }
     }

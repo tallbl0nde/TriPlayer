@@ -273,7 +273,7 @@ namespace Frame {
         // Song metadata
         this->songMenu->setMainText(this->songs[pos].title);
         this->songMenu->setSubText(this->songs[pos].artist);
-        this->songMenu->setImage(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
+        this->songMenu->setImage(new Aether::Image(0, 0, this->metadata.imagePath.empty() ? "romfs:/misc/noalbum.png" : this->metadata.imagePath));
 
         // Play
         CustomElm::MenuButton * b = new CustomElm::MenuButton();

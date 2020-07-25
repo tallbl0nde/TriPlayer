@@ -14,7 +14,6 @@ namespace CustomElm {
 
             // Album art and track metadata
             Aether::Image * albumCover;
-            Aether::Image * albumCoverDefault;
             Aether::Text * trackName;
             Aether::Text * trackArtist;
             Aether::Text * trackArtistDots;
@@ -66,7 +65,7 @@ namespace CustomElm {
             Player();
 
             // Set element values (some will only take effect if not selected)
-            void setAlbumCover(unsigned char *, size_t);
+            void setAlbumCover(Aether::Image *);
             void setTrackName(std::string);
             void setTrackArtist(std::string);
             void setShuffle(bool);

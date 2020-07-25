@@ -165,10 +165,8 @@ namespace Screen {
             }
 
             // Change album cover
-            // std::string path = this->app->database()->getPathForID(id);
-            // Metadata::Art art = Utils::MP3::getArtFromID3(path);
-            // this->player->setAlbumCover(art.data, art.size);
-            // delete[] art.data;
+            Metadata::Album md = this->app->database()->getAlbumMetadataForID(this->app->database()->getAlbumIDForSong(m.ID));
+            this->player->setAlbumCover(new Aether::Image(0, 0, md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath));
         }
 
         // Show/hide dimming element based on current state
