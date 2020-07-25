@@ -1,7 +1,6 @@
 #include "Application.hpp"
 #include "ui/element/ListSong.hpp"
 #include "ui/frame/Songs.hpp"
-#include "utils/MP3.hpp"
 #include "utils/Utils.hpp"
 
 namespace Frame {
@@ -74,18 +73,7 @@ namespace Frame {
         Metadata::Song m = this->app->database()->getSongMetadataForID(id);
         this->menu->setMainText(m.title);
         this->menu->setSubText(m.artist);
-        bool hasArt = false;
-        if (m.path.length() > 0) {
-            Metadata::Art art = Utils::MP3::getArtFromID3(m.path);
-            if (art.data != nullptr) {
-                this->menu->setImage(new Aether::Image(0, 0, art.data, art.size));
-                hasArt = true;
-                delete[] art.data;
-            }
-        }
-        if (!hasArt) {
-            this->menu->setImage(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
-        }
+        this->menu->setImage(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
 
         // Add to Queue
         CustomElm::MenuButton * b = new CustomElm::MenuButton();

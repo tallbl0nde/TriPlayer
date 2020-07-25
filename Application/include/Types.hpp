@@ -40,11 +40,6 @@ namespace Metadata {
         unsigned int songCount;     // Number of songs on album
     };
 
-    struct Art {
-        unsigned char * data;       // Pointer to COPIED data (nullptr if an error occurred)
-        size_t size;                // Size of album art in bytes
-    };
-
     struct Artist {
         ArtistID ID;                // Album's unique ID
         std::string name;           // Album's name

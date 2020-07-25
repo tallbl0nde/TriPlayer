@@ -254,6 +254,44 @@ void Database::close() {
 }
 
 // ===== Album Metadata ===== //
+bool Database::updateAlbum(Metadata::Album m) {
+    // First check we have write permission
+    if (this->db->connectionType() != SQLite::Connection::ReadWrite) {
+        this->setErrorMsg("[updateAlbum] Can't update song as the database is unwritable");
+        return false;
+    }
+
+    // Now update relevant fields
+    bool ok = this->db->prepareQuery("UPDATE Albums SET name = ?, tadb_id = ?, image_path = ? WHERE id = ?;");
+    ok = keepFalse(ok, this->db->bindString(0, m.name));
+    ok = keepFalse(ok, this->db->bindInt(1, m.tadbID));
+    ok = keepFalse(ok, this->db->bindString(2, m.imagePath));
+    ok = keepFalse(ok, this->db->bindInt(3, m.ID));
+    if (!ok) {
+        this->setErrorMsg("[updateAlbum] An error occurred while preparing the statement");
+        return false;
+    }
+
+    // We don't want to ignore constraints for this query
+    this->db->ignoreConstraints(false);
+    ok = this->db->executeQuery();
+    if (!ok) {
+        this->setErrorMsg("[updateAlbum] An error occurred while updating the entry");
+    } else {
+        if (Log::loggingLevel() == Log::Level::Info) {
+            Log::writeInfo("[DB] [updateAlbum] '" + m.name + "' was updated");
+        }
+    }
+    this->db->ignoreConstraints(true);
+
+    // Mark search tables as out of date
+    if (ok) {
+        ok = this->setSearchUpdate(1);
+    }
+
+    return ok;
+}
+
 std::vector<Metadata::Album> Database::getAllAlbumMetadata() {
     std::vector<Metadata::Album> v;
     // Check we can read

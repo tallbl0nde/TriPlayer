@@ -47,6 +47,8 @@ class Database {
         void close();
 
         // ===== Album Metadata ===== //
+        // Update an album's metadata (grabs ID from struct)
+        bool updateAlbum(Metadata::Album);
         // Returns metadata for all stored albums
         // Empty if no albums or an error occurred
         std::vector<Metadata::Album> getAllAlbumMetadata();

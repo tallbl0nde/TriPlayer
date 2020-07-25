@@ -237,10 +237,8 @@ namespace Utils::MP3 {
     }
 
     // Searches and returns an appropriate image
-    Metadata::Art getArtFromID3(std::string path) {
-        Metadata::Art m;
-        m.data = nullptr;
-        m.size = 0;
+    std::vector<unsigned char> getArtFromID3(std::string path) {
+        std::vector<unsigned char> v;
 
         // Use mpg123 to find images
         if (mpg != nullptr) {
@@ -266,18 +264,18 @@ namespace Utils::MP3 {
                                 // Need matching type and mime type
                                 if (pic->type == mpg123_id3_pic_other || pic->type == mpg123_id3_pic_front_cover) {
                                     if (mType == "image/jpg" || mType == "image/jpeg" || mType == "image/png") {
-                                        // Copy image into struct
-                                        m.data = new unsigned char[pic->size];
-                                        std::memcpy(m.data, pic->data, pic->size);
-                                        m.size = pic->size;
+                                        // Copy image into vector
+                                        for (size_t i = 0; i < pic->size; i++) {
+                                            v.push_back(*(pic->data + i));
+                                        }
                                         break;
                                     }
                                 }
                             }
 
                             // Log if none found
-                            if (m.data == nullptr) {
-                                Log::writeWarning("[MP3] No suitable art found in: " + path);
+                            if (v.empty()) {
+                                Log::writeInfo("[MP3] No suitable art found in: " + path);
                             }
 
                         } else {
@@ -299,7 +297,7 @@ namespace Utils::MP3 {
             Log::writeError("[MP3] Unable to open file: " + path);
         }
 
-        return m;
+        return v;
     }
 
     // Checks for tag type and calls appropriate function

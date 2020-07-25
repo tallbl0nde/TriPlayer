@@ -2,7 +2,6 @@
 #include "Application.hpp"
 #include "dtl.hpp"
 #include "ui/frame/Queue.hpp"
-#include "utils/MP3.hpp"
 #include "utils/Utils.hpp"
 
 // Helper function returning length of songs in queue in seconds
@@ -326,18 +325,7 @@ namespace Frame {
         Metadata::Song m = this->app->database()->getSongMetadataForID(id);
         this->menu->setMainText(m.title);
         this->menu->setSubText(m.artist);
-        bool hasArt = false;
-        if (m.path.length() > 0) {
-            Metadata::Art art = Utils::MP3::getArtFromID3(m.path);
-            if (art.data != nullptr) {
-                this->menu->setImage(new Aether::Image(0, 0, art.data, art.size));
-                hasArt = true;
-                delete[] art.data;
-            }
-        }
-        if (!hasArt) {
-            this->menu->setImage(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
-        }
+        this->menu->setImage(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
 
         // Remove from Queue (if not playing)
         CustomElm::MenuButton * b;

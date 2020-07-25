@@ -1,7 +1,6 @@
 #include "Application.hpp"
 #include "ui/element/ListAlbumSong.hpp"
 #include "ui/frame/Album.hpp"
-#include "utils/MP3.hpp"
 #include "utils/Utils.hpp"
 
 // Play button dimensions
@@ -249,7 +248,8 @@ namespace Frame {
             b->setText("View Information");
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this]() {
-                // this->changeFrame(Type::AlbumInfo, Action::Push, id);
+                this->changeFrame(Type::AlbumInfo, Action::Push, this->metadata.ID);
+                this->albumMenu->close();
             });
             this->albumMenu->addButton(b);
 
@@ -273,18 +273,7 @@ namespace Frame {
         // Song metadata
         this->songMenu->setMainText(this->songs[pos].title);
         this->songMenu->setSubText(this->songs[pos].artist);
-        bool hasArt = false;
-        if (this->songs[pos].path.length() > 0) {
-            Metadata::Art art = Utils::MP3::getArtFromID3(this->songs[pos].path);
-            if (art.data != nullptr) {
-                this->songMenu->setImage(new Aether::Image(0, 0, art.data, art.size));
-                hasArt = true;
-                delete[] art.data;
-            }
-        }
-        if (!hasArt) {
-            this->songMenu->setImage(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
-        }
+        this->songMenu->setImage(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
 
         // Play
         CustomElm::MenuButton * b = new CustomElm::MenuButton();

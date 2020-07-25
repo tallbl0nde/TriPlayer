@@ -269,7 +269,8 @@ namespace Frame {
         b->setText("View Information");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
-            // this->changeFrame(Type::SongInfo, Action::Push, id);
+            this->changeFrame(Type::AlbumInfo, Action::Push, id);
+            this->albumMenu->close();
         });
         this->albumMenu->addButton(b);
 
