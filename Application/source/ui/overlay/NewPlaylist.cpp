@@ -16,20 +16,12 @@
 #define SUBHEADING_SIZE 28
 
 namespace CustomOvl {
-    NewPlaylist::NewPlaylist() : Aether::Overlay() {
-        // Close if B pressed
-        this->onButtonPress(Aether::Button::B, [this]() {
-            this->close();
-        });
-
-        // Add a second transparent layer cause we like it dark
-        Aether::Rectangle * r = new Aether::Rectangle(this->x(), this->y(), this->w(), this->h());
-        r->setColour(Aether::Colour{0, 0, 0, 120});
-        this->addElement(r);
-
+    NewPlaylist::NewPlaylist() : Overlay() {
         // Background rectangle
         this->bg = new Aether::Rectangle((this->w() - WIDTH)/2, (this->h() - HEIGHT)/2, WIDTH, HEIGHT, 25);
         this->addElement(this->bg);
+        this->setTopLeft(this->bg->x(), this->bg->y());
+        this->setBottomRight(this->bg->x() + this->bg->w(), this->bg->y() + this->bg->h());
 
         // Heading
         this->heading = new Aether::Text(this->bg->x() + PADDING, this->bg->y() + PADDING, "|", HEADING_SIZE);

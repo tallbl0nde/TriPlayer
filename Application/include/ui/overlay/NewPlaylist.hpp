@@ -2,10 +2,11 @@
 #define OVERLAY_NEWPLAYLIST_HPP
 
 #include "ui/element/TextBox.hpp"
+#include "ui/overlay/Overlay.hpp"
 
 namespace CustomOvl {
     // Overlay shown when creating a new playlist
-    class NewPlaylist : public Aether::Overlay {
+    class NewPlaylist : public Overlay {
         private:
             // Elements
             Aether::Rectangle * bg;

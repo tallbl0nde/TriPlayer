@@ -2,18 +2,17 @@
 #define OVERLAY_MENU_HPP
 
 #include "ui/element/MenuButton.hpp"
+#include "ui/overlay/Overlay.hpp"
 
 namespace CustomOvl {
     // A menu is the overlay that appears when 'more' is pressed on an element.
     // This is the base class which doesn't have the image section, only buttons
-    class Menu : public Aether::Overlay {
+    class Menu : public Overlay {
         private:
             // Container storing buttons for easy alignment
             Aether::Container * btns;
             // Top element (used to refocus)
             CustomElm::MenuButton * topBtn;
-            // Was touch pressed outside of rectangle?
-            bool touchOutside;
 
         protected:
             // Rectangle 'background'
@@ -33,9 +32,6 @@ namespace CustomOvl {
 
             // Set colours
             void setBackgroundColour(Aether::Colour);
-
-            // Close menu if tapped outside of rectangle
-            bool handleEvent(Aether::InputEvent *);
 
             // Move the highlight back to the top element
             void resetHighlight();

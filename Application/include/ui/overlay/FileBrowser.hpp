@@ -1,13 +1,13 @@
 #ifndef OVERLAY_FILEBROWSER_HPP
 #define OVERLAY_FILEBROWSER_HPP
 
-#include "Aether/Aether.hpp"
 #include "ui/element/ListFile.hpp"
+#include "ui/overlay/Overlay.hpp"
 
 namespace CustomOvl {
     // The FileBrowser overlay presents a basic file explorer which is
     // used to select a file on the filesystem (who woulda guessed?)
-    class FileBrowser : public Aether::Overlay {
+    class FileBrowser : public Overlay {
         private:
             // Elements
             Aether::Rectangle * topR;

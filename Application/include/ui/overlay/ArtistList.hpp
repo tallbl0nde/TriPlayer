@@ -2,22 +2,19 @@
 #define OVERLAY_ARTISTLIST_HPP
 
 #include "ui/element/ListArtist.hpp"
+#include "ui/overlay/Overlay.hpp"
 
 namespace CustomOvl {
     // Overlay shown when 'View Artists' is selected
-    class ArtistList : public Aether::Overlay {
+    class ArtistList : public Overlay {
         private:
             // Elements
             Aether::Rectangle * bg;
             Aether::List * list;
-            bool touchOutside;
 
         public:
             // Renders + positions elements
             ArtistList();
-
-            // Close if tapped outside
-            bool handleEvent(Aether::InputEvent *);
 
             // Set rectangle colour
             void setBackgroundColour(Aether::Colour);
