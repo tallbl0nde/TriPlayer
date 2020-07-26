@@ -35,7 +35,7 @@ namespace Screen {
             Aether::Rectangle * settingsBg;
             Aether::Image * settingsIcon;
             CustomElm::SearchBox * search;
-            CustomElm::SideButton * sideRP;
+            CustomElm::SideButton * sidePlaylists;
             CustomElm::SideButton * sideSongs;
             CustomElm::SideButton * sideArtists;
             CustomElm::SideButton * sideAlbums;

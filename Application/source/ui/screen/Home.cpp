@@ -5,6 +5,7 @@
 #include "ui/frame/Artist.hpp"
 #include "ui/frame/Artists.hpp"
 #include "ui/frame/ArtistInfo.hpp"
+#include "ui/frame/Playlists.hpp"
 #include "ui/frame/Queue.hpp"
 #include "ui/frame/Songs.hpp"
 #include "ui/screen/Home.hpp"
@@ -83,8 +84,8 @@ namespace Screen {
 
         switch (t) {
             case Frame::Type::Playlists:
-                // this->sidePlaylists->setActivated(true);
-                // this->frame = new Frame::Playlists(this->app);
+                this->sidePlaylists->setActivated(true);
+                this->frame = new Frame::Playlists(this->app);
                 break;
 
             case Frame::Type::Playlist:
@@ -199,7 +200,7 @@ namespace Screen {
 
     void Home::resetState() {
         // Deselect all side buttons
-        this->sideRP->setActivated(false);
+        this->sidePlaylists->setActivated(false);
         this->sideSongs->setActivated(false);
         this->sideArtists->setActivated(false);
         this->sideAlbums->setActivated(false);
@@ -291,16 +292,16 @@ namespace Screen {
         this->sideContainer->addElement(this->search);
 
         // Navigation list
-        this->sideRP = new CustomElm::SideButton(10, 230, 290);
-        this->sideRP->setIcon(new Aether::Image(0, 0, "romfs:/icons/clock.png"));
-        this->sideRP->setText("Recently Played");
-        this->sideRP->setActiveColour(this->app->theme()->accent());
-        this->sideRP->setInactiveColour(this->app->theme()->FG());
-        this->sideRP->setCallback([this](){
-
+        this->sidePlaylists = new CustomElm::SideButton(10, 230, 290);
+        this->sidePlaylists->setIcon(new Aether::Image(0, 0, "romfs:/icons/playlist.png"));
+        this->sidePlaylists->setText("Playlists");
+        this->sidePlaylists->setActiveColour(this->app->theme()->accent());
+        this->sidePlaylists->setInactiveColour(this->app->theme()->FG());
+        this->sidePlaylists->setCallback([this](){
+            this->changeFrame(Frame::Type::Playlists, Frame::Action::Reset);
         });
-        this->sideContainer->addElement(this->sideRP);
-        this->sideSongs = new CustomElm::SideButton(10, this->sideRP->y() + 60, 290);
+        this->sideContainer->addElement(this->sidePlaylists);
+        this->sideSongs = new CustomElm::SideButton(10, this->sidePlaylists->y() + 60, 290);
         this->sideSongs->setIcon(new Aether::Image(0, 0, "romfs:/icons/musicnote.png"));
         this->sideSongs->setText("Songs");
         this->sideSongs->setActiveColour(this->app->theme()->accent());
