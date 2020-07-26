@@ -1,4 +1,5 @@
 #include <algorithm>
+#include "ui/element/listitem/File.hpp"
 #include "ui/overlay/FileBrowser.hpp"
 #include "utils/FS.hpp"
 
@@ -87,13 +88,13 @@ namespace CustomOvl {
             } else {
                 path = this->path->string() + (this->path->string() == "/" ? "" : "/") + contents[i].first;
             }
-            CustomElm::ListFile * l;
+            CustomElm::ListItem::File * l;
             if (contents[i].second) {
-                l = new CustomElm::ListFile(contents[i].first, true, [this, path]() {
+                l = new CustomElm::ListItem::File(contents[i].first, true, [this, path]() {
                     this->setPath(path);
                 });
             } else {
-                l = new CustomElm::ListFile(contents[i].first, false, [this, path]() {
+                l = new CustomElm::ListItem::File(contents[i].first, false, [this, path]() {
                     this->setFile(path);
                 });
             }

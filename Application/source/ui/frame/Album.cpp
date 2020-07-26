@@ -1,6 +1,8 @@
 #include "Application.hpp"
-#include "ui/element/ListAlbumSong.hpp"
+#include "ui/element/listitem/AlbumSong.hpp"
 #include "ui/frame/Album.hpp"
+#include "ui/overlay/ArtistList.hpp"
+#include "ui/overlay/ItemMenu.hpp"
 #include "utils/Utils.hpp"
 
 // Play button dimensions
@@ -106,7 +108,7 @@ namespace Frame {
                     lastDisc = this->songs[i].discNumber;
                 }
 
-                CustomElm::ListAlbumSong * l = new CustomElm::ListAlbumSong();
+                CustomElm::ListItem::AlbumSong * l = new CustomElm::ListItem::AlbumSong();
                 if (this->songs[i].trackNumber > 0) {
                     l->setTrackString(std::to_string(this->songs[i].trackNumber));
                 }
@@ -115,8 +117,8 @@ namespace Frame {
                     l->setArtistString(this->songs[i].artist);
                 }
                 l->setLengthString(Utils::secondsToHMS(this->songs[i].duration));
-                l->setDotsColour(this->app->theme()->muted());
                 l->setLineColour(this->app->theme()->muted2());
+                l->setMoreColour(this->app->theme()->muted());
                 l->setTextColour(this->app->theme()->FG());
                 l->setCallback([this, i]() {
                     this->playAlbum(i);
@@ -158,8 +160,9 @@ namespace Frame {
 
         // Populate with artists
         for (size_t i = 0; i < m.size(); i++) {
-            CustomElm::ListArtist * l = new CustomElm::ListArtist(m[i].imagePath.empty() ? "romfs:/misc/noartist.png" : m[i].imagePath);
+            CustomElm::ListItem::Artist * l = new CustomElm::ListItem::Artist(m[i].imagePath.empty() ? "romfs:/misc/noartist.png" : m[i].imagePath);
             l->setName(m[i].name);
+            l->setLineColour(this->app->theme()->muted2());
             l->setTextColour(this->app->theme()->FG());
             ArtistID aID = m[i].ID;
             l->setCallback([this, aID]() {

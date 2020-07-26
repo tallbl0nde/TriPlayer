@@ -3,8 +3,13 @@
 
 #include "Types.hpp"
 #include "ui/frame/Frame.hpp"
-#include "ui/overlay/ArtistList.hpp"
-#include "ui/overlay/ItemMenu.hpp"
+
+// Forward declarations cause only pointers are needed here
+namespace CustomOvl {
+    class ArtistList;
+    class ItemMenu;
+    class Menu;
+};
 
 namespace Frame {
     class Album : public Frame {

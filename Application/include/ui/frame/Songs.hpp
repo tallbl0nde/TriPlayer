@@ -2,7 +2,11 @@
 #define FRAME_SONGS_HPP
 
 #include "ui/frame/Frame.hpp"
-#include "ui/overlay/ItemMenu.hpp"
+
+// Forward declaration as the class is used within the frame
+namespace CustomOvl {
+    class ItemMenu;
+}
 
 namespace Frame {
     class Songs : public Frame {

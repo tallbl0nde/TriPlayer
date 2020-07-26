@@ -2,9 +2,13 @@
 #define FRAME_PLAYLISTS_HPP
 
 #include "ui/frame/Frame.hpp"
-#include "ui/overlay/FileBrowser.hpp"
-#include "ui/overlay/ItemMenu.hpp"
-#include "ui/overlay/NewPlaylist.hpp"
+
+// Forward declarations as only pointers are used in this header
+namespace CustomOvl {
+    class FileBrowser;
+    class ItemMenu;
+    class NewPlaylist;
+};
 
 namespace Frame {
     class Playlists : public Frame {

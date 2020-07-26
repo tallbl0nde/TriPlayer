@@ -1,6 +1,6 @@
 #include "Application.hpp"
 #include "ui/element/GridItem.hpp"
-#include "ui/element/ListArtist.hpp"
+#include "ui/element/listitem/Artist.hpp"
 #include "ui/element/ScrollableGrid.hpp"
 #include "ui/frame/Albums.hpp"
 
@@ -76,8 +76,9 @@ namespace Frame {
 
         // Populate with artists
         for (size_t i = 0; i < m.size(); i++) {
-            CustomElm::ListArtist * l = new CustomElm::ListArtist(m[i].imagePath.empty() ? "romfs:/misc/noartist.png" : m[i].imagePath);
+            CustomElm::ListItem::Artist * l = new CustomElm::ListItem::Artist(m[i].imagePath.empty() ? "romfs:/misc/noartist.png" : m[i].imagePath);
             l->setName(m[i].name);
+            l->setLineColour(this->app->theme()->muted2());
             l->setTextColour(this->app->theme()->FG());
             ArtistID aID = m[i].ID;
             l->setCallback([this, aID]() {

@@ -1,6 +1,9 @@
 #include "Application.hpp"
-#include "ui/element/ListPlaylist.hpp"
+#include "ui/element/listitem/Playlist.hpp"
 #include "ui/frame/Playlists.hpp"
+#include "ui/overlay/FileBrowser.hpp"
+#include "ui/overlay/ItemMenu.hpp"
+#include "ui/overlay/NewPlaylist.hpp"
 #include "utils/FS.hpp"
 #include "utils/Utils.hpp"
 
@@ -25,6 +28,10 @@ namespace Frame {
         this->removeElement(this->artistH);
         this->removeElement(this->albumH);
         this->removeElement(this->lengthH);
+
+        // Make the list larger as there's no heading
+        this->list->setY(this->list->y() - 20);
+        this->list->setH(this->list->h() + 20);
 
         // Now prepare this frame
         this->heading->setString("Playlists");
@@ -64,12 +71,12 @@ namespace Frame {
         this->list->removeAllElements();
         for (size_t i = 0; i < this->metadata.size(); i++) {
             std::string img = (this->metadata[i].imagePath.empty() ? DEFAULT_IMAGE : this->metadata[i].imagePath);
-            CustomElm::ListPlaylist * l = new CustomElm::ListPlaylist(img);
+            CustomElm::ListItem::Playlist * l = new CustomElm::ListItem::Playlist(img);
             l->setNameString(this->metadata[i].name);
             std::string str = std::to_string(this->metadata[i].songCount) + (this->metadata[i].songCount == 1 ? " song" : " songs");
             l->setSongsString(str);
-            l->setDotsColour(this->app->theme()->muted());
             l->setLineColour(this->app->theme()->muted2());
+            l->setMoreColour(this->app->theme()->muted());
             l->setTextColour(this->app->theme()->FG());
             l->setMutedTextColour(this->app->theme()->muted());
             l->setCallback([this, i](){

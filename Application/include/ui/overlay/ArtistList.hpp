@@ -1,7 +1,7 @@
 #ifndef OVERLAY_ARTISTLIST_HPP
 #define OVERLAY_ARTISTLIST_HPP
 
-#include "ui/element/ListArtist.hpp"
+#include "ui/element/listitem/Artist.hpp"
 #include "ui/overlay/Overlay.hpp"
 
 namespace CustomOvl {
@@ -20,7 +20,7 @@ namespace CustomOvl {
             void setBackgroundColour(Aether::Colour);
 
             // Add an entry to the list
-            void addArtist(CustomElm::ListArtist *);
+            void addArtist(CustomElm::ListItem::Artist *);
     };
 };
 

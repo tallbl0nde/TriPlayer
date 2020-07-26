@@ -1,4 +1,3 @@
-#include "ui/element/ListArtist.hpp"
 #include "ui/overlay/ArtistList.hpp"
 
 // Fixed dimensions
@@ -24,7 +23,7 @@ namespace CustomOvl {
         this->bg->setColour(c);
     }
 
-    void ArtistList::addArtist(CustomElm::ListArtist * l) {
+    void ArtistList::addArtist(CustomElm::ListItem::Artist * l) {
         this->list->addElement(l);
     }
 };
