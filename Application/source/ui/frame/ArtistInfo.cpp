@@ -233,6 +233,7 @@ namespace Frame {
 
         // Set path and show
         this->checkFB = true;
+        this->browser->resetFile();
         this->browser->setPath(FILE_BROWSER_ROOT);
         this->app->addOverlay(this->browser);
     }
