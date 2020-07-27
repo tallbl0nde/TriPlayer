@@ -46,6 +46,9 @@ namespace Frame {
             // Constructor sets strings and forms list using database
             Playlists(Main::Application *);
 
+            // Override to update list whenever set active (not ideal but it works)
+            void setActive();
+
             // Handles checking for file browser things
             void update(uint32_t);
 

@@ -85,6 +85,8 @@ class Database {
         // Returns metadata for all stored playlists
         // Empty if no playlists or an error occurred
         std::vector<Metadata::Playlist> getAllPlaylistMetadata();
+        // Returns metadata for given ID (id will be -1 if not found!)
+        Metadata::Playlist getPlaylistMetadataForID(PlaylistID);
         // Add a song to a playlist
         // Return true if successful, false otherwise
         bool addSongToPlaylist(PlaylistID, SongID);

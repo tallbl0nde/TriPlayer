@@ -5,6 +5,7 @@
 #include "ui/frame/Artist.hpp"
 #include "ui/frame/Artists.hpp"
 #include "ui/frame/ArtistInfo.hpp"
+#include "ui/frame/Playlist.hpp"
 #include "ui/frame/Playlists.hpp"
 #include "ui/frame/Queue.hpp"
 #include "ui/frame/Songs.hpp"
@@ -13,6 +14,7 @@
 namespace Screen {
     Home::Home(Main::Application * a) : Screen() {
         this->app = a;
+        this->backOneFrame = 0;
         this->playingID = -1;
 
         // Attempt the following in order when B is pressed:
@@ -62,6 +64,12 @@ namespace Screen {
 
     void Home::changeFrame(Frame::Type t, Frame::Action a, int id) {
         switch (a) {
+            // Mark that we should move back a frame
+            case Frame::Action::Back:
+                this->backOneFrame++;
+                return;
+                break;
+
             // Push the current frame on the stack
             case Frame::Action::Push:
                 // Maybe show an error if too deep?
@@ -89,7 +97,7 @@ namespace Screen {
                 break;
 
             case Frame::Type::Playlist:
-                // this->frame = new Frame::Playlist(this->app, id);
+                this->frame = new Frame::Playlist(this->app, id);
                 break;
 
             case Frame::Type::PlaylistInfo:
@@ -172,6 +180,12 @@ namespace Screen {
 
         // Show/hide dimming element based on current state
         this->playerDim->setHidden(!(this->focussed() == this->player && !this->isTouch));
+
+        // Change frame if needed
+        while (this->backOneFrame > 0) {
+            this->backCallback();
+            this->backOneFrame--;
+        }
 
         // Set back button colour and behaviour based on the stack
         if (this->frameStack.empty()) {

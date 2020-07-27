@@ -45,6 +45,8 @@ namespace Screen {
             // Player
             CustomElm::Player * player;
 
+            // Whether to jump back some frames
+            size_t backOneFrame;
             // Right-hand side 'frame'
             Frame::Frame * frame;
             // Stack of frames

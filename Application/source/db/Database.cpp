@@ -314,7 +314,7 @@ std::vector<Metadata::Album> Database::getAllAlbumMetadata() {
         this->setErrorMsg("[getAllAlbumMetadata] Unable to query for all albums");
         return v;
     }
-    while (ok) {
+    while (ok  && this->db->hasRow()) {
         Metadata::Album m;
         ok = this->db->getInt(0, m.ID);
         ok = keepFalse(ok, this->db->getString(1, m.name));
@@ -386,7 +386,7 @@ std::vector<Metadata::Album> Database::getAlbumMetadataForArtist(ArtistID id) {
         this->setErrorMsg("[getAlbumMetadataForArtist] Unable to query for artist's albums");
         return v;
     }
-    while (ok) {
+    while (ok && this->db->hasRow()) {
         Metadata::Album m;
         int tmp;
         ok = this->db->getInt(0, m.ID);
@@ -459,7 +459,7 @@ std::vector<Metadata::Artist> Database::getAllArtistMetadata() {
         this->setErrorMsg("[getAllArtists] Unable to query for all artists");
         return v;
     }
-    while (ok) {
+    while (ok && this->db->hasRow()) {
         Metadata::Artist m;
         ok = this->db->getInt(0, m.ID);
         ok = keepFalse(ok, this->db->getString(1, m.name));
@@ -496,7 +496,7 @@ std::vector<Metadata::Artist> Database::getArtistMetadataForAlbum(AlbumID id) {
         this->setErrorMsg("[getArtistMetadataForAlbum] Unable to query for an album's artists");
         return v;
     }
-    while (ok) {
+    while (ok && this->db->hasRow()) {
         Metadata::Artist m;
         ok = this->db->getInt(0, m.ID);
         ok = keepFalse(ok, this->db->getString(1, m.name));
@@ -664,7 +664,7 @@ std::vector<Metadata::Playlist> Database::getAllPlaylistMetadata() {
         this->setErrorMsg("[getAllPlaylistMetadata] Unable to query for all playlists");
         return v;
     }
-    while (ok) {
+    while (ok && this->db->hasRow()) {
         Metadata::Playlist m;
         int tmp;
         ok = this->db->getInt(0, m.ID);
@@ -682,6 +682,39 @@ std::vector<Metadata::Playlist> Database::getAllPlaylistMetadata() {
 
     v.shrink_to_fit();
     return v;
+}
+
+Metadata::Playlist Database::getPlaylistMetadataForID(PlaylistID id) {
+    Metadata::Playlist m;
+    m.ID = -1;
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getPlaylistMetadataForID] No open connection");
+        return m;
+    }
+
+    // Query for playlist info
+    bool ok = this->db->prepareQuery("SELECT id, name, description, image_path, COUNT(PlaylistSongs.song_id) FROM Playlists LEFT JOIN PlaylistSongs ON playlist_id = Playlists.id WHERE id = ?;");
+    ok = keepFalse(ok, this->db->bindInt(0, id));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[getPlaylistMetadataForID] An error occurred querying for info");
+        return m;
+    }
+    int tmp;
+    ok = this->db->getInt(0, m.ID);
+    ok = keepFalse(ok, this->db->getString(1, m.name));
+    ok = keepFalse(ok, this->db->getString(2, m.description));
+    ok = keepFalse(ok, this->db->getString(3, m.imagePath));
+    ok = keepFalse(ok, this->db->getInt(4, tmp));
+    m.songCount = tmp;
+
+    if (!ok) {
+        this->setErrorMsg("[getPlaylistMetadataForID] An error occurred reading from the query results");
+        m.ID = -1;
+    }
+
+    return m;
 }
 
 bool Database::addSongToPlaylist(PlaylistID pl, SongID s) {
@@ -876,7 +909,7 @@ std::vector<Metadata::Song> Database::getAllSongMetadata() {
         this->setErrorMsg("[getAllSongInfo] Unable to query for all songs");
         return v;
     }
-    while (ok) {
+    while (ok && this->db->hasRow()) {
         Metadata::Song m;
         int tmp;
         ok = this->db->getInt(0, m.ID);
@@ -923,7 +956,7 @@ std::vector<Metadata::Song> Database::getSongMetadataForAlbum(AlbumID id) {
         this->setErrorMsg("[getSongMetadataForAlbum] Unable to query for matching songs");
         return v;
     }
-    while (ok) {
+    while (ok && this->db->hasRow()) {
         Metadata::Song m;
         int tmp;
         ok = this->db->getInt(0, m.ID);
@@ -969,7 +1002,7 @@ std::vector<Metadata::Song> Database::getSongMetadataForArtist(ArtistID id) {
         this->setErrorMsg("[getSongMetadataForArtist] Unable to query for matching songs");
         return v;
     }
-    while (ok) {
+    while (ok && this->db->hasRow()) {
         Metadata::Song m;
         int tmp;
         ok = this->db->getInt(0, m.ID);
@@ -1015,7 +1048,7 @@ std::vector<Metadata::Song> Database::getSongMetadataForPlaylist(PlaylistID id) 
         this->setErrorMsg("[getSongMetadataForPlaylist] Unable to query for matching songs");
         return v;
     }
-    while (ok) {
+    while (ok && this->db->hasRow()) {
         Metadata::Song m;
         int tmp;
         ok = this->db->getInt(0, m.ID);
@@ -1260,7 +1293,7 @@ std::vector<Metadata::Album> Database::searchAlbums(std::string str) {
     }
 
     // Collate results
-    while (ok) {
+    while (ok && this->db->hasRow()) {
         Metadata::Album m;
         ok = this->db->getInt(0, m.ID);
         ok = keepFalse(ok, this->db->getString(1, m.name));
@@ -1302,7 +1335,7 @@ std::vector<Metadata::Artist> Database::searchArtists(std::string str) {
     }
 
     // Collate results
-    while (ok) {
+    while (ok && this->db->hasRow()) {
         Metadata::Artist m;
         ok = this->db->getInt(0, m.ID);
         ok = keepFalse(ok, this->db->getString(1, m.name));
@@ -1348,7 +1381,7 @@ std::vector<Metadata::Playlist> Database::searchPlaylists(std::string str) {
     }
 
     // Collate results
-    while (ok) {
+    while (ok && this->db->hasRow()) {
         Metadata::Playlist m;
         ok = this->db->getInt(0, m.ID);
         ok = keepFalse(ok, this->db->getString(1, m.name));
@@ -1391,7 +1424,7 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str) {
     }
 
     // Collate results
-    while (ok) {
+    while (ok && this->db->hasRow()) {
         Metadata::Song m;
         int tmp;
         ok = this->db->getInt(0, m.ID);
@@ -1436,7 +1469,7 @@ std::vector<std::string> Database::getAllSongPaths() {
         this->setErrorMsg("[getAllSongPaths] Unable to query for all songs");
         return v;
     }
-    while (ok) {
+    while (ok && this->db->hasRow()) {
         std::string path;
         ok = this->db->getString(0, path);
         if (ok) {

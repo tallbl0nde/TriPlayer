@@ -53,15 +53,27 @@ namespace Frame {
         this->newMenu = nullptr;
     }
 
+    void Playlists::setActive() {
+        // This isn't ideal but it gets the job done... for now
+        Frame::setActive();
+        this->refreshList();
+    }
+
     void Playlists::refreshList() {
-        this->list->removeAllElements();
+        size_t oldCount = this->metadata.size();
         this->metadata = this->app->database()->getAllPlaylistMetadata();
 
+        // Do nothing if count didn't change
+        if (oldCount != 0 && this->metadata.size() == oldCount) {
+            return;
+        }
+
         // Show list if there are playlists
+        this->removeElement(this->emptyMsg);
+        this->emptyMsg = nullptr;
+        this->list->removeAllElements();
         if (this->metadata.size() > 0) {
             this->list->setHidden(false);
-            this->removeElement(this->emptyMsg);
-            this->emptyMsg = nullptr;
 
             // Create list items for each playlist
             for (size_t i = 0; i < this->metadata.size(); i++) {
@@ -75,7 +87,8 @@ namespace Frame {
                 l->setTextColour(this->app->theme()->FG());
                 l->setMutedTextColour(this->app->theme()->muted());
                 l->setCallback([this, i](){
-                    // this->changeFrame(Type::Playlist, Action::Push, this->metadata[i].ID);
+                    this->changeFrame(Type::Playlist, Action::Push, this->metadata[i].ID);
+                    this->refreshList();
                 });
                 l->setMoreCallback([this, i]() {
                     this->createMenu(i);

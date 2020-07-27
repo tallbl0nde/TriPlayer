@@ -10,6 +10,7 @@ namespace Main {
 namespace Frame {
     // Action to take on setting frame
     enum class Action {
+        Back,       // Pop and delete the current frame and go back to the previous one
         Push,       // Push the current frame onto the stack
         Reset       // Empty the stack (deleting any frames on the stack)
     };
