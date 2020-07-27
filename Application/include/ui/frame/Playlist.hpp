@@ -20,6 +20,7 @@ namespace Frame {
 
             // Indicates frame should delete itself
             bool goBack;
+            Aether::Text * emptyMsg;
 
             // Cached data
             Metadata::Playlist metadata;
@@ -32,6 +33,9 @@ namespace Frame {
 
             // Helper function to play playlist from position
             void playPlaylist(size_t);
+
+            // Repopulates list
+            void refreshList();
 
         public:
             // The constructor takes the ID of the playlist to show

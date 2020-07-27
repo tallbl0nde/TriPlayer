@@ -44,4 +44,8 @@ namespace Frame {
     void Frame::setChangeFrameFunc(std::function<void(Type, Action, int)> f) {
         this->changeFrame = f;
     }
+
+    void Frame::setShowAddToPlaylistFunc(std::function<void(std::function<void(PlaylistID)>)> f) {
+        this->showAddToPlaylist = f;
+    }
 };

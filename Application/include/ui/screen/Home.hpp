@@ -4,6 +4,7 @@
 #include "ui/element/Player.hpp"
 #include "ui/element/SearchBox.hpp"
 #include "ui/element/SideButton.hpp"
+#include "ui/overlay/AddToPlaylist.hpp"
 #include "ui/frame/Frame.hpp"
 #include <stack>
 
@@ -16,6 +17,9 @@ namespace Screen {
     class Home : public Aether::Screen {
         private:
             Main::Application * app;
+
+            // The screen handles the Add to Playlist menu as it's seen on all frames
+            CustomOvl::AddToPlaylist * addToPlMenu;
 
             // Misc
             Aether::Container * container;
@@ -65,6 +69,9 @@ namespace Screen {
 
         public:
             Home(Main::Application *);
+
+            // Shows 'Add to Playlist' menu and assigns given callback
+            void showAddToPlaylist(std::function<void(PlaylistID)>);
 
             // Changes to the type of frame provided
             // Pass type, action to take and ID to pass to frame (not always used)

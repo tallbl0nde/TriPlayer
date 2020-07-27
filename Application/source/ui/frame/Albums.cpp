@@ -154,7 +154,15 @@ namespace Frame {
         b->setText("Add to Playlist");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
-            // Do something
+            this->showAddToPlaylist([this, id](PlaylistID i) {
+                if (i >= 0) {
+                    std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForAlbum(id);
+                    for (size_t j = 0; j < v.size(); j++) {
+                        this->app->database()->addSongToPlaylist(i, v[j].ID);
+                    }
+                    this->albumMenu->close();
+                }
+            });
         });
         this->albumMenu->addButton(b);
         this->albumMenu->addSeparator(this->app->theme()->muted2());

@@ -256,13 +256,9 @@ namespace Frame {
         }
 
         // Commit changes to db (acquires lock and then writes)
-        this->app->database()->close();
-        this->app->sysmodule()->waitRequestDBLock();
-        this->app->database()->openReadWrite();
+        this->app->lockDatabase();
         bool ok = this->app->database()->updateArtist(this->metadata);
-        this->app->database()->close();
-        this->app->sysmodule()->sendReleaseDBLock();
-        this->app->database()->openReadOnly();
+        this->app->unlockDatabase();
 
         // If updated ok actually manipulate image file(s)
         if (ok && this->updateImage) {

@@ -47,8 +47,9 @@ namespace Frame {
 
             // Pointer to app to access shared objects
             Main::Application * app;
-            // Pointer to function set below
+            // Pointers to callbacks set below
             std::function<void(Type, Action, int)> changeFrame;
+            std::function<void(std::function<void(PlaylistID)>)> showAddToPlaylist;
 
         public:
             // Passed app pointer for sysmodule + theme
@@ -56,6 +57,8 @@ namespace Frame {
 
             // Passed a function to call when wanting to add a frame
             void setChangeFrameFunc(std::function<void(Type, Action, int)>);
+            // Passed a function to call when wanting to add to playlist
+            void setShowAddToPlaylistFunc(std::function<void(std::function<void(PlaylistID)>)>);
     };
 };
 

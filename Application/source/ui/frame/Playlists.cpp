@@ -147,13 +147,9 @@ namespace Frame {
         });
         this->msgbox->addRightButton("Delete", [this, pos]() {
             // Delete and update list
-            this->app->database()->close();
-            this->app->sysmodule()->waitRequestDBLock();
-            this->app->database()->openReadWrite();
+            this->app->lockDatabase();
             this->app->database()->removePlaylist(this->metadata[pos].ID);
-            this->app->database()->close();
-            this->app->sysmodule()->sendReleaseDBLock();
-            this->app->database()->openReadOnly();
+            this->app->unlockDatabase();
             this->refreshList();
 
             // Close both overlays
@@ -254,7 +250,16 @@ namespace Frame {
         b->setText("Add to other Playlist");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
-            // Do something
+            this->showAddToPlaylist([this, pos](PlaylistID i) {
+                if (i >= 0) {
+                    std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForPlaylist(this->metadata[pos].ID);
+                    for (size_t j = 0; j < v.size(); j++) {
+                        this->app->database()->addSongToPlaylist(i, v[j].ID);
+                    }
+                    this->refreshList();
+                    this->menu->close();
+                }
+            });
         });
         this->menu->addButton(b);
         this->menu->addSeparator(this->app->theme()->muted2());
@@ -358,13 +363,9 @@ namespace Frame {
         }
 
         // Commit changes to db (acquires lock and then writes)
-        this->app->database()->close();
-        this->app->sysmodule()->waitRequestDBLock();
-        this->app->database()->openReadWrite();
+        this->app->lockDatabase();
         bool ok = this->app->database()->addPlaylist(this->newData);
-        this->app->database()->close();
-        this->app->sysmodule()->sendReleaseDBLock();
-        this->app->database()->openReadOnly();
+        this->app->unlockDatabase();
 
         // If added ok actually manipulate image file(s)
         if (ok) {

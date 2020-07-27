@@ -60,6 +60,10 @@ namespace Main {
             // Pop screen from stack
             void popScreen();
 
+            // Helper functions for database
+            void lockDatabase();
+            void unlockDatabase();
+
             // Returns database pointer
             Database * database();
             // Returns sysmodule pointer

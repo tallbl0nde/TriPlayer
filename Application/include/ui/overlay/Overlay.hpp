@@ -8,7 +8,7 @@ namespace CustomOvl {
     // darker background and allow it to be closed by pressing B or
     // touching the 'background'.
     class Overlay : public Aether::Overlay {
-        protected:
+        private:
             // Pair of coordinates specifying top-left and bottom-right points of rectangle to
             // ignore touches in
             int x1, y1, x2, y2;
@@ -16,6 +16,7 @@ namespace CustomOvl {
             // Set true when touch pressed outside of above rectangle
             bool touched;
 
+        protected:
             // Set the above coordinates
             void setTopLeft(int, int);
             void setBottomRight(int, int);

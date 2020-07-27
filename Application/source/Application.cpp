@@ -60,6 +60,18 @@ namespace Main {
         this->display->popScreen();
     }
 
+    void Application::lockDatabase() {
+        this->database_->close();
+        this->sysmodule_->waitRequestDBLock();
+        this->database_->openReadWrite();
+    }
+
+    void Application::unlockDatabase() {
+        this->database_->close();
+        this->sysmodule_->sendReleaseDBLock();
+        this->database_->openReadOnly();
+    }
+
     Database * Application::database() {
         return this->database_;
     }

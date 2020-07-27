@@ -62,6 +62,43 @@ namespace Screen {
         }
     }
 
+    void Home::showAddToPlaylist(std::function<void(PlaylistID)> f) {
+        // Always recreate menu
+        delete this->addToPlMenu;
+        this->addToPlMenu = new CustomOvl::AddToPlaylist();
+        this->addToPlMenu->setBackgroundColour(this->app->theme()->popupBG());
+        this->addToPlMenu->setHeadingColour(this->app->theme()->FG());
+        this->addToPlMenu->setHeadingString("Add to Playlist");
+        this->addToPlMenu->setLineColour(this->app->theme()->muted2());
+        this->addToPlMenu->setChosenCallback([this, f](PlaylistID id) {
+            this->app->lockDatabase();
+            f(id);
+            this->app->unlockDatabase();
+
+            // Close menu if playlist chosen
+            if (id >= 0) {
+                this->addToPlMenu->close();
+            }
+        });
+
+        // Insert items for playlists
+        std::vector<Metadata::Playlist> pls = this->app->database()->getAllPlaylistMetadata();
+        for (size_t i = 0; i < pls.size(); i++) {
+            CustomElm::ListItem::Playlist * l = new CustomElm::ListItem::Playlist(pls[i].imagePath.empty() ? "romfs:/misc/noplaylist.png" : pls[i].imagePath);
+            l->setNameString(pls[i].name);
+            std::string str = std::to_string(pls[i].songCount) + (pls[i].songCount == 1 ? " song" : " songs");
+            l->setSongsString(str);
+            l->setLineColour(this->app->theme()->muted2());
+            l->setMoreColour(this->app->theme()->muted());
+            l->setTextColour(this->app->theme()->FG());
+            l->setMutedTextColour(this->app->theme()->muted());
+            this->addToPlMenu->addPlaylist(l, pls[i].ID);
+        }
+
+        // Finally show menu
+        this->app->addOverlay(this->addToPlMenu);
+    }
+
     void Home::changeFrame(Frame::Type t, Frame::Action a, int id) {
         switch (a) {
             // Mark that we should move back a frame
@@ -144,6 +181,9 @@ namespace Screen {
                 this->frame = new Frame::Queue(this->app);
                 break;
         }
+        this->frame->setShowAddToPlaylistFunc([this](std::function<void(PlaylistID)> f) {
+            this->showAddToPlaylist(f);
+        });
         this->frame->setChangeFrameFunc([this](Frame::Type t, Frame::Action a, int id) {
             this->changeFrame(t, a, id);
         });
@@ -406,9 +446,13 @@ namespace Screen {
         this->frame = nullptr;
         this->changeFrame(Frame::Type::Songs, Frame::Action::Reset);
         this->container->setFocussed(this->frame);
+
+        this->addToPlMenu = nullptr;
     }
 
     void Home::onUnload() {
+        delete this->addToPlMenu;
+
         // Ensure all frames are deleted
         this->container->removeElement(this->frame);
         while (!this->frameStack.empty()) {

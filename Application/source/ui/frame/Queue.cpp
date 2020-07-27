@@ -372,7 +372,12 @@ namespace Frame {
         b->setText("Add to Playlist");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
-            // Do something
+            this->showAddToPlaylist([this, id](PlaylistID i) {
+                if (i >= 0) {
+                    this->app->database()->addSongToPlaylist(i, id);
+                    this->menu->close();
+                }
+            });
         });
         this->menu->addButton(b);
         this->menu->addSeparator(this->app->theme()->muted2());

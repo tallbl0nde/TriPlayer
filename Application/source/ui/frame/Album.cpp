@@ -216,7 +216,15 @@ namespace Frame {
             b->setText("Add to Playlist");
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this]() {
-                // Do something
+                this->showAddToPlaylist([this](PlaylistID i) {
+                    if (i >= 0) {
+                        std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForAlbum(this->metadata.ID);
+                        for (size_t j = 0; j < v.size(); j++) {
+                            this->app->database()->addSongToPlaylist(i, v[j].ID);
+                        }
+                        this->albumMenu->close();
+                    }
+                });
             });
             this->albumMenu->addButton(b);
             this->albumMenu->addSeparator(this->app->theme()->muted2());
@@ -310,7 +318,12 @@ namespace Frame {
         b->setText("Add to Playlist");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
-            // Do something
+            this->showAddToPlaylist([this, pos](PlaylistID i) {
+                if (i >= 0) {
+                    this->app->database()->addSongToPlaylist(i, this->songs[pos].ID);
+                    this->songMenu->close();
+                }
+            });
         });
         this->songMenu->addButton(b);
         this->songMenu->addSeparator(this->app->theme()->muted2());

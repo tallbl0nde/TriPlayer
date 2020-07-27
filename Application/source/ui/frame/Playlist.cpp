@@ -67,7 +67,35 @@ namespace Frame {
         c->addElement(moreButton);
         this->addElement(c);
 
+        this->emptyMsg = nullptr;
+        this->goBack = false;
+        this->msgbox = nullptr;
+        this->playlistMenu = nullptr;
+        this->songMenu = nullptr;
+
+        // Populate list
+        this->refreshList();
+        this->setFocused(playButton);
+    }
+
+    void Playlist::playPlaylist(size_t pos) {
+        if (this->songs.size() > 0) {
+            std::vector<SongID> ids;
+            for (size_t i = 0; i < this->songs.size(); i++) {
+                ids.push_back(this->songs[i].ID);
+            }
+            this->app->sysmodule()->sendSetPlayingFrom(this->metadata.name);
+            this->app->sysmodule()->sendSetQueue(ids);
+            this->app->sysmodule()->sendSetSongIdx(pos);
+            this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+        }
+    }
+
+    void Playlist::refreshList() {
         // Create list elements for each song
+        this->list->removeAllElements();
+        this->removeElement(this->emptyMsg);
+        this->emptyMsg = nullptr;
         unsigned int totalSecs = 0;
         this->songs = this->app->database()->getSongMetadataForPlaylist(this->metadata.ID);
         if (this->songs.size() > 0) {
@@ -100,10 +128,10 @@ namespace Frame {
         } else {
             this->list->setHidden(true);
             this->subLength->setHidden(true);
-            Aether::Text * emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "This playlist contains no songs!", 24);
-            emptyMsg->setColour(this->app->theme()->FG());
-            emptyMsg->setX(this->x() + (this->w() - emptyMsg->w())/2);
-            this->addElement(emptyMsg);
+            this->emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "This playlist contains no songs!", 24);
+            this->emptyMsg->setColour(this->app->theme()->FG());
+            this->emptyMsg->setX(this->x() + (this->w() - emptyMsg->w())/2);
+            this->addElement(this->emptyMsg);
         }
 
         // Show number of songs and duration
@@ -111,24 +139,6 @@ namespace Frame {
         str += " | " + Utils::secondsToHoursMins(totalSecs);
         this->subTotal->setString(str);
         this->subTotal->setXY(this->heading->x() + 2, this->heading->y() + this->heading->h());
-
-        this->goBack = false;
-        this->msgbox = nullptr;
-        this->playlistMenu = nullptr;
-        this->songMenu = nullptr;
-    }
-
-    void Playlist::playPlaylist(size_t pos) {
-        if (this->songs.size() > 0) {
-            std::vector<SongID> ids;
-            for (size_t i = 0; i < this->songs.size(); i++) {
-                ids.push_back(this->songs[i].ID);
-            }
-            this->app->sysmodule()->sendSetPlayingFrom(this->metadata.name);
-            this->app->sysmodule()->sendSetQueue(ids);
-            this->app->sysmodule()->sendSetSongIdx(pos);
-            this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
-        }
     }
 
     void Playlist::createDeleteMenu() {
@@ -140,13 +150,9 @@ namespace Frame {
         });
         this->msgbox->addRightButton("Delete", [this]() {
             // Delete and update list
-            this->app->database()->close();
-            this->app->sysmodule()->waitRequestDBLock();
-            this->app->database()->openReadWrite();
+            this->app->lockDatabase();
             this->app->database()->removePlaylist(this->metadata.ID);
-            this->app->database()->close();
-            this->app->sysmodule()->sendReleaseDBLock();
-            this->app->database()->openReadOnly();
+            this->app->unlockDatabase();
             this->goBack = true;
         });
         this->msgbox->setLineColour(this->app->theme()->muted2());
@@ -204,7 +210,15 @@ namespace Frame {
             b->setText("Add to other Playlist");
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this]() {
-                // Do something
+                this->showAddToPlaylist([this](PlaylistID i) {
+                    if (i >= 0) {
+                        for (size_t j = 0; j < this->songs.size(); j++) {
+                            this->app->database()->addSongToPlaylist(i, this->songs[j].ID);
+                        }
+                        this->playlistMenu->close();
+                        this->refreshList();
+                    }
+                });
             });
             this->playlistMenu->addButton(b);
             this->playlistMenu->addSeparator(this->app->theme()->muted2());
@@ -253,7 +267,7 @@ namespace Frame {
         // Song metadata
         this->songMenu->setMainText(this->songs[pos].title);
         this->songMenu->setSubText(this->songs[pos].artist);
-        this->songMenu->setImage(new Aether::Image(0, 0, this->metadata.imagePath.empty() ? "romfs:/misc/noPlaylist.png" : this->metadata.imagePath));
+        this->songMenu->setImage(new Aether::Image(0, 0, this->metadata.imagePath.empty() ? "romfs:/misc/noalbum.png" : this->metadata.imagePath));
 
         // Play
         CustomElm::MenuButton * b = new CustomElm::MenuButton();
@@ -287,7 +301,12 @@ namespace Frame {
         b->setText("Add to other Playlist");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
-            // Do something
+            this->showAddToPlaylist([this, pos](PlaylistID i) {
+                if (i >= 0) {
+                    this->app->database()->addSongToPlaylist(i, this->songs[pos].ID);
+                    this->songMenu->close();
+                }
+            });
         });
         this->songMenu->addButton(b);
         this->songMenu->addSeparator(this->app->theme()->muted2());
