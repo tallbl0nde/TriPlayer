@@ -4,7 +4,6 @@
 #include <atomic>
 #include <ctime>
 #include <deque>
-#include <future>
 #include <shared_mutex>
 #include "Audio.hpp"
 #include "Database.hpp"
@@ -59,12 +58,9 @@ class MainService {
         // Source currently playing
         Source * source;
 
+        // Variables used for 'locking' DB access
         std::mutex dbMutex;
-        std::atomic<bool> dbLock;
-        std::atomic<bool> dbAppLock;
-        std::future<void> dbThread;
-
-        void dbFunc();
+        std::atomic<bool> dbLocked;
 
     public:
         // Constructor initializes socket related things

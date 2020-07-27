@@ -5,7 +5,7 @@
 #include "utils/FS.hpp"
 
 // Interval (in seconds) to test if DB file is accessible
-#define DB_TEST_INTERVAL 1
+#define DB_TEST_INTERVAL 2
 // Number of seconds to wait before previous becomes (back to start)
 #define PREV_WAIT 2
 // Max size of sub-queue (requires 20kB)
@@ -13,8 +13,7 @@
 
 MainService::MainService() {
     this->audio = Audio::getInstance();
-    this->dbAppLock = false;
-    this->dbLock = false;
+    this->dbLocked = false;
     this->muteLevel = 0.0;
     this->pressTime = std::time(nullptr);
     this->queue = new PlayQueue();
@@ -30,29 +29,6 @@ MainService::MainService() {
     // Create database
     if (!this->exit_) {
         this->db = new Database();
-    }
-}
-
-// Thread calls this function to 'hog' the mutex for the App
-void MainService::dbFunc() {
-    std::scoped_lock<std::mutex> mtx(this->dbMutex);
-
-    // Confirm the socket thread we have the mutex
-    this->dbAppLock = true;
-
-    // Loop indefinitely
-    std::chrono::steady_clock::time_point last = std::chrono::steady_clock::now();
-    while (this->dbLock) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-        // Also periodically check if file is accessible (in case releaseDBLock is never received due to a crash)
-        std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast< std::chrono::duration<double> >(now - last).count() > DB_TEST_INTERVAL) {
-            if (Utils::Fs::fileAccessible("/switch/TriPlayer/data.sqlite3")) {
-                this->dbLock = false;
-            }
-            last = now;
-        }
     }
 }
 
@@ -108,19 +84,35 @@ void MainService::playbackThread() {
                         break;
                 }
 
-                // Stop the sysmodule if the database is unreadable
-                std::scoped_lock<std::mutex> mtx(this->dbMutex);
+                // In order to read the file path we need to:
+                // - Lock the mutex and either:
+                // -> Wait until it is marked as unlocked OR
+                // -> Wait until it's readable (in case application crashes)
+                std::unique_lock<std::mutex> mtx(this->dbMutex);
+                std::chrono::steady_clock::time_point last = std::chrono::steady_clock::now();
+                while (this->dbLocked) {
+                    svcSleepThread(5E+7);
+                    std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+                    if (std::chrono::duration_cast< std::chrono::duration<double> >(now - last).count() > DB_TEST_INTERVAL) {
+                        if (Utils::Fs::fileAccessible("/switch/TriPlayer/data.sqlite3")) {
+                            this->dbLocked = false;
+                        }
+                        last = now;
+                    }
+                }
+
+                // Now that the database is available actually read from it (note that this read-only connection
+                // is left intact until either RESET or REQUESTDBLOCK is received)
                 if (!this->db->openReadOnly()) {
                     this->exit_ = true;
                 }
+                std::string path = this->db->getPathForID(this->queue->currentID());
+                mtx.unlock();
 
                 // Delete old source and prepare a new one
                 delete this->source;
-                this->source = new MP3(this->db->getPathForID(this->queue->currentID()));
+                this->source = new MP3(path);
                 this->audio->newSong(this->source->sampleRate(), this->source->channels());
-
-                // Close DB
-                this->db->close();
             }
             this->songAction = SongAction::Nothing;
         }
@@ -560,31 +552,19 @@ void MainService::socketThread() {
                     break;
 
                 case Protocol::Command::RequestDBLock: {
-                    // Spawn a thread to 'hog' the mutex
-                    std::unique_lock<std::mutex> mtx(this->dbMutex);
-                    this->dbAppLock = false;
-                    this->dbThread = std::async(std::launch::async, [this]() {
-                        this->dbFunc();
-                    });
-                    mtx.unlock();
-
-                    // Wait for 'hog' thread to specify it has control before replying
-                    // (just in case decode thread requests mutex before the 'hog' thread does)
-                    while (!this->dbAppLock) {
-                        std::this_thread::sleep_for(std::chrono::milliseconds(5));
-                    }
+                    // Lock the mutex and mark that the database is being used for writing by the app
+                    // Once we lock the mutex the decode thread is guaranteed to not be using the DB
+                    std::scoped_lock<std::mutex> mtx(this->dbMutex);
+                    this->db->close();
+                    this->dbLocked = true;
 
                     reply = std::to_string(0);
                     break;
                 }
 
                 case Protocol::Command::ReleaseDBLock:
-                    // Tell 'hog' thread to release it's mutex
-                    if (this->dbLock) {
-                        this->dbLock = false;
-                        this->dbThread.get();
-                    }
-
+                    // Mark the database as unlocked
+                    this->dbLocked = false;
                     reply = std::to_string(0);
                     break;
 
