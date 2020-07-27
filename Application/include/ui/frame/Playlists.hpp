@@ -19,7 +19,10 @@ namespace Frame {
             Aether::MessageBox * msgbox;
             CustomOvl::NewPlaylist * newMenu;
 
+            // Various things
             bool checkFB;
+            Aether::Text * emptyMsg;
+            Aether::FilledButton * newButton;
 
             // Vector of cached playlist metadata
             std::vector<Metadata::Playlist> metadata;
@@ -27,6 +30,7 @@ namespace Frame {
             Metadata::Playlist newData;
 
             // Helper function to prepare menus
+            void createDeletePlaylistMenu(const size_t);
             void createFileBrowser();
             void createMenu(size_t);
             void createNewPlaylistMenu();

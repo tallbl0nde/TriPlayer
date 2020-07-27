@@ -277,7 +277,6 @@ namespace Frame {
         this->app->sysmodule()->waitRequestDBLock();
         this->app->database()->openReadWrite();
         bool ok = this->app->database()->updateAlbum(this->metadata);
-        this->app->database()->prepareSearch();
         this->app->database()->close();
         this->app->database()->openReadOnly();
         this->app->sysmodule()->sendReleaseDBLock();

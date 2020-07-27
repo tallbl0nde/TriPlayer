@@ -35,30 +35,16 @@ namespace Frame {
 
         // Now prepare this frame
         this->heading->setString("Playlists");
-        this->metadata = this->app->database()->getAllPlaylistMetadata();
-        if (this->metadata.size() > 0) {
-            this->refreshList();
-            this->subLength->setHidden(true);
-            this->subTotal->setHidden(true);
-
-        // Show message if no playlists
-        } else {
-            this->list->setHidden(true);
-            this->subLength->setHidden(true);
-            this->subTotal->setHidden(true);
-            Aether::Text * emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "No playlists found, use the button above to create one!", 24);
-            emptyMsg->setColour(this->app->theme()->FG());
-            emptyMsg->setX(this->x() + (this->w() - emptyMsg->w())/2);
-            this->addElement(emptyMsg);
-        }
-
-        // New Playlist button
-        Aether::FilledButton * newButton = new Aether::FilledButton(this->x() + this->w() - 320, this->heading->y() + (this->heading->h() - BUTTON_H)/2 + 5, BUTTON_W, BUTTON_H, "New Playlist", BUTTON_F, [this]() {
+        this->subLength->setHidden(true);
+        this->subTotal->setHidden(true);
+        this->emptyMsg = nullptr;
+        this->newButton = new Aether::FilledButton(this->x() + this->w() - 320, this->heading->y() + (this->heading->h() - BUTTON_H)/2 + 5, BUTTON_W, BUTTON_H, "New Playlist", BUTTON_F, [this]() {
             this->createNewPlaylistMenu();
         });
-        newButton->setFillColour(this->app->theme()->accent());
-        newButton->setTextColour(Aether::Colour{0, 0, 0, 255});
-        this->addElement(newButton);
+        this->newButton->setFillColour(this->app->theme()->accent());
+        this->newButton->setTextColour(Aether::Colour{0, 0, 0, 255});
+        this->addElement(this->newButton);
+        this->refreshList();
 
         this->checkFB = false;
         this->browser = nullptr;
@@ -69,29 +55,48 @@ namespace Frame {
 
     void Playlists::refreshList() {
         this->list->removeAllElements();
-        for (size_t i = 0; i < this->metadata.size(); i++) {
-            std::string img = (this->metadata[i].imagePath.empty() ? DEFAULT_IMAGE : this->metadata[i].imagePath);
-            CustomElm::ListItem::Playlist * l = new CustomElm::ListItem::Playlist(img);
-            l->setNameString(this->metadata[i].name);
-            std::string str = std::to_string(this->metadata[i].songCount) + (this->metadata[i].songCount == 1 ? " song" : " songs");
-            l->setSongsString(str);
-            l->setLineColour(this->app->theme()->muted2());
-            l->setMoreColour(this->app->theme()->muted());
-            l->setTextColour(this->app->theme()->FG());
-            l->setMutedTextColour(this->app->theme()->muted());
-            l->setCallback([this, i](){
-                // this->changeFrame(Type::Playlist, Action::Push, this->metadata[i].ID);
-            });
-            l->setMoreCallback([this, i]() {
-                this->createMenu(i);
-            });
-            this->list->addElement(l);
+        this->metadata = this->app->database()->getAllPlaylistMetadata();
 
-            if (i == 0) {
-                l->setY(this->list->y() + 10);
+        // Show list if there are playlists
+        if (this->metadata.size() > 0) {
+            this->list->setHidden(false);
+            this->removeElement(this->emptyMsg);
+            this->emptyMsg = nullptr;
+
+            // Create list items for each playlist
+            for (size_t i = 0; i < this->metadata.size(); i++) {
+                std::string img = (this->metadata[i].imagePath.empty() ? DEFAULT_IMAGE : this->metadata[i].imagePath);
+                CustomElm::ListItem::Playlist * l = new CustomElm::ListItem::Playlist(img);
+                l->setNameString(this->metadata[i].name);
+                std::string str = std::to_string(this->metadata[i].songCount) + (this->metadata[i].songCount == 1 ? " song" : " songs");
+                l->setSongsString(str);
+                l->setLineColour(this->app->theme()->muted2());
+                l->setMoreColour(this->app->theme()->muted());
+                l->setTextColour(this->app->theme()->FG());
+                l->setMutedTextColour(this->app->theme()->muted());
+                l->setCallback([this, i](){
+                    // this->changeFrame(Type::Playlist, Action::Push, this->metadata[i].ID);
+                });
+                l->setMoreCallback([this, i]() {
+                    this->createMenu(i);
+                });
+                this->list->addElement(l);
+
+                if (i == 0) {
+                    l->setY(this->list->y() + 10);
+                }
             }
+            this->setFocussed(this->list);
+
+        // Show message if no playlists
+        } else {
+            this->list->setHidden(true);
+            this->emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "No playlists found, use the button above to create one!", 24);
+            this->emptyMsg->setColour(this->app->theme()->FG());
+            this->emptyMsg->setX(this->x() + (this->w() - this->emptyMsg->w())/2);
+            this->addElement(this->emptyMsg);
+            this->setFocussed(this->newButton);
         }
-        this->setFocussed(this->list);
     }
 
     void Playlists::update(uint32_t dt) {
@@ -118,6 +123,42 @@ namespace Frame {
                 this->checkFB = false;
             }
         }
+    }
+
+    void Playlists::createDeletePlaylistMenu(const size_t pos) {
+        delete this->msgbox;
+        this->msgbox = new Aether::MessageBox();
+        this->msgbox->addLeftButton("Cancel", [this]() {
+            // Do nothing; just close this overlay
+            this->msgbox->close();
+        });
+        this->msgbox->addRightButton("Delete", [this, pos]() {
+            // Delete and update list
+            this->app->database()->close();
+            this->app->sysmodule()->waitRequestDBLock();
+            this->app->database()->openReadWrite();
+            this->app->database()->removePlaylist(this->metadata[pos].ID);
+            this->app->database()->close();
+            this->app->sysmodule()->sendReleaseDBLock();
+            this->app->database()->openReadOnly();
+            this->refreshList();
+
+            // Close both overlays
+            this->msgbox->close();
+            this->menu->close();
+        });
+        this->msgbox->setLineColour(this->app->theme()->muted2());
+        this->msgbox->setRectangleColour(this->app->theme()->popupBG());
+        this->msgbox->setTextColour(this->app->theme()->accent());
+        Aether::Element * body = new Aether::Element(0, 0, 700);
+        Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "", 24, 620);
+        tips->setString("Are you sure you want to delete the playlist '" + this->metadata[pos].name + "'? This action cannot be undone!");
+        tips->setColour(this->app->theme()->FG());
+        body->addElement(tips);
+        body->setH(tips->h() + 80);
+        this->msgbox->setBody(body);
+        this->msgbox->setBodySize(body->w(), body->h());
+        this->app->addOverlay(this->msgbox);
     }
 
     void Playlists::createFileBrowser() {
@@ -163,14 +204,16 @@ namespace Frame {
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
             std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForPlaylist(this->metadata[pos].ID);
-            std::vector<SongID> ids;
-            for (size_t i = 0; i < v.size(); i++) {
-                ids.push_back(v[i].ID);
+            if (v.size() > 0) {
+                std::vector<SongID> ids;
+                for (size_t i = 0; i < v.size(); i++) {
+                    ids.push_back(v[i].ID);
+                }
+                this->app->sysmodule()->sendSetPlayingFrom(this->metadata[pos].name);
+                this->app->sysmodule()->sendSetQueue(ids);
+                this->app->sysmodule()->sendSetSongIdx(0);
+                this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
             }
-            this->app->sysmodule()->sendSetPlayingFrom(this->metadata[pos].name);
-            this->app->sysmodule()->sendSetQueue(ids);
-            this->app->sysmodule()->sendSetSongIdx(0);
-            this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
             this->menu->close();
         });
         this->menu->addButton(b);
@@ -199,6 +242,18 @@ namespace Frame {
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
             // Do something
+        });
+        this->menu->addButton(b);
+        this->menu->addSeparator(this->app->theme()->muted2());
+
+        // Delete playlist
+        b = new CustomElm::MenuButton();
+        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/bin.png"));
+        b->setIconColour(this->app->theme()->muted());
+        b->setText("Delete Playlist");
+        b->setTextColour(this->app->theme()->FG());
+        b->setCallback([this, pos]() {
+            this->createDeletePlaylistMenu(pos);
         });
         this->menu->addButton(b);
         this->menu->addSeparator(this->app->theme()->muted2());
@@ -294,7 +349,6 @@ namespace Frame {
         this->app->sysmodule()->waitRequestDBLock();
         this->app->database()->openReadWrite();
         bool ok = this->app->database()->addPlaylist(this->newData);
-        this->app->database()->prepareSearch();
         this->app->database()->close();
         this->app->sysmodule()->sendReleaseDBLock();
         this->app->database()->openReadOnly();
@@ -304,7 +358,6 @@ namespace Frame {
             if (!src.empty()) {
                 Utils::Fs::copyFile(src, this->newData.imagePath);
             }
-            this->metadata = this->app->database()->getAllPlaylistMetadata();
             this->refreshList();
 
         // Otherwise show a message

@@ -596,7 +596,7 @@ bool Database::updatePlaylist(Metadata::Playlist m) {
     }
 
     // Prepare query
-    bool ok = this->db->prepareQuery("UPDATE Playlist SET name = ?, description = ?, imagePath = ? WHERE id = ?;");
+    bool ok = this->db->prepareQuery("UPDATE Playlist SET name = ?, description = ?, image_path = ? WHERE id = ?;");
     ok = keepFalse(ok, this->db->bindString(0, m.name));
     ok = keepFalse(ok, this->db->bindString(1, m.description));
     ok = keepFalse(ok, this->db->bindString(2, m.imagePath));
@@ -631,7 +631,7 @@ bool Database::removePlaylist(PlaylistID id) {
     }
 
     // Prepare and execute query to remove playlist (songs are deleted due to cascade)
-    bool ok = this->db->prepareQuery("DELETE FROM Playlists WHERE playlist_id = ?");
+    bool ok = this->db->prepareQuery("DELETE FROM Playlists WHERE id = ?;");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     if (!ok) {
         this->setErrorMsg("[removePlaylist] An error occurred preparing the query");
@@ -659,7 +659,7 @@ std::vector<Metadata::Playlist> Database::getAllPlaylistMetadata() {
     }
 
     // Create a Metadata::Playlist for each entry
-    bool ok = this->db->prepareAndExecuteQuery("SELECT id, name, description, image_path, COUNT(PlaylistSongs.song_id) FROM Playlists LEFT JOIN PlaylistSongs ON playlist_id = Playlists.id GROUP BY Playlists.id;");
+    bool ok = this->db->prepareAndExecuteQuery("SELECT id, name, description, image_path, COUNT(PlaylistSongs.song_id) FROM Playlists LEFT JOIN PlaylistSongs ON playlist_id = Playlists.id GROUP BY Playlists.id ORDER BY name;");
     if (!ok) {
         this->setErrorMsg("[getAllPlaylistMetadata] Unable to query for all playlists");
         return v;
