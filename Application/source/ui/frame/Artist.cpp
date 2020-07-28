@@ -151,7 +151,7 @@ namespace Frame {
             b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
             b->setIconColour(this->app->theme()->muted());
-            b->setText("Add Album to Queue");
+            b->setText("Add to Queue");
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this, id]() {
                 std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForArtist(id);
@@ -166,7 +166,7 @@ namespace Frame {
             b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoplaylist.png"));
             b->setIconColour(this->app->theme()->muted());
-            b->setText("Add Album to Playlist");
+            b->setText("Add to Playlist");
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this, id]() {
                 this->showAddToPlaylist([this, id](PlaylistID i) {
@@ -247,7 +247,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Add to Queue");
+        b->setText("Add Album to Queue");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
             std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForAlbum(id);
@@ -262,7 +262,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoplaylist.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Add to Playlist");
+        b->setText("Add Album to Playlist");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
             this->showAddToPlaylist([this, id](PlaylistID i) {

@@ -212,11 +212,11 @@ namespace Frame {
         b->setText("Play");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
-            std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForPlaylist(this->metadata[pos].ID);
+            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->metadata[pos].ID);
             if (v.size() > 0) {
                 std::vector<SongID> ids;
                 for (size_t i = 0; i < v.size(); i++) {
-                    ids.push_back(v[i].ID);
+                    ids.push_back(v[i].song.ID);
                 }
                 this->app->sysmodule()->sendSetPlayingFrom(this->metadata[pos].name);
                 this->app->sysmodule()->sendSetQueue(ids);
@@ -235,9 +235,9 @@ namespace Frame {
         b->setText("Add to Queue");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
-            std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForPlaylist(this->metadata[pos].ID);
+            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->metadata[pos].ID);
             for (size_t i = 0; i < v.size(); i++) {
-                this->app->sysmodule()->sendAddToSubQueue(v[i].ID);
+                this->app->sysmodule()->sendAddToSubQueue(v[i].song.ID);
             }
             this->menu->close();
         });
@@ -252,9 +252,9 @@ namespace Frame {
         b->setCallback([this, pos]() {
             this->showAddToPlaylist([this, pos](PlaylistID i) {
                 if (i >= 0) {
-                    std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForPlaylist(this->metadata[pos].ID);
+                    std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->metadata[pos].ID);
                     for (size_t j = 0; j < v.size(); j++) {
-                        this->app->database()->addSongToPlaylist(i, v[j].ID);
+                        this->app->database()->addSongToPlaylist(i, v[j].song.ID);
                     }
                     this->refreshList();
                     this->menu->close();

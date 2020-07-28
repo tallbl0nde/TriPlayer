@@ -4,7 +4,7 @@
 #include <string>
 
 // All IDs are integers
-typedef int ArtistID, AlbumID, PlaylistID, SongID;
+typedef int ArtistID, AlbumID, PlaylistID, PlaylistSongID, SongID;
 // A socket is also an int - this is for easier reading
 typedef int SockFD;
 
@@ -70,6 +70,12 @@ namespace Metadata {
         std::string path;           // Path of associated file
         unsigned int modified;      // Timestamp file was last modified
     };
+
+    struct PlaylistSong {
+        PlaylistSongID ID;          // Unique ID for this song entry
+        Song song;                  // Song struct seen above
+    };
+
 };
 
 #endif

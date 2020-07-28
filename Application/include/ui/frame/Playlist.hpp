@@ -5,6 +5,10 @@
 #include "ui/frame/Frame.hpp"
 
 // Forward declarations cause only pointers are needed here
+namespace CustomElm::ListItem {
+    class Song;
+};
+
 namespace CustomOvl {
     class ItemMenu;
     class Menu;
@@ -23,8 +27,9 @@ namespace Frame {
             Aether::Text * emptyMsg;
 
             // Cached data
+            std::vector<CustomElm::ListItem::Song *> elms;
             Metadata::Playlist metadata;
-            std::vector<Metadata::Song> songs;
+            std::vector<Metadata::PlaylistSong> songs;
 
             // Functions to create menus
             void createDeleteMenu();
@@ -35,6 +40,7 @@ namespace Frame {
             void playPlaylist(size_t);
 
             // Repopulates list
+            void calculateStats();
             void refreshList();
 
         public:

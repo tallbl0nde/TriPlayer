@@ -717,6 +717,55 @@ Metadata::Playlist Database::getPlaylistMetadataForID(PlaylistID id) {
     return m;
 }
 
+
+std::vector<Metadata::PlaylistSong> Database::getSongMetadataForPlaylist(PlaylistID id) {
+    std::vector<Metadata::PlaylistSong> v;
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getSongMetadataForPlaylist] No open connection");
+        return v;
+    }
+
+    // Create a Metadata::Song for each entry given the playlist
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified, PlaylistSongs.rowid FROM PlaylistSongs JOIN Songs ON Songs.id = PlaylistSongs.song_id JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE PlaylistSongs.playlist_id = ?;");
+    ok = keepFalse(ok, this->db->bindInt(0, id));
+    ok = keepFalse(ok, this->db->executeQuery());
+    if (!ok) {
+        this->setErrorMsg("[getSongMetadataForPlaylist] Unable to query for matching songs");
+        return v;
+    }
+    while (ok && this->db->hasRow()) {
+        Metadata::Song m;
+        int tmp;
+        ok = this->db->getInt(0, m.ID);
+        ok = keepFalse(ok, this->db->getString(1, m.title));
+        ok = keepFalse(ok, this->db->getString(2, m.artist));
+        ok = keepFalse(ok, this->db->getString(3, m.album));
+        ok = keepFalse(ok, this->db->getInt(4, tmp));
+        m.trackNumber = tmp;
+        ok = keepFalse(ok, this->db->getInt(5, tmp));
+        m.discNumber = tmp;
+        ok = keepFalse(ok, this->db->getInt(6, tmp));
+        m.duration = tmp;
+        ok = keepFalse(ok, this->db->getInt(7, tmp));
+        m.plays = tmp;
+        ok = keepFalse(ok, this->db->getBool(8, m.favourite));
+        ok = keepFalse(ok, this->db->getString(9, m.path));
+        ok = keepFalse(ok, this->db->getInt(10, tmp));
+        m.modified = tmp;
+        ok = keepFalse(ok, this->db->getInt(11, tmp));
+
+        // Push back PlaylistSong struct if all successful
+        if (ok) {
+            v.push_back(Metadata::PlaylistSong{tmp, m});
+        }
+        ok = keepFalse(ok, this->db->nextRow());
+    }
+
+    v.shrink_to_fit();
+    return v;
+}
+
 bool Database::addSongToPlaylist(PlaylistID pl, SongID s) {
     // First check we have write permission
     if (this->db->connectionType() != SQLite::Connection::ReadWrite) {
@@ -742,7 +791,7 @@ bool Database::addSongToPlaylist(PlaylistID pl, SongID s) {
     return ok;
 }
 
-bool Database::removeSongFromPlaylist(PlaylistID pl, SongID s) {
+bool Database::removeSongFromPlaylist(PlaylistSongID rowid) {
     // First check we have write permission
     if (this->db->connectionType() != SQLite::Connection::ReadWrite) {
         this->setErrorMsg("[removeSongFromPlaylist] Can't add song as the database is unwritable");
@@ -750,9 +799,8 @@ bool Database::removeSongFromPlaylist(PlaylistID pl, SongID s) {
     }
 
     // Prepare query
-    bool ok = this->db->prepareQuery("DELETE FROM PlaylistSongs WHERE playlist_id = ? AND song_id = ?;");
-    ok = keepFalse(ok, this->db->bindInt(0, pl));
-    ok = keepFalse(ok, this->db->bindInt(1, s));
+    bool ok = this->db->prepareQuery("DELETE FROM PlaylistSongs WHERE rowid = ?;");
+    ok = keepFalse(ok, this->db->bindInt(0, rowid));
     if (!ok) {
         this->setErrorMsg("[removeSongFromPlaylist] An error occurred preparing the query");
         return false;
@@ -1000,52 +1048,6 @@ std::vector<Metadata::Song> Database::getSongMetadataForArtist(ArtistID id) {
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
         this->setErrorMsg("[getSongMetadataForArtist] Unable to query for matching songs");
-        return v;
-    }
-    while (ok && this->db->hasRow()) {
-        Metadata::Song m;
-        int tmp;
-        ok = this->db->getInt(0, m.ID);
-        ok = keepFalse(ok, this->db->getString(1, m.title));
-        ok = keepFalse(ok, this->db->getString(2, m.artist));
-        ok = keepFalse(ok, this->db->getString(3, m.album));
-        ok = keepFalse(ok, this->db->getInt(4, tmp));
-        m.trackNumber = tmp;
-        ok = keepFalse(ok, this->db->getInt(5, tmp));
-        m.discNumber = tmp;
-        ok = keepFalse(ok, this->db->getInt(6, tmp));
-        m.duration = tmp;
-        ok = keepFalse(ok, this->db->getInt(7, tmp));
-        m.plays = tmp;
-        ok = keepFalse(ok, this->db->getBool(8, m.favourite));
-        ok = keepFalse(ok, this->db->getString(9, m.path));
-        ok = keepFalse(ok, this->db->getInt(10, tmp));
-        m.modified = tmp;
-
-        if (ok) {
-            v.push_back(m);
-        }
-        ok = keepFalse(ok, this->db->nextRow());
-    }
-
-    v.shrink_to_fit();
-    return v;
-}
-
-std::vector<Metadata::Song> Database::getSongMetadataForPlaylist(PlaylistID id) {
-    std::vector<Metadata::Song> v;
-    // Check we can read
-    if (this->db->connectionType() == SQLite::Connection::None) {
-        this->setErrorMsg("[getSongMetadataForPlaylist] No open connection");
-        return v;
-    }
-
-    // Create a Metadata::Song for each entry given the playlist
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM PlaylistSongs JOIN Songs ON Songs.id = PlaylistSongs.song_id JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE PlaylistSongs.playlist_id = ?;");
-    ok = keepFalse(ok, this->db->bindInt(0, id));
-    ok = keepFalse(ok, this->db->executeQuery());
-    if (!ok) {
-        this->setErrorMsg("[getSongMetadataForPlaylist] Unable to query for matching songs");
         return v;
     }
     while (ok && this->db->hasRow()) {

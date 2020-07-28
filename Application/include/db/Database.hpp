@@ -87,12 +87,15 @@ class Database {
         std::vector<Metadata::Playlist> getAllPlaylistMetadata();
         // Returns metadata for given ID (id will be -1 if not found!)
         Metadata::Playlist getPlaylistMetadataForID(PlaylistID);
+        // Returns a playlist's songs
+        // Empty if there are none or an error occurred
+        std::vector<Metadata::PlaylistSong> getSongMetadataForPlaylist(PlaylistID);
         // Add a song to a playlist
         // Return true if successful, false otherwise
         bool addSongToPlaylist(PlaylistID, SongID);
         // Remove a song from a playlist
         // Return true if successful, false otherwise
-        bool removeSongFromPlaylist(PlaylistID, SongID);
+        bool removeSongFromPlaylist(PlaylistSongID);
 
         // ===== Song Metadata ===== //
         // Add a song (and associated artists, etc) into database
@@ -113,9 +116,6 @@ class Database {
         // Returns an artist's songs
         // Empty if there are none or an error occurred
         std::vector<Metadata::Song> getSongMetadataForArtist(ArtistID);
-        // Returns a playlist's songs
-        // Empty if there are none or an error occurred
-        std::vector<Metadata::Song> getSongMetadataForPlaylist(PlaylistID);
         // Returns SongInfo for given ID (id will be -1 if not found!)
         Metadata::Song getSongMetadataForID(SongID);
 
