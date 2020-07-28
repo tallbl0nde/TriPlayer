@@ -28,7 +28,8 @@ namespace Frame {
         ArtistInfo,
         Songs,
         SongInfo,
-        Queue
+        Queue,
+        None            // Only passed in special cases (e.g. when action is ::Reset)
     };
 
     // A frame is a container that is 'swapped out' on the right hand side
@@ -54,6 +55,13 @@ namespace Frame {
         public:
             // Passed app pointer for sysmodule + theme
             Frame(Main::Application *);
+
+            // Called when the frame is pushed onto the screen's stack
+            // Passed next frame type
+            virtual void onPush(Type);
+            // Called when the frame is popped the screen's stack (even when Reset!)
+            // Passed previous frame type
+            virtual void onPop(Type);
 
             // Passed a function to call when wanting to add a frame
             void setChangeFrameFunc(std::function<void(Type, Action, int)>);

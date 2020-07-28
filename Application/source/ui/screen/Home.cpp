@@ -52,10 +52,13 @@ namespace Screen {
 
     void Home::backCallback() {
         if (!this->frameStack.empty()) {
+            // Delete the current frame and pop one from the stack
             this->container->removeElement(this->frame);
-            this->frame = this->frameStack.top();
+            this->frame = this->frameStack.top().frame;
+            this->frame->onPop(this->frameStack.top().type);
             this->frameStack.pop();
 
+            // Add that frame to the screen
             this->container->addElement(this->frame);
             this->container->setHasSelectable(false);
             this->returnElement(this->playerDim);
@@ -111,8 +114,9 @@ namespace Screen {
             // Push the current frame on the stack
             case Frame::Action::Push:
                 // Maybe show an error if too deep?
+                this->frame->onPush(t);
                 this->container->returnElement(this->frame);
-                this->frameStack.push(this->frame);
+                this->frameStack.push(FramePair{this->frame, t});
                 this->returnElement(this->playerDim);
                 break;
 
@@ -120,7 +124,8 @@ namespace Screen {
             case Frame::Action::Reset:
                 this->container->removeElement(this->frame);
                 while (!this->frameStack.empty()) {
-                    delete this->frameStack.top();
+                    this->frameStack.top().frame->onPop(Frame::Type::None);
+                    delete this->frameStack.top().frame;
                     this->frameStack.pop();
                 }
                 this->resetState();
@@ -180,6 +185,9 @@ namespace Screen {
             case Frame::Type::Queue:
                 this->sideQueue->setActivated(true);
                 this->frame = new Frame::Queue(this->app);
+                break;
+
+            default:
                 break;
         }
         this->frame->setShowAddToPlaylistFunc([this](std::function<void(PlaylistID)> f) {
@@ -457,7 +465,7 @@ namespace Screen {
         // Ensure all frames are deleted
         this->container->removeElement(this->frame);
         while (!this->frameStack.empty()) {
-            delete this->frameStack.top();
+            delete this->frameStack.top().frame;
             this->frameStack.pop();
         }
 

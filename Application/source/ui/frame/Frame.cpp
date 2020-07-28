@@ -41,6 +41,14 @@ namespace Frame {
         this->addElement(this->list);
     }
 
+    void Frame::onPush(Type t) {
+        // Do nothing by default
+    }
+
+    void Frame::onPop(Type t) {
+        // Do nothing by default
+    }
+
     void Frame::setChangeFrameFunc(std::function<void(Type, Action, int)> f) {
         this->changeFrame = f;
     }
