@@ -194,21 +194,8 @@ namespace Frame {
             this->playlistMenu = new CustomOvl::Menu();
             this->playlistMenu->setBackgroundColour(this->app->theme()->popupBG());
 
-            // Play Playlist
-            CustomElm::MenuButton * b = new CustomElm::MenuButton();
-            b->setIcon(new Aether::Image(0, 0, "romfs:/icons/playsmall.png"));
-            b->setIconColour(this->app->theme()->muted());
-            b->setText("Play");
-            b->setTextColour(this->app->theme()->FG());
-            b->setCallback([this]() {
-                this->playPlaylist(0);
-                this->playlistMenu->close();
-            });
-            this->playlistMenu->addButton(b);
-            this->playlistMenu->addSeparator(this->app->theme()->muted2());
-
             // Add to Queue
-            b = new CustomElm::MenuButton();
+            CustomElm::MenuButton * b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
             b->setIconColour(this->app->theme()->muted());
             b->setText("Add to Queue");
@@ -264,8 +251,8 @@ namespace Frame {
             b->setText("View Information");
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this]() {
-                // this->changeFrame(Type::PlaylistInfo, Action::Push, this->metadata.ID);
-                // this->playlistMenu->close();
+                this->changeFrame(Type::PlaylistInfo, Action::Push, this->metadata.ID);
+                this->playlistMenu->close();
             });
             this->playlistMenu->addButton(b);
 
@@ -291,21 +278,8 @@ namespace Frame {
         this->songMenu->setSubText(this->songs[pos].song.artist);
         this->songMenu->setImage(new Aether::Image(0, 0, this->metadata.imagePath.empty() ? "romfs:/misc/noalbum.png" : this->metadata.imagePath));
 
-        // Play
-        CustomElm::MenuButton * b = new CustomElm::MenuButton();
-        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/playsmall.png"));
-        b->setIconColour(this->app->theme()->muted());
-        b->setText("Play");
-        b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, pos]() {
-            this->playPlaylist(pos);
-            this->songMenu->close();
-        });
-        this->songMenu->addButton(b);
-        this->songMenu->addSeparator(this->app->theme()->muted2());
-
         // Add to Queue
-        b = new CustomElm::MenuButton();
+        CustomElm::MenuButton * b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
         b->setIconColour(this->app->theme()->muted());
         b->setText("Add to Queue");

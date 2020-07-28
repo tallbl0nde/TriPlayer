@@ -181,21 +181,8 @@ namespace Frame {
             this->albumMenu = new CustomOvl::Menu();
             this->albumMenu->setBackgroundColour(this->app->theme()->popupBG());
 
-            // Play Album
-            CustomElm::MenuButton * b = new CustomElm::MenuButton();
-            b->setIcon(new Aether::Image(0, 0, "romfs:/icons/playsmall.png"));
-            b->setIconColour(this->app->theme()->muted());
-            b->setText("Play");
-            b->setTextColour(this->app->theme()->FG());
-            b->setCallback([this]() {
-                this->playAlbum(0);
-                this->albumMenu->close();
-            });
-            this->albumMenu->addButton(b);
-            this->albumMenu->addSeparator(this->app->theme()->muted2());
-
             // Add to Queue
-            b = new CustomElm::MenuButton();
+            CustomElm::MenuButton * b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
             b->setIconColour(this->app->theme()->muted());
             b->setText("Add to Queue");
@@ -286,21 +273,8 @@ namespace Frame {
         this->songMenu->setSubText(this->songs[pos].artist);
         this->songMenu->setImage(new Aether::Image(0, 0, this->metadata.imagePath.empty() ? "romfs:/misc/noalbum.png" : this->metadata.imagePath));
 
-        // Play
-        CustomElm::MenuButton * b = new CustomElm::MenuButton();
-        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/playsmall.png"));
-        b->setIconColour(this->app->theme()->muted());
-        b->setText("Play");
-        b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, pos]() {
-            this->playAlbum(pos);
-            this->songMenu->close();
-        });
-        this->songMenu->addButton(b);
-        this->songMenu->addSeparator(this->app->theme()->muted2());
-
         // Add to Queue
-        b = new CustomElm::MenuButton();
+        CustomElm::MenuButton * b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
         b->setIconColour(this->app->theme()->muted());
         b->setText("Add to Queue");

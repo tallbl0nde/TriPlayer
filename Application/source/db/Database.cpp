@@ -596,7 +596,7 @@ bool Database::updatePlaylist(Metadata::Playlist m) {
     }
 
     // Prepare query
-    bool ok = this->db->prepareQuery("UPDATE Playlist SET name = ?, description = ?, image_path = ? WHERE id = ?;");
+    bool ok = this->db->prepareQuery("UPDATE Playlists SET name = ?, description = ?, image_path = ? WHERE id = ?;");
     ok = keepFalse(ok, this->db->bindString(0, m.name));
     ok = keepFalse(ok, this->db->bindString(1, m.description));
     ok = keepFalse(ok, this->db->bindString(2, m.imagePath));

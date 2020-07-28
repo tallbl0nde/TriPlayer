@@ -7,6 +7,7 @@
 #include "ui/frame/ArtistInfo.hpp"
 #include "ui/frame/Playlist.hpp"
 #include "ui/frame/Playlists.hpp"
+#include "ui/frame/PlaylistInfo.hpp"
 #include "ui/frame/Queue.hpp"
 #include "ui/frame/Songs.hpp"
 #include "ui/screen/Home.hpp"
@@ -138,7 +139,7 @@ namespace Screen {
                 break;
 
             case Frame::Type::PlaylistInfo:
-                // this->frame = new Frame::PlaylistInfo(this->app, id);
+                this->frame = new Frame::PlaylistInfo(this->app, id);
                 break;
 
             case Frame::Type::Albums:

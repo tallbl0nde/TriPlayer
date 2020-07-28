@@ -283,8 +283,8 @@ namespace Frame {
         b->setText("View Information");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
-            // this->changeFrame(Type::PlaylistInfo, Action::Push, this->metadata[pos].ID);
-            // this->menu->close();
+            this->changeFrame(Type::PlaylistInfo, Action::Push, this->metadata[pos].ID);
+            this->menu->close();
         });
         this->menu->addButton(b);
 
