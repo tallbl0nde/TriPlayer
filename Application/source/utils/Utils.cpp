@@ -131,17 +131,17 @@ namespace Utils {
         }
 
         // Update search tables if needed
-        if (db->needsSearchUpdate()) {
-            if (!hasLock) {
-                aStage = ProcessStage::Update;
-                hasLock = true;
-                db->close();
-                sys->waitReset();
-                sys->waitRequestDBLock();
-                db->openReadWrite();
-            }
-            db->prepareSearch();
-        }
+        // if (db->needsSearchUpdate()) {
+        //     if (!hasLock) {
+        //         aStage = ProcessStage::Update;
+        //         hasLock = true;
+        //         db->close();
+        //         sys->waitReset();
+        //         sys->waitRequestDBLock();
+        //         db->openReadWrite();
+        //     }
+        //     db->prepareSearch();
+        // }
 
         // Cleanup database (TBD)
         if (hasLock) {

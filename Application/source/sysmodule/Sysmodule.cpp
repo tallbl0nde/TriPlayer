@@ -372,6 +372,10 @@ void Sysmodule::sendGetQueue(const size_t s, const size_t e) {
 }
 
 void Sysmodule::sendSetQueue(const std::vector<SongID> & q) {
+    if (q.size() == 0) {
+        return;
+    }
+
     // Construct string first
     std::string seq;
     size_t size = q.size();

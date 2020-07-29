@@ -5,6 +5,9 @@
 #include "ui/frame/Artist.hpp"
 #include "ui/frame/Artists.hpp"
 #include "ui/frame/ArtistInfo.hpp"
+#include "ui/frame/Playlist.hpp"
+#include "ui/frame/Playlists.hpp"
+#include "ui/frame/PlaylistInfo.hpp"
 #include "ui/frame/Queue.hpp"
 #include "ui/frame/Songs.hpp"
 #include "ui/screen/Home.hpp"
@@ -12,6 +15,7 @@
 namespace Screen {
     Home::Home(Main::Application * a) : Screen() {
         this->app = a;
+        this->backOneFrame = 0;
         this->playingID = -1;
 
         // Attempt the following in order when B is pressed:
@@ -48,10 +52,13 @@ namespace Screen {
 
     void Home::backCallback() {
         if (!this->frameStack.empty()) {
+            // Delete the current frame and pop one from the stack
             this->container->removeElement(this->frame);
-            this->frame = this->frameStack.top();
+            this->frame = this->frameStack.top().frame;
+            this->frame->onPop(this->frameStack.top().type);
             this->frameStack.pop();
 
+            // Add that frame to the screen
             this->container->addElement(this->frame);
             this->container->setHasSelectable(false);
             this->returnElement(this->playerDim);
@@ -59,13 +66,57 @@ namespace Screen {
         }
     }
 
+    void Home::showAddToPlaylist(std::function<void(PlaylistID)> f) {
+        // Always recreate menu
+        delete this->addToPlMenu;
+        this->addToPlMenu = new CustomOvl::AddToPlaylist();
+        this->addToPlMenu->setBackgroundColour(this->app->theme()->popupBG());
+        this->addToPlMenu->setHeadingColour(this->app->theme()->FG());
+        this->addToPlMenu->setHeadingString("Add to Playlist");
+        this->addToPlMenu->setLineColour(this->app->theme()->muted2());
+        this->addToPlMenu->setChosenCallback([this, f](PlaylistID id) {
+            this->app->lockDatabase();
+            f(id);
+            this->app->unlockDatabase();
+
+            // Close menu if playlist chosen
+            if (id >= 0) {
+                this->addToPlMenu->close();
+            }
+        });
+
+        // Insert items for playlists
+        std::vector<Metadata::Playlist> pls = this->app->database()->getAllPlaylistMetadata();
+        for (size_t i = 0; i < pls.size(); i++) {
+            CustomElm::ListItem::Playlist * l = new CustomElm::ListItem::Playlist(pls[i].imagePath.empty() ? "romfs:/misc/noplaylist.png" : pls[i].imagePath);
+            l->setNameString(pls[i].name);
+            std::string str = std::to_string(pls[i].songCount) + (pls[i].songCount == 1 ? " song" : " songs");
+            l->setSongsString(str);
+            l->setLineColour(this->app->theme()->muted2());
+            l->setMoreColour(this->app->theme()->muted());
+            l->setTextColour(this->app->theme()->FG());
+            l->setMutedTextColour(this->app->theme()->muted());
+            this->addToPlMenu->addPlaylist(l, pls[i].ID);
+        }
+
+        // Finally show menu
+        this->app->addOverlay(this->addToPlMenu);
+    }
+
     void Home::changeFrame(Frame::Type t, Frame::Action a, int id) {
         switch (a) {
+            // Mark that we should move back a frame
+            case Frame::Action::Back:
+                this->backOneFrame++;
+                return;
+                break;
+
             // Push the current frame on the stack
             case Frame::Action::Push:
                 // Maybe show an error if too deep?
+                this->frame->onPush(t);
                 this->container->returnElement(this->frame);
-                this->frameStack.push(this->frame);
+                this->frameStack.push(FramePair{this->frame, t});
                 this->returnElement(this->playerDim);
                 break;
 
@@ -73,7 +124,8 @@ namespace Screen {
             case Frame::Action::Reset:
                 this->container->removeElement(this->frame);
                 while (!this->frameStack.empty()) {
-                    delete this->frameStack.top();
+                    this->frameStack.top().frame->onPop(Frame::Type::None);
+                    delete this->frameStack.top().frame;
                     this->frameStack.pop();
                 }
                 this->resetState();
@@ -83,16 +135,16 @@ namespace Screen {
 
         switch (t) {
             case Frame::Type::Playlists:
-                // this->sidePlaylists->setActivated(true);
-                // this->frame = new Frame::Playlists(this->app);
+                this->sidePlaylists->setActivated(true);
+                this->frame = new Frame::Playlists(this->app);
                 break;
 
             case Frame::Type::Playlist:
-                // this->frame = new Frame::Playlist(this->app, id);
+                this->frame = new Frame::Playlist(this->app, id);
                 break;
 
             case Frame::Type::PlaylistInfo:
-                // this->frame = new Frame::PlaylistInfo(this->app, id);
+                this->frame = new Frame::PlaylistInfo(this->app, id);
                 break;
 
             case Frame::Type::Albums:
@@ -134,7 +186,13 @@ namespace Screen {
                 this->sideQueue->setActivated(true);
                 this->frame = new Frame::Queue(this->app);
                 break;
+
+            default:
+                break;
         }
+        this->frame->setShowAddToPlaylistFunc([this](std::function<void(PlaylistID)> f) {
+            this->showAddToPlaylist(f);
+        });
         this->frame->setChangeFrameFunc([this](Frame::Type t, Frame::Action a, int id) {
             this->changeFrame(t, a, id);
         });
@@ -172,6 +230,12 @@ namespace Screen {
         // Show/hide dimming element based on current state
         this->playerDim->setHidden(!(this->focussed() == this->player && !this->isTouch));
 
+        // Change frame if needed
+        while (this->backOneFrame > 0) {
+            this->backCallback();
+            this->backOneFrame--;
+        }
+
         // Set back button colour and behaviour based on the stack
         if (this->frameStack.empty()) {
             this->backIcon->setColour(this->app->theme()->muted());
@@ -199,7 +263,7 @@ namespace Screen {
 
     void Home::resetState() {
         // Deselect all side buttons
-        this->sideRP->setActivated(false);
+        this->sidePlaylists->setActivated(false);
         this->sideSongs->setActivated(false);
         this->sideArtists->setActivated(false);
         this->sideAlbums->setActivated(false);
@@ -291,16 +355,16 @@ namespace Screen {
         this->sideContainer->addElement(this->search);
 
         // Navigation list
-        this->sideRP = new CustomElm::SideButton(10, 230, 290);
-        this->sideRP->setIcon(new Aether::Image(0, 0, "romfs:/icons/clock.png"));
-        this->sideRP->setText("Recently Played");
-        this->sideRP->setActiveColour(this->app->theme()->accent());
-        this->sideRP->setInactiveColour(this->app->theme()->FG());
-        this->sideRP->setCallback([this](){
-
+        this->sidePlaylists = new CustomElm::SideButton(10, 230, 290);
+        this->sidePlaylists->setIcon(new Aether::Image(0, 0, "romfs:/icons/playlist.png"));
+        this->sidePlaylists->setText("Playlists");
+        this->sidePlaylists->setActiveColour(this->app->theme()->accent());
+        this->sidePlaylists->setInactiveColour(this->app->theme()->FG());
+        this->sidePlaylists->setCallback([this](){
+            this->changeFrame(Frame::Type::Playlists, Frame::Action::Reset);
         });
-        this->sideContainer->addElement(this->sideRP);
-        this->sideSongs = new CustomElm::SideButton(10, this->sideRP->y() + 60, 290);
+        this->sideContainer->addElement(this->sidePlaylists);
+        this->sideSongs = new CustomElm::SideButton(10, this->sidePlaylists->y() + 60, 290);
         this->sideSongs->setIcon(new Aether::Image(0, 0, "romfs:/icons/musicnote.png"));
         this->sideSongs->setText("Songs");
         this->sideSongs->setActiveColour(this->app->theme()->accent());
@@ -391,13 +455,17 @@ namespace Screen {
         this->frame = nullptr;
         this->changeFrame(Frame::Type::Songs, Frame::Action::Reset);
         this->container->setFocussed(this->frame);
+
+        this->addToPlMenu = nullptr;
     }
 
     void Home::onUnload() {
+        delete this->addToPlMenu;
+
         // Ensure all frames are deleted
         this->container->removeElement(this->frame);
         while (!this->frameStack.empty()) {
-            delete this->frameStack.top();
+            delete this->frameStack.top().frame;
             this->frameStack.pop();
         }
 

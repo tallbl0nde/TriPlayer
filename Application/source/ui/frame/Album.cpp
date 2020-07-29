@@ -1,6 +1,8 @@
 #include "Application.hpp"
-#include "ui/element/ListAlbumSong.hpp"
+#include "ui/element/listitem/AlbumSong.hpp"
 #include "ui/frame/Album.hpp"
+#include "ui/overlay/ArtistList.hpp"
+#include "ui/overlay/ItemMenu.hpp"
 #include "utils/Utils.hpp"
 
 // Play button dimensions
@@ -106,7 +108,7 @@ namespace Frame {
                     lastDisc = this->songs[i].discNumber;
                 }
 
-                CustomElm::ListAlbumSong * l = new CustomElm::ListAlbumSong();
+                CustomElm::ListItem::AlbumSong * l = new CustomElm::ListItem::AlbumSong();
                 if (this->songs[i].trackNumber > 0) {
                     l->setTrackString(std::to_string(this->songs[i].trackNumber));
                 }
@@ -115,8 +117,8 @@ namespace Frame {
                     l->setArtistString(this->songs[i].artist);
                 }
                 l->setLengthString(Utils::secondsToHMS(this->songs[i].duration));
-                l->setDotsColour(this->app->theme()->muted());
                 l->setLineColour(this->app->theme()->muted2());
+                l->setMoreColour(this->app->theme()->muted());
                 l->setTextColour(this->app->theme()->FG());
                 l->setCallback([this, i]() {
                     this->playAlbum(i);
@@ -158,8 +160,9 @@ namespace Frame {
 
         // Populate with artists
         for (size_t i = 0; i < m.size(); i++) {
-            CustomElm::ListArtist * l = new CustomElm::ListArtist(m[i].imagePath.empty() ? "romfs:/misc/noartist.png" : m[i].imagePath);
+            CustomElm::ListItem::Artist * l = new CustomElm::ListItem::Artist(m[i].imagePath.empty() ? "romfs:/misc/noartist.png" : m[i].imagePath);
             l->setName(m[i].name);
+            l->setLineColour(this->app->theme()->muted2());
             l->setTextColour(this->app->theme()->FG());
             ArtistID aID = m[i].ID;
             l->setCallback([this, aID]() {
@@ -178,21 +181,8 @@ namespace Frame {
             this->albumMenu = new CustomOvl::Menu();
             this->albumMenu->setBackgroundColour(this->app->theme()->popupBG());
 
-            // Play Album
-            CustomElm::MenuButton * b = new CustomElm::MenuButton();
-            b->setIcon(new Aether::Image(0, 0, "romfs:/icons/playsmall.png"));
-            b->setIconColour(this->app->theme()->muted());
-            b->setText("Play");
-            b->setTextColour(this->app->theme()->FG());
-            b->setCallback([this]() {
-                this->playAlbum(0);
-                this->albumMenu->close();
-            });
-            this->albumMenu->addButton(b);
-            this->albumMenu->addSeparator(this->app->theme()->muted2());
-
             // Add to Queue
-            b = new CustomElm::MenuButton();
+            CustomElm::MenuButton * b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
             b->setIconColour(this->app->theme()->muted());
             b->setText("Add to Queue");
@@ -213,7 +203,15 @@ namespace Frame {
             b->setText("Add to Playlist");
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this]() {
-                // Do something
+                this->showAddToPlaylist([this](PlaylistID i) {
+                    if (i >= 0) {
+                        std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForAlbum(this->metadata.ID);
+                        for (size_t j = 0; j < v.size(); j++) {
+                            this->app->database()->addSongToPlaylist(i, v[j].ID);
+                        }
+                        this->albumMenu->close();
+                    }
+                });
             });
             this->albumMenu->addButton(b);
             this->albumMenu->addSeparator(this->app->theme()->muted2());
@@ -275,21 +273,8 @@ namespace Frame {
         this->songMenu->setSubText(this->songs[pos].artist);
         this->songMenu->setImage(new Aether::Image(0, 0, this->metadata.imagePath.empty() ? "romfs:/misc/noalbum.png" : this->metadata.imagePath));
 
-        // Play
-        CustomElm::MenuButton * b = new CustomElm::MenuButton();
-        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/playsmall.png"));
-        b->setIconColour(this->app->theme()->muted());
-        b->setText("Play");
-        b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, pos]() {
-            this->playAlbum(pos);
-            this->songMenu->close();
-        });
-        this->songMenu->addButton(b);
-        this->songMenu->addSeparator(this->app->theme()->muted2());
-
         // Add to Queue
-        b = new CustomElm::MenuButton();
+        CustomElm::MenuButton * b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
         b->setIconColour(this->app->theme()->muted());
         b->setText("Add to Queue");
@@ -307,7 +292,12 @@ namespace Frame {
         b->setText("Add to Playlist");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
-            // Do something
+            this->showAddToPlaylist([this, pos](PlaylistID i) {
+                if (i >= 0) {
+                    this->app->database()->addSongToPlaylist(i, this->songs[pos].ID);
+                    this->songMenu->close();
+                }
+            });
         });
         this->songMenu->addButton(b);
         this->songMenu->addSeparator(this->app->theme()->muted2());

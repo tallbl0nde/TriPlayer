@@ -8,17 +8,7 @@
 #define WIDTH 380
 
 namespace CustomOvl {
-    Menu::Menu() : Aether::Overlay() {
-        // Close if B pressed
-        this->onButtonPress(Aether::Button::B, [this]() {
-            this->close();
-        });
-
-        // Add a second transparent layer cause we like it dark
-        Aether::Rectangle * r = new Aether::Rectangle(this->x(), this->y(), this->w(), this->h());
-        r->setColour(Aether::Colour{0, 0, 0, 120});
-        this->addElement(r);
-
+    Menu::Menu() : Overlay() {
         // Background (will be resized vertically to fit buttons)
         this->bg = new Aether::Rectangle(0, 0, WIDTH, 1, 25);
         this->addElement(this->bg);
@@ -30,7 +20,6 @@ namespace CustomOvl {
 
         this->nextY = Y_PADDING;
         this->topBtn = nullptr;
-        this->touchOutside = false;
     }
 
     void Menu::addButton(CustomElm::MenuButton * b) {
@@ -40,6 +29,8 @@ namespace CustomOvl {
             this->bg->setXY((this->w() - this->bg->w())/2, (this->h() -  this->bg->h())/2);
             this->btns->setXY(this->bg->x(), this->bg->y());
             this->btns->setH(this->nextY - this->btns->y());
+            this->setTopLeft(this->bg->x(), this->bg->y());
+            this->setBottomRight(this->bg->x() + this->bg->w(), this->bg->y() + this->bg->h());
             return;
         }
 
@@ -63,30 +54,6 @@ namespace CustomOvl {
 
     void Menu::setBackgroundColour(Aether::Colour c) {
         this->bg->setColour(c);
-    }
-
-    bool Menu::handleEvent(Aether::InputEvent * e) {
-        if (Overlay::handleEvent(e)) {
-            return true;
-        }
-
-        // Mark as touched outside
-        if (e->type() == Aether::EventType::TouchPressed) {
-            if (e->touchX() < this->bg->x() || e->touchX() > this->bg->x() + this->bg->w() || e->touchY() < this->bg->y() || e->touchY() > this->bg->y() + this->bg->h()) {
-                this->touchOutside = true;
-            }
-
-        // Close overlay if released outside too
-        } else if (e->type() == Aether::EventType::TouchReleased) {
-            bool b = this->touchOutside;
-            this->touchOutside = false;
-            if (b && (e->touchX() < this->bg->x() || e->touchX() > this->bg->x() + this->bg->w() || e->touchY() < this->bg->y() || e->touchY() > this->bg->y() + this->bg->h())) {
-                this->close();
-                return true;
-            }
-        }
-
-        return false;
     }
 
     void Menu::resetHighlight() {

@@ -1,6 +1,7 @@
 #include "Application.hpp"
-#include "ui/element/ListSong.hpp"
+#include "ui/element/listitem/Song.hpp"
 #include "ui/frame/Songs.hpp"
+#include "ui/overlay/ItemMenu.hpp"
 #include "utils/Utils.hpp"
 
 namespace Frame {
@@ -14,13 +15,13 @@ namespace Frame {
             for (size_t i = 0; i < m.size(); i++) {
                 this->songIDs.push_back(m[i].ID);
                 totalSecs += m[i].duration;
-                CustomElm::ListSong * l = new CustomElm::ListSong();
+                CustomElm::ListItem::Song * l = new CustomElm::ListItem::Song();
                 l->setTitleString(m[i].title);
                 l->setArtistString(m[i].artist);
                 l->setAlbumString(m[i].album);
                 l->setLengthString(Utils::secondsToHMS(m[i].duration));
-                l->setDotsColour(this->app->theme()->muted());
                 l->setLineColour(this->app->theme()->muted2());
+                l->setMoreColour(this->app->theme()->muted());
                 l->setTextColour(this->app->theme()->FG());
                 l->setCallback([this, i](){
                     this->app->sysmodule()->sendSetPlayingFrom("Your Songs");
@@ -95,7 +96,12 @@ namespace Frame {
         b->setText("Add to Playlist");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
-            // Do something
+            this->showAddToPlaylist([this, id](PlaylistID i) {
+                if (i >= 0) {
+                    this->app->database()->addSongToPlaylist(i, id);
+                    this->menu->close();
+                }
+            });
         });
         this->menu->addButton(b);
         this->menu->addSeparator(this->app->theme()->muted2());

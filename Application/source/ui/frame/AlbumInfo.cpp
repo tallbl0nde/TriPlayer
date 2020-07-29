@@ -250,6 +250,7 @@ namespace Frame {
 
         // Set path and show
         this->checkFB = true;
+        this->browser->resetFile();
         this->browser->setPath(FILE_BROWSER_ROOT);
         this->app->addOverlay(this->browser);
     }
@@ -272,14 +273,9 @@ namespace Frame {
         }
 
         // Commit changes to db (acquires lock and then writes)
-        this->app->database()->close();
-        this->app->sysmodule()->waitRequestDBLock();
-        this->app->database()->openReadWrite();
+        this->app->lockDatabase();
         bool ok = this->app->database()->updateAlbum(this->metadata);
-        this->app->database()->prepareSearch();
-        this->app->database()->close();
-        this->app->database()->openReadOnly();
-        this->app->sysmodule()->sendReleaseDBLock();
+        this->app->unlockDatabase();
 
         // If updated ok actually manipulate image file(s)
         if (ok && this->updateImage) {

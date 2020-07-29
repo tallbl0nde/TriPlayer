@@ -2,9 +2,15 @@
 #define FRAME_QUEUE_HPP
 
 #include <list>
-#include "ui/element/ListSong.hpp"
 #include "ui/frame/Frame.hpp"
-#include "ui/overlay/ItemMenu.hpp"
+
+// Forward declarations as these are used within the frame
+namespace CustomElm::ListItem {
+    class Song;
+};
+namespace CustomOvl {
+    class ItemMenu;
+}
 
 namespace Frame {
     class Queue : public Frame {
@@ -18,12 +24,12 @@ namespace Frame {
 
             // Elements in list
             Aether::Element * playing;
-            CustomElm::ListSong * playingElm;
+            CustomElm::ListItem::Song * playingElm;
             Aether::Element * queue;
-            std::list<CustomElm::ListSong *> queueEls;
+            std::list<CustomElm::ListItem::Song *> queueEls;
             Aether::Element * upnext;
             Aether::Text * upnextStr;
-            std::list<CustomElm::ListSong *> upnextEls;
+            std::list<CustomElm::ListItem::Song *> upnextEls;
 
             // Temporary vector of song metadata
             std::vector<Metadata::Song> songMeta;
@@ -53,8 +59,8 @@ namespace Frame {
             // Update list elements
             void updateList();
 
-            // Create a ListSong for given id
-            CustomElm::ListSong * getListSong(size_t, Section);
+            // Create a ListItem::Song for given id
+            CustomElm::ListItem::Song * getListSong(size_t, Section);
 
         public:
             // Constructor sets strings and forms list using database and queue

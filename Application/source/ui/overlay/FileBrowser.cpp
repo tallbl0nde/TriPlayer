@@ -1,4 +1,5 @@
 #include <algorithm>
+#include "ui/element/listitem/File.hpp"
 #include "ui/overlay/FileBrowser.hpp"
 #include "utils/FS.hpp"
 
@@ -6,15 +7,12 @@
 #define PADDING 50
 
 namespace CustomOvl {
-    FileBrowser::FileBrowser(int w, int h) : Aether::Overlay() {
-        // Allow exiting by pressing B
-        this->onButtonPress(Aether::Button::B, [this]() {
-            this->close();
-        });
-
+    FileBrowser::FileBrowser(int w, int h) : Overlay() {
         // Rectangle background
         this->rect = new Aether::Rectangle(640 - w/2, 360 - h/2, w, h, 8);
         this->addElement(this->rect);
+        this->setTopLeft(this->rect->x(), this->rect->y());
+        this->setBottomRight(this->rect->x() + this->rect->w(), this->rect->y() + this->rect->h());
 
         // Headings
         this->heading = new Aether::Text(this->rect->x() + PADDING, this->rect->y() + PADDING/2, "", 30);
@@ -90,13 +88,13 @@ namespace CustomOvl {
             } else {
                 path = this->path->string() + (this->path->string() == "/" ? "" : "/") + contents[i].first;
             }
-            CustomElm::ListFile * l;
+            CustomElm::ListItem::File * l;
             if (contents[i].second) {
-                l = new CustomElm::ListFile(contents[i].first, true, [this, path]() {
+                l = new CustomElm::ListItem::File(contents[i].first, true, [this, path]() {
                     this->setPath(path);
                 });
             } else {
-                l = new CustomElm::ListFile(contents[i].first, false, [this, path]() {
+                l = new CustomElm::ListItem::File(contents[i].first, false, [this, path]() {
                     this->setFile(path);
                 });
             }

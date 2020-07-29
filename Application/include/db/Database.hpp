@@ -72,6 +72,31 @@ class Database {
         // ID will be negative if not found
         Metadata::Artist getArtistMetadataForID(ArtistID);
 
+        // ===== Playlist Metadata ===== //
+        // Add a blank playlist to the database
+        // Returns true if successful, false otherwise
+        bool addPlaylist(Metadata::Playlist);
+        // Update a playlist's metadata
+        // Returns true if successful, false otherwise
+        bool updatePlaylist(Metadata::Playlist);
+        // Remove a playlist from the database
+        // Returns true if successful, false otherwise
+        bool removePlaylist(PlaylistID);
+        // Returns metadata for all stored playlists
+        // Empty if no playlists or an error occurred
+        std::vector<Metadata::Playlist> getAllPlaylistMetadata();
+        // Returns metadata for given ID (id will be -1 if not found!)
+        Metadata::Playlist getPlaylistMetadataForID(PlaylistID);
+        // Returns a playlist's songs
+        // Empty if there are none or an error occurred
+        std::vector<Metadata::PlaylistSong> getSongMetadataForPlaylist(PlaylistID);
+        // Add a song to a playlist
+        // Return true if successful, false otherwise
+        bool addSongToPlaylist(PlaylistID, SongID);
+        // Remove a song from a playlist
+        // Return true if successful, false otherwise
+        bool removeSongFromPlaylist(PlaylistSongID);
+
         // ===== Song Metadata ===== //
         // Add a song (and associated artists, etc) into database
         // Returns true if successful, false otherwise
@@ -120,8 +145,6 @@ class Database {
         ArtistID getArtistIDForSong(SongID);
         // Returns modified time for song matching path (0 on error/not found!)
         unsigned int getModifiedTimeForPath(std::string &);
-        // Return a path matching given ID (or blank if not found)
-        std::string getPathForID(SongID);
         // Return ID of song with given path (-1 if not found)
         SongID getSongIDForPath(std::string &);
 

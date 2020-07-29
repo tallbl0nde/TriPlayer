@@ -1,7 +1,9 @@
 #include <sstream>
 #include "Application.hpp"
 #include "dtl.hpp"
+#include "ui/element/listitem/Song.hpp"
 #include "ui/frame/Queue.hpp"
+#include "ui/overlay/ItemMenu.hpp"
 #include "utils/Utils.hpp"
 
 // Helper function returning length of songs in queue in seconds
@@ -135,7 +137,7 @@ namespace Frame {
         }
 
         // Update sub queue
-        std::list<CustomElm::ListSong *>::iterator it = this->queueEls.begin();
+        std::list<CustomElm::ListItem::Song *>::iterator it = this->queueEls.begin();
         std::stringstream ss;
         subQueueDiff.printSES(ss);
         for (std::string line; std::getline(ss, line);) {
@@ -143,7 +145,7 @@ namespace Frame {
             switch (line[0]) {
                 // Remove element
                 case '-': {
-                    std::list<CustomElm::ListSong *>::iterator prev = std::prev(it);
+                    std::list<CustomElm::ListItem::Song *>::iterator prev = std::prev(it);
                     this->list->removeElement(*it);
                     this->queueEls.erase(it);
                     it = prev;
@@ -154,10 +156,10 @@ namespace Frame {
                 // Add element
                 case '+': {
                     SongID id = std::stoi(line.substr(1, line.length() - 1));
-                    CustomElm::ListSong * l = this->getListSong(id, Section::Queue);
+                    CustomElm::ListItem::Song * l = this->getListSong(id, Section::Queue);
                     l->setMoreCallback([this, id, l]() {
                         // Need to find current position
-                        std::list<CustomElm::ListSong *>::iterator it = std::find(this->queueEls.begin(), this->queueEls.end(), l);
+                        std::list<CustomElm::ListItem::Song *>::iterator it = std::find(this->queueEls.begin(), this->queueEls.end(), l);
                         size_t pos = std::distance(this->queueEls.begin(), it);
                         this->createMenu(id, pos, Section::Queue);
                     });
@@ -194,7 +196,7 @@ namespace Frame {
             switch (line[0]) {
                 // Remove element
                 case '-': {
-                    std::list<CustomElm::ListSong *>::iterator prev = std::prev(it);
+                    std::list<CustomElm::ListItem::Song *>::iterator prev = std::prev(it);
                     this->list->removeElement(*it);
                     this->upnextEls.erase(it);
                     it = prev;
@@ -205,10 +207,10 @@ namespace Frame {
                 // Add element
                 case '+': {
                     SongID id = std::stoi(line.substr(1, line.length() - 1));
-                    CustomElm::ListSong * l = this->getListSong(id, Section::UpNext);
+                    CustomElm::ListItem::Song * l = this->getListSong(id, Section::UpNext);
                     l->setMoreCallback([this, id, l]() {
                         // Need to find current position
-                        std::list<CustomElm::ListSong *>::iterator it = std::find(this->upnextEls.begin(), this->upnextEls.end(), l);
+                        std::list<CustomElm::ListItem::Song *>::iterator it = std::find(this->upnextEls.begin(), this->upnextEls.end(), l);
                         size_t pos = std::distance(this->upnextEls.begin(), it) + this->cachedSongIdx + 1;
                         this->createMenu(id, pos, Section::UpNext);
                     });
@@ -244,7 +246,7 @@ namespace Frame {
         this->subTotal->setX(this->x() + 885 - this->subTotal->w());
     }
 
-    CustomElm::ListSong * Queue::getListSong(size_t id, Section sec) {
+    CustomElm::ListItem::Song * Queue::getListSong(size_t id, Section sec) {
         // Get info for song (will be blank if not found)
         Metadata::Song m;
         // I can't think of a case where the same metadata would be in there twice
@@ -256,13 +258,13 @@ namespace Frame {
         }
 
         // Create element
-        CustomElm::ListSong * l = new CustomElm::ListSong();
+        CustomElm::ListItem::Song * l = new CustomElm::ListItem::Song();
         l->setTitleString(m.title);
         l->setArtistString(m.artist);
         l->setAlbumString(m.album);
         l->setLengthString(Utils::secondsToHMS(m.duration));
-        l->setDotsColour(this->app->theme()->muted());
         l->setLineColour(this->app->theme()->muted2());
+        l->setMoreColour(this->app->theme()->muted());
         l->setTextColour(this->app->theme()->FG());
 
         if (sec == Section::Playing) {
@@ -370,7 +372,12 @@ namespace Frame {
         b->setText("Add to Playlist");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
-            // Do something
+            this->showAddToPlaylist([this, id](PlaylistID i) {
+                if (i >= 0) {
+                    this->app->database()->addSongToPlaylist(i, id);
+                    this->menu->close();
+                }
+            });
         });
         this->menu->addButton(b);
         this->menu->addSeparator(this->app->theme()->muted2());
