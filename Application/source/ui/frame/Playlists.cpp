@@ -7,6 +7,8 @@
 #include "utils/FS.hpp"
 #include "utils/Utils.hpp"
 
+#include "Log.hpp"
+
 // New Playlist button dimensions
 #define BUTTON_F 26
 #define BUTTON_W 250
@@ -51,50 +53,65 @@ namespace Frame {
         this->menu = nullptr;
         this->msgbox = nullptr;
         this->newMenu = nullptr;
+        this->pushedIdx = -1;
     }
 
-    void Playlists::setActive() {
-        // This isn't ideal but it gets the job done... for now
-        Frame::setActive();
-        this->refreshList();
+    CustomElm::ListItem::Playlist * Playlists::getListItem(const Metadata::Playlist & m) {
+        CustomElm::ListItem::Playlist * l = new CustomElm::ListItem::Playlist(m.imagePath.empty() ? DEFAULT_IMAGE : m.imagePath);
+
+        // Set styling parameters
+        l->setNameString(m.name);
+        l->setSongsString(std::to_string(m.songCount) + (m.songCount == 1 ? " song" : " songs"));
+        l->setLineColour(this->app->theme()->muted2());
+        l->setMoreColour(this->app->theme()->muted());
+        l->setTextColour(this->app->theme()->FG());
+        l->setMutedTextColour(this->app->theme()->muted());
+
+        // Need to search for element in callbacks as order is changed when a playlist is removed
+        l->setCallback([this, l](){
+            std::vector<Item>::iterator it = std::find_if(this->items.begin(), this->items.end(), [this, l](const Item e) {
+                return e.elm == l;
+            });
+            if (it != this->items.end()) {
+                size_t idx = std::distance(this->items.begin(), it);
+                this->pushedIdx = idx;
+                this->changeFrame(Type::Playlist, Action::Push, this->items[idx].meta.ID);
+            }
+        });
+        l->setMoreCallback([this, l]() {
+            std::vector<Item>::iterator it = std::find_if(this->items.begin(), this->items.end(), [this, l](const Item e) {
+                return e.elm == l;
+            });
+            if (it != this->items.end()) {
+                size_t idx = std::distance(this->items.begin(), it);
+                this->pushedIdx = idx;
+                this->createMenu(idx);
+            }
+        });
+
+        return l;
     }
 
     void Playlists::refreshList() {
-        size_t oldCount = this->metadata.size();
-        this->metadata = this->app->database()->getAllPlaylistMetadata();
-
-        // Do nothing if count didn't change
-        if (oldCount != 0 && this->metadata.size() == oldCount) {
-            return;
-        }
-
-        // Show list if there are playlists
+        // Delete old data and fetch/create new items
         this->removeElement(this->emptyMsg);
         this->emptyMsg = nullptr;
         this->list->removeAllElements();
-        if (this->metadata.size() > 0) {
+        this->items.clear();
+        std::vector<Metadata::Playlist> m = this->app->database()->getAllPlaylistMetadata();
+
+        // Show list if there are playlists
+        if (m.size() > 0) {
             this->list->setHidden(false);
 
             // Create list items for each playlist
-            for (size_t i = 0; i < this->metadata.size(); i++) {
-                std::string img = (this->metadata[i].imagePath.empty() ? DEFAULT_IMAGE : this->metadata[i].imagePath);
-                CustomElm::ListItem::Playlist * l = new CustomElm::ListItem::Playlist(img);
-                l->setNameString(this->metadata[i].name);
-                std::string str = std::to_string(this->metadata[i].songCount) + (this->metadata[i].songCount == 1 ? " song" : " songs");
-                l->setSongsString(str);
-                l->setLineColour(this->app->theme()->muted2());
-                l->setMoreColour(this->app->theme()->muted());
-                l->setTextColour(this->app->theme()->FG());
-                l->setMutedTextColour(this->app->theme()->muted());
-                l->setCallback([this, i](){
-                    this->changeFrame(Type::Playlist, Action::Push, this->metadata[i].ID);
-                    this->refreshList();
-                });
-                l->setMoreCallback([this, i]() {
-                    this->createMenu(i);
-                });
-                this->list->addElement(l);
+            for (size_t i = 0; i < m.size(); i++) {
+                // Create and push element onto vector
+                CustomElm::ListItem::Playlist * l = this->getListItem(m[i]);
+                this->items.push_back(Item{m[i], l});
 
+                // Position in list
+                this->list->addElement(l);
                 if (i == 0) {
                     l->setY(this->list->y() + 10);
                 }
@@ -112,32 +129,6 @@ namespace Frame {
         }
     }
 
-    void Playlists::update(uint32_t dt) {
-        Frame::update(dt);
-
-        // Check the file browser result and create popup/image
-        if (this->checkFB) {
-            if (this->browser->shouldClose()) {
-                std::string path = this->browser->chosenFile();
-                if (!path.empty()) {
-                    // Attempt to create new image
-                    Aether::Image * tmpImage = new Aether::Image(0, 0, path);
-
-                    // Show error if image wasn't created
-                    if (tmpImage->texW() == 0 || tmpImage->texH() == 0) {
-                        this->createInfoOverlay("An error occurred reading the selected image. This may be due to a corrupted image or incorrect file extension.");
-                        delete tmpImage;
-
-                    } else {
-                        this->newData.imagePath = path;
-                        this->newMenu->setImage(tmpImage);
-                    }
-                }
-                this->checkFB = false;
-            }
-        }
-    }
-
     void Playlists::createDeletePlaylistMenu(const size_t pos) {
         delete this->msgbox;
         this->msgbox = new Aether::MessageBox();
@@ -148,9 +139,18 @@ namespace Frame {
         this->msgbox->addRightButton("Delete", [this, pos]() {
             // Delete and update list
             this->app->lockDatabase();
-            this->app->database()->removePlaylist(this->metadata[pos].ID);
+            bool ok = this->app->database()->removePlaylist(this->items[pos].meta.ID);
             this->app->unlockDatabase();
-            this->refreshList();
+
+            // Remove image and item from list if succeeded
+            if (ok) {
+                Utils::Fs::deleteFile(this->items[pos].meta.imagePath);
+                this->list->removeElement(this->items[pos].elm);
+                this->items.erase(this->items.begin() + pos);
+                if (this->items.empty()) {
+                    this->refreshList();
+                }
+            }
 
             // Close both overlays
             this->msgbox->close();
@@ -161,7 +161,7 @@ namespace Frame {
         this->msgbox->setTextColour(this->app->theme()->accent());
         Aether::Element * body = new Aether::Element(0, 0, 700);
         Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "", 24, 620);
-        tips->setString("Are you sure you want to delete the playlist '" + this->metadata[pos].name + "'? This action cannot be undone!");
+        tips->setString("Are you sure you want to delete the playlist '" + this->items[pos].meta.name + "'? This action cannot be undone!");
         tips->setColour(this->app->theme()->FG());
         body->addElement(tips);
         body->setH(tips->h() + 80);
@@ -200,9 +200,9 @@ namespace Frame {
         this->menu->addSeparator(this->app->theme()->muted2());
 
         // Set playlist specific things
-        this->menu->setImage(new Aether::Image(0, 0, this->metadata[pos].imagePath.empty() ? "romfs:/misc/noplaylist.png" : this->metadata[pos].imagePath));
-        this->menu->setMainText(this->metadata[pos].name);
-        std::string str = std::to_string(this->metadata[pos].songCount) + (this->metadata[pos].songCount == 1 ? " song" : " songs");
+        this->menu->setImage(new Aether::Image(0, 0, this->items[pos].meta.imagePath.empty() ? "romfs:/misc/noplaylist.png" : this->items[pos].meta.imagePath));
+        this->menu->setMainText(this->items[pos].meta.name);
+        std::string str = std::to_string(this->items[pos].meta.songCount) + (this->items[pos].meta.songCount == 1 ? " song" : " songs");
         this->menu->setSubText(str);
 
         // Play
@@ -212,13 +212,13 @@ namespace Frame {
         b->setText("Play");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
-            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->metadata[pos].ID);
+            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID);
             if (v.size() > 0) {
                 std::vector<SongID> ids;
                 for (size_t i = 0; i < v.size(); i++) {
                     ids.push_back(v[i].song.ID);
                 }
-                this->app->sysmodule()->sendSetPlayingFrom(this->metadata[pos].name);
+                this->app->sysmodule()->sendSetPlayingFrom(this->items[pos].meta.name);
                 this->app->sysmodule()->sendSetQueue(ids);
                 this->app->sysmodule()->sendSetSongIdx(0);
                 this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
@@ -235,7 +235,7 @@ namespace Frame {
         b->setText("Add to Queue");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
-            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->metadata[pos].ID);
+            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID);
             for (size_t i = 0; i < v.size(); i++) {
                 this->app->sysmodule()->sendAddToSubQueue(v[i].song.ID);
             }
@@ -252,11 +252,28 @@ namespace Frame {
         b->setCallback([this, pos]() {
             this->showAddToPlaylist([this, pos](PlaylistID i) {
                 if (i >= 0) {
-                    std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->metadata[pos].ID);
+                    // Get list of songs and add one-by-one to other playlist
+                    std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID);
                     for (size_t j = 0; j < v.size(); j++) {
                         this->app->database()->addSongToPlaylist(i, v[j].song.ID);
                     }
-                    this->refreshList();
+
+                    // Recreate list item in order to update song count
+                    std::vector<Item>::iterator it = std::find_if(this->items.begin(), this->items.end(), [this, i](const Item e) {
+                        return e.meta.ID == i;
+                    });
+                    if (it != this->items.end()) {
+                        size_t idx = std::distance(this->items.begin(), it);
+                        this->list->removeElement(this->items[idx].elm);
+                        this->items[idx].meta = this->app->database()->getPlaylistMetadataForID(i);
+                        this->items[idx].elm = this->getListItem(this->items[idx].meta);
+                        this->list->addElementAfter(this->items[idx].elm, (idx == 0 ? nullptr : this->items[idx-1].elm));
+
+                    // Otherwise recreate list
+                    } else {
+                        this->refreshList();
+                    }
+
                     this->menu->close();
                 }
             });
@@ -283,7 +300,7 @@ namespace Frame {
         b->setText("View Information");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
-            this->changeFrame(Type::PlaylistInfo, Action::Push, this->metadata[pos].ID);
+            this->changeFrame(Type::PlaylistInfo, Action::Push, this->items[pos].meta.ID);
             this->menu->close();
         });
         this->menu->addButton(b);
@@ -372,12 +389,101 @@ namespace Frame {
             if (!src.empty()) {
                 Utils::Fs::copyFile(src, this->newData.imagePath);
             }
+            // Completely recreate list
             this->refreshList();
 
         // Otherwise show a message
         } else {
             this->createInfoOverlay("Unable to write to the database, see the logs for more information!");
         }
+    }
+
+    void Playlists::update(uint32_t dt) {
+        Frame::update(dt);
+
+        // Check the file browser result and create popup/image
+        if (this->checkFB) {
+            if (this->browser->shouldClose()) {
+                std::string path = this->browser->chosenFile();
+                if (!path.empty()) {
+                    // Attempt to create new image
+                    Aether::Image * tmpImage = new Aether::Image(0, 0, path);
+
+                    // Show error if image wasn't created
+                    if (tmpImage->texW() == 0 || tmpImage->texH() == 0) {
+                        this->createInfoOverlay("An error occurred reading the selected image. This may be due to a corrupted image or incorrect file extension.");
+                        delete tmpImage;
+
+                    } else {
+                        this->newData.imagePath = path;
+                        this->newMenu->setImage(tmpImage);
+                    }
+                }
+                this->checkFB = false;
+            }
+        }
+    }
+
+    void Playlists::onPop(Type t) {
+        // Get new metadata (if last playlist was deleted we can simply refresh the list)
+        std::vector<Metadata::Playlist> m = this->app->database()->getAllPlaylistMetadata();
+        if (!this->items.empty() && m.empty()) {
+            this->refreshList();
+            return;
+        }
+
+        // If there's a count difference then we need to remove the pushed playlist (as it was deleted)
+        if (m.size() != this->items.size()) {
+            this->list->removeElement(this->items[this->pushedIdx].elm);
+            this->items.erase(this->items.begin() + this->pushedIdx);
+            return;
+        }
+
+        // Recreate the playlist item if the metadata changed (and move to correct position)
+        std::vector<Metadata::Playlist>::iterator it = std::find_if(m.begin(), m.end(), [this](const Metadata::Playlist m) {
+            return m.ID == this->items[this->pushedIdx].meta.ID;
+        });
+        if (it != m.end()) {
+            size_t idx = std::distance(m.begin(), it);
+
+            // Check if we need to recreate the element due to metadata changes
+            Metadata::Playlist o = this->items[this->pushedIdx].meta;
+            if (o.imagePath != m[idx].imagePath || o.name != m[idx].name || o.songCount != m[idx].songCount) {
+                // If so remove the element from the list
+                bool hi = (this->list->focussed() == this->items[this->pushedIdx].elm);
+                this->list->removeElement(this->items[this->pushedIdx].elm);
+                this->items[this->pushedIdx].elm = this->getListItem(m[idx]);
+                this->items[this->pushedIdx].meta = m[idx];
+
+                // Now rotate items to match future positions;
+                if (this->pushedIdx != idx) {
+                    if (this->pushedIdx < idx) {
+                        std::rotate(this->items.begin() + this->pushedIdx, this->items.begin() + this->pushedIdx + 1, this->items.begin() + idx + 1);
+                    } else if (this->pushedIdx > idx) {
+                        std::rotate(this->items.begin() + idx, this->items.begin() + this->pushedIdx, this->items.begin() + this->pushedIdx + 1);
+                    }
+                }
+
+                // Finally (re)add to list
+                this->list->addElementAfter(this->items[idx].elm, (idx == 0 ? nullptr : this->items[idx-1].elm));
+                if (hi) {
+                    this->list->setFocussed(this->items[idx].elm);
+                }
+            }
+        }
+
+        // Now that everything is in order, check if other element's song counts have changed
+        for (size_t i = 0; i < this->items.size(); i++) {
+            if (m[i].songCount != this->items[i].meta.songCount) {
+                // Recreate if different count
+                this->list->removeElement(this->items[i].elm);
+                this->items[i].elm = this->getListItem(m[i]);
+                this->items[i].meta = m[i];
+                this->list->addElementAfter(this->items[i].elm, (i == 0 ? nullptr : this->items[i-1].elm));
+            }
+        }
+
+        this->pushedIdx = -1;
     }
 
     Playlists::~Playlists() {

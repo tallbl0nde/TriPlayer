@@ -4,6 +4,10 @@
 #include "ui/frame/Frame.hpp"
 
 // Forward declarations as only pointers are used in this header
+namespace CustomElm::ListItem {
+    class Playlist;
+};
+
 namespace CustomOvl {
     class FileBrowser;
     class ItemMenu;
@@ -13,6 +17,12 @@ namespace CustomOvl {
 namespace Frame {
     class Playlists : public Frame {
         private:
+            // Struct forming a pair between metadata and list item
+            struct Item {
+                Metadata::Playlist meta;                // Playlist metadata
+                CustomElm::ListItem::Playlist * elm;    // List item matching metadata
+            };
+
             // Various overlays shown
             CustomOvl::FileBrowser * browser;
             CustomOvl::ItemMenu * menu;
@@ -25,7 +35,9 @@ namespace Frame {
             Aether::FilledButton * newButton;
 
             // Vector of cached playlist metadata
-            std::vector<Metadata::Playlist> metadata;
+            std::vector<Item> items;
+            size_t pushedIdx;
+
             // Metadata of playlist to create
             Metadata::Playlist newData;
 
@@ -36,7 +48,10 @@ namespace Frame {
             void createNewPlaylistMenu();
             void createInfoOverlay(const std::string &);
 
-            // Refreshes the list
+            // Creates a ListItem::Playlist from the given metadata
+            CustomElm::ListItem::Playlist * getListItem(const Metadata::Playlist &);
+
+            // Reconstructs the entire list from scratch
             void refreshList();
 
             // Save new playlist to DB
@@ -46,11 +61,11 @@ namespace Frame {
             // Constructor sets strings and forms list using database
             Playlists(Main::Application *);
 
-            // Override to update list whenever set active (not ideal but it works)
-            void setActive();
-
             // Handles checking for file browser things
             void update(uint32_t);
+
+            // Check for changes when popped
+            void onPop(Type);
 
             // Delete menu if there is one
             ~Playlists();

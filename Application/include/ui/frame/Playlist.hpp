@@ -24,7 +24,11 @@ namespace Frame {
 
             // Indicates frame should delete itself
             bool goBack;
+
+            // UI elements
+            Aether::Container * btns;
             Aether::Text * emptyMsg;
+            Aether::Image * image;
 
             // Cached data
             std::vector<CustomElm::ListItem::Song *> elms;
@@ -49,6 +53,9 @@ namespace Frame {
 
             // Check when we need to change frame
             void update(uint32_t);
+
+            // Check if we need to update heading and image (due to change in PlaylistInfo)
+            void onPop(Type);
 
             // Delete created overlays
             ~Playlist();

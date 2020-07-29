@@ -2,6 +2,7 @@
 #include "ui/element/listitem/Song.hpp"
 #include "ui/frame/Playlist.hpp"
 #include "ui/overlay/ItemMenu.hpp"
+#include "utils/FS.hpp"
 #include "utils/Utils.hpp"
 
 // Play button dimensions
@@ -21,6 +22,7 @@ namespace Frame {
         this->lengthH->setY(this->albumH->y());
         this->list->setY(this->list->y() + 80);
         this->list->setH(this->list->h() - 80);
+        this->subLength->setHidden(true);
 
         // First get metadata for the provided playlist
         this->metadata = this->app->database()->getPlaylistMetadataForID(id);
@@ -31,9 +33,9 @@ namespace Frame {
         }
 
         // Populate with Playlist's data
-        Aether::Image * image = new Aether::Image(this->x() + 50, this->y() + 50, this->metadata.imagePath.empty() ? "romfs:/misc/noplaylist.png" : this->metadata.imagePath);
-        image->setWH(IMAGE_SIZE, IMAGE_SIZE);
-        this->addElement(image);
+        this->image = new Aether::Image(this->x() + 50, this->y() + 50, this->metadata.imagePath.empty() ? "romfs:/misc/noplaylist.png" : this->metadata.imagePath);
+        this->image->setWH(IMAGE_SIZE, IMAGE_SIZE);
+        this->addElement(this->image);
         this->heading->setString(this->metadata.name);
         this->heading->setX(image->x() + image->w() + 28);
         this->heading->setY(image->y() - 10);
@@ -63,10 +65,10 @@ namespace Frame {
         dots->setColour(this->app->theme()->FG());
         moreButton->addElement(dots);
 
-        Aether::Container * c = new Aether::Container(playButton->x(), playButton->y(), moreButton->x() + moreButton->w() - playButton->x(), playButton->h());
-        c->addElement(playButton);
-        c->addElement(moreButton);
-        this->addElement(c);
+        this->btns = new Aether::Container(playButton->x(), playButton->y(), moreButton->x() + moreButton->w() - playButton->x(), playButton->h());
+        this->btns->addElement(playButton);
+        this->btns->addElement(moreButton);
+        this->addElement(this->btns);
 
         this->emptyMsg = nullptr;
         this->goBack = false;
@@ -76,7 +78,8 @@ namespace Frame {
 
         // Populate list
         this->refreshList();
-        this->setFocused(playButton);
+        this->setFocused(this->btns);
+        this->btns->setFocused(playButton);
     }
 
     void Playlist::playPlaylist(size_t pos) {
@@ -109,6 +112,8 @@ namespace Frame {
             this->emptyMsg->setColour(this->app->theme()->FG());
             this->emptyMsg->setX(this->x() + (this->w() - emptyMsg->w())/2);
             this->addElement(this->emptyMsg);
+            this->list->setHidden(true);
+            this->setFocused(this->btns);
         }
     }
 
@@ -150,11 +155,6 @@ namespace Frame {
             }
 
             this->setFocussed(this->list);
-
-        // Show message if no songs
-        } else {
-            this->list->setHidden(true);
-            this->subLength->setHidden(true);
         }
 
         this->calculateStats();
@@ -168,11 +168,15 @@ namespace Frame {
             this->msgbox->close();
         });
         this->msgbox->addRightButton("Delete", [this]() {
-            // Delete and update list
             this->app->lockDatabase();
-            this->app->database()->removePlaylist(this->metadata.ID);
+            bool ok = this->app->database()->removePlaylist(this->metadata.ID);
             this->app->unlockDatabase();
-            this->goBack = true;
+
+            // Delete image and frame if succeeded
+            if (ok) {
+                Utils::Fs::deleteFile(this->metadata.imagePath);
+                this->goBack = true;
+            }
         });
         this->msgbox->setLineColour(this->app->theme()->muted2());
         this->msgbox->setRectangleColour(this->app->theme()->popupBG());
@@ -376,6 +380,22 @@ namespace Frame {
             this->msgbox->close();
             this->playlistMenu->close();
             this->changeFrame(Type::Playlists, Action::Back, 0);
+        }
+    }
+
+    void Playlist::onPop(Type t) {
+        // Only take action if frame was PlaylistInfo
+        if (t == Type::PlaylistInfo) {
+            // Get updated metadata and update elements if needed
+            Metadata::Playlist m = this->app->database()->getPlaylistMetadataForID(this->metadata.ID);
+            if (m.imagePath != this->metadata.imagePath) {
+                this->removeElement(this->image);
+                this->image = new Aether::Image(this->x() + 50, this->y() + 50, m.imagePath.empty() ? "romfs:/misc/noplaylist.png" : m.imagePath);
+                this->image->setWH(IMAGE_SIZE, IMAGE_SIZE);
+                this->addElement(this->image);
+            }
+            this->heading->setString(m.name);
+            this->metadata = m;
         }
     }
 
