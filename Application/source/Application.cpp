@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "ui/screen/Fullscreen.hpp"
 #include "ui/screen/Home.hpp"
 #include "ui/screen/Splash.hpp"
 
@@ -29,6 +30,7 @@ namespace Main {
         // Setup screens
         this->scSplash = new Screen::Splash(this);
         this->scHome = new Screen::Home(this);
+        this->scFull = new Screen::Fullscreen(this);
         this->setScreen(ScreenID::Splash);
     }
 
@@ -48,6 +50,10 @@ namespace Main {
 
             case Home:
                 this->display->setScreen(this->scHome);
+                break;
+
+            case Fullscreen:
+                this->display->setScreen(this->scFull);
                 break;
         }
     }
@@ -97,6 +103,7 @@ namespace Main {
 
     Application::~Application() {
         // Delete screens
+        delete this->scFull;
         delete this->scHome;
         delete this->scSplash;
 

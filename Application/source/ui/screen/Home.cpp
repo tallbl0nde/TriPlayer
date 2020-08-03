@@ -446,7 +446,8 @@ namespace Screen {
             this->app->sysmodule()->sendSetVolume(f);
         });
         this->player->setFullscreenCallback([this]() {
-            // Change screen
+            this->app->pushScreen();
+            this->app->setScreen(Main::ScreenID::Fullscreen);
         });
         this->addElement(this->player);
         this->player->setHasSelectable(false);

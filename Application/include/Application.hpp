@@ -10,13 +10,15 @@
 namespace Screen {
     class Home;
     class Splash;
+    class Fullscreen;
 };
 
 namespace Main {
     // Enumeration for screens (allows for easy switching)
     enum ScreenID {
         Home,
-        Splash
+        Splash,
+        Fullscreen
     };
 
     // The Application class represents the "root" object of the app. It stores/handles all states
@@ -27,6 +29,7 @@ namespace Main {
             Aether::Display * display;
 
             // Screens of the app
+            Screen::Fullscreen * scFull;
             Screen::Home * scHome;
             Screen::Splash * scSplash;
 
