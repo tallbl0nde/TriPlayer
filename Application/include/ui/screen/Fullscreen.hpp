@@ -50,6 +50,7 @@ namespace Screen {
 
             // Cache the song ID to avoid updating every frame
             SongID playingID;
+            unsigned int durationVal;
 
             // Milliseconds since last controller input
             size_t buttonMs;
