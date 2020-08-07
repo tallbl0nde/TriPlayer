@@ -10,3 +10,6 @@
 [submodule "Application/libs/json"]
 	path = Application/libs/json
 	url = https://github.com/nlohmann/json.git
+[submodule "Common/libs/splash/splash"]
+	path = Common/libs/splash/splash
+	url = https://github.com/tallbl0nde/splash
