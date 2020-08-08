@@ -3,6 +3,12 @@
 #include "utils/Splash.hpp"
 
 namespace Utils::Splash {
+    Aether::Colour changeLightness(Aether::Colour old, int val) {
+        ::Splash::Colour col = ::Splash::Colour(old.a, old.r, old.g, old.b);
+        col = ::Splash::ColourUtils::changeColourLightness(col, val);
+        return Aether::Colour{(uint8_t)col.r(), (uint8_t)col.g(), (uint8_t)col.b(), (uint8_t)col.a()};
+    }
+
     Palette getPaletteForSurface(SDL_Surface * surf) {
         // Struct to return
         Palette palette;
@@ -54,9 +60,15 @@ namespace Utils::Splash {
         return palette;
     }
 
-    Aether::Colour changeLightness(Aether::Colour old, int val) {
-        ::Splash::Colour col = ::Splash::Colour(old.a, old.r, old.g, old.b);
-        col = ::Splash::ColourUtils::changeColourLightness(col, val);
-        return Aether::Colour{(uint8_t)col.r(), (uint8_t)col.g(), (uint8_t)col.b(), (uint8_t)col.a()};
+    Aether::Colour interpolateColours(const Aether::Colour & start, const Aether::Colour & end, double amt) {
+        amt = (amt < 0.0 ? 0.0 : amt);
+        amt = (amt > 1.0 ? 1.0 : amt);
+
+        Aether::Colour mid;
+        mid.r = ((1.0 - amt) * start.r) + (amt * end.r);
+        mid.g = ((1.0 - amt) * start.g) + (amt * end.g);
+        mid.b = ((1.0 - amt) * start.b) + (amt * end.b);
+        mid.a = ((1.0 - amt) * start.a) + (amt * end.a);
+        return mid;
     }
 };

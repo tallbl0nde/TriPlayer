@@ -21,6 +21,7 @@ namespace Screen {
             Aether::Image * gradient;
 
             // Metadata
+            std::vector<CustomElm::Image *> oldAlbumArt;
             CustomElm::Image * albumArt;
             Aether::Text * title;
             Aether::Text * artist;
@@ -54,6 +55,10 @@ namespace Screen {
             unsigned int durationVal;
 
             // Colours matching the album art
+            double interpolatePos;
+            Aether::Colour oldBackground;
+            Aether::Colour currentBackground;
+            Aether::Colour targetBackground;
             Aether::Colour primary;
             Aether::Colour secondary;
             Aether::Colour tertiary;

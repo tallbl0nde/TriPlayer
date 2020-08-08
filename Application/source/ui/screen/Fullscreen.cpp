@@ -8,6 +8,8 @@
 // Max width of song text
 #define MAX_TEXT_WIDTH 600
 
+// Time to fade between songs
+#define ANIM_TIME 1500
 // Time to fade in in milliseconds
 #define FADE_IN_TIME 300
 // Time to fade out in milliseconds
@@ -60,8 +62,12 @@ namespace Screen {
     }
 
     void Fullscreen::updateImage(const std::string & path) {
-        // Remove old image first
-        this->removeElement(this->albumArt);
+        // Move old image into vector
+        if (this->albumArt != nullptr) {
+            this->oldAlbumArt.push_back(this->albumArt);
+        }
+        this->oldBackground = this->currentBackground;
+        this->interpolatePos = 0.0d;
 
         // Now create a surface and get colours
         SDL_Surface * image = SDLHelper::renderImageS(path);
@@ -79,19 +85,20 @@ namespace Screen {
                 this->tertiary.a = 200;
             }
             palette.background.a = (palette.bgLight ? 150 : 255);
-            this->gradient->setColour(palette.background);
+            this->targetBackground = palette.background;
 
         } else {
             // Otherwise set defaults
-            this->gradient->setColour(Aether::Colour{150, 255, 255, 255});
             this->primary = this->app->theme()->FG();
             this->secondary = this->app->theme()->muted();
             this->tertiary = this->app->theme()->muted2();
+            this->targetBackground = Aether::Colour{150, 255, 255, 255};
         }
 
         // Add image and set colours
         this->albumArt = new CustomElm::Image(460, 65, image);
         this->albumArt->setWH(360, 360);
+        this->albumArt->setColour(Aether::Colour{255, 255, 255, 0});
         this->addElement(this->albumArt);
         this->setColours();
     }
@@ -178,6 +185,48 @@ namespace Screen {
             this->shuffle->setColour(this->secondary);
         } else {
             this->shuffle->setColour(this->tertiary);
+        }
+
+        // Fade out old album images
+        if (!this->oldAlbumArt.empty()) {
+            size_t i = 0;
+            while (i < this->oldAlbumArt.size()) {
+                // Check if we need to delete the image as it is transparent
+                Aether::Colour colour = this->oldAlbumArt[i]->getColour();
+                int alpha = colour.a;
+                alpha -= (255 * (dt/(double)ANIM_TIME));
+                if (alpha <= 0) {
+                    this->removeElement(this->oldAlbumArt[i]);
+                    this->oldAlbumArt.erase(this->oldAlbumArt.begin() + i);
+                    continue;
+                }
+
+                // Otherwise the image can still be seen and should continue fading
+                colour.a = static_cast<uint8_t>(alpha);
+                this->oldAlbumArt[i]->setColour(colour);
+                i++;
+            }
+        }
+
+        // Fade in new image
+        if (this->albumArt != nullptr) {
+            Aether::Colour colour = this->albumArt->getColour();
+            if (colour.a < 255) {
+                int alpha = colour.a;
+                alpha += (255 * (dt/(double)ANIM_TIME));
+                if (alpha > 255) {
+                    alpha = 255;
+                }
+                colour.a = static_cast<uint8_t>(alpha);
+                this->albumArt->setColour(colour);
+            }
+        }
+
+        // Interpolate the colour of the background gradient
+        if (this->interpolatePos < 1.0d) {
+            this->interpolatePos += (dt/(double)ANIM_TIME);
+            this->currentBackground = Utils::Splash::interpolateColours(this->oldBackground, this->targetBackground, this->interpolatePos);
+            this->gradient->setColour(this->currentBackground);
         }
 
         // Update song metadata
@@ -329,6 +378,9 @@ namespace Screen {
 
         // Initialize variables
         this->albumArt = nullptr;
+        this->interpolatePos = 0.0d;
+        this->currentBackground = Aether::Colour{0, 0, 0, 255};
+        this->targetBackground = this->currentBackground;
         this->buttonMs = 0;
         this->playingID = -1;
     }
@@ -344,6 +396,10 @@ namespace Screen {
         this->removeElement(this->albumArt);
         this->removeElement(this->bg);
         this->removeElement(this->gradient);
+        for (size_t i = 0; i < this->oldAlbumArt.size(); i++) {
+            this->removeElement(this->oldAlbumArt[i]);
+        }
+        this->oldAlbumArt.clear();
 
         // Reset highlight animation
         this->app->setHighlightAnimation(nullptr);
