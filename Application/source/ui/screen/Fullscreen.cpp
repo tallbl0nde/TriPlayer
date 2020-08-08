@@ -287,14 +287,20 @@ namespace Screen {
         this->addElement(this->gradient);
 
         // === PLAYING FROM ===
-        this->note = new Aether::Image(40, 35, "romfs:/icons/musicnotelarge.png");
-        this->addElement(this->note);
+        this->note = new Aether::Image(40, 35, "romfs:/icons/musicnoteback.png");
+        this->noteElement = new Aether::Element(this->note->x() - 15, this->note->y() - 15, this->note->w() + 30, this->note->h() + 30);
+        this->noteElement->setCallback([this]() {
+            this->app->popScreen();
+        });
+        this->noteElement->setSelectable(false);
+        this->noteElement->addElement(this->note);
+        this->addElement(this->noteElement);
         std::string str = this->app->sysmodule()->playingFrom();
         if (str.length() > 16) {
             str = str.substr(0, 16);
             str += "...";
         }
-        this->playingFrom = new Aether::Text(this->note->x() + this->note->w() + 30, this->note->y() + this->note->h()/2, str, 28);
+        this->playingFrom = new Aether::Text(this->note->x() + this->note->w() + 20, this->note->y() + this->note->h()/2, str, 28);
         this->playingFrom->setY(this->playingFrom->y() - this->playingFrom->h()/2);
         this->addElement(this->playingFrom);
 
@@ -416,7 +422,7 @@ namespace Screen {
 
     void Fullscreen::onUnload() {
         // Remove added elements
-        this->removeElement(this->note);
+        this->removeElement(this->noteElement);
         this->removeElement(this->playingFrom);
         this->removeElement(this->clock);
         this->removeElement(this->position);

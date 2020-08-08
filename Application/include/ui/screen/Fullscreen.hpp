@@ -17,6 +17,7 @@ namespace Screen {
             Main::Application * app;
 
             // Playing from
+            Aether::Element * noteElement;
             Aether::Image * note;
             Aether::Text * playingFrom;
 
