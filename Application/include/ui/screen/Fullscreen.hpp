@@ -58,8 +58,11 @@ namespace Screen {
             Aether::Colour secondary;
             Aether::Colour tertiary;
 
-            // Milliseconds since last controller input
-            size_t buttonMs;
+            // Milliseconds since last controller input (set negative in order to fade in)
+            int buttonMs;
+
+            // Returns the current colour to use for the highlight
+            Aether::Colour highlightColour(uint32_t);
 
             // Set all element colours based on primary/secondary colours
             void setColours();

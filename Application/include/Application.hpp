@@ -49,8 +49,9 @@ namespace Main {
             // Constructor inits Aether, screens + other objects
             Application();
 
-            // Wrapper for display function
+            // Wrappers for display functions
             void setHoldDelay(int);
+            void setHighlightAnimation(std::function<Aether::Colour(uint32_t)>);
 
             // Pass an overlay element in order to render
             // Element is not deleted when closed!

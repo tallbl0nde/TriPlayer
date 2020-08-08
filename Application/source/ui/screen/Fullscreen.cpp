@@ -8,6 +8,13 @@
 // Max width of song text
 #define MAX_TEXT_WIDTH 600
 
+// Time to fade in in milliseconds
+#define FADE_IN_TIME 300
+// Time to fade out in milliseconds
+#define FADE_OUT_TIME 600
+// Number of milliseconds to show highlight for
+#define HI_TIMEOUT 7000
+
 namespace Screen {
     Fullscreen::Fullscreen(Main::Application * a) : Screen() {
         this->app = a;
@@ -16,6 +23,26 @@ namespace Screen {
         this->onButtonPress(Aether::Button::B, [this]() {
             this->app->popScreen();
         });
+    }
+
+    Aether::Colour Fullscreen::highlightColour(uint32_t t) {
+        // Get the original highlight colour
+        Aether::Colour colour = Aether::Theme::Dark.highlightFunc(t);
+
+        // Adjust the alpha based on time since button press
+        if (this->buttonMs < 0) {
+            // Fade in
+            double per = (this->buttonMs/(double)-FADE_IN_TIME);
+            colour.a = 255 - 255*per;
+
+        } else if (this->buttonMs > HI_TIMEOUT) {
+            // Fade out
+            int val = (this->buttonMs-HI_TIMEOUT > FADE_OUT_TIME ? FADE_OUT_TIME : this->buttonMs-HI_TIMEOUT);
+            double per = (val/(double)FADE_OUT_TIME);
+            colour.a = 255 - 255*per;
+        }
+
+        return colour;
     }
 
     void Fullscreen::setColours() {
@@ -70,8 +97,24 @@ namespace Screen {
     }
 
     bool Fullscreen::handleEvent(Aether::InputEvent * e) {
-        // Reset timer when button pressed
+        // Reset timer when button pressed and don't actually do anything else
         if (e->type() == Aether::EventType::ButtonPressed) {
+            // If we were hidden make sure to unhide
+            if (this->buttonMs > HI_TIMEOUT) {
+                if (this->buttonMs > HI_TIMEOUT + FADE_OUT_TIME) {
+                    this->buttonMs = -FADE_IN_TIME;
+                } else {
+                    int val = (this->buttonMs > HI_TIMEOUT+FADE_OUT_TIME ? FADE_OUT_TIME : this->buttonMs - HI_TIMEOUT);
+                    this->buttonMs = -FADE_IN_TIME*(val/(double)FADE_OUT_TIME);
+                }
+                return true;
+            }
+
+            // Otherwise just reset timer
+            this->buttonMs = 0;
+
+        // Also reset the timer on any touch events
+        } else if (e->type() == Aether::EventType::TouchPressed || e->type() == Aether::EventType::TouchReleased) {
             this->buttonMs = 0;
         }
 
@@ -170,6 +213,9 @@ namespace Screen {
         this->position->setX(465 - this->position->w());
 
         // Now update elements
+        if (!this->isTouch) {
+            this->buttonMs += dt;
+        }
         Screen::update(dt);
     }
 
@@ -276,6 +322,12 @@ namespace Screen {
         this->duration->setY(658 - this->duration->h()/2);
         this->addElement(this->duration);
 
+        // This screen determines the highlight animation colour
+        this->app->setHighlightAnimation([this](uint32_t t) {
+            return this->highlightColour(t);
+        });
+
+        // Initialize variables
         this->albumArt = nullptr;
         this->buttonMs = 0;
         this->playingID = -1;
@@ -292,5 +344,8 @@ namespace Screen {
         this->removeElement(this->albumArt);
         this->removeElement(this->bg);
         this->removeElement(this->gradient);
+
+        // Reset highlight animation
+        this->app->setHighlightAnimation(nullptr);
     }
 };

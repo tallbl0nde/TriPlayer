@@ -23,7 +23,7 @@ namespace Main {
         this->display->setBackgroundColour(0, 0, 0);
         this->display->setFont("romfs:/Quicksand.ttf");
         this->display->setHighlightColours(Aether::Colour{255, 255, 255, 0}, this->theme_->selected());
-        this->display->setHighlightAnimation(Aether::Theme::Dark.highlightFunc);
+        this->setHighlightAnimation(nullptr);
         this->display->setFadeIn();
         this->display->setShowFPS(true);
 
@@ -36,6 +36,14 @@ namespace Main {
 
     void Application::setHoldDelay(int i) {
         this->display->setHoldDelay(i);
+    }
+
+    void Application::setHighlightAnimation(std::function<Aether::Colour(uint32_t)> f) {
+        // Set to default animation
+        if (f == nullptr) {
+            f = Aether::Theme::Dark.highlightFunc;
+        }
+        this->display->setHighlightAnimation(f);
     }
 
     void Application::addOverlay(Aether::Overlay * o) {
