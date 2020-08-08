@@ -16,6 +16,8 @@
 #define FADE_OUT_TIME 600
 // Number of milliseconds to show highlight for
 #define HI_TIMEOUT 7000
+// Period in milliseconds to update clock string
+#define UPDATE_CLOCK_PERIOD 500
 
 namespace Screen {
     Fullscreen::Fullscreen(Main::Application * a) : Screen() {
@@ -48,6 +50,9 @@ namespace Screen {
     }
 
     void Fullscreen::setColours() {
+        this->note->setColour(this->primary);
+        this->playingFrom->setColour(this->primary);
+        this->clock->setColour(this->primary);
         this->title->setColour(this->primary);
         this->artist->setColour(this->secondary);
         this->previous->setColour(this->primary);
@@ -261,6 +266,14 @@ namespace Screen {
         this->position->setString(Utils::secondsToHMS(this->durationVal * (this->seekBar->value() / 100.0)));
         this->position->setX(465 - this->position->w());
 
+        // Update the clock (this only redraws when the string changes)
+        this->updateClock += dt;
+        if (this->updateClock > UPDATE_CLOCK_PERIOD) {
+            this->clock->setString(Utils::getClockString());
+            this->clock->setX(1240 - this->clock->w());
+            this->updateClock = 0;
+        }
+
         // Now update elements
         if (!this->isTouch) {
             this->buttonMs += dt;
@@ -269,11 +282,27 @@ namespace Screen {
     }
 
     void Fullscreen::onLoad() {
-        // Add background images
-        this->bg = new Aether::Image(0, 0, "romfs:/bg/main.png");
-        this->addElement(this->bg);
+        // === BACKGROUND ===
         this->gradient = new Aether::Image(0, 0, "romfs:/bg/gradient.png");
         this->addElement(this->gradient);
+
+        // === PLAYING FROM ===
+        this->note = new Aether::Image(40, 35, "romfs:/icons/musicnotelarge.png");
+        this->addElement(this->note);
+        std::string str = this->app->sysmodule()->playingFrom();
+        if (str.length() > 16) {
+            str = str.substr(0, 16);
+            str += "...";
+        }
+        this->playingFrom = new Aether::Text(this->note->x() + this->note->w() + 30, this->note->y() + this->note->h()/2, str, 28);
+        this->playingFrom->setY(this->playingFrom->y() - this->playingFrom->h()/2);
+        this->addElement(this->playingFrom);
+
+        // === CLOCK ===
+        this->updateClock = 0;
+        this->clock = new Aether::Text(0, this->playingFrom->y(), Utils::getClockString(), 28);
+        this->clock->setX(1240 - this->clock->w());
+        this->addElement(this->clock);
 
         // === METADATA ===
         this->title = new Aether::Text(0, 450, "", 36);
@@ -387,6 +416,9 @@ namespace Screen {
 
     void Fullscreen::onUnload() {
         // Remove added elements
+        this->removeElement(this->note);
+        this->removeElement(this->playingFrom);
+        this->removeElement(this->clock);
         this->removeElement(this->position);
         this->removeElement(this->seekBar);
         this->removeElement(this->duration);
@@ -394,7 +426,6 @@ namespace Screen {
         this->removeElement(this->artist);
         this->removeElement(this->title);
         this->removeElement(this->albumArt);
-        this->removeElement(this->bg);
         this->removeElement(this->gradient);
         for (size_t i = 0; i < this->oldAlbumArt.size(); i++) {
             this->removeElement(this->oldAlbumArt[i]);

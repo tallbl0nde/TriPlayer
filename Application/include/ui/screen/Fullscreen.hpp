@@ -16,8 +16,15 @@ namespace Screen {
             // Pointer to application object
             Main::Application * app;
 
+            // Playing from
+            Aether::Image * note;
+            Aether::Text * playingFrom;
+
+            // Time
+            Aether::Text * clock;
+            unsigned int updateClock;
+
             // Background
-            Aether::Image * bg;
             Aether::Image * gradient;
 
             // Metadata

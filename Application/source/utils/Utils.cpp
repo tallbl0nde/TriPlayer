@@ -6,6 +6,18 @@
 #include "utils/Utils.hpp"
 
 namespace Utils {
+    std::string getClockString(bool in24) {
+        // Get time
+        std::time_t ts = std::time(nullptr);
+        std::tm * tm = std::localtime(&ts);
+
+        // Print time into buffer
+        char buf[20];
+        const char * fmt = (in24 ? "%R" : "%I:%M %p");
+        std::strftime(buf, 20, fmt, tm);
+        return std::string(buf);
+    }
+
     time_t getModifiedTimestamp(std::string path) {
         struct stat st;
         if (stat(path.c_str(), &st) == 0) {

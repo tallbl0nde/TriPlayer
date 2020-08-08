@@ -18,6 +18,10 @@ enum class ProcessStage {
 
 // General helper functions
 namespace Utils {
+    // Returns the current time as a string
+    // Pass true to get in 24-hour format
+    std::string getClockString(bool = false);
+
     // Returns the date/time (as time_t) the given file was modified
     // (returns 0 on an error)
     time_t getModifiedTimestamp(std::string);
