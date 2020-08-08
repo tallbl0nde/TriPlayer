@@ -1,6 +1,7 @@
 #ifndef SCREEN_FULLSCREEN_HPP
 #define SCREEN_FULLSCREEN_HPP
 
+#include "ui/element/Image.hpp"
 #include "ui/element/RoundButton.hpp"
 #include "ui/element/Slider.hpp"
 
@@ -20,7 +21,7 @@ namespace Screen {
             Aether::Image * gradient;
 
             // Metadata
-            Aether::Image * albumArt;
+            CustomElm::Image * albumArt;
             Aether::Text * title;
             Aether::Text * artist;
 
@@ -52,8 +53,19 @@ namespace Screen {
             SongID playingID;
             unsigned int durationVal;
 
+            // Colours matching the album art
+            Aether::Colour primary;
+            Aether::Colour secondary;
+            Aether::Colour tertiary;
+
             // Milliseconds since last controller input
             size_t buttonMs;
+
+            // Set all element colours based on primary/secondary colours
+            void setColours();
+
+            // Updates the image and extracts/sets colours based on image
+            void updateImage(const std::string &);
 
         public:
             Fullscreen(Main::Application *);

@@ -1,5 +1,6 @@
 #include "Application.hpp"
 #include "ui/screen/Fullscreen.hpp"
+#include "utils/Splash.hpp"
 #include "utils/Utils.hpp"
 
 // Diameter of buttons
@@ -15,6 +16,57 @@ namespace Screen {
         this->onButtonPress(Aether::Button::B, [this]() {
             this->app->popScreen();
         });
+    }
+
+    void Fullscreen::setColours() {
+        this->title->setColour(this->primary);
+        this->artist->setColour(this->secondary);
+        this->previous->setColour(this->primary);
+        this->play->setColour(this->primary);
+        this->pause->setColour(this->primary);
+        this->next->setColour(this->primary);
+        this->position->setColour(this->primary);
+        this->duration->setColour(this->primary);
+        this->seekBar->setBarBackgroundColour(this->tertiary);
+        this->seekBar->setBarForegroundColour(this->secondary);
+        this->seekBar->setKnobColour(this->primary);
+    }
+
+    void Fullscreen::updateImage(const std::string & path) {
+        // Remove old image first
+        this->removeElement(this->albumArt);
+
+        // Now create a surface and get colours
+        SDL_Surface * image = SDLHelper::renderImageS(path);
+        Utils::Splash::Palette palette = Utils::Splash::getPaletteForSurface(image);
+        if (!palette.invalid) {
+            // Set matching colours if valid
+            if (palette.bgLight) {
+                this->primary = palette.background;
+                this->secondary = Utils::Splash::changeLightness(this->primary, -20);
+                this->tertiary = Utils::Splash::changeLightness(this->secondary, -20);
+            } else {
+                this->primary = palette.primary;
+                this->secondary = palette.secondary;
+                this->tertiary = Utils::Splash::changeLightness(this->secondary, -10);
+                this->tertiary.a = 200;
+            }
+            palette.background.a = (palette.bgLight ? 150 : 255);
+            this->gradient->setColour(palette.background);
+
+        } else {
+            // Otherwise set defaults
+            this->gradient->setColour(Aether::Colour{150, 255, 255, 255});
+            this->primary = this->app->theme()->FG();
+            this->secondary = this->app->theme()->muted();
+            this->tertiary = this->app->theme()->muted2();
+        }
+
+        // Add image and set colours
+        this->albumArt = new CustomElm::Image(460, 65, image);
+        this->albumArt->setWH(360, 360);
+        this->addElement(this->albumArt);
+        this->setColours();
     }
 
     bool Fullscreen::handleEvent(Aether::InputEvent * e) {
@@ -52,7 +104,7 @@ namespace Screen {
         switch (rm) {
             case RepeatMode::Off:
                 this->repeatC->setHidden(false);
-                this->repeat->setColour(this->app->theme()->muted());
+                this->repeat->setColour(this->tertiary);
                 this->repeatOneC->setHidden(true);
                 if (this->controls->focussed() == this->repeatOneContainer) {
                     this->controls->setFocussed(this->repeatContainer);
@@ -61,7 +113,7 @@ namespace Screen {
 
             case RepeatMode::One:
                 this->repeatOneC->setHidden(false);
-                this->repeatOne->setColour(this->app->theme()->accent());
+                this->repeatOne->setColour(this->secondary);
                 this->repeatC->setHidden(true);
                 if (this->controls->focussed() == this->repeatContainer) {
                     this->controls->setFocussed(this->repeatOneContainer);
@@ -70,7 +122,7 @@ namespace Screen {
 
             case RepeatMode::All:
                 this->repeatC->setHidden(false);
-                this->repeat->setColour(this->app->theme()->accent());
+                this->repeat->setColour(this->secondary);
                 this->repeatOneC->setHidden(true);
                 if (this->controls->focussed() == this->repeatOneContainer) {
                     this->controls->setFocussed(this->repeatContainer);
@@ -80,9 +132,9 @@ namespace Screen {
 
         // Ensure shuffle has correct colour
         if (this->app->sysmodule()->shuffleMode() == ShuffleMode::On) {
-            this->shuffle->setColour(this->app->theme()->accent());
+            this->shuffle->setColour(this->secondary);
         } else {
-            this->shuffle->setColour(this->app->theme()->muted());
+            this->shuffle->setColour(this->tertiary);
         }
 
         // Update song metadata
@@ -107,10 +159,7 @@ namespace Screen {
 
             // Change album cover
             Metadata::Album md = this->app->database()->getAlbumMetadataForID(this->app->database()->getAlbumIDForSong(m.ID));
-            this->removeElement(this->albumArt);
-            this->albumArt = new Aether::Image(460, 65, md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath);
-            this->albumArt->setWH(360, 360);
-            this->addElement(this->albumArt);
+            this->updateImage(md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath);
         }
 
         // Update the seekbar
@@ -129,18 +178,15 @@ namespace Screen {
         this->bg = new Aether::Image(0, 0, "romfs:/bg/main.png");
         this->addElement(this->bg);
         this->gradient = new Aether::Image(0, 0, "romfs:/bg/gradient.png");
-        this->gradient->setColour(Aether::Colour{255, 255, 255, 255});
         this->addElement(this->gradient);
 
         // === METADATA ===
         this->title = new Aether::Text(0, 450, "", 36);
-        this->title->setColour(this->app->theme()->FG());
         this->title->setScroll(true);
         this->title->setScrollSpeed(35);
         this->title->setScrollWaitTime(1200);
         this->addElement(this->title);
         this->artist = new Aether::Text(0, this->title->y() + 50, "", 24);
-        this->artist->setColour(this->app->theme()->muted());
         this->addElement(this->artist);
 
         // === CONTROLS ===
@@ -156,7 +202,6 @@ namespace Screen {
 
         // Previous
         this->previous = new Aether::Image(0, 0, "romfs:/icons/previous.png");
-        this->previous->setColour(this->app->theme()->FG());
         this->previousC = new CustomElm::RoundButton(560 - BTN_SIZE/2, 590 - BTN_SIZE/2, BTN_SIZE);
         this->previousC->setImage(this->previous);
         this->previousC->setCallback([this]() {
@@ -166,7 +211,6 @@ namespace Screen {
 
         // Play/pause
         this->play = new Aether::Image(0, 0, "romfs:/icons/playsmall.png");
-        this->play->setColour(this->app->theme()->FG());
         this->playC = new CustomElm::RoundButton(640 - BTN_SIZE/2, 590 - BTN_SIZE/2, BTN_SIZE);
         this->playC->setHidden(true);
         this->playC->setImage(this->play);
@@ -175,7 +219,6 @@ namespace Screen {
         });
         this->controls->addElement(this->playC);
         this->pause = new Aether::Image(0, 0, "romfs:/icons/pausesmall.png");
-        this->pause->setColour(this->app->theme()->FG());
         this->pauseC = new CustomElm::RoundButton(640 - BTN_SIZE/2, 590 - BTN_SIZE/2, BTN_SIZE);
         this->pauseC->setImage(this->pause);
         this->pauseC->setCallback([this]() {
@@ -186,7 +229,6 @@ namespace Screen {
 
         // Next
         this->next = new Aether::Image(0, 0, "romfs:/icons/next.png");
-        this->next->setColour(this->app->theme()->FG());
         this->nextC = new CustomElm::RoundButton(720 - BTN_SIZE/2, 590 - BTN_SIZE/2, BTN_SIZE);
         this->nextC->setImage(this->next);
         this->nextC->setCallback([this]() {
@@ -223,12 +265,8 @@ namespace Screen {
         // === SEEKBAR ===
         this->position = new Aether::Text(0, 0, "0:00", 18);
         this->position->setY(658 - this->position->h()/2);
-        this->position->setColour(this->app->theme()->FG());
         this->addElement(this->position);
         this->seekBar = new CustomElm::Slider(490, 649, 300, 20, 8);
-        this->seekBar->setBarBackgroundColour(this->app->theme()->muted());
-        this->seekBar->setBarForegroundColour(this->app->theme()->accent());
-        this->seekBar->setKnobColour(this->app->theme()->FG());
         this->seekBar->setNudge(1);
         this->seekBar->setCallback([this]() {
             this->app->sysmodule()->sendSetPosition(this->seekBar->value());
@@ -236,7 +274,6 @@ namespace Screen {
         this->addElement(this->seekBar);
         this->duration = new Aether::Text(815, 0, "0:00", 18);
         this->duration->setY(658 - this->duration->h()/2);
-        this->duration->setColour(this->app->theme()->FG());
         this->addElement(this->duration);
 
         this->albumArt = nullptr;
