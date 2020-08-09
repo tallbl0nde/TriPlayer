@@ -1,5 +1,6 @@
 #include "db/Database.hpp"
 #include "db/migrations/Migration.hpp"
+#include "db/okapi_bm25.h"
 #include "db/Spellfix.h"
 #include "Log.hpp"
 #include "utils/FS.hpp"
@@ -37,6 +38,8 @@ Database::Database() {
 
     // Load the spellfix1 extension
     sqlite3_auto_extension((void (*)(void))sqlite3_spellfix_init);
+    // Load the okapi_bm25 extension
+    sqlite3_auto_extension((void (*)(void))sqlite3_okapi_bm25_init);
 
     // Set variables
     this->error_ = "";
