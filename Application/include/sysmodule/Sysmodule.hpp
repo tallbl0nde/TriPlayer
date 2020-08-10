@@ -5,7 +5,7 @@
 #include <chrono>
 #include <functional>
 #include <mutex>
-#include <queue>
+#include "socket/Connector.hpp"
 #include "Types.hpp"
 #include <vector>
 
@@ -13,8 +13,10 @@
 // sysmodule.
 class Sysmodule {
     private:
-        // Socket file descriptor (set negative if an error occurred)
-        SockFD socket;
+        // Socket 'connector' used to connect to the sysmodule
+        Socket::Connector * connector;
+        // Transfer socket used to actually communicate with the sysmodule
+        Socket::Transfer * socket;
 
         std::atomic<bool> error_;
         std::atomic<bool> exit_;

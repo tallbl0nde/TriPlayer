@@ -4,6 +4,7 @@
 #include <queue>
 #include <string>
 
+// Class representing a socket that is used for transferring messages
 namespace Socket {
     class Transfer {
         private:
