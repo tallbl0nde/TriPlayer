@@ -127,7 +127,7 @@ void Audio::newSong(long rate, int channels) {
             audrvVoiceSetMixFactor(&this->drv, this->voice, 0.0f, 1, 0);
             audrvVoiceSetMixFactor(&this->drv, this->voice, 1.0f, 1, 1);
         }
-        Log::writeSuccess("[AUDIO] Created a new voice");
+        Log::writeInfo("[AUDIO] Created a new voice");
     }
     Log::writeInfo("[AUDIO] Rate: " + std::to_string(rate) +  ", Channels: " + std::to_string(channels));
 }

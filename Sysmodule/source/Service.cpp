@@ -35,7 +35,7 @@ MainService::MainService() {
     }
 }
 
-void MainService::handleData(Socket::Transfer * socket) {
+void MainService::commandThread(Socket::Transfer * socket) {
     // Loop until we've been signalled to exit or the socket loses connection
     while (!this->exit_ && socket->isConnected()) {
         // Wait for a message
@@ -396,15 +396,19 @@ void MainService::handleData(Socket::Transfer * socket) {
                 break;
             }
 
-            case Protocol::Command::GetPlayingFrom:
+            case Protocol::Command::GetPlayingFrom: {
                 // Replying with an empty string triggers an error
+                std::shared_lock<std::shared_mutex> mtx(this->qMutex);
                 reply = (this->playingFrom.empty() ? " " : this->playingFrom);
                 break;
+            }
 
-            case Protocol::Command::SetPlayingFrom:
+            case Protocol::Command::SetPlayingFrom: {
+                std::unique_lock<std::shared_mutex> mtx(this->qMutex);
                 this->playingFrom = msg.substr(0, (msg.length() > 100) ? 100 : msg.length());
                 reply = (this->playingFrom.empty() ? " " : this->playingFrom);
                 break;
+            }
 
             case Protocol::Command::RequestDBLock: {
                 // Lock the mutex and mark that the database is being used for writing by the app
@@ -634,7 +638,7 @@ void MainService::socketThread() {
             // Start the thread (it is responsible for deleting the socket when done)
             Socket::Transfer * socket = this->listener->getTransferSocket();
             threads.push_back(std::async(std::launch::async, [this, socket]() {
-                this->handleData(socket);
+                this->commandThread(socket);
             }));
         }
 

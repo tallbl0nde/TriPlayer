@@ -66,7 +66,7 @@ MP3::MP3(std::string path) : Source() {
     }
 
     if (this->valid_) {
-        Log::writeSuccess("[MP3] File opened successfully");
+        Log::writeInfo("[MP3] File opened successfully");
     }
 }
 

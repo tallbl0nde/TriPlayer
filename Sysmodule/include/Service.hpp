@@ -42,7 +42,7 @@ class MainService {
         // String set by client indicating where the music is playing from
         std::string playingFrom;
         // Timestamp of last previous press
-        std::time_t pressTime;
+        std::atomic<std::time_t> pressTime;
         // Repeat mode
         std::atomic<RepeatMode> repeatMode;
         // Status vars for comm. between threads
@@ -63,7 +63,7 @@ class MainService {
         std::atomic<bool> dbLocked;
 
         // Function run by transfer sockets
-        void handleData(Socket::Transfer *);
+        void commandThread(Socket::Transfer *);
 
     public:
         // Constructor initializes socket related things
