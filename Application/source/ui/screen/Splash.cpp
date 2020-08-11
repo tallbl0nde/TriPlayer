@@ -8,7 +8,7 @@ namespace Screen {
         // Can only exit on an error
         this->onButtonPress(Aether::Button::B, [this](){
             this->stopSignal = true;
-            if (this->app->sysmodule()->error()) {
+            if (this->app->sysmodule()->error() != Sysmodule::Error::None) {
                 this->app->exit();
             }
         });
@@ -125,20 +125,33 @@ namespace Screen {
         this->lastStage = ProcessStage::Search;
         this->stopSignal = false;
 
-        // Check if connected to sysmodule
-        if (!this->app->sysmodule()->error()) {
-            // Start searching for files
-            this->future = std::async(std::launch::async, [this](){
-                Utils::processFileChanges(this->app->database(), this->app->sysmodule(), this->currentFile, this->currentStage, this->totalFiles, this->stopSignal);
-            });
-        } else {
-            this->status->setString("Unable to connect to Sysmodule!");
-            this->status->setX(640 - this->status->w()/2);
-            this->statusNum->setString("Check that it is enabled and up to date");
-            this->statusNum->setX(640 - this->statusNum->w()/2);
-            this->statusNum->setHidden(false);
-            this->anim->setHidden(true);
+        // Take action based on sysmodule status
+        switch (this->app->sysmodule()->error()) {
+            case Sysmodule::Error::None:
+                // Start searching for file
+                this->future = std::async(std::launch::async, [this](){
+                    Utils::processFileChanges(this->app->database(), this->app->sysmodule(), this->currentFile, this->currentStage, this->totalFiles, this->stopSignal);
+                });
+                return;
+
+            case Sysmodule::Error::DifferentVersion:
+                // Indicate wrong version
+                this->status->setString("The sysmodule and application versions do not match");
+                this->statusNum->setString("Please ensure that all components of TriPlayer are up to date");
+                break;
+
+            default:
+                // All other errors represent a connection issue
+                this->status->setString("Couldn't connect to the sysmodule");
+                this->statusNum->setString("Check that it is enabled and reboot if this still occurs");
+                break;
         }
+
+        // If an error occurred reposition the text elements
+        this->status->setX(640 - this->status->w()/2);
+        this->statusNum->setX(640 - this->statusNum->w()/2);
+        this->statusNum->setHidden(false);
+        this->anim->setHidden(true);
     }
 
     void Splash::onUnload() {

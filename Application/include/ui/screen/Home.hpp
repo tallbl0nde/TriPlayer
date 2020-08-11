@@ -25,7 +25,7 @@ namespace Screen {
             // Pointer to application object
             Main::Application * app;
 
-            // The screen handles the Add to Playlist menu as it's seen on all frames
+            // This screen handles the Add to Playlist menu as it's seen on all frames
             CustomOvl::AddToPlaylist * addToPlMenu;
 
             // Misc
