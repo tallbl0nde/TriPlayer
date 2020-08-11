@@ -2,7 +2,6 @@
 #define SCREEN_HOME_HPP
 
 #include "ui/element/Player.hpp"
-#include "ui/element/SearchBox.hpp"
 #include "ui/element/SideButton.hpp"
 #include "ui/overlay/AddToPlaylist.hpp"
 #include "ui/frame/Frame.hpp"
@@ -17,9 +16,10 @@ namespace Screen {
     class Home : public Aether::Screen {
         private:
             // Struct pair for a frame and next type
-            struct FramePair {
+            struct FrameTuple {
                 Frame::Frame * frame;       // Frame object
-                Frame::Type type;           // Type of next frame on stack (i.e. what pushed this frame on the stack?)
+                Frame::Type type;      // Type of the frame stored in this pair
+                Frame::Type pushedType;     // Type of next frame on stack (i.e. what pushed this frame on the stack?)
             };
 
             // Pointer to application object
@@ -40,18 +40,16 @@ namespace Screen {
             Aether::Element * backButton;
             Aether::Container * sideContainer;
             Aether::Rectangle * sideBg;
-            Aether::Rectangle * userBg;
-            Aether::Image * userIcon;
-            Aether::Text * userText;
-            Aether::Rectangle * settingsBg;
-            Aether::Image * settingsIcon;
-            CustomElm::SearchBox * search;
+            CustomElm::SideButton * sideSearch;
+            Aether::Rectangle * sideSeparator;
             CustomElm::SideButton * sidePlaylists;
             CustomElm::SideButton * sideSongs;
             CustomElm::SideButton * sideArtists;
             CustomElm::SideButton * sideAlbums;
-            Aether::Rectangle * sideSeparator;
+            Aether::Rectangle * sideSeparator2;
             CustomElm::SideButton * sideQueue;
+            Aether::Rectangle * sideSeparator3;
+            CustomElm::SideButton * sideSettings;
 
             // Player
             CustomElm::Player * player;
@@ -60,8 +58,9 @@ namespace Screen {
             size_t backOneFrame;
             // Right-hand side 'frame'
             Frame::Frame * frame;
+            Frame::Type frameType;
             // Stack of frames
-            std::stack<FramePair> frameStack;
+            std::stack<FrameTuple> frameStack;
 
             // Cached vars to avoid updating every frame
             SongID playingID;

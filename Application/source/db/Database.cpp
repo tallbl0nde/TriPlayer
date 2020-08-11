@@ -11,7 +11,9 @@
 // Location of the database file
 #define DB_PATH "/switch/TriPlayer/data.sqlite3"
 // Version of the database (database begins with zero from 'template', so this started at 1)
-#define DB_VERSION 4
+#define DB_VERSION 5
+// Maximum number of phrases to search for using spellfixed strings
+#define SEARCH_PHRASES 6
 // Maximum 'spellfix score' allowed when fixing a word
 #define SPELLFIX_SCORE 150
 // Location of template file
@@ -160,6 +162,14 @@ bool Database::migrate() {
                     break;
                 }
                 Log::writeSuccess("[DB] Migrated to version 4");
+
+            case 4:
+                err = Migration::migrateTo5(this->db);
+                if (!err.empty()) {
+                    err = "Migration 5: " + err;
+                    break;
+                }
+                Log::writeSuccess("[DB] Migrated to version 5");
         }
     }
 
@@ -279,8 +289,8 @@ std::vector<SpellfixString> Database::getSearchPhrases(const std::string & table
         std::vector<SpellfixString> fixed;
         while (ok && this->db->hasRow()) {
             SpellfixString word;
-            ok = this->db->getInt(0, word.score);
-            ok = keepFalse(ok, this->db->getString(1, word.string));
+            ok = keepFalse(ok, this->db->getString(0, word.string));
+            ok = keepFalse(ok, this->db->getInt(1, word.score));
 
             if (ok) {
                 fixed.push_back(word);
@@ -297,6 +307,11 @@ std::vector<SpellfixString> Database::getSearchPhrases(const std::string & table
     std::sort(phrases.begin(), phrases.end(), [](const SpellfixString & lhs, const SpellfixString & rhs) {
         return lhs.score < rhs.score;
     });
+
+    // Limit number of phrases
+    if (phrases.size() > SEARCH_PHRASES) {
+        phrases = std::vector<SpellfixString>(phrases.begin(), phrases.begin() + SEARCH_PHRASES);
+    }
     return phrases;
 }
 

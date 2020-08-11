@@ -26,6 +26,7 @@ namespace Frame {
         Artists,
         Artist,
         ArtistInfo,
+        Search,
         Songs,
         SongInfo,
         Queue,
