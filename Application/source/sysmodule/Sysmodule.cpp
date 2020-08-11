@@ -1,28 +1,34 @@
 #include <cstring>
 #include <limits>
-#include <mutex>
 #include "Log.hpp"
 #include "Protocol.hpp"
 #include "sysmodule/Sysmodule.hpp"
-#include "utils/Socket.hpp"
 
 // Macro for adding delimiter
 #define DELIM std::string(1, Protocol::Delimiter)
 // Number of seconds between updating state (automatically)
 #define UPDATE_DELAY 0.1
 
-void Sysmodule::addToWriteQueue(std::string s, std::function<void(std::string)> f) {
-    if (this->error_) {
-        return;
+bool Sysmodule::addToWriteQueue(std::string s, std::function<void(std::string)> f) {
+    if (this->error_ != Error::None) {
+        return false;
     }
 
     std::scoped_lock<std::mutex> mtx(this->writeMutex);
     this->writeQueue.push(std::pair< std::string, std::function<void(std::string)> >(s, f));
+    return true;
 }
 
 Sysmodule::Sysmodule() {
+    // Attempt connection on creation
+    this->connector = new Socket::Connector(Protocol::Port);
+    this->connector->setTimeout(Protocol::Timeout);
+    this->error_ = Error::Unknown;
+    this->socket = nullptr;
+    this->reconnect();
+
+    // Initialize all variables
     this->currentSong_ = -1;
-    this->error_ = true;
     this->exit_ = false;
     this->lastUpdateTime = std::chrono::steady_clock::now();
     this->playingFrom_ = "";
@@ -36,68 +42,79 @@ Sysmodule::Sysmodule() {
     this->status_ = PlaybackStatus::Stopped;
     this->volume_ = 100.0;
 
-    // Get socket
-    this->socket = -1;
-    this->reconnect();
-
     // Fetch queue at launch
     this->sendGetQueue(0, 25000);
     this->sendGetSubQueue(0, 5000);
 }
 
-bool Sysmodule::error() {
+Sysmodule::Error Sysmodule::error() {
     return this->error_;
 }
 
 void Sysmodule::reconnect() {
     std::scoped_lock<std::mutex> mtx(this->writeMutex);
 
-    // Create and setup socket
-    if (this->socket >= 0) {
-        Utils::Socket::closeSocket(this->socket);
-    }
-    this->socket = Utils::Socket::createSocket(Protocol::Port);
-    Utils::Socket::setTimeout(this->socket, Protocol::Timeout);
+    // Delete old socket and get a new one
+    delete this->socket;
+    this->socket = this->connector->getTransferSocket();
 
-    // Get protocol version
-    Utils::Socket::writeToSocket(this->socket, std::to_string((int)Protocol::Command::Version));
-    std::string str = Utils::Socket::readFromSocket(this->socket);
-    if (str.length() > 0) {
-        int ver = std::stoi(str);
-        if (ver != Protocol::Version) {
-            Log::writeError("[SYSMODULE] Versions do not match!");
-            this->error_ = true;
-            return;
-        }
-    } else {
-        Log::writeError("[SYSMODULE] An error occurred getting version!");
-        this->error_ = true;
+    // Check we're actually connected before proceeding
+    if (this->socket == nullptr || !this->socket->isConnected()) {
+        this->error_ = Error::NotConnected;
+        Log::writeError("[SYSMODULE] Unable to connect to sysmodule");
         return;
     }
 
-    Log::writeSuccess("[SYSMODULE] Socket (re)connected successfully!");
-    this->error_ = false;
+    // Check the protocol version next and make sure it matches
+    std::string message = std::to_string((int)Protocol::Command::Version);
+    this->socket->writeMessage(message);
+    std::string reply = this->socket->readMessage();
+    if (reply.length() > 0) {
+        int version = std::stoi(reply);
+        if (version != Protocol::Version) {
+            Log::writeError("[SYSMODULE] Versions do not match! Sysmodule: " + reply + ", Application: " + message);
+            this->error_ = Error::DifferentVersion;
+            return;
+        }
+
+    // If the response is empty some other unknown error occurred
+    } else {
+        Log::writeError("[SYSMODULE] Unable to get sysmodule version");
+        this->error_ = Error::Unknown;
+        return;
+    }
+
+    // If we reach here we're connected successfully!
+    Log::writeSuccess("[SYSMODULE] Connection established!");
+    this->error_ = Error::None;
 }
 
 void Sysmodule::process() {
     // Loop until we want to exit
     while (!this->exit_) {
-        // Sleep if an error occurred
-        if (this->error_) {
+        // Sleep if an error occurred (this way if the app asks it to reconnect it will continue communicating)
+        if (this->error_ != Error::None) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             continue;
         }
 
-        // First process anything on the queue
+        // First process commands on the write queue
         std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
         std::unique_lock<std::mutex> mtx(this->writeMutex);
         while (!this->writeQueue.empty()) {
-            if (!Utils::Socket::writeToSocket(this->socket, this->writeQueue.front().first)) {
-                this->error_ = true;
+            // Get the first message on the queue
+            std::string message = this->writeQueue.front().first;
+            if (!this->socket->writeMessage(message)) {
+                this->error_ = Error::LostConnection;
+
+            // If the write succeeded wait for and read the response
             } else {
-                std::string str = Utils::Socket::readFromSocket(this->socket);
+                std::string str = this->socket->readMessage();
                 if (str.length() == 0) {
-                    this->error_ = true;
+                    this->error_ = Error::LostConnection;
+
+                // If we successfully received a response call the associated function and pop the
+                // message from the queue
                 } else {
                     std::function<void(std::string)> queuedFunc = this->writeQueue.front().second;
                     mtx.unlock();
@@ -108,7 +125,7 @@ void Sysmodule::process() {
             }
 
             // Clear queue if an error occurred
-            if (this->error_) {
+            if (this->error_ != Error::None) {
                 Log::writeError("[SYSMODULE] Command queue cleared as an error occurred during processing");
                 this->writeQueue = std::queue< std::pair<std::string, std::function<void(std::string)> > >();
                 continue;
@@ -212,7 +229,7 @@ double Sysmodule::volume() {
     return this->volume_;
 }
 
-void Sysmodule::waitRequestDBLock() {
+bool Sysmodule::waitRequestDBLock() {
     std::atomic<bool> done = false;
 
     this->addToWriteQueue(std::to_string((int)Protocol::Command::RequestDBLock), [&done](std::string s) {
@@ -225,10 +242,14 @@ void Sysmodule::waitRequestDBLock() {
     // Block until done
     while (!done) {
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        if (this->error_ != Error::None) {
+            return false;
+        }
     }
+    return true;
 }
 
-void Sysmodule::waitReset() {
+bool Sysmodule::waitReset() {
     std::atomic<bool> done = false;
 
     this->addToWriteQueue(std::to_string((int)Protocol::Command::Reset), [&done](std::string s) {
@@ -238,7 +259,12 @@ void Sysmodule::waitReset() {
     // Block until done
     while (!done) {
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        if (this->error_ != Error::None) {
+            return false;
+        }
     }
+
+    return true;
 }
 
 size_t Sysmodule::waitSongIdx() {
@@ -253,7 +279,7 @@ size_t Sysmodule::waitSongIdx() {
     // Block until done
     while (!done) {
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
-        if (this->error_) {
+        if (this->error_ != Error::None) {
             return std::numeric_limits<size_t>::max();
             break;
         }
@@ -578,7 +604,6 @@ void Sysmodule::exit() {
 }
 
 Sysmodule::~Sysmodule() {
-    if (this->socket >= 0) {
-        Utils::Socket::closeSocket(this->socket);
-    }
+    delete this->connector;
+    delete this->socket;
 }

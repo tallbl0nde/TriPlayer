@@ -5,8 +5,6 @@
 
 // All IDs are integers
 typedef int ArtistID, AlbumID, PlaylistID, PlaylistSongID, SongID;
-// A socket is also an int - this is for easier reading
-typedef int SockFD;
 
 // Status of sysmodule playback
 enum class PlaybackStatus {

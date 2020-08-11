@@ -1,5 +1,6 @@
 #include "db/Database.hpp"
 #include "db/migrations/Migration.hpp"
+#include "db/okapi_bm25.h"
 #include "db/Spellfix.h"
 #include "Log.hpp"
 #include "utils/FS.hpp"
@@ -11,12 +12,51 @@
 #define DB_PATH "/switch/TriPlayer/data.sqlite3"
 // Version of the database (database begins with zero from 'template', so this started at 1)
 #define DB_VERSION 4
+// Maximum 'spellfix score' allowed when fixing a word
+#define SPELLFIX_SCORE 150
 // Location of template file
 #define TEMPLATE_DB_PATH "romfs:/db/template.sqlite3"
 
 // Custom boolean 'operator' which instead of 'keeping' true, will 'keep' false
 bool keepFalse(const bool & a, const bool & b) {
     return !(!a || !b);
+}
+
+// Helper function which takes a vector of vectors containing spellfixed words,
+// which forms all possible phrases and calculates the score of each phrase
+// It uses recursion to search 'down' the next vector and concatenate words
+std::vector<SpellfixString> combineWords(std::vector< std::vector<SpellfixString> > & words, size_t v) {
+    // Vector to return, will be populated with combinatins
+    std::vector<SpellfixString> strings;
+
+    // Base case - stop if going past end of vector
+    if (v >= words.size()) {
+        return strings;
+
+    // Base case - if we're up to the last vector, return the vector
+    } else if (v == words.size() - 1) {
+        return words[v];
+    }
+
+    // Edge case - skip over empty vectors
+    if (words[v].empty()) {
+        return combineWords(words, v+1);
+    }
+
+    // Form combinations by recursively concatenating entire vectors with
+    // the currently chosen word
+    for (size_t i = 0; i < words[v].size(); i++) {
+        std::vector<SpellfixString> subset = combineWords(words, v+1);
+        for (size_t j = 0; j < subset.size(); j++) {
+            // Combine both strings and scores
+            SpellfixString tmp;
+            tmp.string = words[v][i].string + " " + subset[j].string;
+            tmp.score = words[v][i].score + subset[j].score;
+            strings.push_back(tmp);
+        }
+    }
+
+    return strings;
 }
 
 // ===== Housekeeping ===== //
@@ -37,6 +77,8 @@ Database::Database() {
 
     // Load the spellfix1 extension
     sqlite3_auto_extension((void (*)(void))sqlite3_spellfix_init);
+    // Load the okapi_bm25 extension
+    sqlite3_auto_extension((void (*)(void))sqlite3_okapi_bm25_init);
 
     // Set variables
     this->error_ = "";
@@ -216,36 +258,46 @@ bool Database::setSearchUpdate(int val) {
     return ok;
 }
 
-bool Database::spellfixString(const std::string & table, std::string & str) {
-    // Split into words
+std::vector<SpellfixString> Database::getSearchPhrases(const std::string & table, std::string & str) {
+    // Split string into words
     std::vector<std::string> words = Utils::splitIntoWords(str);
     str = "";
 
-    // Fix each word using the spellfix extension
+    // Get word suggestions for each word and store associated score
+    std::vector< std::vector<SpellfixString> > suggestions;
     for (size_t i = 0; i < words.size(); i++) {
         // Use string concatenation here as you can't bind a table name (I know it's not ideal but the names are hard coded at least)
-        bool ok = this->db->prepareQuery("SELECT word FROM " + table + " WHERE word MATCH ?;");
+        bool ok = this->db->prepareQuery("SELECT word, score FROM " + table + " WHERE word MATCH ? AND SCORE < ?;");
         ok = keepFalse(ok, this->db->bindString(0, words[i]));
+        ok = keepFalse(ok, this->db->bindInt(1, SPELLFIX_SCORE));
         ok = keepFalse(ok, this->db->executeQuery());
         if (!ok) {
             this->setErrorMsg("Error performing spell check");
-            return false;
         }
 
-        // Add fixed word onto string
-        std::string word;
-        ok = this->db->getString(0, word);
-        if (!ok) {
-            this->setErrorMsg("Error performing spell check");
-            return false;
+        // Push returned words onto vector
+        std::vector<SpellfixString> fixed;
+        while (ok && this->db->hasRow()) {
+            SpellfixString word;
+            ok = this->db->getInt(0, word.score);
+            ok = keepFalse(ok, this->db->getString(1, word.string));
+
+            if (ok) {
+                fixed.push_back(word);
+            }
+            ok = keepFalse(ok, this->db->nextRow());
         }
-        str += word;
-        if (i < words.size() - 1) {
-            str += " ";
-        }
+        suggestions.push_back(fixed);
     }
 
-    return true;
+    // Now form phrases using all possible combinations of words (in order)
+    std::vector<SpellfixString> phrases = combineWords(suggestions, 0);
+
+    // Sort so that phrases with lower scores are used first
+    std::sort(phrases.begin(), phrases.end(), [](const SpellfixString & lhs, const SpellfixString & rhs) {
+        return lhs.score < rhs.score;
+    });
+    return phrases;
 }
 
 // ===== Connection Management ===== //
@@ -1155,7 +1207,7 @@ bool Database::prepareSearch() {
         this->setErrorMsg("[prepareSearch] Unable to empty FtsSongs");
         return false;
     }
-    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsSongs SELECT title FROM Songs;");
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsSongs SELECT title, Artists.name, Albums.name FROM Songs JOIN Artists ON artist_id = Artists.id JOIN Albums ON album_id = Albums.id;");
     if (!ok) {
         this->setErrorMsg("[prepareSearch] Failed to populate FtsSongs");
         return false;
@@ -1276,34 +1328,34 @@ std::vector<Metadata::Album> Database::searchAlbums(std::string str) {
         return v;
     }
 
-    // Split string into words and correct any spelling mistakes
-    if (!this->spellfixString("SpellfixAlbums", str)) {
+    // Fix any spelling mistakes and get suggested searches based on input
+    std::vector<SpellfixString> phrases = this->getSearchPhrases("SpellfixAlbums", str);
+    if (phrases.empty()) {
         return v;
     }
 
-    // Perform search
-    bool ok = this->db->prepareQuery("SELECT id, name FROM Albums WHERE name IN (SELECT * FROM FtsAlbums WHERE FtsAlbums MATCH ?);");
-    ok = keepFalse(ok, this->db->bindString(0, str));
-    if (!ok) {
-        this->setErrorMsg("[searchAlbums] Unable to prepare search query");
-        return v;
-    }
-    ok = this->db->executeQuery();
-    if (!ok) {
-        this->setErrorMsg("[searchAlbums] Unable to search database");
-        return v;
-    }
-
-    // Collate results
-    while (ok && this->db->hasRow()) {
-        Metadata::Album m;
-        ok = this->db->getInt(0, m.ID);
-        ok = keepFalse(ok, this->db->getString(1, m.name));
-
-        if (ok) {
-            v.push_back(m);
+    // Iterate over each phrase and store results
+    for (size_t i = 0; i < phrases.size(); i++) {
+        bool ok = this->db->prepareQuery("SELECT id, name FROM FtsAlbums JOIN Albums ON content = name WHERE FtsAlbums MATCH ? ORDER BY okapi_bm25(matchinfo(FtsAlbums, 'pcxnal'), 0) DESC;");
+        std::string tmp = phrases[i].string;
+        ok = keepFalse(ok, this->db->bindString(0, tmp));
+        ok = keepFalse(ok, this->db->executeQuery());
+        if (!ok) {
+            this->setErrorMsg("[searchPlaylists] An error occurred searching with the phrase: " + phrases[i].string);
+            return v;
         }
-        ok = keepFalse(ok, this->db->nextRow());
+
+        // Iterate over returned rows
+        while (ok && this->db->hasRow()) {
+            Metadata::Album m;
+            ok = this->db->getInt(0, m.ID);
+            ok = keepFalse(ok, this->db->getString(1, m.name));
+
+            if (ok) {
+                v.push_back(m);
+            }
+            ok = keepFalse(ok, this->db->nextRow());
+        }
     }
 
     return v;
@@ -1318,38 +1370,38 @@ std::vector<Metadata::Artist> Database::searchArtists(std::string str) {
         return v;
     }
 
-    // Split string into words and correct any spelling mistakes
-    if (!this->spellfixString("SpellfixArtists", str)) {
+    // Fix any spelling mistakes and get suggested searches based on input
+    std::vector<SpellfixString> phrases = this->getSearchPhrases("SpellfixArtists", str);
+    if (phrases.empty()) {
         return v;
     }
 
-    // Perform search
-    bool ok = this->db->prepareQuery("SELECT id, name, tadb_id, image_path FROM Artists WHERE name IN (SELECT * FROM FtsArtists WHERE FtsArtists MATCH ?);");
-    ok = keepFalse(ok, this->db->bindString(0, str));
-    if (!ok) {
-        this->setErrorMsg("[searchArtists] Unable to prepare search query");
-        return v;
-    }
-    ok = this->db->executeQuery();
-    if (!ok) {
-        this->setErrorMsg("[searchArtists] Unable to search database");
-        return v;
-    }
-
-    // Collate results
-    while (ok && this->db->hasRow()) {
-        Metadata::Artist m;
-        ok = this->db->getInt(0, m.ID);
-        ok = keepFalse(ok, this->db->getString(1, m.name));
-        ok = keepFalse(ok, this->db->getInt(2, m.tadbID));
-        ok = keepFalse(ok, this->db->getString(3, m.imagePath));
-        m.songCount = 0;    // These should probably be implemented here?
-        m.albumCount = 0;
-
-        if (ok) {
-            v.push_back(m);
+    // Iterate over each phrase and store results
+    for (size_t i = 0; i < phrases.size(); i++) {
+        bool ok = this->db->prepareQuery("SELECT id, name, tadb_id, image_path FROM FtsArtists JOIN Artists ON content = name WHERE FtsArtists MATCH ? ORDER BY okapi_bm25(matchinfo(FtsArtists, 'pcxnal'), 0) DESC;");
+        std::string tmp = phrases[i].string;
+        ok = keepFalse(ok, this->db->bindString(0, tmp));
+        ok = keepFalse(ok, this->db->executeQuery());
+        if (!ok) {
+            this->setErrorMsg("[searchArtists] An error occurred searching with the phrase: " + phrases[i].string);
+            return v;
         }
-        ok = keepFalse(ok, this->db->nextRow());
+
+        // Iterate over returned rows
+        while (ok && this->db->hasRow()) {
+            Metadata::Artist m;
+            ok = this->db->getInt(0, m.ID);
+            ok = keepFalse(ok, this->db->getString(1, m.name));
+            ok = keepFalse(ok, this->db->getInt(2, m.tadbID));
+            ok = keepFalse(ok, this->db->getString(3, m.imagePath));
+            m.songCount = 0;    // I haven't been able to figure out how to get these in this query
+            m.albumCount = 0;
+
+            if (ok) {
+                v.push_back(m);
+            }
+            ok = keepFalse(ok, this->db->nextRow());
+        }
     }
 
     return v;
@@ -1364,35 +1416,35 @@ std::vector<Metadata::Playlist> Database::searchPlaylists(std::string str) {
         return v;
     }
 
-    // Split string into words and correct any spelling mistakes
-    if (!this->spellfixString("SpellfixPlaylists", str)) {
+    // Fix any spelling mistakes and get suggested searches based on input
+    std::vector<SpellfixString> phrases = this->getSearchPhrases("SpellfixPlaylists", str);
+    if (phrases.empty()) {
         return v;
     }
 
-    // Perform search
-    bool ok = this->db->prepareQuery("SELECT id, name, description FROM Playlists WHERE name IN (SELECT * FROM FtsPlaylists WHERE FtsPlaylists MATCH ?);");
-    ok = keepFalse(ok, this->db->bindString(0, str));
-    if (!ok) {
-        this->setErrorMsg("[searchPlaylists] Unable to prepare search query");
-        return v;
-    }
-    ok = this->db->executeQuery();
-    if (!ok) {
-        this->setErrorMsg("[searchPlaylists] Unable to search database");
-        return v;
-    }
-
-    // Collate results
-    while (ok && this->db->hasRow()) {
-        Metadata::Playlist m;
-        ok = this->db->getInt(0, m.ID);
-        ok = keepFalse(ok, this->db->getString(1, m.name));
-        ok = keepFalse(ok, this->db->getString(2, m.description));
-
-        if (ok) {
-            v.push_back(m);
+    // Iterate over each phrase and store results
+    for (size_t i = 0; i < phrases.size(); i++) {
+        bool ok = this->db->prepareQuery("SELECT id, name, description FROM FtsPlaylists JOIN Playlists ON content = name WHERE FtsPlaylists MATCH ? ORDER BY okapi_bm25(matchinfo(FtsPlaylists, 'pcxnal'), 0) DESC;");
+        std::string tmp = phrases[i].string;
+        ok = keepFalse(ok, this->db->bindString(0, tmp));
+        ok = keepFalse(ok, this->db->executeQuery());
+        if (!ok) {
+            this->setErrorMsg("[searchPlaylists] An error occurred searching with the phrase: " + phrases[i].string);
+            return v;
         }
-        ok = keepFalse(ok, this->db->nextRow());
+
+        // Iterate over returned rows
+        while (ok && this->db->hasRow()) {
+            Metadata::Playlist m;
+            ok = this->db->getInt(0, m.ID);
+            ok = keepFalse(ok, this->db->getString(1, m.name));
+            ok = keepFalse(ok, this->db->getString(2, m.description));
+
+            if (ok) {
+                v.push_back(m);
+            }
+            ok = keepFalse(ok, this->db->nextRow());
+        }
     }
 
     return v;
@@ -1407,49 +1459,49 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str) {
         return v;
     }
 
-    // Split string into words and correct any spelling mistakes
-    if (!this->spellfixString("SpellfixSongs", str)) {
+    // Fix any spelling mistakes and get suggested searches based on input
+    std::vector<SpellfixString> phrases = this->getSearchPhrases("SpellfixSongs", str);
+    if (phrases.empty()) {
         return v;
     }
 
-    // Perform search
-    bool ok = this->db->prepareQuery("SELECT Songs.id, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.title IN (SELECT * FROM FtsSongs WHERE FtsSongs MATCH ?);");
-    ok = keepFalse(ok, this->db->bindString(0, str));
-    if (!ok) {
-        this->setErrorMsg("[searchSongs] Unable to prepare search query");
-        return v;
-    }
-    ok = this->db->executeQuery();
-    if (!ok) {
-        this->setErrorMsg("[searchSongs] Unable to search database");
-        return v;
-    }
-
-    // Collate results
-    while (ok && this->db->hasRow()) {
-        Metadata::Song m;
-        int tmp;
-        ok = this->db->getInt(0, m.ID);
-        ok = keepFalse(ok, this->db->getString(1, m.title));
-        ok = keepFalse(ok, this->db->getString(2, m.artist));
-        ok = keepFalse(ok, this->db->getString(3, m.album));
-        ok = keepFalse(ok, this->db->getInt(4, tmp));
-        m.trackNumber = tmp;
-        ok = keepFalse(ok, this->db->getInt(5, tmp));
-        m.discNumber = tmp;
-        ok = keepFalse(ok, this->db->getInt(6, tmp));
-        m.duration = tmp;
-        ok = keepFalse(ok, this->db->getInt(7, tmp));
-        m.plays = tmp;
-        ok = keepFalse(ok, this->db->getBool(8, m.favourite));
-        ok = keepFalse(ok, this->db->getString(9, m.path));
-        ok = keepFalse(ok, this->db->getInt(10, tmp));
-        m.modified = tmp;
-
-        if (ok) {
-            v.push_back(m);
+    // Iterate over each phrase and store results
+    for (size_t i = 0; i < phrases.size(); i++) {
+        bool ok = this->db->prepareQuery("SELECT Songs.id, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN FtsSongs ON Songs.title = FtsSongs.title JOIN Artists ON artist_id = Artists.id JOIN Albums ON album_id = Albums.id WHERE FtsSongs MATCH ? ORDER BY okapi_bm25(matchinfo(FtsSongs, 'pcxnal'), 0) DESC;");
+        std::string tmp = phrases[i].string;
+        ok = keepFalse(ok, this->db->bindString(0, tmp));
+        ok = keepFalse(ok, this->db->executeQuery());
+        if (!ok) {
+            this->setErrorMsg("[searchSongs] An error occurred searching with the phrase: " + phrases[i].string);
+            return v;
         }
-        ok = keepFalse(ok, this->db->nextRow());
+
+        // Iterate over returned rows
+        while (ok && this->db->hasRow()) {
+            Metadata::Song m;
+            int tmp;
+            ok = this->db->getInt(0, m.ID);
+            ok = keepFalse(ok, this->db->getString(1, m.title));
+            ok = keepFalse(ok, this->db->getString(2, m.artist));
+            ok = keepFalse(ok, this->db->getString(3, m.album));
+            ok = keepFalse(ok, this->db->getInt(4, tmp));
+            m.trackNumber = tmp;
+            ok = keepFalse(ok, this->db->getInt(5, tmp));
+            m.discNumber = tmp;
+            ok = keepFalse(ok, this->db->getInt(6, tmp));
+            m.duration = tmp;
+            ok = keepFalse(ok, this->db->getInt(7, tmp));
+            m.plays = tmp;
+            ok = keepFalse(ok, this->db->getBool(8, m.favourite));
+            ok = keepFalse(ok, this->db->getString(9, m.path));
+            ok = keepFalse(ok, this->db->getInt(10, tmp));
+            m.modified = tmp;
+
+            if (ok) {
+                v.push_back(m);
+            }
+            ok = keepFalse(ok, this->db->nextRow());
+        }
     }
 
     return v;

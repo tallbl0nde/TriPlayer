@@ -9,8 +9,8 @@
 #include "Database.hpp"
 #include "PlayQueue.hpp"
 #include "Protocol.hpp"
+#include "socket/Listener.hpp"
 #include "sources/Source.hpp"
-#include "utils/Socket.hpp"
 
 // Class which manages all actions taken when receiving a command
 // Essentially encapsulates everything
@@ -32,8 +32,8 @@ class MainService {
         PlayQueue * queue;
         // Queue of 'queued' songs
         std::deque<SongID> subQueue;
-        // Socket object for communication
-        Socket * socket;
+        // Listening socket to listen and accept new connections
+        Socket::Listener * listener;
 
         // Whether to stop loop and exit
         std::atomic<bool> exit_;
@@ -42,7 +42,7 @@ class MainService {
         // String set by client indicating where the music is playing from
         std::string playingFrom;
         // Timestamp of last previous press
-        std::time_t pressTime;
+        std::atomic<std::time_t> pressTime;
         // Repeat mode
         std::atomic<RepeatMode> repeatMode;
         // Status vars for comm. between threads
@@ -62,6 +62,9 @@ class MainService {
         std::mutex dbMutex;
         std::atomic<bool> dbLocked;
 
+        // Function run by transfer sockets
+        void commandThread(Socket::Transfer *);
+
     public:
         // Constructor initializes socket related things
         MainService();
@@ -71,7 +74,7 @@ class MainService {
 
         // Handles decoding and shifting between songs due to commands
         void playbackThread();
-        // listens and takes action when receiving a command
+        // Listens for connections and spawns new threads for each connection
         void socketThread();
 
         ~MainService();

@@ -5,18 +5,30 @@
 #include <chrono>
 #include <functional>
 #include <mutex>
-#include <queue>
+#include "socket/Connector.hpp"
 #include "Types.hpp"
 #include <vector>
 
 // The sysmodule class makes use of a socket to communicate with the
 // sysmodule.
 class Sysmodule {
-    private:
-        // Socket file descriptor (set negative if an error occurred)
-        SockFD socket;
+    public:
+        // Reasons for loss of communication
+        enum class Error {
+            None,                   // No error
+            DifferentVersion,       // App and sysmodule versions don't match
+            LostConnection,         // Lost connection while trying to communicate
+            NotConnected,           // Couldn't establish a connection
+            Unknown                 // Unknown error
+        };
 
-        std::atomic<bool> error_;
+    private:
+        // Socket 'connector' used to connect to the sysmodule
+        Socket::Connector * connector;
+        // Transfer socket used to actually communicate with the sysmodule
+        Socket::Transfer * socket;
+
+        std::atomic<Error> error_;
         std::atomic<bool> exit_;
         std::chrono::steady_clock::time_point lastUpdateTime;
 
@@ -43,15 +55,17 @@ class Sysmodule {
         // Queue of messages to write and callback
         std::queue< std::pair<std::string, std::function<void(std::string)> > > writeQueue;
         std::mutex writeMutex;
-        void addToWriteQueue(std::string, std::function<void(std::string)>);
+
+        // Returns if the message was added to the queue
+        bool addToWriteQueue(std::string, std::function<void(std::string)>);
 
     public:
         // Constructor creates a socket and attempts connection to sysmodule
         Sysmodule();
 
-        // Returns true when an error occurred in communication
-        bool error();
-        // (Drops) current socket and reconnects
+        // Returns type of error occurred
+        Error error();
+        // Drops current connection if there is one and attempts to reconnect
         void reconnect();
 
         // Main function which updates state when replies received
@@ -74,8 +88,8 @@ class Sysmodule {
         double volume();
 
         // The following commands block the calling thread until a response is received
-        void waitRequestDBLock();
-        void waitReset();
+        bool waitRequestDBLock();
+        bool waitReset();
         size_t waitSongIdx();
 
         // === Send command to sysmodule ===

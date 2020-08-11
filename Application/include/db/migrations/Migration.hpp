@@ -6,5 +6,6 @@
 #include "db/migrations/2_AddArtistImage.hpp"
 #include "db/migrations/3_AddAlbumMetadata.hpp"
 #include "db/migrations/4_AddPlaylistImage.hpp"
+#include "db/migrations/5_UpdateSearch.hpp"
 
 #endif
