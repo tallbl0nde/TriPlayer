@@ -16,7 +16,7 @@ namespace Frame {
             void addPlaylists(const std::vector<Metadata::Playlist> &);
             void addArtists(const std::vector<Metadata::Artist> &);
             void addAlbums(const std::vector<Metadata::Album> &);
-            void addSongs(const std::vector<Metadata::Song> &);
+            void addSongs(const std::vector<Metadata::Song> &, const std::string &);
 
             // Callback when text box is updated
             void searchDatabase(const std::string &);

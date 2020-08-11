@@ -1,5 +1,8 @@
 #include "Application.hpp"
+#include "ui/element/GridItem.hpp"
+#include "ui/element/HorizontalList.hpp"
 #include "ui/element/ListHeadingCount.hpp"
+#include "ui/element/listitem/Song.hpp"
 #include "ui/frame/Search.hpp"
 #include "utils/NX.hpp"
 #include "utils/Utils.hpp"
@@ -63,6 +66,25 @@ namespace Frame {
             heading->setY(this->list->y() + 10);
             this->listEmpty = false;
         }
+
+        // Create horizontal list and populate with items
+        CustomElm::HorizontalList * hlist = new CustomElm::HorizontalList(this->list->x(), 0, this->list->w(), 250);
+        for (size_t i = 0; i < v.size(); i++) {
+            std::string img = (v[i].imagePath.empty() ? "romfs:/misc/noplaylist.png" : v[i].imagePath);
+            CustomElm::GridItem * l = new CustomElm::GridItem(img);
+            l->setMainString(v[i].name);
+            l->setDotsColour(this->app->theme()->muted());
+            l->setTextColour(this->app->theme()->FG());
+            PlaylistID id = v[i].ID;
+            l->setCallback([this, id](){
+                this->changeFrame(Type::Playlist, Action::Push, id);
+            });
+            l->setMoreCallback([this, id]() {
+                // this->createMenu(id);
+            });
+            hlist->addElement(l);
+        }
+        this->list->addElement(hlist);
     }
 
     void Search::addArtists(const std::vector<Metadata::Artist> & v) {
@@ -76,6 +98,25 @@ namespace Frame {
             heading->setY(this->list->y() + 10);
             this->listEmpty = false;
         }
+
+        // Create horizontal list and populate with items
+        CustomElm::HorizontalList * hlist = new CustomElm::HorizontalList(this->list->x(), 0, this->list->w(), 250);
+        for (size_t i = 0; i < v.size(); i++) {
+            std::string img = (v[i].imagePath.empty() ? "romfs:/misc/noartist.png" : v[i].imagePath);
+            CustomElm::GridItem * l = new CustomElm::GridItem(img);
+            l->setMainString(v[i].name);
+            l->setDotsColour(this->app->theme()->muted());
+            l->setTextColour(this->app->theme()->FG());
+            ArtistID id = v[i].ID;
+            l->setCallback([this, id](){
+                this->changeFrame(Type::Artist, Action::Push, id);
+            });
+            l->setMoreCallback([this, id]() {
+                // this->createMenu(id);
+            });
+            hlist->addElement(l);
+        }
+        this->list->addElement(hlist);
     }
 
     void Search::addAlbums(const std::vector<Metadata::Album> & v) {
@@ -89,18 +130,64 @@ namespace Frame {
             heading->setY(this->list->y() + 10);
             this->listEmpty = false;
         }
+
+        // Create horizontal list and populate with items
+        CustomElm::HorizontalList * hlist = new CustomElm::HorizontalList(this->list->x(), 0, this->list->w(), 250);
+        for (size_t i = 0; i < v.size(); i++) {
+            std::string img = (v[i].imagePath.empty() ? "romfs:/misc/noalbum.png" : v[i].imagePath);
+            CustomElm::GridItem * l = new CustomElm::GridItem(img);
+            l->setMainString(v[i].name);
+            l->setSubString(v[i].artist);
+            l->setDotsColour(this->app->theme()->muted());
+            l->setTextColour(this->app->theme()->FG());
+            l->setMutedTextColour(this->app->theme()->muted());
+            AlbumID id = v[i].ID;
+            l->setCallback([this, id](){
+                this->changeFrame(Type::Album, Action::Push, id);
+            });
+            l->setMoreCallback([this, id]() {
+                // this->createMenu(id);
+            });
+            hlist->addElement(l);
+        }
+        this->list->addElement(hlist);
     }
 
-    void Search::addSongs(const std::vector<Metadata::Song> & v) {
+    void Search::addSongs(const std::vector<Metadata::Song> & v, const std::string & phrase) {
         // Add heading and count first
         CustomElm::ListHeadingCount * heading = new CustomElm::ListHeadingCount();
         heading->setHeadingString("Songs");
         heading->setCount(v.size());
         heading->setTextColour(this->app->theme()->FG());
         this->list->addElement(heading);
+        this->list->addElement(new Aether::ListSeparator(10));
         if (this->listEmpty) {
             heading->setY(this->list->y() + 10);
             this->listEmpty = false;
+        }
+
+        // Add songs to list
+        for (size_t i = 0; i < v.size(); i++) {
+            this->songIDs.push_back(v[i].ID);
+            CustomElm::ListItem::Song * l = new CustomElm::ListItem::Song();
+            l->setTitleString(v[i].title);
+            l->setArtistString(v[i].artist);
+            l->setAlbumString(v[i].album);
+            l->setLengthString(Utils::secondsToHMS(v[i].duration));
+            l->setLineColour(this->app->theme()->muted2());
+            l->setMoreColour(this->app->theme()->muted());
+            l->setTextColour(this->app->theme()->FG());
+            l->setCallback([this, phrase, i](){
+                this->app->sysmodule()->sendSetPlayingFrom("'" + phrase + "'");
+                this->app->sysmodule()->sendSetQueue(this->songIDs);
+                this->app->sysmodule()->sendSetSongIdx(i);
+                this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+            });
+            SongID id = v[i].ID;
+            l->setMoreCallback([this, id]() {
+                // this->createMenu(id);
+            });
+            this->list->addElement(l);
         }
     }
 
@@ -131,13 +218,9 @@ namespace Frame {
             this->addAlbums(albums);
         }
         if (!songs.empty()) {
-            this->addSongs(songs);
+            this->addSongs(songs, phrase);
         }
-
-        // Copy song IDs to set queue if playing a song
-        for (size_t i = 0; i < songs.size(); i++) {
-            this->songIDs.push_back(songs[i].ID);
-        }
+        this->setFocussed(this->list);
     }
 
     void Search::showError(const std::string & message) {

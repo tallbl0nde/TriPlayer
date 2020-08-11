@@ -1351,7 +1351,7 @@ std::vector<Metadata::Album> Database::searchAlbums(std::string str) {
 
     // Iterate over each phrase and store results
     for (size_t i = 0; i < phrases.size(); i++) {
-        bool ok = this->db->prepareQuery("SELECT id, name FROM FtsAlbums JOIN Albums ON content = name WHERE FtsAlbums MATCH ? ORDER BY okapi_bm25(matchinfo(FtsAlbums, 'pcxnal'), 0) DESC;");
+        bool ok = this->db->prepareQuery("SELECT id, name, image_path FROM FtsAlbums JOIN Albums ON content = name WHERE FtsAlbums MATCH ? ORDER BY okapi_bm25(matchinfo(FtsAlbums, 'pcxnal'), 0) DESC;");
         std::string tmp = phrases[i].string;
         ok = keepFalse(ok, this->db->bindString(0, tmp));
         ok = keepFalse(ok, this->db->executeQuery());
@@ -1365,6 +1365,7 @@ std::vector<Metadata::Album> Database::searchAlbums(std::string str) {
             Metadata::Album m;
             ok = this->db->getInt(0, m.ID);
             ok = keepFalse(ok, this->db->getString(1, m.name));
+            ok = keepFalse(ok, this->db->getString(2, m.imagePath));
 
             if (ok) {
                 v.push_back(m);
@@ -1439,7 +1440,7 @@ std::vector<Metadata::Playlist> Database::searchPlaylists(std::string str) {
 
     // Iterate over each phrase and store results
     for (size_t i = 0; i < phrases.size(); i++) {
-        bool ok = this->db->prepareQuery("SELECT id, name, description FROM FtsPlaylists JOIN Playlists ON content = name WHERE FtsPlaylists MATCH ? ORDER BY okapi_bm25(matchinfo(FtsPlaylists, 'pcxnal'), 0) DESC;");
+        bool ok = this->db->prepareQuery("SELECT id, name, description, image_path FROM FtsPlaylists JOIN Playlists ON content = name WHERE FtsPlaylists MATCH ? ORDER BY okapi_bm25(matchinfo(FtsPlaylists, 'pcxnal'), 0) DESC;");
         std::string tmp = phrases[i].string;
         ok = keepFalse(ok, this->db->bindString(0, tmp));
         ok = keepFalse(ok, this->db->executeQuery());
@@ -1454,6 +1455,7 @@ std::vector<Metadata::Playlist> Database::searchPlaylists(std::string str) {
             ok = this->db->getInt(0, m.ID);
             ok = keepFalse(ok, this->db->getString(1, m.name));
             ok = keepFalse(ok, this->db->getString(2, m.description));
+            ok = keepFalse(ok, this->db->getString(3, m.imagePath));
 
             if (ok) {
                 v.push_back(m);
