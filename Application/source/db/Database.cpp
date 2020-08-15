@@ -13,7 +13,7 @@
 // Version of the database (database begins with zero from 'template', so this started at 1)
 #define DB_VERSION 5
 // Maximum number of phrases to search for using spellfixed strings
-#define SEARCH_PHRASES 6
+#define SEARCH_PHRASES 8
 // Maximum 'spellfix score' allowed when fixing a word
 #define SPELLFIX_SCORE 150
 // Location of template file
@@ -1242,7 +1242,7 @@ bool Database::prepareSearch() {
         this->setErrorMsg("[prepareSearch] Unable to empty FtsAlbums");
         return false;
     }
-    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsAlbums SELECT name FROM Albums;");
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsAlbums SELECT DISTINCT Albums.name, Artists.name FROM Songs JOIN Artists ON artist_id = Artists.id JOIN Albums ON album_id = Albums.id;");
     if (!ok) {
         this->setErrorMsg("[prepareSearch] Failed to populate FtsAlbums");
         return false;
@@ -1334,8 +1334,11 @@ bool Database::prepareSearch() {
     return ok;
 }
 
-std::vector<Metadata::Album> Database::searchAlbums(std::string str) {
+std::vector<Metadata::Album> Database::searchAlbums(std::string str, int limit) {
     std::vector<Metadata::Album> v;
+    if (limit == 0) {
+        return v;
+    }
 
     // Check we can read
     if (this->db->connectionType() == SQLite::Connection::None) {
@@ -1351,12 +1354,18 @@ std::vector<Metadata::Album> Database::searchAlbums(std::string str) {
 
     // Iterate over each phrase and store results
     for (size_t i = 0; i < phrases.size(); i++) {
-        bool ok = this->db->prepareQuery("SELECT id, name, image_path FROM FtsAlbums JOIN Albums ON content = name WHERE FtsAlbums MATCH ? ORDER BY okapi_bm25(matchinfo(FtsAlbums, 'pcxnal'), 0) DESC;");
+        // Create query and optionally append LIMIT
+        std::string query = "SELECT DISTINCT id, Albums.name, image_path FROM FtsAlbums JOIN Albums ON Albums.name = FtsAlbums.name WHERE FtsAlbums MATCH ? ORDER BY okapi_bm25(matchinfo(FtsAlbums, 'pcxnal'), 0) DESC";
+        query += (limit >= 0 ? " LIMIT ?;" : ";");
+        bool ok = this->db->prepareQuery(query);
         std::string tmp = phrases[i].string;
         ok = keepFalse(ok, this->db->bindString(0, tmp));
+        if (limit >= 0) {
+            ok = keepFalse(ok, this->db->bindInt(1, limit));
+        }
         ok = keepFalse(ok, this->db->executeQuery());
         if (!ok) {
-            this->setErrorMsg("[searchPlaylists] An error occurred searching with the phrase: " + phrases[i].string);
+            this->setErrorMsg("[searchAlbums] An error occurred searching with the phrase: " + phrases[i].string);
             return v;
         }
 
@@ -1377,8 +1386,11 @@ std::vector<Metadata::Album> Database::searchAlbums(std::string str) {
     return v;
 }
 
-std::vector<Metadata::Artist> Database::searchArtists(std::string str) {
+std::vector<Metadata::Artist> Database::searchArtists(std::string str, int limit) {
     std::vector<Metadata::Artist> v;
+    if (limit == 0) {
+        return v;
+    }
 
     // Check we can read
     if (this->db->connectionType() == SQLite::Connection::None) {
@@ -1394,9 +1406,15 @@ std::vector<Metadata::Artist> Database::searchArtists(std::string str) {
 
     // Iterate over each phrase and store results
     for (size_t i = 0; i < phrases.size(); i++) {
-        bool ok = this->db->prepareQuery("SELECT id, name, tadb_id, image_path FROM FtsArtists JOIN Artists ON content = name WHERE FtsArtists MATCH ? ORDER BY okapi_bm25(matchinfo(FtsArtists, 'pcxnal'), 0) DESC;");
+        // Create query and optionally append LIMIT
+        std::string query = "SELECT id, name, tadb_id, image_path FROM FtsArtists JOIN Artists ON content = name WHERE FtsArtists MATCH ? ORDER BY okapi_bm25(matchinfo(FtsArtists, 'pcxnal'), 0) DESC";
+        query += (limit >= 0 ? " LIMIT ?;" : ";");
+        bool ok = this->db->prepareQuery(query);
         std::string tmp = phrases[i].string;
         ok = keepFalse(ok, this->db->bindString(0, tmp));
+        if (limit >= 0) {
+            ok = keepFalse(ok, this->db->bindInt(1, limit));
+        }
         ok = keepFalse(ok, this->db->executeQuery());
         if (!ok) {
             this->setErrorMsg("[searchArtists] An error occurred searching with the phrase: " + phrases[i].string);
@@ -1423,8 +1441,11 @@ std::vector<Metadata::Artist> Database::searchArtists(std::string str) {
     return v;
 }
 
-std::vector<Metadata::Playlist> Database::searchPlaylists(std::string str) {
+std::vector<Metadata::Playlist> Database::searchPlaylists(std::string str, int limit) {
     std::vector<Metadata::Playlist> v;
+    if (limit == 0) {
+        return v;
+    }
 
     // Check we can read
     if (this->db->connectionType() == SQLite::Connection::None) {
@@ -1440,9 +1461,15 @@ std::vector<Metadata::Playlist> Database::searchPlaylists(std::string str) {
 
     // Iterate over each phrase and store results
     for (size_t i = 0; i < phrases.size(); i++) {
-        bool ok = this->db->prepareQuery("SELECT id, name, description, image_path FROM FtsPlaylists JOIN Playlists ON content = name WHERE FtsPlaylists MATCH ? ORDER BY okapi_bm25(matchinfo(FtsPlaylists, 'pcxnal'), 0) DESC;");
+        // Create query and optionally append LIMIT
+        std::string query = "SELECT id, name, description, image_path FROM FtsPlaylists JOIN Playlists ON content = name WHERE FtsPlaylists MATCH ? ORDER BY okapi_bm25(matchinfo(FtsPlaylists, 'pcxnal'), 0) DESC";
+        query += (limit >= 0 ? " LIMIT ?;" : ";");
+        bool ok = this->db->prepareQuery(query);
         std::string tmp = phrases[i].string;
         ok = keepFalse(ok, this->db->bindString(0, tmp));
+        if (limit >= 0) {
+            ok = keepFalse(ok, this->db->bindInt(1, limit));
+        }
         ok = keepFalse(ok, this->db->executeQuery());
         if (!ok) {
             this->setErrorMsg("[searchPlaylists] An error occurred searching with the phrase: " + phrases[i].string);
@@ -1467,8 +1494,11 @@ std::vector<Metadata::Playlist> Database::searchPlaylists(std::string str) {
     return v;
 }
 
-std::vector<Metadata::Song> Database::searchSongs(std::string str) {
+std::vector<Metadata::Song> Database::searchSongs(std::string str, int limit) {
     std::vector<Metadata::Song> v;
+    if (limit == 0) {
+        return v;
+    }
 
     // Check we can read
     if (this->db->connectionType() == SQLite::Connection::None) {
@@ -1484,9 +1514,15 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str) {
 
     // Iterate over each phrase and store results
     for (size_t i = 0; i < phrases.size(); i++) {
-        bool ok = this->db->prepareQuery("SELECT Songs.id, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN FtsSongs ON Songs.title = FtsSongs.title JOIN Artists ON artist_id = Artists.id JOIN Albums ON album_id = Albums.id WHERE FtsSongs MATCH ? ORDER BY okapi_bm25(matchinfo(FtsSongs, 'pcxnal'), 0) DESC;");
+        // Create query and optionally append LIMIT
+        std::string query = "SELECT Songs.id, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN FtsSongs ON Songs.title = FtsSongs.title JOIN Artists ON artist_id = Artists.id JOIN Albums ON album_id = Albums.id WHERE FtsSongs MATCH ? ORDER BY okapi_bm25(matchinfo(FtsSongs, 'pcxnal'), 0) DESC";
+        query += (limit >= 0 ? " LIMIT ?;" : ";");
+        bool ok = this->db->prepareQuery(query);
         std::string tmp = phrases[i].string;
         ok = keepFalse(ok, this->db->bindString(0, tmp));
+        if (limit >= 0) {
+            ok = keepFalse(ok, this->db->bindInt(1, limit));
+        }
         ok = keepFalse(ok, this->db->executeQuery());
         if (!ok) {
             this->setErrorMsg("[searchSongs] An error occurred searching with the phrase: " + phrases[i].string);

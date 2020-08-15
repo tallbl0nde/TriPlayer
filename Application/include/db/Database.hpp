@@ -131,11 +131,12 @@ class Database {
         // Indexes terms and prepares database for searching
         bool prepareSearch();
         // Search for records matching given text
+        // The number of returned records can also be optionally limited
         // Empty if no matching songs or an error occurred
-        std::vector<Metadata::Album> searchAlbums(const std::string);
-        std::vector<Metadata::Artist> searchArtists(const std::string);
-        std::vector<Metadata::Playlist> searchPlaylists(const std::string);
-        std::vector<Metadata::Song> searchSongs(const std::string);
+        std::vector<Metadata::Album> searchAlbums(const std::string, int = -1);
+        std::vector<Metadata::Artist> searchArtists(const std::string, int = -1);
+        std::vector<Metadata::Playlist> searchPlaylists(const std::string, int = -1);
+        std::vector<Metadata::Song> searchSongs(const std::string, int = -1);
 
         // ===== Misc. Queries ===== //
         // Returns vector of paths for all stored songs
