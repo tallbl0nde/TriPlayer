@@ -128,6 +128,7 @@ bool Database::migrate() {
     }
 
     // Now actually migrate
+    ok = this->db->beginTransaction();
     std::string err = "";
     if (ok) {
         switch (version) {
@@ -173,11 +174,23 @@ bool Database::migrate() {
         }
     }
 
+    // Commit changes if all successful
+    bool commitFailed = false;
+    if (err.empty() && ok) {
+        ok = this->db->commitTransaction();
+        if (!ok) {
+            commitFailed = true;
+        }
+    }
+
     // Log outcome and close database
     if (err.empty() && ok) {
         Log::writeSuccess("[DB] Migrations completed successfully!");
 
     } else {
+        if (!commitFailed) {
+            this->db->rollbackTransaction();
+        }
         this->setErrorMsg(err);
         this->setErrorMsg("An error occurred migrating the database, rolling back");
     }

@@ -31,6 +31,8 @@ class SQLite {
         sqlite3 * db;
         // Whether to ignore SQLITE_CONSTRAINT* result codes
         bool ignoreConstraints_;
+        // Whether we are in a transaction
+        bool inTransaction;
         // Path to file
         std::string path;
         // SQLite command
@@ -66,6 +68,16 @@ class SQLite {
         // Open a connection with the given type
         // Returns true if successful, false on an error
         bool openConnection(Connection);
+
+        // Begin a transaction
+        // Returns true on success, false on an error
+        bool beginTransaction();
+        // Commit and end the current transaction (rolls back if unable to commit!)
+        // Returns true if successful (i.e. beginTransaction() was called), false on an error
+        bool commitTransaction();
+        // Rollback and end the current transaction
+        // Returns true on success, false on an error
+        bool rollbackTransaction();
 
         // Prepares the provided query (cleaned up automatically)
         // Returns true if successful, false on an error
