@@ -73,8 +73,10 @@ namespace Frame {
             std::string img = (v[i].imagePath.empty() ? "romfs:/misc/noplaylist.png" : v[i].imagePath);
             CustomElm::GridItem * l = new CustomElm::GridItem(img);
             l->setMainString(v[i].name);
+            l->setSubString(std::to_string(v[i].songCount) + (v[i].songCount == 1 ? " song" : " songs"));
             l->setDotsColour(this->app->theme()->muted());
             l->setTextColour(this->app->theme()->FG());
+            l->setMutedTextColour(this->app->theme()->muted());
             PlaylistID id = v[i].ID;
             l->setCallback([this, id](){
                 this->changeFrame(Type::Playlist, Action::Push, id);
@@ -105,8 +107,12 @@ namespace Frame {
             std::string img = (v[i].imagePath.empty() ? "romfs:/misc/noartist.png" : v[i].imagePath);
             CustomElm::GridItem * l = new CustomElm::GridItem(img);
             l->setMainString(v[i].name);
+            std::string str = std::to_string(v[i].albumCount) + (v[i].albumCount == 1 ? " album" : " albums");
+            str += " | " + std::to_string(v[i].songCount) + (v[i].songCount == 1 ? " song" : " songs");
+            l->setSubString(str);
             l->setDotsColour(this->app->theme()->muted());
             l->setTextColour(this->app->theme()->FG());
+            l->setMutedTextColour(this->app->theme()->muted());
             ArtistID id = v[i].ID;
             l->setCallback([this, id](){
                 this->changeFrame(Type::Artist, Action::Push, id);
