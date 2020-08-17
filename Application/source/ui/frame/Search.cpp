@@ -26,7 +26,7 @@ namespace Frame {
         this->artistH->setHidden(true);
         this->albumH->setHidden(true);
         this->lengthH->setHidden(true);
-        this->prepareBox = nullptr;
+        this->msgbox = nullptr;
 
         // Get input first
         bool haveInput = Utils::NX::getUserInput(keyboard);
@@ -36,21 +36,16 @@ namespace Frame {
             return;
         }
 
-        // Ensure the database is up to date
-        if (this->app->database()->needsSearchUpdate()) {
-            this->createPreparingOverlay();
-            this->app->lockDatabase();
-            bool ok = this->app->database()->prepareSearch();
-            this->app->unlockDatabase();
-            this->prepareBox->close();
+        // Search the database and populate the list!
+        std::string copy = keyboard.buffer;
+        this->threadDone = false;
+        this->searchThread = std::async(std::launch::async, [this, copy]() -> bool {
+           return this->searchDatabase(copy);
+        });
+        this->createMessageBox();
+    }
 
-            // Show error message if needed
-            if (!ok) {
-                this->showError("An error occurred updating the search data. Please restart the application and try again.");
-                return;
-            }
-        }
-
+    void Search::addEntries() {
         // Set heading and position
         this->heading->setFontSize(46);
         this->heading->setString("Results for: " + keyboard.buffer);
@@ -63,19 +58,36 @@ namespace Frame {
         }
 
         // Position the list
+        this->listEmpty = true;
         this->list->setY(this->heading->y() + this->heading->h() + (this->heading->y() - this->y()));
         this->list->setH(this->h() - this->list->y());
 
-        // Search the database and populate the list!
-        this->listEmpty = true;
-        this->searchDatabase(keyboard.buffer);
+        // Show message if no results found
+        if (this->playlists.empty() && this->artists.empty() && this->albums.empty() && this->songs.empty()) {
+            Aether::Text * text = new Aether::Text(this->x() + this->w()/2, this->y() + this->h()/2, "No results found", 26);
+            text->setX(text->x() - text->w()/2);
+            text->setColour(this->app->theme()->FG());
+            this->addElement(text);
+            return;
+        }
+
+        // Add elements to list
+        this->addPlaylists();
+        this->addArtists();
+        this->addAlbums();
+        this->addSongs();
+        this->setFocussed(this->list);
     }
 
-    void Search::addPlaylists(const std::vector<Metadata::Playlist> & v) {
+    void Search::addPlaylists() {
+        if (this->playlists.empty()) {
+            return;
+        }
+
         // Add heading and count first
         CustomElm::ListHeadingCount * heading = new CustomElm::ListHeadingCount();
         heading->setHeadingString("Playlists");
-        heading->setCount(v.size());
+        heading->setCount(this->playlists.size());
         heading->setTextColour(this->app->theme()->FG());
         this->list->addElement(heading);
         if (this->listEmpty) {
@@ -85,15 +97,15 @@ namespace Frame {
 
         // Create horizontal list and populate with items
         CustomElm::HorizontalList * hlist = new CustomElm::HorizontalList(this->list->x(), 0, this->list->w(), 250);
-        for (size_t i = 0; i < v.size(); i++) {
-            std::string img = (v[i].imagePath.empty() ? "romfs:/misc/noplaylist.png" : v[i].imagePath);
+        for (size_t i = 0; i < this->playlists.size(); i++) {
+            std::string img = (this->playlists[i].imagePath.empty() ? "romfs:/misc/noplaylist.png" : this->playlists[i].imagePath);
             CustomElm::GridItem * l = new CustomElm::GridItem(img);
-            l->setMainString(v[i].name);
-            l->setSubString(std::to_string(v[i].songCount) + (v[i].songCount == 1 ? " song" : " songs"));
+            l->setMainString(this->playlists[i].name);
+            l->setSubString(std::to_string(this->playlists[i].songCount) + (this->playlists[i].songCount == 1 ? " song" : " songs"));
             l->setDotsColour(this->app->theme()->muted());
             l->setTextColour(this->app->theme()->FG());
             l->setMutedTextColour(this->app->theme()->muted());
-            PlaylistID id = v[i].ID;
+            PlaylistID id = this->playlists[i].ID;
             l->setCallback([this, id](){
                 this->changeFrame(Type::Playlist, Action::Push, id);
             });
@@ -103,13 +115,18 @@ namespace Frame {
             hlist->addElement(l);
         }
         this->list->addElement(hlist);
+        this->playlists.clear();
     }
 
-    void Search::addArtists(const std::vector<Metadata::Artist> & v) {
+    void Search::addArtists() {
+        if (this->artists.empty()) {
+            return;
+        }
+
         // Add heading and count first
         CustomElm::ListHeadingCount * heading = new CustomElm::ListHeadingCount();
         heading->setHeadingString("Artists");
-        heading->setCount(v.size());
+        heading->setCount(this->artists.size());
         heading->setTextColour(this->app->theme()->FG());
         this->list->addElement(heading);
         if (this->listEmpty) {
@@ -119,17 +136,17 @@ namespace Frame {
 
         // Create horizontal list and populate with items
         CustomElm::HorizontalList * hlist = new CustomElm::HorizontalList(this->list->x(), 0, this->list->w(), 250);
-        for (size_t i = 0; i < v.size(); i++) {
-            std::string img = (v[i].imagePath.empty() ? "romfs:/misc/noartist.png" : v[i].imagePath);
+        for (size_t i = 0; i < this->artists.size(); i++) {
+            std::string img = (this->artists[i].imagePath.empty() ? "romfs:/misc/noartist.png" : this->artists[i].imagePath);
             CustomElm::GridItem * l = new CustomElm::GridItem(img);
-            l->setMainString(v[i].name);
-            std::string str = std::to_string(v[i].albumCount) + (v[i].albumCount == 1 ? " album" : " albums");
-            str += " | " + std::to_string(v[i].songCount) + (v[i].songCount == 1 ? " song" : " songs");
+            l->setMainString(this->artists[i].name);
+            std::string str = std::to_string(this->artists[i].albumCount) + (this->artists[i].albumCount == 1 ? " album" : " albums");
+            str += " | " + std::to_string(this->artists[i].songCount) + (this->artists[i].songCount == 1 ? " song" : " songs");
             l->setSubString(str);
             l->setDotsColour(this->app->theme()->muted());
             l->setTextColour(this->app->theme()->FG());
             l->setMutedTextColour(this->app->theme()->muted());
-            ArtistID id = v[i].ID;
+            ArtistID id = this->artists[i].ID;
             l->setCallback([this, id](){
                 this->changeFrame(Type::Artist, Action::Push, id);
             });
@@ -139,13 +156,18 @@ namespace Frame {
             hlist->addElement(l);
         }
         this->list->addElement(hlist);
+        this->artists.clear();
     }
 
-    void Search::addAlbums(const std::vector<Metadata::Album> & v) {
+    void Search::addAlbums() {
+        if (this->albums.empty()) {
+            return;
+        }
+
         // Add heading and count first
         CustomElm::ListHeadingCount * heading = new CustomElm::ListHeadingCount();
         heading->setHeadingString("Albums");
-        heading->setCount(v.size());
+        heading->setCount(this->albums.size());
         heading->setTextColour(this->app->theme()->FG());
         this->list->addElement(heading);
         if (this->listEmpty) {
@@ -155,15 +177,15 @@ namespace Frame {
 
         // Create horizontal list and populate with items
         CustomElm::HorizontalList * hlist = new CustomElm::HorizontalList(this->list->x(), 0, this->list->w(), 250);
-        for (size_t i = 0; i < v.size(); i++) {
-            std::string img = (v[i].imagePath.empty() ? "romfs:/misc/noalbum.png" : v[i].imagePath);
+        for (size_t i = 0; i < this->albums.size(); i++) {
+            std::string img = (this->albums[i].imagePath.empty() ? "romfs:/misc/noalbum.png" : this->albums[i].imagePath);
             CustomElm::GridItem * l = new CustomElm::GridItem(img);
-            l->setMainString(v[i].name);
-            l->setSubString(v[i].artist);
+            l->setMainString(this->albums[i].name);
+            l->setSubString(this->albums[i].artist);
             l->setDotsColour(this->app->theme()->muted());
             l->setTextColour(this->app->theme()->FG());
             l->setMutedTextColour(this->app->theme()->muted());
-            AlbumID id = v[i].ID;
+            AlbumID id = this->albums[i].ID;
             l->setCallback([this, id](){
                 this->changeFrame(Type::Album, Action::Push, id);
             });
@@ -173,13 +195,18 @@ namespace Frame {
             hlist->addElement(l);
         }
         this->list->addElement(hlist);
+        this->albums.clear();
     }
 
-    void Search::addSongs(const std::vector<Metadata::Song> & v, const std::string & phrase) {
+    void Search::addSongs() {
+        if (this->songs.empty()) {
+            return;
+        }
+
         // Add heading and count first
         CustomElm::ListHeadingCount * heading = new CustomElm::ListHeadingCount();
         heading->setHeadingString("Songs");
-        heading->setCount(v.size());
+        heading->setCount(this->songs.size());
         heading->setTextColour(this->app->theme()->FG());
         this->list->addElement(heading);
         this->list->addElement(new Aether::ListSeparator(10));
@@ -189,60 +216,70 @@ namespace Frame {
         }
 
         // Add songs to list
-        for (size_t i = 0; i < v.size(); i++) {
-            this->songIDs.push_back(v[i].ID);
+        for (size_t i = 0; i < this->songs.size(); i++) {
+            this->songIDs.push_back(this->songs[i].ID);
             CustomElm::ListItem::Song * l = new CustomElm::ListItem::Song();
-            l->setTitleString(v[i].title);
-            l->setArtistString(v[i].artist);
-            l->setAlbumString(v[i].album);
-            l->setLengthString(Utils::secondsToHMS(v[i].duration));
+            l->setTitleString(this->songs[i].title);
+            l->setArtistString(this->songs[i].artist);
+            l->setAlbumString(this->songs[i].album);
+            l->setLengthString(Utils::secondsToHMS(this->songs[i].duration));
             l->setLineColour(this->app->theme()->muted2());
             l->setMoreColour(this->app->theme()->muted());
             l->setTextColour(this->app->theme()->FG());
+            std::string phrase = keyboard.buffer;
             l->setCallback([this, phrase, i](){
                 this->app->sysmodule()->sendSetPlayingFrom("'" + phrase + "'");
                 this->app->sysmodule()->sendSetQueue(this->songIDs);
                 this->app->sysmodule()->sendSetSongIdx(i);
                 this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
             });
-            SongID id = v[i].ID;
+            SongID id = this->songs[i].ID;
             l->setMoreCallback([this, id]() {
                 // this->createMenu(id);
             });
             this->list->addElement(l);
         }
+        this->songs.clear();
     }
 
-    void Search::searchDatabase(const std::string & phrase) {
-        // Search for each entry first
-        std::vector<Metadata::Playlist> playlists = this->app->database()->searchPlaylists(phrase);
-        std::vector<Metadata::Artist> artists = this->app->database()->searchArtists(phrase);
-        std::vector<Metadata::Album> albums = this->app->database()->searchAlbums(phrase);
-        std::vector<Metadata::Song> songs = this->app->database()->searchSongs(phrase);
+    void Search::createMessageBox() {
+        this->msgbox = new Aether::MessageBox();
+        this->msgbox->onButtonPress(Aether::Button::B, nullptr);
+        this->msgbox->setLineColour(Aether::Colour{255, 255, 255, 0});
+        this->msgbox->setRectangleColour(this->app->theme()->popupBG());
+        this->msgbox->setTextColour(this->app->theme()->accent());
+        Aether::Element * body = new Aether::Element(0, 0, 700);
+        Aether::TextBlock * msg = new Aether::TextBlock(40, 40, "Searching for '" + keyboard.buffer + "'...", 24, 620);
+        msg->setColour(this->app->theme()->FG());
+        body->addElement(msg);
+        body->setH(msg->h() + 80);
+        this->msgbox->setBody(body);
+        this->msgbox->setBodySize(body->w(), body->h());
+        this->app->addOverlay(this->msgbox);
+    }
 
-        // Show message if no results found
-        if (playlists.empty() && artists.empty() && albums.empty() && songs.empty()) {
-            Aether::Text * text = new Aether::Text(this->x() + this->w()/2, this->y() + this->h()/2, "No results found", 26);
-            text->setX(text->x() - text->w()/2);
-            text->setColour(this->app->theme()->FG());
-            this->addElement(text);
-            return;
+    bool Search::searchDatabase(const std::string & phrase) {
+        // NOTE: The interactions with the database and app object should be
+        // thread-safe as we show an overlay to block all user interaction
+        // (thus we can ensure nothing else accesses them)
+
+        // Ensure the database is up to date
+        if (this->app->database()->needsSearchUpdate()) {
+            this->app->lockDatabase();
+            bool ok = this->app->database()->prepareSearch();
+            this->app->unlockDatabase();
+
+            if (!ok) {
+                return false;
+            }
         }
 
-        // Add elements if needed
-        if (!playlists.empty()) {
-            this->addPlaylists(playlists);
-        }
-        if (!artists.empty()) {
-            this->addArtists(artists);
-        }
-        if (!albums.empty()) {
-            this->addAlbums(albums);
-        }
-        if (!songs.empty()) {
-            this->addSongs(songs, phrase);
-        }
-        this->setFocussed(this->list);
+        // Search for each type of entry and return
+        this->playlists = this->app->database()->searchPlaylists(phrase);
+        this->artists = this->app->database()->searchArtists(phrase);
+        this->albums = this->app->database()->searchAlbums(phrase);
+        this->songs = this->app->database()->searchSongs(phrase);
+        return true;
     }
 
     void Search::showError(const std::string & message) {
@@ -262,22 +299,26 @@ namespace Frame {
         this->addElement(msg);
     }
 
-    void Search::createPreparingOverlay() {
-        this->prepareBox = new Aether::MessageBox();
-        this->prepareBox->setLineColour(this->app->theme()->muted2());
-        this->prepareBox->setRectangleColour(this->app->theme()->popupBG());
-        this->prepareBox->setTextColour(this->app->theme()->accent());
-        Aether::Element * body = new Aether::Element(0, 0, 700);
-        Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "Updating search data, this shouldn't take too long...", 24, 620);
-        tips->setColour(this->app->theme()->FG());
-        body->addElement(tips);
-        body->setH(tips->h() + 80);
-        this->prepareBox->setBody(body);
-        this->prepareBox->setBodySize(body->w(), body->h());
-        this->app->addOverlay(this->prepareBox);
+    void Search::update(uint32_t dt) {
+        // Wait until the thread is finished and update frame
+        if (!this->threadDone) {
+            if (this->searchThread.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+                bool result = this->searchThread.get();
+                if (!result) {
+                    this->showError("An error occurred searching the database. Please restart the application and try again.");
+
+                } else {
+                    this->addEntries();
+                }
+                this->msgbox->close();
+                this->threadDone = true;
+            }
+        }
+
+        Frame::update(dt);
     }
 
     Search::~Search() {
-        delete this->prepareBox;
+        delete this->msgbox;
     }
 };

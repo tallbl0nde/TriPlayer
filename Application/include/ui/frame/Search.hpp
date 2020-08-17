@@ -13,24 +13,41 @@ namespace Frame {
             bool listEmpty;
 
             // Functions that setup/add relevant entries to the list
-            void addPlaylists(const std::vector<Metadata::Playlist> &);
-            void addArtists(const std::vector<Metadata::Artist> &);
-            void addAlbums(const std::vector<Metadata::Album> &);
-            void addSongs(const std::vector<Metadata::Song> &, const std::string &);
+            void addEntries();
+            void addPlaylists();
+            void addArtists();
+            void addAlbums();
+            void addSongs();
 
-            // Callback when text box is updated
-            void searchDatabase(const std::string &);
-
-            // Shows an error message
+            // Shows an error message in the middle of the frame
             void showError(const std::string &);
 
-            // Create 'preparing search' overlay
-            Aether::MessageBox * prepareBox;
-            void createPreparingOverlay();
+            // Create 'searching...' overlay
+            Aether::MessageBox * msgbox;
+            void createMessageBox();
+
+            // Function run by other thread to actually search the database
+            bool searchDatabase(const std::string &);
+
+            // === Variables used to operate the search thread ===
+            // These vectors are filled with the results and emptied after used
+            std::vector<Metadata::Playlist> playlists;
+            std::vector<Metadata::Artist> artists;
+            std::vector<Metadata::Album> albums;
+            std::vector<Metadata::Song> songs;
+
+            // Future returning true if search appeared to succeed
+            std::future<bool> searchThread;
+
+            // Set true after the thread is done to avoid accessing an invalid future
+            bool threadDone;
 
         public:
             // Constructor sets up elements and invokes keyboard
             Search(Main::Application *);
+
+            // Checks if the thread is finished
+            void update(uint32_t);
 
             // Delete created menu
             ~Search();
