@@ -4,6 +4,7 @@
 #include "db/Spellfix.h"
 #include "Log.hpp"
 #include "utils/FS.hpp"
+#include "utils/Search.hpp"
 #include "utils/Utils.hpp"
 
 // Location of backup file
@@ -14,6 +15,8 @@
 #define DB_VERSION 5
 // Maximum number of phrases to search for using spellfixed strings
 #define SEARCH_PHRASES 8
+// Maximum number of spellfixed words to allow per word (i.e. pick the top x words)
+#define SPELLFIX_LIMIT 6
 // Maximum 'spellfix score' allowed when fixing a word
 #define SPELLFIX_SCORE 130
 // Location of template file
@@ -22,43 +25,6 @@
 // Custom boolean 'operator' which instead of 'keeping' true, will 'keep' false
 bool keepFalse(const bool & a, const bool & b) {
     return !(!a || !b);
-}
-
-// Helper function which takes a vector of vectors containing spellfixed words,
-// which forms all possible phrases and calculates the score of each phrase
-// It uses recursion to search 'down' the next vector and concatenate words
-std::vector<SpellfixString> combineWords(std::vector< std::vector<SpellfixString> > & words, size_t v) {
-    // Vector to return, will be populated with combinatins
-    std::vector<SpellfixString> strings;
-
-    // Base case - stop if going past end of vector
-    if (v >= words.size()) {
-        return strings;
-
-    // Base case - if we're up to the last vector, return the vector
-    } else if (v == words.size() - 1) {
-        return words[v];
-    }
-
-    // Edge case - skip over empty vectors
-    if (words[v].empty()) {
-        return combineWords(words, v+1);
-    }
-
-    // Form combinations by recursively concatenating entire vectors with
-    // the currently chosen word
-    for (size_t i = 0; i < words[v].size(); i++) {
-        std::vector<SpellfixString> subset = combineWords(words, v+1);
-        for (size_t j = 0; j < subset.size(); j++) {
-            // Combine both strings and scores
-            SpellfixString tmp;
-            tmp.string = words[v][i].string + " " + subset[j].string;
-            tmp.score = words[v][i].score + subset[j].score;
-            strings.push_back(tmp);
-        }
-    }
-
-    return strings;
 }
 
 // ===== Housekeeping ===== //
@@ -282,27 +248,28 @@ bool Database::setSearchUpdate(int val) {
     return ok;
 }
 
-std::vector<SpellfixString> Database::getSearchPhrases(const std::string & table, std::string & str) {
+std::vector<std::string> Database::getSearchPhrases(const std::string & table, std::string & str) {
     // Split string into words
     std::vector<std::string> words = Utils::splitIntoWords(str);
     str = "";
 
     // Get word suggestions for each word and store associated score
-    std::vector< std::vector<SpellfixString> > suggestions;
+    std::vector< std::vector<Utils::Search::ScoredString> > suggestions;
     for (size_t i = 0; i < words.size(); i++) {
         // Use string concatenation here as you can't bind a table name (I know it's not ideal but the names are hard coded at least)
-        bool ok = this->db->prepareQuery("SELECT word, score FROM " + table + " WHERE word MATCH ? AND SCORE < ?;");
+        bool ok = this->db->prepareQuery("SELECT word, score FROM " + table + " WHERE word MATCH ? AND SCORE < ? LIMIT ?;");
         ok = keepFalse(ok, this->db->bindString(0, words[i]));
         ok = keepFalse(ok, this->db->bindInt(1, SPELLFIX_SCORE));
+        ok = keepFalse(ok, this->db->bindInt(2, SPELLFIX_LIMIT));
         ok = keepFalse(ok, this->db->executeQuery());
         if (!ok) {
             this->setErrorMsg("Error performing spell check");
         }
 
         // Push returned words onto vector
-        std::vector<SpellfixString> fixed;
+        std::vector<Utils::Search::ScoredString> fixed;
         while (ok && this->db->hasRow()) {
-            SpellfixString word;
+            Utils::Search::ScoredString word;
             ok = keepFalse(ok, this->db->getString(0, word.string));
             ok = keepFalse(ok, this->db->getInt(1, word.score));
 
@@ -311,22 +278,17 @@ std::vector<SpellfixString> Database::getSearchPhrases(const std::string & table
             }
             ok = keepFalse(ok, this->db->nextRow());
         }
+
+        // Return empty vector if no appropriate words are found
+        if (fixed.empty()) {
+            return std::vector<std::string>();
+        }
+
         suggestions.push_back(fixed);
     }
 
-    // Now form phrases using all possible combinations of words (in order)
-    std::vector<SpellfixString> phrases = combineWords(suggestions, 0);
-
-    // Sort so that phrases with lower scores are used first
-    std::sort(phrases.begin(), phrases.end(), [](const SpellfixString & lhs, const SpellfixString & rhs) {
-        return lhs.score < rhs.score;
-    });
-
-    // Limit number of phrases
-    if (phrases.size() > SEARCH_PHRASES) {
-        phrases = std::vector<SpellfixString>(phrases.begin(), phrases.begin() + SEARCH_PHRASES);
-    }
-    return phrases;
+    // Get top number of phrases (sorted best first)
+    return Utils::Search::getPhrases(suggestions, SEARCH_PHRASES);
 }
 
 // ===== Connection Management ===== //
@@ -1361,7 +1323,7 @@ std::vector<Metadata::Album> Database::searchAlbums(std::string str, int limit) 
     }
 
     // Fix any spelling mistakes and get suggested searches based on input
-    std::vector<SpellfixString> phrases = this->getSearchPhrases("SpellfixAlbums", str);
+    std::vector<std::string> phrases = this->getSearchPhrases("SpellfixAlbums", str);
     if (phrases.empty()) {
         return v;
     }
@@ -1372,14 +1334,14 @@ std::vector<Metadata::Album> Database::searchAlbums(std::string str, int limit) 
         std::string query = "SELECT Albums.id, Albums.name, CASE WHEN COUNT(DISTINCT Songs.artist_id) > 1 THEN 'Various Artists' ELSE Artists.name END, Albums.tadb_id, Albums.image_path, COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id JOIN Albums ON Songs.album_id = Albums.id LEFT JOIN (SELECT DISTINCT name AS content, okapi_bm25(matchinfo(FtsAlbums, 'pcxnal'), 0) AS score FROM FtsAlbums WHERE FtsAlbums MATCH ?) ON Albums.name = content WHERE score IS NOT NULL GROUP BY album_id ORDER BY score DESC, Albums.name";
         query += (limit >= 0 ? " LIMIT ?;" : ";");
         bool ok = this->db->prepareQuery(query);
-        std::string str = phrases[i].string;
+        std::string str = phrases[i];
         ok = keepFalse(ok, this->db->bindString(0, str));
         if (limit >= 0) {
             ok = keepFalse(ok, this->db->bindInt(1, limit));
         }
         ok = keepFalse(ok, this->db->executeQuery());
         if (!ok) {
-            this->setErrorMsg("[searchAlbums] An error occurred searching with the phrase: " + phrases[i].string);
+            this->setErrorMsg("[searchAlbums] An error occurred searching with the phrase: " + phrases[i]);
             return v;
         }
 
@@ -1429,7 +1391,7 @@ std::vector<Metadata::Artist> Database::searchArtists(std::string str, int limit
     }
 
     // Fix any spelling mistakes and get suggested searches based on input
-    std::vector<SpellfixString> phrases = this->getSearchPhrases("SpellfixArtists", str);
+    std::vector<std::string> phrases = this->getSearchPhrases("SpellfixArtists", str);
     if (phrases.empty()) {
         return v;
     }
@@ -1442,14 +1404,14 @@ std::vector<Metadata::Artist> Database::searchArtists(std::string str, int limit
         std::string query = "SELECT Artists.id, Artists.name, Artists.tadb_id, Artists.image_path, COUNT(DISTINCT album_id), COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id LEFT JOIN (SELECT DISTINCT content AS text, okapi_bm25(matchinfo(FtsArtists, 'pcxnal'), 0) AS score FROM FtsArtists WHERE FtsArtists MATCH ?) ON Artists.name = text WHERE score IS NOT NULL GROUP BY artist_id ORDER BY score DESC, Artists.name";
         query += (limit >= 0 ? " LIMIT ?;" : ";");
         bool ok = this->db->prepareQuery(query);
-        std::string str = phrases[i].string;
+        std::string str = phrases[i];
         ok = keepFalse(ok, this->db->bindString(0, str));
         if (limit >= 0) {
             ok = keepFalse(ok, this->db->bindInt(1, limit));
         }
         ok = keepFalse(ok, this->db->executeQuery());
         if (!ok) {
-            this->setErrorMsg("[searchArtists] An error occurred searching with the phrase: " + phrases[i].string);
+            this->setErrorMsg("[searchArtists] An error occurred searching with the phrase: " + phrases[i]);
             return v;
         }
 
@@ -1499,7 +1461,7 @@ std::vector<Metadata::Playlist> Database::searchPlaylists(std::string str, int l
     }
 
     // Fix any spelling mistakes and get suggested searches based on input
-    std::vector<SpellfixString> phrases = this->getSearchPhrases("SpellfixPlaylists", str);
+    std::vector<std::string> phrases = this->getSearchPhrases("SpellfixPlaylists", str);
     if (phrases.empty()) {
         return v;
     }
@@ -1512,14 +1474,14 @@ std::vector<Metadata::Playlist> Database::searchPlaylists(std::string str, int l
         std::string query = "SELECT id, name, description, image_path, COUNT(PlaylistSongs.song_id), score FROM Playlists LEFT JOIN PlaylistSongs ON playlist_id = Playlists.id LEFT JOIN (SELECT DISTINCT content AS text, okapi_bm25(matchinfo(FtsPlaylists, 'pcxnal'), 0) AS score FROM FtsPlaylists WHERE FtsPlaylists MATCH ?) ON name = text WHERE score IS NOT NULL GROUP BY Playlists.id ORDER BY score DESC, name";
         query += (limit >= 0 ? " LIMIT ?;" : ";");
         bool ok = this->db->prepareQuery(query);
-        std::string str = phrases[i].string;
+        std::string str = phrases[i];
         ok = keepFalse(ok, this->db->bindString(0, str));
         if (limit >= 0) {
             ok = keepFalse(ok, this->db->bindInt(1, limit));
         }
         ok = keepFalse(ok, this->db->executeQuery());
         if (!ok) {
-            this->setErrorMsg("[searchPlaylists] An error occurred searching with the phrase: " + phrases[i].string);
+            this->setErrorMsg("[searchPlaylists] An error occurred searching with the phrase: " + phrases[i]);
             return v;
         }
 
@@ -1567,7 +1529,7 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str, int limit) {
     }
 
     // Fix any spelling mistakes and get suggested searches based on input
-    std::vector<SpellfixString> phrases = this->getSearchPhrases("SpellfixSongs", str);
+    std::vector<std::string> phrases = this->getSearchPhrases("SpellfixSongs", str);
     if (phrases.empty()) {
         return v;
     }
@@ -1578,14 +1540,14 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str, int limit) {
         std::string query = "SELECT Songs.id, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN FtsSongs ON Songs.title = FtsSongs.title JOIN Artists ON artist_id = Artists.id JOIN Albums ON album_id = Albums.id WHERE FtsSongs MATCH ? ORDER BY okapi_bm25(matchinfo(FtsSongs, 'pcxnal'), 0) DESC, Songs.title";
         query += (limit >= 0 ? " LIMIT ?;" : ";");
         bool ok = this->db->prepareQuery(query);
-        std::string str = phrases[i].string;
+        std::string str = phrases[i];
         ok = keepFalse(ok, this->db->bindString(0, str));
         if (limit >= 0) {
             ok = keepFalse(ok, this->db->bindInt(1, limit));
         }
         ok = keepFalse(ok, this->db->executeQuery());
         if (!ok) {
-            this->setErrorMsg("[searchSongs] An error occurred searching with the phrase: " + phrases[i].string);
+            this->setErrorMsg("[searchSongs] An error occurred searching with the phrase: " + phrases[i]);
             return v;
         }
 

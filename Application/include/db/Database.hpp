@@ -5,12 +5,6 @@
 #include "Types.hpp"
 #include <vector>
 
-// Stores a spellfixed word or string and it's score
-struct SpellfixString {
-    std::string string;     // Fixed word
-    int score;              // Score of the word (lower is better)
-};
-
 // The Database class interacts with the database stored on the sd card
 // to read/write data. All queries have a way of detecting if they failed.
 // If so, error() will return a non-empty string describing the error.
@@ -33,7 +27,7 @@ class Database {
         bool addAlbum(std::string &);
         bool getVersion(int &);
         bool setSearchUpdate(int);
-        std::vector<SpellfixString> getSearchPhrases(const std::string &, std::string &);
+        std::vector<std::string> getSearchPhrases(const std::string &, std::string &);
 
     public:
         // ===== Housekeeping ===== //
