@@ -26,6 +26,7 @@ namespace Frame {
         this->artistH->setHidden(true);
         this->albumH->setHidden(true);
         this->lengthH->setHidden(true);
+        this->prepareBox = nullptr;
 
         // Get input first
         bool haveInput = Utils::NX::getUserInput(keyboard);
@@ -33,6 +34,21 @@ namespace Frame {
             // Show error message if we couldn't launch the keyboard
             this->showError("An unexpected error occurred showing the keyboard. If this persists, please restart the application.");
             return;
+        }
+
+        // Ensure the database is up to date
+        if (this->app->database()->needsSearchUpdate()) {
+            this->createPreparingOverlay();
+            this->app->lockDatabase();
+            bool ok = this->app->database()->prepareSearch();
+            this->app->unlockDatabase();
+            this->prepareBox->close();
+
+            // Show error message if needed
+            if (!ok) {
+                this->showError("An error occurred updating the search data. Please restart the application and try again.");
+                return;
+            }
         }
 
         // Set heading and position
@@ -246,7 +262,22 @@ namespace Frame {
         this->addElement(msg);
     }
 
-    Search::~Search() {
+    void Search::createPreparingOverlay() {
+        this->prepareBox = new Aether::MessageBox();
+        this->prepareBox->setLineColour(this->app->theme()->muted2());
+        this->prepareBox->setRectangleColour(this->app->theme()->popupBG());
+        this->prepareBox->setTextColour(this->app->theme()->accent());
+        Aether::Element * body = new Aether::Element(0, 0, 700);
+        Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "Updating search data, this shouldn't take too long...", 24, 620);
+        tips->setColour(this->app->theme()->FG());
+        body->addElement(tips);
+        body->setH(tips->h() + 80);
+        this->prepareBox->setBody(body);
+        this->prepareBox->setBodySize(body->w(), body->h());
+        this->app->addOverlay(this->prepareBox);
+    }
 
+    Search::~Search() {
+        delete this->prepareBox;
     }
 };

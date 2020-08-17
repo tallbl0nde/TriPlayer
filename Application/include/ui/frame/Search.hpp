@@ -24,6 +24,10 @@ namespace Frame {
             // Shows an error message
             void showError(const std::string &);
 
+            // Create 'preparing search' overlay
+            Aether::MessageBox * prepareBox;
+            void createPreparingOverlay();
+
         public:
             // Constructor sets up elements and invokes keyboard
             Search(Main::Application *);
