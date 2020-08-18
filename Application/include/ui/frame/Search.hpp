@@ -2,7 +2,9 @@
 #define FRAME_SEARCH_HPP
 
 #include "ui/frame/Frame.hpp"
+#include "ui/overlay/ArtistList.hpp"
 #include "ui/overlay/Overlay.hpp"
+#include "ui/overlay/ItemMenu.hpp"
 
 namespace Frame {
     class Search : public Frame {
@@ -29,6 +31,17 @@ namespace Frame {
 
             // Function run by other thread to actually search the database
             bool searchDatabase(const std::string &);
+
+            // Functions to create appropriate menus
+            CustomOvl::ItemMenu * menu;
+            void createNewMenu();
+            void createPlaylistMenu(PlaylistID);
+            void createArtistMenu(ArtistID);
+            void createAlbumMenu(AlbumID);
+            void createSongMenu(SongID);
+
+            CustomOvl::ArtistList * artistsList;
+            void createArtistsList(AlbumID);
 
             // === Variables used to operate the search thread ===
             // These vectors are filled with the results and emptied after use
