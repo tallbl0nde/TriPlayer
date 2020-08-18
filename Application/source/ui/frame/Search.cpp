@@ -26,6 +26,7 @@ namespace Frame {
         this->artistH->setHidden(true);
         this->albumH->setHidden(true);
         this->lengthH->setHidden(true);
+        this->searchContainer = nullptr;
 
         // Get input first
         bool haveInput = Utils::NX::getUserInput(keyboard);
@@ -39,6 +40,7 @@ namespace Frame {
         // Search the database and populate the list!
         std::string copy = keyboard.buffer;
         this->threadDone = false;
+        this->showSearching();
         this->searchThread = std::async(std::launch::async, [this, copy]() -> bool {
            return this->searchDatabase(copy);
         });
@@ -208,11 +210,11 @@ namespace Frame {
         heading->setCount(this->songs.size());
         heading->setTextColour(this->app->theme()->FG());
         this->list->addElement(heading);
-        this->list->addElement(new Aether::ListSeparator(10));
         if (this->listEmpty) {
             heading->setY(this->list->y() + 10);
             this->listEmpty = false;
         }
+        this->list->addElement(new Aether::ListSeparator(10));
 
         // Add songs to list
         for (size_t i = 0; i < this->songs.size(); i++) {
@@ -278,6 +280,30 @@ namespace Frame {
         this->addElement(msg);
     }
 
+    void Search::showSearching() {
+        this->searchContainer = new Aether::Container(0, 0, 500, 60);
+        this->searchContainer->setXY(this->x() + (this->w() - this->searchContainer->w())/2, this->y() + this->h()/2);
+
+        // Text
+        Aether::Text * text = new Aether::Text(0, 0, "Searching...", 26);
+        text->setXY(this->searchContainer->x() + (this->searchContainer->w() - text->w())/2 + 20, this->searchContainer->y());
+        text->setColour(this->app->theme()->FG());
+        this->searchContainer->addElement(text);
+
+        // Animation
+        Aether::Animation * anim = new Aether::Animation(text->x() - 50, text->y() + (text->h() - 20)/2, 40, 20);
+        for (size_t i = 1; i <= 50; i++) {
+            Aether::Image * im = new Aether::Image(anim->x(), anim->y(), "romfs:/anim/infload/" + std::to_string(i) + ".png");
+            im->setWH(40, 20);
+            im->setColour(Aether::Colour{0, 255, 255, 255});
+            anim->addElement(im);
+        }
+        anim->setAnimateSpeed(50);
+        this->searchContainer->addElement(anim);
+
+        this->addElement(this->searchContainer);
+    }
+
     void Search::update(uint32_t dt) {
         // Wait until the thread is finished and update frame
         if (!this->threadDone) {
@@ -286,6 +312,7 @@ namespace Frame {
                 if (!result) {
                     this->showError("An error occurred searching the database. Please restart the application and try again.");
                 } else {
+                    this->removeElement(this->searchContainer);
                     this->addEntries();
                 }
                 this->threadDone = true;

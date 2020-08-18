@@ -23,6 +23,10 @@ namespace Frame {
             // Shows an error message in the middle of the frame
             void showError(const std::string &);
 
+            // Show searching text in the middle of the frame
+            Aether::Container * searchContainer;
+            void showSearching();
+
             // Function run by other thread to actually search the database
             bool searchDatabase(const std::string &);
 

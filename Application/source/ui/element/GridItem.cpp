@@ -83,7 +83,7 @@ namespace CustomElm {
         switch (this->isRendering) {
             case Waiting:
                 // Waiting to render - check position and start if within threshold
-                if (this->y() + this->h() > -TEX_THRESHOLD && this->y() < 720 + TEX_THRESHOLD) {
+                if (this->x() > -TEX_THRESHOLD && this->x() + this->w() < 1280 + TEX_THRESHOLD && this->y() + this->h() > -TEX_THRESHOLD && this->y() < 720 + TEX_THRESHOLD) {
                     this->image->startRendering();
                     this->main->startRendering();
                     this->sub->startRendering();
@@ -105,7 +105,7 @@ namespace CustomElm {
 
             case Done:
                 // Check if move outside of threshold and if so remove texture to save memory
-                if (this->y() + this->h() < -TEX_THRESHOLD || this->y() > 720 + TEX_THRESHOLD) {
+                if (this->x() < -TEX_THRESHOLD || this->x() + this->w() > 1280 + TEX_THRESHOLD || this->y() + this->h() < -TEX_THRESHOLD || this->y() > 720 + TEX_THRESHOLD) {
                     this->image->destroyTexture();
                     this->main->destroyTexture();
                     this->sub->destroyTexture();
