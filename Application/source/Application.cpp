@@ -4,13 +4,13 @@
 #include "ui/screen/Splash.hpp"
 
 namespace Main {
-    Application::Application() {
+    Application::Application() : database_(SyncDatabase(new Database())) {
         // Prepare theme
         this->theme_ = new Theme();
 
-        // Open database (actually an object that wraps every method call with a mutex)
-        this->database_ = DatabaseWrapper(new Database(), std::bind(&std::mutex::lock, &this->dbMutex), std::bind(&std::mutex::unlock, &this->dbMutex));
+        // Migrate database (already created)
         this->database_->migrate();
+        this->database_->openReadOnly();
 
         // Create sysmodule object (will attempt connection)
         this->sysmodule_ = new Sysmodule();
@@ -86,7 +86,7 @@ namespace Main {
         this->database_->openReadOnly();
     }
 
-    const DatabaseWrapper & Application::database() {
+    const SyncDatabase & Application::database() {
         return this->database_;
     }
 

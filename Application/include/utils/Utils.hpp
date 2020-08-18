@@ -1,41 +1,14 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
-#include <atomic>
-#include <ctime>
 #include <string>
 #include <vector>
-#include "db/Database.hpp"
-#include "sysmodule/Sysmodule.hpp"
-#include "utils/ExecuteAround.hpp"
-
-typedef ExecuteAround<Database, std::shared_ptr, std::function<void()>, std::function<void()> > DatabaseWrapper;
-
-// Stages of update process (used to update UI)
-enum class ProcessStage {
-    Search,     // Search music folder for paths
-    Parse,      // Parse each file's metadata
-    Update,     // Update/clean database
-    Done
-};
 
 // General helper functions
 namespace Utils {
     // Returns the current time as a string
     // Pass true to get in 24-hour format
     std::string getClockString(bool = false);
-
-    // Returns the date/time (as time_t) the given file was modified
-    // (returns 0 on an error)
-    time_t getModifiedTimestamp(std::string);
-
-    // Recursively scan given directory for files with given extension
-    // Returns vector of paths: give directory, path
-    std::vector<std::string> getFilesWithExt(std::string, std::string);
-
-    // Updates the provided database to reflect the state of files on the sd card in /music
-    // Atomics are used to provide the current status
-    void processFileChanges(const DatabaseWrapper &, Sysmodule *, std::atomic<int> &, std::atomic<ProcessStage> &, std::atomic<int> &, std::atomic<bool> &);
 
     // Return a random alpha-numeric string with given length
     std::string randomString(size_t);
