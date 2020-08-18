@@ -8,8 +8,8 @@ namespace Main {
         // Prepare theme
         this->theme_ = new Theme();
 
-        // Open database
-        this->database_ = new Database();
+        // Open database (actually an object that wraps every method call with a mutex)
+        this->database_ = DatabaseWrapper(new Database(), std::bind(&std::mutex::lock, &this->dbMutex), std::bind(&std::mutex::unlock, &this->dbMutex));
         this->database_->migrate();
 
         // Create sysmodule object (will attempt connection)
@@ -86,7 +86,7 @@ namespace Main {
         this->database_->openReadOnly();
     }
 
-    Database * Application::database() {
+    const DatabaseWrapper & Application::database() {
         return this->database_;
     }
 
@@ -126,7 +126,6 @@ namespace Main {
         this->sysThread.get();
         delete this->sysmodule_;
 
-        // Close/save database
-        delete this->database_;
+        // The database will be closed here as the wrapper goes out of scope
     }
 };

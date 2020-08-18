@@ -26,13 +26,13 @@ namespace Frame {
         this->artistH->setHidden(true);
         this->albumH->setHidden(true);
         this->lengthH->setHidden(true);
-        this->msgbox = nullptr;
 
         // Get input first
         bool haveInput = Utils::NX::getUserInput(keyboard);
         if (!haveInput) {
             // Show error message if we couldn't launch the keyboard
             this->showError("An unexpected error occurred showing the keyboard. If this persists, please restart the application.");
+            this->threadDone = true;
             return;
         }
 
@@ -42,7 +42,6 @@ namespace Frame {
         this->searchThread = std::async(std::launch::async, [this, copy]() -> bool {
            return this->searchDatabase(copy);
         });
-        this->createMessageBox();
     }
 
     void Search::addEntries() {
@@ -242,27 +241,7 @@ namespace Frame {
         this->songs.clear();
     }
 
-    void Search::createMessageBox() {
-        this->msgbox = new Aether::MessageBox();
-        this->msgbox->onButtonPress(Aether::Button::B, nullptr);
-        this->msgbox->setLineColour(Aether::Colour{255, 255, 255, 0});
-        this->msgbox->setRectangleColour(this->app->theme()->popupBG());
-        this->msgbox->setTextColour(this->app->theme()->accent());
-        Aether::Element * body = new Aether::Element(0, 0, 700);
-        Aether::TextBlock * msg = new Aether::TextBlock(40, 40, "Searching for '" + keyboard.buffer + "'...", 24, 620);
-        msg->setColour(this->app->theme()->FG());
-        body->addElement(msg);
-        body->setH(msg->h() + 80);
-        this->msgbox->setBody(body);
-        this->msgbox->setBodySize(body->w(), body->h());
-        this->app->addOverlay(this->msgbox);
-    }
-
     bool Search::searchDatabase(const std::string & phrase) {
-        // NOTE: The interactions with the database and app object should be
-        // thread-safe as we show an overlay to block all user interaction
-        // (thus we can ensure nothing else accesses them)
-
         // Ensure the database is up to date
         if (this->app->database()->needsSearchUpdate()) {
             this->app->lockDatabase();
@@ -306,11 +285,9 @@ namespace Frame {
                 bool result = this->searchThread.get();
                 if (!result) {
                     this->showError("An error occurred searching the database. Please restart the application and try again.");
-
                 } else {
                     this->addEntries();
                 }
-                this->msgbox->close();
                 this->threadDone = true;
             }
         }
@@ -319,6 +296,6 @@ namespace Frame {
     }
 
     Search::~Search() {
-        delete this->msgbox;
+
     }
 };

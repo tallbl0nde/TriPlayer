@@ -7,6 +7,9 @@
 #include <vector>
 #include "db/Database.hpp"
 #include "sysmodule/Sysmodule.hpp"
+#include "utils/ExecuteAround.hpp"
+
+typedef ExecuteAround<Database, std::shared_ptr, std::function<void()>, std::function<void()> > DatabaseWrapper;
 
 // Stages of update process (used to update UI)
 enum class ProcessStage {
@@ -32,7 +35,7 @@ namespace Utils {
 
     // Updates the provided database to reflect the state of files on the sd card in /music
     // Atomics are used to provide the current status
-    void processFileChanges(Database *, Sysmodule *, std::atomic<int> &, std::atomic<ProcessStage> &, std::atomic<int> &, std::atomic<bool> &);
+    void processFileChanges(const DatabaseWrapper &, Sysmodule *, std::atomic<int> &, std::atomic<ProcessStage> &, std::atomic<int> &, std::atomic<bool> &);
 
     // Return a random alpha-numeric string with given length
     std::string randomString(size_t);

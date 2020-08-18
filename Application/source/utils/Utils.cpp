@@ -39,7 +39,7 @@ namespace Utils {
         return paths;
     }
 
-    void processFileChanges(Database * db, Sysmodule * sys, std::atomic<int> & aFile, std::atomic<ProcessStage> & aStage, std::atomic<int> & aTotal, std::atomic<bool> & stop) {
+    void processFileChanges(const DatabaseWrapper & db, Sysmodule * sys, std::atomic<int> & aFile, std::atomic<ProcessStage> & aStage, std::atomic<int> & aTotal, std::atomic<bool> & stop) {
         // Get list of file paths
         aStage = ProcessStage::Search;
         std::vector<std::string> paths = getFilesWithExt("/music", ".mp3");

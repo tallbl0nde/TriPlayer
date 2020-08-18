@@ -2,6 +2,7 @@
 #define FRAME_SEARCH_HPP
 
 #include "ui/frame/Frame.hpp"
+#include "ui/overlay/Overlay.hpp"
 
 namespace Frame {
     class Search : public Frame {
@@ -22,15 +23,11 @@ namespace Frame {
             // Shows an error message in the middle of the frame
             void showError(const std::string &);
 
-            // Create 'searching...' overlay
-            Aether::MessageBox * msgbox;
-            void createMessageBox();
-
             // Function run by other thread to actually search the database
             bool searchDatabase(const std::string &);
 
             // === Variables used to operate the search thread ===
-            // These vectors are filled with the results and emptied after used
+            // These vectors are filled with the results and emptied after use
             std::vector<Metadata::Playlist> playlists;
             std::vector<Metadata::Artist> artists;
             std::vector<Metadata::Album> albums;

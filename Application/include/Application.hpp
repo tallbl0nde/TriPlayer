@@ -1,10 +1,15 @@
 #ifndef APPLICATION_HPP
 #define APPLICATION_HPP
 
-#include <future>
 #include "db/Database.hpp"
+#include <future>
+#include <mutex>
 #include "sysmodule/Sysmodule.hpp"
 #include "ui/Theme.hpp"
+#include "utils/ExecuteAround.hpp"
+
+// Typedef database wrapper (wraps calls with mutex to make object thread-safe)
+typedef ExecuteAround<Database, std::shared_ptr, std::function<void()>, std::function<void()> > DatabaseWrapper;
 
 // Forward declaration because cyclic dependency /shrug
 namespace Screen {
@@ -33,8 +38,9 @@ namespace Main {
             Screen::Home * scHome;
             Screen::Splash * scSplash;
 
-            // Database object
-            Database * database_;
+            // Database object (all calls are wrapped with a mutex)
+            DatabaseWrapper database_;
+            std::mutex dbMutex;
 
             // Sysmodule object which allows communication
             Sysmodule * sysmodule_;
@@ -69,7 +75,7 @@ namespace Main {
             void unlockDatabase();
 
             // Returns database pointer
-            Database * database();
+            const DatabaseWrapper & database();
             // Returns sysmodule pointer
             Sysmodule * sysmodule();
             // Returns theme pointer
