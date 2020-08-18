@@ -4,7 +4,7 @@
 // Location of the database file
 #define DB_PATH "/switch/TriPlayer/data.sqlite3"
 // Version of the database (database begins with zero from 'template', so this started at 1)
-#define DB_VERSION 4
+#define DB_VERSION 5
 
 // Custom boolean 'operator' which instead of 'keeping' true, will 'keep' false
 bool keepFalse(const bool & a, const bool & b) {

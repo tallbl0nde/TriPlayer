@@ -255,7 +255,8 @@ namespace Screen {
             }
 
             // Change album cover
-            Metadata::Album md = this->app->database()->getAlbumMetadataForID(this->app->database()->getAlbumIDForSong(m.ID));
+            AlbumID id = this->app->database()->getAlbumIDForSong(m.ID);
+            Metadata::Album md = this->app->database()->getAlbumMetadataForID(id);
             this->updateImage(md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath);
         }
 

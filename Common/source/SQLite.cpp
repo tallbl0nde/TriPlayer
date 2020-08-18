@@ -12,6 +12,7 @@ SQLite::SQLite(const std::string & pth) {
     this->db = nullptr;
     this->errorMsg_ = "";
     this->ignoreConstraints_ = false;
+    this->inTransaction = false;
     this->query = nullptr;
     this->queryStatus = SQLite::Query::None;
 }
@@ -86,6 +87,11 @@ void SQLite::closeConnection() {
     // Ensure query is finalized
     this->finalizeQuery();
 
+    // Automatically rollback transaction (assume something went wrong)
+    if (this->inTransaction) {
+        this->rollbackTransaction();
+    }
+
     // Close database object
     if (this->connectionType_ != SQLite::Connection::None) {
         sqlite3_close(this->db);
@@ -139,6 +145,67 @@ bool SQLite::openConnection(Connection type) {
     }
 
     return false;
+}
+
+bool SQLite::beginTransaction() {
+    // Don't do anything if already in a transaction (assuming we don't want to rollback)
+    if (this->inTransaction) {
+        this->setErrorMsg("Not beginning another transaction as there is already an active transaction!");
+        return false;
+    }
+
+    // Actually begin the transaction
+    bool ok = this->prepareAndExecuteQuery("BEGIN;");
+    if (ok) {
+        Log::writeInfo("[SQLITE] Started a new transaction");
+        this->inTransaction = true;
+
+    } else {
+        this->setErrorMsg("Failed to start a new transaction");
+        this->inTransaction = false;
+    }
+
+    return this->inTransaction;
+}
+
+bool SQLite::commitTransaction() {
+    // Ensure we actually have a transaction
+    if (!this->inTransaction) {
+        this->setErrorMsg("Can't commit a non-existent transaction!");
+        return false;
+    }
+
+    // Commit the transaction to the database
+    bool ok = this->prepareAndExecuteQuery("COMMIT;");
+    if (ok) {
+        Log::writeInfo("[SQLITE] Commited transaction");
+    } else {
+        // Ensure we've rolled back if an error occurred
+        this->setErrorMsg("Failed to commit transaction, rolling back");
+        this->rollbackTransaction();
+    }
+
+    this->inTransaction = false;
+    return ok;
+}
+
+bool SQLite::rollbackTransaction() {
+    // Ensure we have a transaction to rollback!
+    if (!this->inTransaction) {
+        this->setErrorMsg("Can't rollback a non-existent transaction!");
+        return false;
+    }
+
+    // Rollback the transaction
+    bool ok = this->prepareAndExecuteQuery("ROLLBACK;");
+    if (ok) {
+        Log::writeInfo("[SQLITE] Rolled back the transaction");
+    } else {
+        this->setErrorMsg("Failed to rollback the transaction");
+    }
+
+    this->inTransaction = false;
+    return ok;
 }
 
 bool SQLite::prepareQuery(const std::string & qry) {

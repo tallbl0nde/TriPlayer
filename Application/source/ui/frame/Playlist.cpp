@@ -280,7 +280,8 @@ namespace Frame {
         // Song metadata
         this->songMenu->setMainText(this->songs[pos].song.title);
         this->songMenu->setSubText(this->songs[pos].song.artist);
-        Metadata::Album md = this->app->database()->getAlbumMetadataForID(this->app->database()->getAlbumIDForSong(this->songs[pos].song.ID));
+        AlbumID id = this->app->database()->getAlbumIDForSong(this->songs[pos].song.ID);
+        Metadata::Album md = this->app->database()->getAlbumMetadataForID(id);
         this->songMenu->setImage(new Aether::Image(0, 0, md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath));
 
         // Add to Queue

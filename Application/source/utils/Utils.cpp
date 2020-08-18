@@ -39,7 +39,7 @@ namespace Utils {
         return paths;
     }
 
-    void processFileChanges(Database * db, Sysmodule * sys, std::atomic<int> & aFile, std::atomic<ProcessStage> & aStage, std::atomic<int> & aTotal, std::atomic<bool> & stop) {
+    void processFileChanges(const DatabaseWrapper & db, Sysmodule * sys, std::atomic<int> & aFile, std::atomic<ProcessStage> & aStage, std::atomic<int> & aTotal, std::atomic<bool> & stop) {
         // Get list of file paths
         aStage = ProcessStage::Search;
         std::vector<std::string> paths = getFilesWithExt("/music", ".mp3");
@@ -142,20 +142,7 @@ namespace Utils {
             }
         }
 
-        // Update search tables if needed
-        // if (db->needsSearchUpdate()) {
-        //     if (!hasLock) {
-        //         aStage = ProcessStage::Update;
-        //         hasLock = true;
-        //         db->close();
-        //         sys->waitReset();
-        //         sys->waitRequestDBLock();
-        //         db->openReadWrite();
-        //     }
-        //     db->prepareSearch();
-        // }
-
-        // Cleanup database (TBD)
+        // Cleanup database (TBD) (maybe remove redundant images here?)
         if (hasLock) {
             db->close();
             sys->sendReleaseDBLock();

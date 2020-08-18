@@ -8,10 +8,22 @@ namespace Migration {
             return "Unable to drop FtsSongs";
         }
 
-        // Create new FtsSongs tables which also stores artist and album names
+        // Create new FtsSongs table which also stores artist and album names
         ok = db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsSongs USING fts4(title, artist, album);");
         if (!ok) {
             return "Unable to create new FtsSongs table";
+        }
+
+        // Drop old table
+        ok = db->prepareAndExecuteQuery("DROP Table FtsAlbums;");
+        if (!ok) {
+            return "Unable to drop FtsAlbums";
+        }
+
+        // Create new FtsAlbums table which also stores artist names
+        ok = db->prepareAndExecuteQuery("CREATE VIRTUAL TABLE FtsAlbums USING fts4(name, artist);");
+        if (!ok) {
+            return "Unable to create new FtsAlbums table";
         }
 
         // Bump up version number (only done if everything passes)

@@ -5,12 +5,6 @@
 #include "Types.hpp"
 #include <vector>
 
-// Stores a spellfixed word or string and it's score
-struct SpellfixString {
-    std::string string;     // Fixed word
-    int score;              // Score of the word (lower is better)
-};
-
 // The Database class interacts with the database stored on the sd card
 // to read/write data. All queries have a way of detecting if they failed.
 // If so, error() will return a non-empty string describing the error.
@@ -33,7 +27,7 @@ class Database {
         bool addAlbum(std::string &);
         bool getVersion(int &);
         bool setSearchUpdate(int);
-        std::vector<SpellfixString> getSearchPhrases(const std::string &, std::string &);
+        std::vector<std::string> getSearchPhrases(const std::string &, std::string &);
 
     public:
         // ===== Housekeeping ===== //
@@ -131,11 +125,12 @@ class Database {
         // Indexes terms and prepares database for searching
         bool prepareSearch();
         // Search for records matching given text
+        // The number of returned records can also be optionally limited
         // Empty if no matching songs or an error occurred
-        std::vector<Metadata::Album> searchAlbums(const std::string);
-        std::vector<Metadata::Artist> searchArtists(const std::string);
-        std::vector<Metadata::Playlist> searchPlaylists(const std::string);
-        std::vector<Metadata::Song> searchSongs(const std::string);
+        std::vector<Metadata::Album> searchAlbums(const std::string, int = -1);
+        std::vector<Metadata::Artist> searchArtists(const std::string, int = -1);
+        std::vector<Metadata::Playlist> searchPlaylists(const std::string, int = -1);
+        std::vector<Metadata::Song> searchSongs(const std::string, int = -1);
 
         // ===== Misc. Queries ===== //
         // Returns vector of paths for all stored songs

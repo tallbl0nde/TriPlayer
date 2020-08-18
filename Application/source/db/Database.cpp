@@ -4,6 +4,7 @@
 #include "db/Spellfix.h"
 #include "Log.hpp"
 #include "utils/FS.hpp"
+#include "utils/Search.hpp"
 #include "utils/Utils.hpp"
 
 // Location of backup file
@@ -11,52 +12,19 @@
 // Location of the database file
 #define DB_PATH "/switch/TriPlayer/data.sqlite3"
 // Version of the database (database begins with zero from 'template', so this started at 1)
-#define DB_VERSION 4
+#define DB_VERSION 5
+// Maximum number of phrases to search for using spellfixed strings
+#define SEARCH_PHRASES 8
+// Maximum number of spellfixed words to allow per word (i.e. pick the top x words)
+#define SPELLFIX_LIMIT 6
 // Maximum 'spellfix score' allowed when fixing a word
-#define SPELLFIX_SCORE 150
+#define SPELLFIX_SCORE 130
 // Location of template file
 #define TEMPLATE_DB_PATH "romfs:/db/template.sqlite3"
 
 // Custom boolean 'operator' which instead of 'keeping' true, will 'keep' false
 bool keepFalse(const bool & a, const bool & b) {
     return !(!a || !b);
-}
-
-// Helper function which takes a vector of vectors containing spellfixed words,
-// which forms all possible phrases and calculates the score of each phrase
-// It uses recursion to search 'down' the next vector and concatenate words
-std::vector<SpellfixString> combineWords(std::vector< std::vector<SpellfixString> > & words, size_t v) {
-    // Vector to return, will be populated with combinatins
-    std::vector<SpellfixString> strings;
-
-    // Base case - stop if going past end of vector
-    if (v >= words.size()) {
-        return strings;
-
-    // Base case - if we're up to the last vector, return the vector
-    } else if (v == words.size() - 1) {
-        return words[v];
-    }
-
-    // Edge case - skip over empty vectors
-    if (words[v].empty()) {
-        return combineWords(words, v+1);
-    }
-
-    // Form combinations by recursively concatenating entire vectors with
-    // the currently chosen word
-    for (size_t i = 0; i < words[v].size(); i++) {
-        std::vector<SpellfixString> subset = combineWords(words, v+1);
-        for (size_t j = 0; j < subset.size(); j++) {
-            // Combine both strings and scores
-            SpellfixString tmp;
-            tmp.string = words[v][i].string + " " + subset[j].string;
-            tmp.score = words[v][i].score + subset[j].score;
-            strings.push_back(tmp);
-        }
-    }
-
-    return strings;
 }
 
 // ===== Housekeeping ===== //
@@ -126,6 +94,7 @@ bool Database::migrate() {
     }
 
     // Now actually migrate
+    ok = this->db->beginTransaction();
     std::string err = "";
     if (ok) {
         switch (version) {
@@ -160,15 +129,36 @@ bool Database::migrate() {
                     break;
                 }
                 Log::writeSuccess("[DB] Migrated to version 4");
+
+            case 4:
+                err = Migration::migrateTo5(this->db);
+                if (!err.empty()) {
+                    err = "Migration 5: " + err;
+                    break;
+                }
+                Log::writeSuccess("[DB] Migrated to version 5");
+        }
+    }
+
+    // Commit changes if all successful
+    bool commitFailed = false;
+    if (err.empty() && ok) {
+        ok = this->db->commitTransaction();
+        if (!ok) {
+            commitFailed = true;
         }
     }
 
     // Log outcome and close database
-    if (err.empty()) {
+    if (err.empty() && ok) {
         Log::writeSuccess("[DB] Migrations completed successfully!");
+
     } else {
+        if (!commitFailed) {
+            this->db->rollbackTransaction();
+        }
         this->setErrorMsg(err);
-        this->setErrorMsg("An error occurred migrating the database");
+        this->setErrorMsg("An error occurred migrating the database, rolling back");
     }
     this->close();
     return ok;
@@ -258,46 +248,47 @@ bool Database::setSearchUpdate(int val) {
     return ok;
 }
 
-std::vector<SpellfixString> Database::getSearchPhrases(const std::string & table, std::string & str) {
+std::vector<std::string> Database::getSearchPhrases(const std::string & table, std::string & str) {
     // Split string into words
     std::vector<std::string> words = Utils::splitIntoWords(str);
     str = "";
 
     // Get word suggestions for each word and store associated score
-    std::vector< std::vector<SpellfixString> > suggestions;
+    std::vector< std::vector<Utils::Search::ScoredString> > suggestions;
     for (size_t i = 0; i < words.size(); i++) {
         // Use string concatenation here as you can't bind a table name (I know it's not ideal but the names are hard coded at least)
-        bool ok = this->db->prepareQuery("SELECT word, score FROM " + table + " WHERE word MATCH ? AND SCORE < ?;");
+        bool ok = this->db->prepareQuery("SELECT word, score FROM " + table + " WHERE word MATCH ? AND SCORE < ? LIMIT ?;");
         ok = keepFalse(ok, this->db->bindString(0, words[i]));
         ok = keepFalse(ok, this->db->bindInt(1, SPELLFIX_SCORE));
+        ok = keepFalse(ok, this->db->bindInt(2, SPELLFIX_LIMIT));
         ok = keepFalse(ok, this->db->executeQuery());
         if (!ok) {
             this->setErrorMsg("Error performing spell check");
         }
 
         // Push returned words onto vector
-        std::vector<SpellfixString> fixed;
+        std::vector<Utils::Search::ScoredString> fixed;
         while (ok && this->db->hasRow()) {
-            SpellfixString word;
-            ok = this->db->getInt(0, word.score);
-            ok = keepFalse(ok, this->db->getString(1, word.string));
+            Utils::Search::ScoredString word;
+            ok = keepFalse(ok, this->db->getString(0, word.string));
+            ok = keepFalse(ok, this->db->getInt(1, word.score));
 
             if (ok) {
                 fixed.push_back(word);
             }
             ok = keepFalse(ok, this->db->nextRow());
         }
+
+        // Return empty vector if no appropriate words are found
+        if (fixed.empty()) {
+            return std::vector<std::string>();
+        }
+
         suggestions.push_back(fixed);
     }
 
-    // Now form phrases using all possible combinations of words (in order)
-    std::vector<SpellfixString> phrases = combineWords(suggestions, 0);
-
-    // Sort so that phrases with lower scores are used first
-    std::sort(phrases.begin(), phrases.end(), [](const SpellfixString & lhs, const SpellfixString & rhs) {
-        return lhs.score < rhs.score;
-    });
-    return phrases;
+    // Get top number of phrases (sorted best first)
+    return Utils::Search::getPhrases(suggestions, SEARCH_PHRASES);
 }
 
 // ===== Connection Management ===== //
@@ -1227,7 +1218,7 @@ bool Database::prepareSearch() {
         this->setErrorMsg("[prepareSearch] Unable to empty FtsAlbums");
         return false;
     }
-    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsAlbums SELECT name FROM Albums;");
+    ok = this->db->prepareAndExecuteQuery("INSERT INTO FtsAlbums SELECT DISTINCT Albums.name, Artists.name FROM Songs JOIN Artists ON artist_id = Artists.id JOIN Albums ON album_id = Albums.id;");
     if (!ok) {
         this->setErrorMsg("[prepareSearch] Failed to populate FtsAlbums");
         return false;
@@ -1319,8 +1310,11 @@ bool Database::prepareSearch() {
     return ok;
 }
 
-std::vector<Metadata::Album> Database::searchAlbums(std::string str) {
+std::vector<Metadata::Album> Database::searchAlbums(std::string str, int limit) {
     std::vector<Metadata::Album> v;
+    if (limit == 0) {
+        return v;
+    }
 
     // Check we can read
     if (this->db->connectionType() == SQLite::Connection::None) {
@@ -1329,27 +1323,50 @@ std::vector<Metadata::Album> Database::searchAlbums(std::string str) {
     }
 
     // Fix any spelling mistakes and get suggested searches based on input
-    std::vector<SpellfixString> phrases = this->getSearchPhrases("SpellfixAlbums", str);
+    std::vector<std::string> phrases = this->getSearchPhrases("SpellfixAlbums", str);
     if (phrases.empty()) {
         return v;
     }
 
     // Iterate over each phrase and store results
     for (size_t i = 0; i < phrases.size(); i++) {
-        bool ok = this->db->prepareQuery("SELECT id, name FROM FtsAlbums JOIN Albums ON content = name WHERE FtsAlbums MATCH ? ORDER BY okapi_bm25(matchinfo(FtsAlbums, 'pcxnal'), 0) DESC;");
-        std::string tmp = phrases[i].string;
-        ok = keepFalse(ok, this->db->bindString(0, tmp));
+        // Create query and optionally append LIMIT
+        std::string query = "SELECT Albums.id, Albums.name, CASE WHEN COUNT(DISTINCT Songs.artist_id) > 1 THEN 'Various Artists' ELSE Artists.name END, Albums.tadb_id, Albums.image_path, COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id JOIN Albums ON Songs.album_id = Albums.id LEFT JOIN (SELECT DISTINCT name AS content, okapi_bm25(matchinfo(FtsAlbums, 'pcxnal'), 0) AS score FROM FtsAlbums WHERE FtsAlbums MATCH ?) ON Albums.name = content WHERE score IS NOT NULL GROUP BY album_id ORDER BY score DESC, Albums.name";
+        query += (limit >= 0 ? " LIMIT ?;" : ";");
+        bool ok = this->db->prepareQuery(query);
+        std::string str = phrases[i];
+        ok = keepFalse(ok, this->db->bindString(0, str));
+        if (limit >= 0) {
+            ok = keepFalse(ok, this->db->bindInt(1, limit));
+        }
         ok = keepFalse(ok, this->db->executeQuery());
         if (!ok) {
-            this->setErrorMsg("[searchPlaylists] An error occurred searching with the phrase: " + phrases[i].string);
+            this->setErrorMsg("[searchAlbums] An error occurred searching with the phrase: " + phrases[i]);
             return v;
         }
 
         // Iterate over returned rows
+        int tmp;
         while (ok && this->db->hasRow()) {
             Metadata::Album m;
             ok = this->db->getInt(0, m.ID);
+
+            // Skip over album if already in vector
+            std::vector<Metadata::Album>::iterator it = std::find_if(v.begin(), v.end(), [m](const Metadata::Album e) {
+                return e.ID == m.ID;
+            });
+            if (it != v.end()) {
+                ok = keepFalse(ok, this->db->nextRow());
+                continue;
+            }
+
             ok = keepFalse(ok, this->db->getString(1, m.name));
+            ok = keepFalse(ok, this->db->getString(2, m.artist));
+            ok = keepFalse(ok, this->db->getInt(3, tmp));
+            m.tadbID = tmp;
+            ok = keepFalse(ok, this->db->getString(4, m.imagePath));
+            ok = keepFalse(ok, this->db->getInt(5, tmp));
+            m.songCount = tmp;
 
             if (ok) {
                 v.push_back(m);
@@ -1361,8 +1378,11 @@ std::vector<Metadata::Album> Database::searchAlbums(std::string str) {
     return v;
 }
 
-std::vector<Metadata::Artist> Database::searchArtists(std::string str) {
+std::vector<Metadata::Artist> Database::searchArtists(std::string str, int limit) {
     std::vector<Metadata::Artist> v;
+    if (limit == 0) {
+        return v;
+    }
 
     // Check we can read
     if (this->db->connectionType() == SQLite::Connection::None) {
@@ -1371,31 +1391,52 @@ std::vector<Metadata::Artist> Database::searchArtists(std::string str) {
     }
 
     // Fix any spelling mistakes and get suggested searches based on input
-    std::vector<SpellfixString> phrases = this->getSearchPhrases("SpellfixArtists", str);
+    std::vector<std::string> phrases = this->getSearchPhrases("SpellfixArtists", str);
     if (phrases.empty()) {
         return v;
     }
 
     // Iterate over each phrase and store results
     for (size_t i = 0; i < phrases.size(); i++) {
-        bool ok = this->db->prepareQuery("SELECT id, name, tadb_id, image_path FROM FtsArtists JOIN Artists ON content = name WHERE FtsArtists MATCH ? ORDER BY okapi_bm25(matchinfo(FtsArtists, 'pcxnal'), 0) DESC;");
-        std::string tmp = phrases[i].string;
-        ok = keepFalse(ok, this->db->bindString(0, tmp));
+        // Create query and optionally append LIMIT
+        // A little note: "SELECT DISTINCT content AS text" has to be in the subquery otherwise SQLite says "matchinfo can't be used in this context"...
+        // It works fine on Linux with "SELECT content" so who knows why it's disagreeing here
+        std::string query = "SELECT Artists.id, Artists.name, Artists.tadb_id, Artists.image_path, COUNT(DISTINCT album_id), COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id LEFT JOIN (SELECT DISTINCT content AS text, okapi_bm25(matchinfo(FtsArtists, 'pcxnal'), 0) AS score FROM FtsArtists WHERE FtsArtists MATCH ?) ON Artists.name = text WHERE score IS NOT NULL GROUP BY artist_id ORDER BY score DESC, Artists.name";
+        query += (limit >= 0 ? " LIMIT ?;" : ";");
+        bool ok = this->db->prepareQuery(query);
+        std::string str = phrases[i];
+        ok = keepFalse(ok, this->db->bindString(0, str));
+        if (limit >= 0) {
+            ok = keepFalse(ok, this->db->bindInt(1, limit));
+        }
         ok = keepFalse(ok, this->db->executeQuery());
         if (!ok) {
-            this->setErrorMsg("[searchArtists] An error occurred searching with the phrase: " + phrases[i].string);
+            this->setErrorMsg("[searchArtists] An error occurred searching with the phrase: " + phrases[i]);
             return v;
         }
 
         // Iterate over returned rows
+        int tmp;
         while (ok && this->db->hasRow()) {
             Metadata::Artist m;
             ok = this->db->getInt(0, m.ID);
+
+            // Skip over artist if already in vector
+            std::vector<Metadata::Artist>::iterator it = std::find_if(v.begin(), v.end(), [m](const Metadata::Artist e) {
+                return e.ID == m.ID;
+            });
+            if (it != v.end()) {
+                ok = keepFalse(ok, this->db->nextRow());
+                continue;
+            }
+
             ok = keepFalse(ok, this->db->getString(1, m.name));
             ok = keepFalse(ok, this->db->getInt(2, m.tadbID));
             ok = keepFalse(ok, this->db->getString(3, m.imagePath));
-            m.songCount = 0;    // I haven't been able to figure out how to get these in this query
-            m.albumCount = 0;
+            ok = keepFalse(ok, this->db->getInt(4, tmp));
+            m.albumCount = tmp;
+            ok = keepFalse(ok, this->db->getInt(5, tmp));
+            m.songCount = tmp;
 
             if (ok) {
                 v.push_back(m);
@@ -1407,8 +1448,11 @@ std::vector<Metadata::Artist> Database::searchArtists(std::string str) {
     return v;
 }
 
-std::vector<Metadata::Playlist> Database::searchPlaylists(std::string str) {
+std::vector<Metadata::Playlist> Database::searchPlaylists(std::string str, int limit) {
     std::vector<Metadata::Playlist> v;
+    if (limit == 0) {
+        return v;
+    }
 
     // Check we can read
     if (this->db->connectionType() == SQLite::Connection::None) {
@@ -1417,28 +1461,50 @@ std::vector<Metadata::Playlist> Database::searchPlaylists(std::string str) {
     }
 
     // Fix any spelling mistakes and get suggested searches based on input
-    std::vector<SpellfixString> phrases = this->getSearchPhrases("SpellfixPlaylists", str);
+    std::vector<std::string> phrases = this->getSearchPhrases("SpellfixPlaylists", str);
     if (phrases.empty()) {
         return v;
     }
 
     // Iterate over each phrase and store results
     for (size_t i = 0; i < phrases.size(); i++) {
-        bool ok = this->db->prepareQuery("SELECT id, name, description FROM FtsPlaylists JOIN Playlists ON content = name WHERE FtsPlaylists MATCH ? ORDER BY okapi_bm25(matchinfo(FtsPlaylists, 'pcxnal'), 0) DESC;");
-        std::string tmp = phrases[i].string;
-        ok = keepFalse(ok, this->db->bindString(0, tmp));
+        // Create query and optionally append LIMIT
+        // A little note: "SELECT DISTINCT content AS text" has to be in the subquery otherwise SQLite says "matchinfo can't be used in this context"...
+        // It works fine on Linux with "SELECT content" so who knows why it's disagreeing here
+        std::string query = "SELECT id, name, description, image_path, COUNT(PlaylistSongs.song_id), score FROM Playlists LEFT JOIN PlaylistSongs ON playlist_id = Playlists.id LEFT JOIN (SELECT DISTINCT content AS text, okapi_bm25(matchinfo(FtsPlaylists, 'pcxnal'), 0) AS score FROM FtsPlaylists WHERE FtsPlaylists MATCH ?) ON name = text WHERE score IS NOT NULL GROUP BY Playlists.id ORDER BY score DESC, name";
+        query += (limit >= 0 ? " LIMIT ?;" : ";");
+        bool ok = this->db->prepareQuery(query);
+        std::string str = phrases[i];
+        ok = keepFalse(ok, this->db->bindString(0, str));
+        if (limit >= 0) {
+            ok = keepFalse(ok, this->db->bindInt(1, limit));
+        }
         ok = keepFalse(ok, this->db->executeQuery());
         if (!ok) {
-            this->setErrorMsg("[searchPlaylists] An error occurred searching with the phrase: " + phrases[i].string);
+            this->setErrorMsg("[searchPlaylists] An error occurred searching with the phrase: " + phrases[i]);
             return v;
         }
 
         // Iterate over returned rows
+        int tmp;
         while (ok && this->db->hasRow()) {
             Metadata::Playlist m;
             ok = this->db->getInt(0, m.ID);
+
+            // Skip over playlist if already in vector
+            std::vector<Metadata::Playlist>::iterator it = std::find_if(v.begin(), v.end(), [m](const Metadata::Playlist e) {
+                return e.ID == m.ID;
+            });
+            if (it != v.end()) {
+                ok = keepFalse(ok, this->db->nextRow());
+                continue;
+            }
+
             ok = keepFalse(ok, this->db->getString(1, m.name));
             ok = keepFalse(ok, this->db->getString(2, m.description));
+            ok = keepFalse(ok, this->db->getString(3, m.imagePath));
+            ok = keepFalse(ok, this->db->getInt(4, tmp));
+            m.songCount = tmp;
 
             if (ok) {
                 v.push_back(m);
@@ -1450,8 +1516,11 @@ std::vector<Metadata::Playlist> Database::searchPlaylists(std::string str) {
     return v;
 }
 
-std::vector<Metadata::Song> Database::searchSongs(std::string str) {
+std::vector<Metadata::Song> Database::searchSongs(std::string str, int limit) {
     std::vector<Metadata::Song> v;
+    if (limit == 0) {
+        return v;
+    }
 
     // Check we can read
     if (this->db->connectionType() == SQLite::Connection::None) {
@@ -1460,27 +1529,43 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str) {
     }
 
     // Fix any spelling mistakes and get suggested searches based on input
-    std::vector<SpellfixString> phrases = this->getSearchPhrases("SpellfixSongs", str);
+    std::vector<std::string> phrases = this->getSearchPhrases("SpellfixSongs", str);
     if (phrases.empty()) {
         return v;
     }
 
     // Iterate over each phrase and store results
     for (size_t i = 0; i < phrases.size(); i++) {
-        bool ok = this->db->prepareQuery("SELECT Songs.id, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN FtsSongs ON Songs.title = FtsSongs.title JOIN Artists ON artist_id = Artists.id JOIN Albums ON album_id = Albums.id WHERE FtsSongs MATCH ? ORDER BY okapi_bm25(matchinfo(FtsSongs, 'pcxnal'), 0) DESC;");
-        std::string tmp = phrases[i].string;
-        ok = keepFalse(ok, this->db->bindString(0, tmp));
+        // Create query and optionally append LIMIT
+        std::string query = "SELECT Songs.id, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN FtsSongs ON Songs.title = FtsSongs.title JOIN Artists ON artist_id = Artists.id JOIN Albums ON album_id = Albums.id WHERE FtsSongs MATCH ? ORDER BY okapi_bm25(matchinfo(FtsSongs, 'pcxnal'), 0) DESC, Songs.title";
+        query += (limit >= 0 ? " LIMIT ?;" : ";");
+        bool ok = this->db->prepareQuery(query);
+        std::string str = phrases[i];
+        ok = keepFalse(ok, this->db->bindString(0, str));
+        if (limit >= 0) {
+            ok = keepFalse(ok, this->db->bindInt(1, limit));
+        }
         ok = keepFalse(ok, this->db->executeQuery());
         if (!ok) {
-            this->setErrorMsg("[searchSongs] An error occurred searching with the phrase: " + phrases[i].string);
+            this->setErrorMsg("[searchSongs] An error occurred searching with the phrase: " + phrases[i]);
             return v;
         }
 
         // Iterate over returned rows
+        int tmp;
         while (ok && this->db->hasRow()) {
             Metadata::Song m;
-            int tmp;
             ok = this->db->getInt(0, m.ID);
+
+            // Skip over song if already in vector
+            std::vector<Metadata::Song>::iterator it = std::find_if(v.begin(), v.end(), [m](const Metadata::Song e) {
+                return e.ID == m.ID;
+            });
+            if (it != v.end()) {
+                ok = keepFalse(ok, this->db->nextRow());
+                continue;
+            }
+
             ok = keepFalse(ok, this->db->getString(1, m.title));
             ok = keepFalse(ok, this->db->getString(2, m.artist));
             ok = keepFalse(ok, this->db->getString(3, m.album));

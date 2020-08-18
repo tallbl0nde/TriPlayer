@@ -9,6 +9,7 @@
 #include "ui/frame/Playlists.hpp"
 #include "ui/frame/PlaylistInfo.hpp"
 #include "ui/frame/Queue.hpp"
+#include "ui/frame/Search.hpp"
 #include "ui/frame/Songs.hpp"
 #include "ui/screen/Home.hpp"
 
@@ -53,16 +54,14 @@ namespace Screen {
     void Home::backCallback() {
         if (!this->frameStack.empty()) {
             // Delete the current frame and pop one from the stack
+            this->resetState();
             this->container->removeElement(this->frame);
-            this->frame = this->frameStack.top().frame;
-            this->frame->onPop(this->frameStack.top().type);
+            FrameTuple tuple = this->frameStack.top();
             this->frameStack.pop();
-
-            // Add that frame to the screen
-            this->container->addElement(this->frame);
-            this->container->setHasSelectable(false);
-            this->returnElement(this->playerDim);
-            this->addElement(this->playerDim);
+            this->frame = tuple.frame;
+            this->frameType = tuple.type;
+            this->frame->onPop(tuple.pushedType);
+            this->finalizeState();
         }
     }
 
@@ -116,26 +115,25 @@ namespace Screen {
                 // Maybe show an error if too deep?
                 this->frame->onPush(t);
                 this->container->returnElement(this->frame);
-                this->frameStack.push(FramePair{this->frame, t});
-                this->returnElement(this->playerDim);
+                this->frameStack.push(FrameTuple{this->frame, this->frameType, t});
                 break;
 
             // Empty stack and delete current frame
             case Frame::Action::Reset:
                 this->container->removeElement(this->frame);
                 while (!this->frameStack.empty()) {
-                    this->frameStack.top().frame->onPop(Frame::Type::None);
-                    delete this->frameStack.top().frame;
+                    FrameTuple tuple = this->frameStack.top();
                     this->frameStack.pop();
+                    tuple.frame->onPop(Frame::Type::None);
+                    delete tuple.frame;
                 }
-                this->resetState();
                 break;
         }
         this->frame = nullptr;
+        this->resetState();
 
         switch (t) {
             case Frame::Type::Playlists:
-                this->sidePlaylists->setActivated(true);
                 this->frame = new Frame::Playlists(this->app);
                 break;
 
@@ -148,7 +146,6 @@ namespace Screen {
                 break;
 
             case Frame::Type::Albums:
-                this->sideAlbums->setActivated(true);
                 this->frame = new Frame::Albums(this->app);
                 break;
 
@@ -161,7 +158,6 @@ namespace Screen {
                 break;
 
             case Frame::Type::Artists:
-                this->sideArtists->setActivated(true);
                 this->frame = new Frame::Artists(this->app);
                 break;
 
@@ -173,8 +169,11 @@ namespace Screen {
                 this->frame = new Frame::ArtistInfo(this->app, id);
                 break;
 
+            case Frame::Type::Search:
+                this->frame = new Frame::Search(this->app);
+                break;
+
             case Frame::Type::Songs:
-                this->sideSongs->setActivated(true);
                 this->frame = new Frame::Songs(this->app);
                 break;
 
@@ -183,19 +182,13 @@ namespace Screen {
                 break;
 
             case Frame::Type::Queue:
-                this->sideQueue->setActivated(true);
                 this->frame = new Frame::Queue(this->app);
                 break;
 
             default:
                 break;
         }
-        this->frame->setShowAddToPlaylistFunc([this](std::function<void(PlaylistID)> f) {
-            this->showAddToPlaylist(f);
-        });
-        this->frame->setChangeFrameFunc([this](Frame::Type t, Frame::Action a, int id) {
-            this->changeFrame(t, a, id);
-        });
+        this->frameType = t;
         this->finalizeState();
     }
 
@@ -223,7 +216,8 @@ namespace Screen {
             }
 
             // Change album cover
-            Metadata::Album md = this->app->database()->getAlbumMetadataForID(this->app->database()->getAlbumIDForSong(m.ID));
+            AlbumID id = this->app->database()->getAlbumIDForSong(m.ID);
+            Metadata::Album md = this->app->database()->getAlbumMetadataForID(id);
             this->player->setAlbumCover(new Aether::Image(0, 0, md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath));
         }
 
@@ -253,16 +247,62 @@ namespace Screen {
     }
 
     void Home::finalizeState() {
+        // Set the frame's callbacks
+        this->frame->setShowAddToPlaylistFunc([this](std::function<void(PlaylistID)> f) {
+            this->showAddToPlaylist(f);
+        });
+        this->frame->setChangeFrameFunc([this](Frame::Type t, Frame::Action a, int id) {
+            this->changeFrame(t, a, id);
+        });
+
         // Mark the container non-selectable so the highlight won't jump to it
         this->container->addElement(this->frame);
         this->container->setHasSelectable(false);
 
         // (Re)add dimming element after frame so it's drawn on top
         this->addElement(this->playerDim);
+
+        // Highlight appropriate menu entry
+        switch (this->frameType) {
+            case Frame::Type::Search:
+                this->sideSearch->setActivated(true);
+                break;
+
+            case Frame::Type::Playlists:
+            case Frame::Type::Playlist:
+            case Frame::Type::PlaylistInfo:
+                this->sidePlaylists->setActivated(true);
+                break;
+
+            case Frame::Type::Songs:
+            case Frame::Type::SongInfo:
+                this->sideSongs->setActivated(true);
+                break;
+
+            case Frame::Type::Artists:
+            case Frame::Type::Artist:
+            case Frame::Type::ArtistInfo:
+                this->sideArtists->setActivated(true);
+                break;
+
+            case Frame::Type::Albums:
+            case Frame::Type::Album:
+            case Frame::Type::AlbumInfo:
+                this->sideAlbums->setActivated(true);
+                break;
+
+            case Frame::Type::Queue:
+                this->sideQueue->setActivated(true);
+                break;
+
+            default:
+                break;
+        }
     }
 
     void Home::resetState() {
         // Deselect all side buttons
+        this->sideSearch->setActivated(false);
         this->sidePlaylists->setActivated(false);
         this->sideSongs->setActivated(false);
         this->sideArtists->setActivated(false);
@@ -329,33 +369,30 @@ namespace Screen {
         quitButton->setSelectable(false);
         this->sideContainer->addElement(quitButton);
 
-        // User
-        this->userBg = new Aether::Rectangle(25, 90, 200, 50, 10);
-        this->userBg->setColour(this->app->theme()->muted2());
-        this->sideContainer->addElement(this->userBg);
-        this->userIcon = new Aether::Image(this->userBg->x(), this->userBg->y(), "romfs:/user.png");
-        this->userIcon->setWH(50, 50);
-        this->sideContainer->addElement(this->userIcon);
-        this->userText = new Aether::Text(this->userIcon->x() + this->userIcon->w() + 8, 0, "Username", 26);
-        this->userText->setY(this->userBg->y() + (this->userBg->h() - this->userText->h())/2);
-        this->userText->setColour(this->app->theme()->FG());
-        this->sideContainer->addElement(this->userText);
-
-        // Settings
-        this->settingsBg = new Aether::Rectangle(235, 90, 50, 50, 10);
-        this->settingsBg->setColour(this->app->theme()->muted2());
-        this->sideContainer->addElement(this->settingsBg);
-        this->settingsIcon = new Aether::Image(this->settingsBg->x() + 10, this->settingsBg->y() + 10, "romfs:/icons/settings.png");
-        this->sideContainer->addElement(this->settingsIcon);
-
-        // Search bar
-        this->search = new CustomElm::SearchBox(25, 170, 260);
-        this->search->setBoxColour(this->app->theme()->muted2());
-        this->search->setIconColour(this->app->theme()->FG());
-        this->sideContainer->addElement(this->search);
-
         // Navigation list
-        this->sidePlaylists = new CustomElm::SideButton(10, 230, 290);
+        this->sideSearch = new CustomElm::SideButton(10, 80, 290);
+        this->sideSearch->setIcon(new Aether::Image(0, 0, "romfs:/icons/search.png"));
+        this->sideSearch->setText("Search");
+        this->sideSearch->setActiveColour(this->app->theme()->accent());
+        this->sideSearch->setInactiveColour(this->app->theme()->FG());
+        this->sideSearch->setCallback([this](){
+            // If the current frame is search recreate it
+            if (this->frameType == Frame::Type::Search) {
+                this->returnElement(this->playerDim);
+                this->container->removeElement(this->frame);
+                this->frame = new Frame::Search(this->app);
+                this->finalizeState();
+
+            // Otherwise push the last frame on the stack
+            } else {
+                this->changeFrame(Frame::Type::Search, Frame::Action::Push);
+            }
+        });
+        this->sideContainer->addElement(this->sideSearch);
+        this->sideSeparator = new Aether::Rectangle(30, this->sideSearch->y() + 70, 250, 1);
+        this->sideSeparator->setColour(this->app->theme()->muted2());
+        this->sideContainer->addElement(this->sideSeparator);
+        this->sidePlaylists = new CustomElm::SideButton(10, this->sideSeparator->y() + 10, 290);
         this->sidePlaylists->setIcon(new Aether::Image(0, 0, "romfs:/icons/playlist.png"));
         this->sidePlaylists->setText("Playlists");
         this->sidePlaylists->setActiveColour(this->app->theme()->accent());
@@ -391,20 +428,42 @@ namespace Screen {
             this->changeFrame(Frame::Type::Albums, Frame::Action::Reset);
         });
         this->sideContainer->addElement(this->sideAlbums);
-        this->sideSeparator = new Aether::Rectangle(30, this->sideAlbums->y() + 70, 250, 1);
-        this->sideSeparator->setColour(this->app->theme()->muted2());
-        this->sideContainer->addElement(this->sideSeparator);
-        this->sideQueue = new CustomElm::SideButton(10, this->sideSeparator->y() + 10, 290);
+        this->sideSeparator2 = new Aether::Rectangle(30, this->sideAlbums->y() + 70, 250, 1);
+        this->sideSeparator2->setColour(this->app->theme()->muted2());
+        this->sideContainer->addElement(this->sideSeparator2);
+        this->sideQueue = new CustomElm::SideButton(10, this->sideSeparator2->y() + 10, 290);
         this->sideQueue->setIcon(new Aether::Image(0, 0, "romfs:/icons/queue.png"));
         this->sideQueue->setText("Play Queue");
         this->sideQueue->setActiveColour(this->app->theme()->accent());
         this->sideQueue->setInactiveColour(this->app->theme()->FG());
         this->sideQueue->setCallback([this](){
-            this->changeFrame(Frame::Type::Queue, Frame::Action::Reset);
+            // If the current frame is queue recreate it
+            if (this->frameType == Frame::Type::Queue) {
+                this->returnElement(this->playerDim);
+                this->container->removeElement(this->frame);
+                this->frame = new Frame::Queue(this->app);
+                this->finalizeState();
+
+            // Otherwise push the last frame on the stack
+            } else {
+                this->changeFrame(Frame::Type::Queue, Frame::Action::Push);
+            }
         });
         this->sideContainer->addElement(this->sideQueue);
         this->sideContainer->setFocussed(this->sideSongs);
         this->container->addElement(this->sideContainer);
+        this->sideSeparator3 = new Aether::Rectangle(30, this->sideQueue->y() + 70, 250, 1);
+        this->sideSeparator3->setColour(this->app->theme()->muted2());
+        this->sideContainer->addElement(this->sideSeparator3);
+        this->sideSettings = new CustomElm::SideButton(10, this->sideSeparator3->y() + 10, 290);
+        this->sideSettings->setIcon(new Aether::Image(0, 0, "romfs:/icons/settings.png"));
+        this->sideSettings->setText("Settings");
+        this->sideSettings->setActiveColour(this->app->theme()->accent());
+        this->sideSettings->setInactiveColour(this->app->theme()->FG());
+        this->sideSettings->setCallback([this](){
+            // change to settings screen
+        });
+        this->sideContainer->addElement(this->sideSettings);
         this->addElement(this->container);
 
         // === PLAYER ===
@@ -454,6 +513,7 @@ namespace Screen {
 
         // Set songs active
         this->frame = nullptr;
+        this->frameType = Frame::Type::None;
         this->changeFrame(Frame::Type::Songs, Frame::Action::Reset);
         this->container->setFocussed(this->frame);
 
