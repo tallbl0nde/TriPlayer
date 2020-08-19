@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 #include <mpg123.h>
+#include <mutex>
 #include "Log.hpp"
 #include "utils/MP3.hpp"
 
@@ -19,6 +20,9 @@ enum class MPEGVer {
 
 // mpg123 instance
 static mpg123_handle * mpg = nullptr;
+
+// Mutex protecting above handle
+static std::mutex mutex;
 
 namespace Utils::MP3 {
     // Small helper function which returns a string from a (possibly not) null terminated string
@@ -241,6 +245,7 @@ namespace Utils::MP3 {
         std::vector<unsigned char> v;
 
         // Use mpg123 to find images
+        std::scoped_lock<std::mutex> mtx(mutex);
         if (mpg != nullptr) {
             int err = mpg123_open(mpg, path.c_str());
             if (err == MPG123_OK) {
@@ -312,6 +317,7 @@ namespace Utils::MP3 {
         m.discNumber = 0;                                  // Initially 0 to indicate not set
 
         // Use mpg123 to read ID3 tags
+        std::unique_lock<std::mutex> mtx(mutex);
         if (mpg != nullptr) {
             int err = mpg123_open(mpg, path.c_str());
             if (err == MPG123_OK) {
@@ -353,6 +359,7 @@ namespace Utils::MP3 {
                 Log::writeError("[MP3] Unable to open file: " + path);
             }
         }
+        mtx.unlock();
 
         // Calculate duration
         std::ifstream file;

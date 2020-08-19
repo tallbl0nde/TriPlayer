@@ -133,9 +133,9 @@ class Database {
         std::vector<Metadata::Song> searchSongs(const std::string, int = -1);
 
         // ===== Misc. Queries ===== //
-        // Returns vector of paths for all stored songs
-        // Empty if no songs or an error occurred
-        std::vector<std::string> getAllSongPaths();
+        // Returns a vector of pairs (file path, modified time) for all songs
+        // Empty if no songs or error occurred (bool set false on error, true on success)
+        std::vector< std::pair<std::string, unsigned int> > getAllSongFileInfo(bool &);
         // Returns the id of the artist with the given name (-1 if not found)
         ArtistID getArtistIDForName(const std::string &);
         // Return the id of a song's album
@@ -144,8 +144,6 @@ class Database {
         // Return the id of a song's artist
         // ID will be negative on an error
         ArtistID getArtistIDForSong(SongID);
-        // Returns modified time for song matching path (0 on error/not found!)
-        unsigned int getModifiedTimeForPath(std::string &);
         // Return ID of song with given path (-1 if not found)
         SongID getSongIDForPath(std::string &);
 
