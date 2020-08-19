@@ -3,42 +3,64 @@
 
 #include "Aether/Aether.hpp"
 #include <future>
-#include "utils/Utils.hpp"
 
 namespace Main {
     class Application;
 };
 
 namespace Screen {
-    // Splash/loading screen
+    // The 'Splash' screen is shown when the application is launched.
+    // It is displayed while the library is scanned and the database
+    // is updated. It portrays the progress of the update.
     class Splash : public Aether::Screen {
         private:
+            // Stages in the library scan
+            enum class ScanStage {
+                Files,          // Searching for file changes
+                Metadata,       // Extracting metadata from files
+                Database,       // Updating database to match filesystem
+                Done,           // Everything is done
+                Error           // An error occurred during the scan
+            };
+
+            // Pointer to main app object
             Main::Application * app;
 
-            // Elements
+            // Set true when an error has occurred (allows exit)
+            bool fatalError;
+
+            // UI elements
             Aether::Image * bg;
-            Aether::Text * status;
-            Aether::Text * statusNum;
-            Aether::RoundProgressBar * pbar;
+            Aether::Text * heading;
+            Aether::Text * subheading;
+            Aether::RoundProgressBar * progress;
             Aether::Text * percent;
-            Aether::Animation * anim;
+            Aether::Animation * animation;
             Aether::Text * hint;
 
-            // === The following variables are used to communicate between threads === //
+            // Helper functions to update UI
+            void setScanFiles();
+            void setScanMetadata();
+            void setScanDatabase();
+            void setScanError();
+
+            // === Variables to communicate status between threads === //
             // Future for thread
             std::future<void> future;
-            // Stage of 'loading'
-            std::atomic<ProcessStage> currentStage;
-            // Value of last lStage
-            ProcessStage lastStage;
-            // Variable which signals how many files have been read (set to 0 until files have been found)
-            std::atomic<int> currentFile;
-            // Total number of files found
-            std::atomic<int> totalFiles;
+            // Stage in scan
+            std::atomic<ScanStage> currentStage;
+            ScanStage lastStage;
+            // Number of scanned (completed) files
+            std::atomic<size_t> currentFile;
+            // Total number of files to scan/update
+            std::atomic<size_t> totalFiles;
             // Used to detect change
-            int lastFile;
-            // Set to true to stop process thread
-            std::atomic<bool> stopSignal;
+            size_t lastFile;
+            // Number of estimated seconds remaining
+            std::atomic<size_t> estRemaining;
+
+            // Function run on another thread to control library scan
+            void scanLibrary();
 
         public:
             Splash(Main::Application *);

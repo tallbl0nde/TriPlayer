@@ -61,7 +61,7 @@ class LibraryScanner {
         // Process metadata for each required file
         // Accepts references to variables to update status
         // (current file, total files, estimated remaining time (secs))
-        Status processMetadata(std::atomic<int> &, std::atomic<int> &, std::atomic<size_t> &);
+        Status processMetadata(std::atomic<size_t> &, std::atomic<size_t> &, std::atomic<size_t> &);
 
         // Update the database with new data
         // !! Assumes that the database is locked for writing before calling !!

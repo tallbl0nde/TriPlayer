@@ -1,14 +1,13 @@
 #include <algorithm>
-#include <chrono>
 #include <filesystem>
 #include <future>
 #include "LibraryScanner.hpp"
-#include "utils/MP3.hpp"
-
 #include "Log.hpp"
+#include "utils/MP3.hpp"
+#include "utils/Timer.hpp"
 
 // Number of threads to use for scanning audio files
-#define SCAN_THREADS 2
+#define SCAN_THREADS 1
 
 // Comparator for FilePairs returning true if the lhs is before the rhs
 // (this only comapres the path as we don't care about the modified time)
@@ -24,6 +23,7 @@ LibraryScanner::Status LibraryScanner::parseFileAdd(const FilePair & file) {
     // Read tags and data from file (thread-safe)
     Metadata::Song meta = Utils::MP3::getInfoFromID3(file.path);
     if (meta.ID == -3) {
+        Log::writeError("[SCAN] [ADD] Failed to parse file: " + file.path);
         return Status::ErrUnknown;
     }
     meta.path = file.path;
@@ -39,6 +39,7 @@ LibraryScanner::Status LibraryScanner::parseFileUpdate(const FilePair & file) {
     // Read new tags and data from file (thread-safe)
     Metadata::Song newMeta = Utils::MP3::getInfoFromID3(file.path);
     if (newMeta.ID == -3) {
+        Log::writeError("[SCAN] [UPDATE] Failed to parse file: " + file.path);
         return Status::ErrUnknown;
     }
 
@@ -47,6 +48,7 @@ LibraryScanner::Status LibraryScanner::parseFileUpdate(const FilePair & file) {
     SongID id = this->database->getSongIDForPath(tmp);
     Metadata::Song meta = this->database->getSongMetadataForID(id);
     if (meta.ID < 0) {
+        Log::writeError("[SCAN] [UPDATE] Failed to get metadata for: " + file.path);
         return Status::ErrDatabase;
     }
     meta.title = newMeta.title;
@@ -76,6 +78,7 @@ LibraryScanner::Status LibraryScanner::processFiles() {
             files.push_back(FilePair{entry.path().string(), timestamp});
         }
     }
+    Log::writeInfo("[SCAN] Found " + std::to_string(files.size()) + " files");
 
     // Sort returned paths
     std::sort(files.begin(), files.end(), FilePairComparator);
@@ -86,6 +89,7 @@ LibraryScanner::Status LibraryScanner::processFiles() {
     std::vector<FilePair> dbFiles;
     std::vector< std::pair<std::string, unsigned int> > tmp = this->database->getAllSongFileInfo(dbOK);
     if (!dbOK) {
+        Log::writeError("[SCAN] Couldn't read filesystem info from database");
         return Status::ErrDatabase;
     }
     for (size_t i = 0; i < tmp.size(); i++) {
@@ -130,6 +134,12 @@ LibraryScanner::Status LibraryScanner::processFiles() {
     addThread.get();
     updateThread.get();
 
+    // Log status
+    Log::writeInfo("[SCAN] Adding " + std::to_string(this->addFiles.size()) + " files");
+    Log::writeInfo("[SCAN] Updating " + std::to_string(this->updateFiles.size()) + " files");
+    Log::writeInfo("[SCAN] Removing " + std::to_string(this->removeFiles.size()) + " files");
+    Log::writeSuccess("[SCAN] Initial processing completed");
+
     // Return appropriate status
     if (this->addFiles.empty() && this->updateFiles.empty()) {
         return (this->removeFiles.empty() ? Status::Done : Status::DoneRemove);
@@ -137,7 +147,7 @@ LibraryScanner::Status LibraryScanner::processFiles() {
     return Status::Ok;
 }
 
-LibraryScanner::Status LibraryScanner::processMetadata(std::atomic<int> & currentFile, std::atomic<int> & totalFiles, std::atomic<size_t> & estRemaining) {
+LibraryScanner::Status LibraryScanner::processMetadata(std::atomic<size_t> & currentFile, std::atomic<size_t> & totalFiles, std::atomic<size_t> & estRemaining) {
     // Set initial status values
     estRemaining = 0;
     currentFile = 1;
@@ -145,6 +155,10 @@ LibraryScanner::Status LibraryScanner::processMetadata(std::atomic<int> & curren
 
     // We're going to use multiple threads to hopefully speed up the parsing
     std::vector< std::future<Status> > threads;
+
+    // Timer used to estimate remaining time
+    Utils::Timer timer = Utils::Timer();
+    timer.start();
 
     // Parse files that need to be added/updated
     std::vector<FilePair> dummy;
@@ -174,7 +188,11 @@ LibraryScanner::Status LibraryScanner::processMetadata(std::atomic<int> & curren
                 if (threads[i].wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
                     status = (status == Status::Ok ? threads[i].get() : status);
                     threads.erase(threads.begin() + i);
+
+                    // Increment counter and adjust remaining time
+                    estRemaining = (timer.elapsedSeconds() / (double)currentFile) * (totalFiles - currentFile);
                     currentFile++;
+
                 } else {
                     i++;
                 }
@@ -202,6 +220,7 @@ LibraryScanner::Status LibraryScanner::processMetadata(std::atomic<int> & curren
 
         // Return if an error occurred
         if (status != Status::Ok) {
+            Log::writeError("[SCAN] Error occurred during metadata scan");
             while (!threads.empty()) {
                 threads[0].get();
                 threads.erase(threads.begin());
@@ -211,6 +230,7 @@ LibraryScanner::Status LibraryScanner::processMetadata(std::atomic<int> & curren
     }
 
     // We get here once all are completed and no error occurred
+    Log::writeSuccess("[SCAN] Song metadata processed successfully");
     return Status::Ok;
 }
 
@@ -219,6 +239,7 @@ LibraryScanner::Status LibraryScanner::updateDatabase() {
     for (size_t i = 0; i < this->addMeta.size(); i++) {
         bool ok = this->database->addSong(this->addMeta[i]);
         if (!ok) {
+            Log::writeError("[SCAN] Error adding song: " + this->addMeta[i].path);
             return Status::ErrDatabase;
         }
     }
@@ -227,6 +248,7 @@ LibraryScanner::Status LibraryScanner::updateDatabase() {
     for (size_t i = 0; i < this->updateMeta.size(); i++) {
         bool ok = this->database->updateSong(this->updateMeta[i]);
         if (!ok) {
+            Log::writeError("[SCAN] Error updating song: " + this->updateMeta[i].path);
             return Status::ErrDatabase;
         }
     }
@@ -238,9 +260,11 @@ LibraryScanner::Status LibraryScanner::updateDatabase() {
         SongID id = this->database->getSongIDForPath(tmp);
         (id >= 0 ? ok = this->database->removeSong(id) : ok = false);
         if (!ok) {
+            Log::writeError("[SCAN] Error removing song: " + this->removeFiles[i].path);
             return Status::ErrDatabase;
         }
     }
 
+    Log::writeSuccess("[SCAN] Database successfully updated");
     return Status::Ok;
 }

@@ -351,7 +351,12 @@ namespace Utils::MP3 {
                     }
                     // Free memory used by metadata
                     mpg123_meta_free(mpg);
+
+                } else {
+                    m.ID = -2;
+                    Log::writeWarning("[MP3] No ID3 metadata present in: " + path);
                 }
+
                 // Close file
                 mpg123_close(mpg);
 
