@@ -7,7 +7,8 @@
 #include "utils/Timer.hpp"
 
 // Number of threads to use for scanning audio files
-#define SCAN_THREADS 1
+// For my library 2 threads instead of one sped up scanning by ~5%
+#define SCAN_THREADS 2
 
 // Comparator for FilePairs returning true if the lhs is before the rhs
 // (this only comapres the path as we don't care about the modified time)

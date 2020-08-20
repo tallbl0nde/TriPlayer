@@ -7,6 +7,11 @@
 #include "Log.hpp"
 #include "utils/MP3.hpp"
 
+// Size of read buffer (used for calculating duration) - 20MB
+// This should be enough for most songs, but also large enough to not cause too many
+// reads for very large files
+#define READ_BUFFER_SIZE 20 * 1024 * 1024
+
 // Bitrates matching value of bitrate bits
 static const int bitVer1[16] = {0, 32000, 40000, 48000, 56000, 64000, 80000, 96000, 112000, 128000, 160000, 192000, 224000, 256000, 320000, 0};
 static const int bitVer2[16] = {0, 32000, 48000, 56000, 64000, 80000, 96000, 112000, 128000, 144000, 160000, 176000, 192000, 224000, 256000, 0};
@@ -45,101 +50,144 @@ namespace Utils::MP3 {
         return std::string(str->p, len);
     }
 
-    // Calculates duration of MP3 file
-    // Returns number of seconds (0 if error occurred)
+    // MISSING ~4 HOURS OF DURATION
+
+    // Calculates duration of MP3 file and returns in seconds (0 if error occurred)
+    // If you're reading this and you're interested how I came up with this,
+    // see this site: http://www.mp3-tech.org/programmer/frame_header.html
     static unsigned int parseDuration(std::ifstream &file) {
-        // Read file into RAM
-        file.seekg(0, file.end);
-        size_t size = file.tellg();
-        file.seekg(0, file.beg);
-        unsigned char * buf;
-        try {
-            buf = new unsigned char[size];
-        } catch (const std::bad_alloc& e) {
-            // For now just skip files that are too large
-            return 0;
-        }
-        file.read((char *) buf, size);
-        size_t pos = 0;
-
-        // If an ID3 tag is present skip it
-        if (buf[0] == 'I' && buf[1] == 'D' && buf[2] == '3') {
-            unsigned int tagSize = 0;
-            tagSize = ((buf[6] & 127) << 21) | ((buf[7] & 127) << 14) | ((buf[8] & 127) << 7) | ((buf[9] & 127));
-            pos += 10 + tagSize;
-        }
-
-        // Loop over each frame and calculate stuff
         double seconds = 0;
-        while (pos < size) {
-            // Read frame header
-            if (!(buf[pos] == 0xFF && (buf[pos + 1] & 0b11100000) == 0b11100000)) {
+
+        // Read buffer
+        unsigned char * buf = new unsigned char[READ_BUFFER_SIZE];
+        size_t size = 0;
+
+        // Position to begin reading from in next buffer
+        size_t beginAt = 0;
+
+        bool atStart = true;
+        while (file) {
+            // Read chunks of the file until we reach the end
+            file.read((char *) buf + size, READ_BUFFER_SIZE - size);
+            size += file.gcount();
+            if (!size) {
                 break;
             }
 
-            // Get mpeg version (layer is always 3!)
-            MPEGVer ver = MPEGVer::One;
-            switch (buf[pos + 1] & 0b00011000) {
-                case 0b00011000:
-                    ver = MPEGVer::One;
-                    break;
+            // Byte we are 'at' in this buffer
+            size_t pos = beginAt;
 
-                case 0b00010000:
-                    ver = MPEGVer::Two;
+            // Check for the ID3 tag if at the start
+            if (atStart) {
+                // Stop if we didn't read 10 bytes
+                if (size < 10) {
+                    seconds = 0;
                     break;
+                }
 
-                case 0b00000000:
-                    ver = MPEGVer::TwoFive;
-                    break;
+                // If we have an ID3 tag skip it
+                if (buf[0] == 'I' && buf[1] == 'D' && buf[2] == '3') {
+                    unsigned int tagSize = 0;
+                    tagSize = ((buf[6] & 127) << 21) | ((buf[7] & 127) << 14) | ((buf[8] & 127) << 7) | ((buf[9] & 127));
+                    pos += 10 + tagSize;
+                }
             }
 
-            // Check for padding (which is 1 byte)
-            bool padding = ((buf[pos + 2] & 0b10) == 0b10);
-
-            // Get bitrate and sample rate
-            int bitrate;
-            switch (ver) {
-                case MPEGVer::One:
-                    bitrate = bitVer1[(buf[pos + 2] & 0b11110000) >> 4];
+            // Loop over MPEG frames in the buffer until we run out
+            bool loop = true;
+            while (pos < size && size - pos >= 3) {
+                // Check for the header and stop once we encounter something that isn't right
+                if (!(buf[pos] == 0xFF && (buf[pos + 1] & 0b11100000) == 0b11100000)) {
+                    loop = false;
                     break;
+                }
 
-                case MPEGVer::Two:
-                case MPEGVer::TwoFive:
-                    bitrate = bitVer2[(buf[pos + 2] & 0b11110000) >> 4];
-                    break;
+                // Get mpeg version (layer is always 3!)
+                MPEGVer ver = MPEGVer::One;
+                switch ((buf[pos + 1] & 0b00011000) >> 3) {
+                    case 0b11:
+                        ver = MPEGVer::One;
+                        break;
+
+                    case 0b10:
+                        ver = MPEGVer::Two;
+                        break;
+
+                    case 0b00:
+                        ver = MPEGVer::TwoFive;
+                        break;
+                }
+
+                // Check for CRC bytes
+                bool hasCRC = ((buf[pos + 1] & 0b1) == 0b0);
+
+                // Get bitrate
+                int bitrate;
+                switch (ver) {
+                    case MPEGVer::One:
+                        bitrate = bitVer1[(buf[pos + 2] & 0b11110000) >> 4];
+                        break;
+
+                    case MPEGVer::Two:
+                    case MPEGVer::TwoFive:
+                        bitrate = bitVer2[(buf[pos + 2] & 0b11110000) >> 4];
+                        break;
+                }
+
+                // Get sample rate
+                int samplerate = 1;
+                switch ((buf[pos + 2] & 0b00001100) >> 2) {
+                    case 0b00:
+                        samplerate = 44100;
+                        break;
+
+                    case 0b01:
+                        samplerate = 48000;
+                        break;
+
+                    case 0b10:
+                        samplerate = 32000;
+                        break;
+                }
+                if (ver == MPEGVer::Two) {
+                    samplerate /= 2;
+                } else if (ver == MPEGVer::TwoFive) {
+                    samplerate /= 4;
+                }
+
+                // Check for padding
+                bool hasPadding = (((buf[pos + 2] & 0b10) >> 1) == 0b1);
+
+                // Calculate size and jump to next frame header
+                unsigned int frameSize = ((144 * bitrate) / samplerate) + (hasCRC ? 2 : 0) + (hasPadding ? 1 : 0) - 4;
+                pos += (4 + frameSize);
+
+                // Duration in seconds is (samples per frame / sample rate)
+                seconds += (1152 / (long double)samplerate);
             }
 
-            int samplerate = 1;
-            switch (buf[pos + 2] & 0b1100) {
-                case 0b0000:
-                    samplerate = 44100;
-                    break;
-
-                case 0b0100:
-                    samplerate = 48000;
-                    break;
-
-                case 0b1000:
-                    samplerate = 32000;
-                    break;
-            }
-            if (ver == MPEGVer::Two) {
-                samplerate /= 2;
-            } else if (ver == MPEGVer::TwoFive) {
-                samplerate /= 4;
+            // Break immediately on error
+            if (!loop) {
+                break;
             }
 
-            // Calculate size and jump to end (next frame header)
-            unsigned int size = ((144 * bitrate) / samplerate) + (padding ? 1 : 0) - 4;
-            pos += 4 + size;
+            // Move remaining bytes to the start of the buffer
+            if (pos < size) {
+                size -= pos;
+                for (size_t i = 0; i < size; i++) {
+                    buf[i] = buf[pos + i];
+                }
+                beginAt = 0;
 
-            // Duration in seconds is (samples per frame / sample rate)
-            seconds += (1152 / (long double)samplerate);
+            // Otherwise indicate what byte in the next buffer will start the next header
+            } else {
+                beginAt = (pos - size);
+                size = 0;
+            }
+            atStart = false;
         }
 
-        // Delete RAM copy
         delete[] buf;
-
         return (unsigned int)std::round(seconds);
     }
 
