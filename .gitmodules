@@ -13,3 +13,6 @@
 [submodule "Common/libs/splash/splash"]
 	path = Common/libs/splash/splash
 	url = https://github.com/tallbl0nde/splash
+[submodule "Application/libs/avir"]
+	path = Application/libs/avir
+	url = https://github.com/avaneev/avir

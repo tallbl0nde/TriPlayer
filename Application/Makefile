@@ -30,7 +30,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	TriPlayer
 BUILD		:=	build
-INCLUDES	:=	include ../Common/include ../Common/libs/splash/splash/include libs/dtl/dtl
+INCLUDES	:=	include ../Common/include ../Common/libs/splash/splash/include libs/avir libs/dtl/dtl
 SOURCES		:=	source	../Common/source
 ROMFS		:=	romfs
 LIBS		:=  -lAether -lcurl -lmpg123 -lnx -lSQLite `sdl2-config --libs` -lSDL2_ttf `freetype-config --libs` -lSDL2_gfx -lSDL2_image -lSplash -lpng -ljpeg -lwebp
