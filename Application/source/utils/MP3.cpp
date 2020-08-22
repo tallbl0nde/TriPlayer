@@ -50,8 +50,6 @@ namespace Utils::MP3 {
         return std::string(str->p, len);
     }
 
-    // MISSING ~4 HOURS OF DURATION
-
     // Calculates duration of MP3 file and returns in seconds (0 if error occurred)
     // If you're reading this and you're interested how I came up with this,
     // see this site: http://www.mp3-tech.org/programmer/frame_header.html
@@ -66,6 +64,7 @@ namespace Utils::MP3 {
         size_t beginAt = 0;
 
         bool atStart = true;
+        bool atPadding = false;
         while (file) {
             // Read chunks of the file until we reach the end
             file.read((char *) buf + size, READ_BUFFER_SIZE - size);
@@ -91,6 +90,29 @@ namespace Utils::MP3 {
                     tagSize = ((buf[6] & 127) << 21) | ((buf[7] & 127) << 14) | ((buf[8] & 127) << 7) | ((buf[9] & 127));
                     pos += 10 + tagSize;
                 }
+                atPadding = true;
+            }
+
+            // The ID3 specification permits 0x00 bytes as padding after
+            // the ID3 header/frames, so skip over those too
+            if (atPadding) {
+                // Loop until we either reach a frame or the end of the buffer
+                bool needMoreBytes = false;
+                while (buf[pos] == 0x00) {
+                    pos++;
+                    if (pos >= size) {
+                        needMoreBytes = true;
+                        break;
+                    }
+                }
+
+                // Get another buffer if we need to
+                if (needMoreBytes) {
+                    size = 0;
+                    beginAt = 0;
+                    continue;
+                }
+                atPadding = false;
             }
 
             // Loop over MPEG frames in the buffer until we run out
@@ -118,8 +140,8 @@ namespace Utils::MP3 {
                         break;
                 }
 
-                // Check for CRC bytes
-                bool hasCRC = ((buf[pos + 1] & 0b1) == 0b0);
+                // Check for CRC bytes (not used)
+                // bool hasCRC = ((buf[pos + 1] & 0b1) == 0b0);
 
                 // Get bitrate
                 int bitrate;
@@ -159,7 +181,7 @@ namespace Utils::MP3 {
                 bool hasPadding = (((buf[pos + 2] & 0b10) >> 1) == 0b1);
 
                 // Calculate size and jump to next frame header
-                unsigned int frameSize = ((144 * bitrate) / samplerate) + (hasCRC ? 2 : 0) + (hasPadding ? 1 : 0) - 4;
+                unsigned int frameSize = ((144 * bitrate) / samplerate) + (hasPadding ? 1 : 0) - 4;
                 pos += (4 + frameSize);
 
                 // Duration in seconds is (samples per frame / sample rate)

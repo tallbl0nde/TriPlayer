@@ -214,7 +214,7 @@ LibraryScanner::Status LibraryScanner::processMetadata(std::atomic<size_t> & cur
                 }
 
                 // Wait very briefly before checking again
-                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
 
         } while (nextIdx < vec.size() && status == Status::Ok);
