@@ -47,6 +47,7 @@ class LibraryScanner {
         std::vector<FilePair> removeFiles;
 
         // Functions to actually process files on another thread
+        std::string parseAlbumArt(const std::string &);
         Status parseFileAdd(const FilePair &);
         Status parseFileUpdate(const FilePair &);
 
@@ -66,6 +67,10 @@ class LibraryScanner {
         // Update the database with new data
         // !! Assumes that the database is locked for writing before calling !!
         Status updateDatabase();
+
+        // Extract album art and write path to database
+        // !! Assumes that the database is locked for writing before calling !!
+        Status processArt(std::atomic<size_t> &);
 };
 
 #endif

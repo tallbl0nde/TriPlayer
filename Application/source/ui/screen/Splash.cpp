@@ -50,7 +50,7 @@ namespace Screen {
             }
         }
 
-        // Lock the database for writing and update!
+        // Lock the database for writing and update with metadata
         this->currentStage = ScanStage::Database;
         this->app->sysmodule()->waitReset();
         this->app->lockDatabase();
@@ -59,6 +59,18 @@ namespace Screen {
         if (result != LibraryScanner::Status::Ok) {
             this->currentStage = ScanStage::Error;
             return;
+        }
+
+        // Now re-lock the database to update for album art
+        if (result != LibraryScanner::Status::DoneRemove) {
+            this->currentStage = ScanStage::Art;
+            this->app->lockDatabase();
+            result = scanner.processArt(this->currentFile);
+            this->app->unlockDatabase();
+            if (result != LibraryScanner::Status::Ok) {
+                this->currentStage = ScanStage::Error;
+                return;
+            }
         }
 
         this->currentStage = ScanStage::Done;
@@ -75,6 +87,7 @@ namespace Screen {
     }
 
     void Splash::setScanMetadata() {
+        this->lastFile = 0;
         this->heading->setString("Scanning new files...");
         this->heading->setX(640 - this->heading->w()/2);
         this->subheading->setHidden(false);
@@ -91,10 +104,20 @@ namespace Screen {
 
     void Splash::setScanDatabase() {
         this->heading->setString("Updating database...");
+        this->heading->setX(640 - this->heading->w()/2);
         this->subheading->setHidden(true);
         this->animation->setX(620);
         this->progress->setHidden(true);
         this->percent->setHidden(true);
+    }
+
+    void Splash::setScanArt() {
+        this->lastFile = 0;
+        this->heading->setString("Extracting album art...");
+        this->heading->setX(640 - this->heading->w()/2);
+        this->subheading->setHidden(false);
+        this->subheading->setString("0 albums processed");
+        this->subheading->setX(640 - this->subheading->w()/2);
     }
 
     void Splash::setScanError() {
@@ -128,6 +151,10 @@ namespace Screen {
                     this->setScanDatabase();
                     break;
 
+                case ScanStage::Art:
+                    this->setScanArt();
+                    break;
+
                 case ScanStage::Done:
                     this->animation->setHidden(true);
                     this->hint->setHidden(true);
@@ -151,13 +178,21 @@ namespace Screen {
             if (file != this->lastFile) {
                 std::string tmp = "File " + std::to_string(file) + " of " + std::to_string(this->totalFiles);
                 if (time > 0) {
-                    tmp += " (~" + Utils::secondsToHMS(this->estRemaining) + " left)";
+                    tmp += " (~" + Utils::secondsToHMS(time) + " left)";
                 }
                 this->subheading->setString(tmp);
                 this->subheading->setX(640 - this->subheading->w()/2);
                 this->progress->setValue(100 * (float)file/(this->totalFiles + 1));
                 this->percent->setString(Utils::truncateToDecimalPlace(std::to_string(this->progress->value()), 1) + "%");
                 this->lastFile = file;
+            }
+
+        // Update strings to indicate number of albums processed
+        } else if (stage == ScanStage::Art) {
+            size_t album = this->currentFile;
+            if (album != this->lastFile) {
+                this->subheading->setString(std::to_string(album) + (album == 1 ? " album" : " albums") + " processed");
+                this->subheading->setX(640 - this->subheading->w()/2);
             }
         }
     }

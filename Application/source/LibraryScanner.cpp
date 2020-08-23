@@ -3,8 +3,14 @@
 #include <future>
 #include "LibraryScanner.hpp"
 #include "Log.hpp"
+#include "utils/Fs.hpp"
+#include "utils/Image.hpp"
 #include "utils/MP3.hpp"
 #include "utils/Timer.hpp"
+#include "utils/Utils.hpp"
+
+// Location to save album art to
+#define SAVE_LOCATION "/switch/TriPlayer/images/album/"
 
 // Number of threads to use for scanning audio files
 // For my library 2 threads instead of one sped up scanning by ~5%
@@ -18,6 +24,34 @@ bool LibraryScanner::FilePairComparator(const FilePair & lhs, const FilePair & r
 
 LibraryScanner::LibraryScanner(const SyncDatabase & db, const std::string & path) : database(db), searchPath(path) {
 
+}
+
+std::string LibraryScanner::parseAlbumArt(const std::string & path) {
+    // First attempt to extract image from file
+    std::vector<unsigned char> image = Utils::MP3::getArtFromID3(path);
+    if (image.empty()) {
+        return "";
+    }
+
+    // If we extracted an image resize it
+    bool resized = Utils::Image::resize(image, 400, 400);
+    if (!resized) {
+        Log::writeError("[SCAN] [ART] Unable to resize image found in: " + path);
+        return "";
+    }
+
+    // Write the image to disk
+    std::string filename;
+    do {
+        filename = Utils::randomString(10);
+    } while (Utils::Fs::fileExists(SAVE_LOCATION + filename + ".png"));
+    bool ok = Utils::Fs::writeFile(filename, image);
+    if (!ok) {
+        Log::writeError("[SCAN] [ART] Unable to write image to file: " + filename);
+        return "";
+    }
+
+    return filename;
 }
 
 LibraryScanner::Status LibraryScanner::parseFileAdd(const FilePair & file) {
@@ -267,5 +301,77 @@ LibraryScanner::Status LibraryScanner::updateDatabase() {
     }
 
     Log::writeSuccess("[SCAN] Database successfully updated");
+    return Status::Ok;
+}
+
+LibraryScanner::Status LibraryScanner::processArt(std::atomic<size_t> & currentFile) {
+    // Initialize variables
+    currentFile = 0;
+
+    // Map used to mark when an album has an image
+    // Album name -> bool
+    std::unordered_map<std::string, bool> hasImage;
+
+    // First get all the albums in the database and mark
+    std::vector<Metadata::Album> albums = this->database->getAllAlbumMetadata();
+    for (size_t i = 0; i < albums.size(); i++) {
+        hasImage[albums[i].name] = (!albums[i].imagePath.empty());
+    }
+
+    // Iterate over each song added/updated and search for an image if the album doesn't have one
+    std::vector<Metadata::Song> dummy;
+    for (size_t v = 0; v < 2; v++) {
+        // Pick vector based on 'v' (used to avoid repeating code)
+        std::vector<Metadata::Song> & vec = dummy;
+        switch (v) {
+            case 0:
+                vec = this->addMeta;
+                break;
+
+            case 1:
+                vec = this->updateMeta;
+                break;
+
+            default:
+                return Status::ErrUnknown;
+        }
+
+        for (size_t i = 0; i < vec.size(); i++) {
+            Metadata::Song meta = vec[i];
+
+            // Check this song for album art if the album does not yet have any
+            if (hasImage[meta.album]) {
+                continue;
+            }
+            std::string path = this->parseAlbumArt(meta.path);
+
+            // If the image was written to the SD Card update database
+            if (path.empty()) {
+                continue;
+            }
+            SongID songID = this->database->getSongIDForPath(meta.path);
+            AlbumID albumID = this->database->getAlbumIDForSong(songID);
+            Status status = (songID >= 0 && albumID >= 0 ? Status::Ok : Status::ErrDatabase);
+            if (status == Status::Ok) {
+                Metadata::Album album = this->database->getAlbumMetadataForID(albumID);
+                status = (album.ID >= 0 ? Status::Ok : Status::ErrDatabase);
+                if (status == Status::Ok) {
+                    album.imagePath = path;
+                    status = (this->database->updateAlbum(album) ? Status::Ok : Status::ErrDatabase);
+                }
+            }
+
+            // Remove the image file if an error occurred and return
+            if (status != Status::Ok) {
+                Utils::Fs::deleteFile(path);
+                return status;
+            }
+
+            // Otherwise mark that the album has an image
+            currentFile++;
+            hasImage[meta.album] = true;
+        }
+    }
+
     return Status::Ok;
 }

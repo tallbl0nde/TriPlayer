@@ -19,6 +19,7 @@ namespace Screen {
                 Files,          // Searching for file changes
                 Metadata,       // Extracting metadata from files
                 Database,       // Updating database to match filesystem
+                Art,            // Extracting album art from needd files
                 Done,           // Everything is done
                 Error           // An error occurred during the scan
             };
@@ -42,6 +43,7 @@ namespace Screen {
             void setScanFiles();
             void setScanMetadata();
             void setScanDatabase();
+            void setScanArt();
             void setScanError();
 
             // === Variables to communicate status between threads === //
