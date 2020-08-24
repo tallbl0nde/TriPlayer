@@ -45,6 +45,7 @@ std::string LibraryScanner::parseAlbumArt(const std::string & path) {
     do {
         filename = Utils::randomString(10);
     } while (Utils::Fs::fileExists(SAVE_LOCATION + filename + ".png"));
+    filename = SAVE_LOCATION + filename + ".png";
     bool ok = Utils::Fs::writeFile(filename, image);
     if (!ok) {
         Log::writeError("[SCAN] [ART] Unable to write image to file: " + filename);

@@ -71,6 +71,20 @@ bool SQLite::prepare() {
     return ok;
 }
 
+bool SQLite::createFunction(const std::string & name, void(*func)(sqlite3_context *, int, sqlite3_value **), void * data) {
+    // Only attempt if we have a connection
+    if (this->connectionType_ == SQLite::Connection::None) {
+        return false;
+    }
+
+    // Attempt to bind the function
+    bool ok = (sqlite3_create_function(this->db, name.c_str(), -1, SQLITE_UTF8, data, func, nullptr, nullptr) == SQLITE_OK);
+    if (!ok) {
+        this->setErrorMsg();
+    }
+    return ok;
+}
+
 std::string SQLite::errorMsg() {
     return this->errorMsg_;
 }
