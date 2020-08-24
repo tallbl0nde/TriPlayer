@@ -42,4 +42,26 @@ namespace Utils::NX {
         delete[] out;
         return success;
     }
+
+    static bool boost = false;
+    void setCPUBoost(bool enable) {
+        // Only set if different state
+        if (enable == boost) {
+            return;
+        }
+
+        appletSetCpuBoostMode((enable ? ApmCpuBoostMode_Type1 : ApmCpuBoostMode_Disabled));
+        boost = enable;
+    }
+
+    static bool media = false;
+    void setPlayingMedia(bool enable) {
+        // Only set if different state
+        if (enable == media) {
+            return;
+        }
+
+        appletSetMediaPlaybackState(enable);
+        media = enable;
+    }
 };

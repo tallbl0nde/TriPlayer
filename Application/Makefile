@@ -30,7 +30,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	TriPlayer
 BUILD		:=	build
-INCLUDES	:=	include ../Common/include ../Common/libs/splash/splash/include libs/dtl/dtl
+INCLUDES	:=	include ../Common/include ../Common/libs/splash/splash/include libs/avir libs/dtl/dtl
 SOURCES		:=	source	../Common/source
 ROMFS		:=	romfs
 LIBS		:=  -lAether -lcurl -lmpg123 -lnx -lSQLite `sdl2-config --libs` -lSDL2_ttf `freetype-config --libs` -lSDL2_gfx -lSDL2_image -lSplash -lpng -ljpeg -lwebp
@@ -70,7 +70,7 @@ OUTPUT		:=	$(CURDIR)/$(TARGET)
 #---------------------------------------------------------------------------------
 DEFINES		:=	-D__SWITCH__ -D_APPLICATION_ -DVER_MAJOR=$(VER_MAJOR) -DVER_MINOR=$(VER_MINOR) -DVER_MICRO=$(VER_MICRO) -DVER_STRING=\"$(VER_MAJOR).$(VER_MINOR).$(VER_MICRO)\"
 CFLAGS		:=	-g -Wall -O2 -ffunction-sections $(ARCH) $(DEFINES) $(INCLUDE)
-CXXFLAGS	:=	$(CFLAGS) -fno-rtti -std=gnu++17
+CXXFLAGS	:=	$(CFLAGS) -fno-rtti -std=gnu++2a
 
 #----------------------------------------------------------------------------------------------------------------------
 # Definition of variables which store file locations

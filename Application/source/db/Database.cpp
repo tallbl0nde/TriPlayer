@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "db/Database.hpp"
 #include "db/migrations/Migration.hpp"
 #include "db/okapi_bm25.h"
@@ -12,7 +13,7 @@
 // Location of the database file
 #define DB_PATH "/switch/TriPlayer/data.sqlite3"
 // Version of the database (database begins with zero from 'template', so this started at 1)
-#define DB_VERSION 5
+#define DB_VERSION 6
 // Maximum number of phrases to search for using spellfixed strings
 #define SEARCH_PHRASES 8
 // Maximum number of spellfixed words to allow per word (i.e. pick the top x words)
@@ -25,6 +26,24 @@
 // Custom boolean 'operator' which instead of 'keeping' true, will 'keep' false
 bool keepFalse(const bool & a, const bool & b) {
     return !(!a || !b);
+}
+
+// Helper function called by sqlite3 to remove an entry's image
+void removeImage(sqlite3_context * pCtx, int argc, sqlite3_value ** argv) {
+    // Get image_path string
+    if (argc < 1) {
+        return;
+    }
+    const unsigned char * tmp = sqlite3_value_text(argv[0]);
+    std::string string((char *)tmp);
+
+    // Do nothing if empty
+    if (string.empty()) {
+        return;
+    }
+
+    // Otherwise remove
+    Utils::Fs::deleteFile(string);
 }
 
 // ===== Housekeeping ===== //
@@ -137,6 +156,14 @@ bool Database::migrate() {
                     break;
                 }
                 Log::writeSuccess("[DB] Migrated to version 5");
+
+            case 5:
+                err = Migration::migrateTo6(this->db);
+                if (!err.empty()) {
+                    err = "Migration 6: " + err;
+                    break;
+                }
+                Log::writeSuccess("[DB] Migrated to version 6");
         }
     }
 
@@ -293,11 +320,19 @@ std::vector<std::string> Database::getSearchPhrases(const std::string & table, s
 
 // ===== Connection Management ===== //
 bool Database::openReadWrite() {
-    return this->db->openConnection(SQLite::Connection::ReadWrite);
+    bool ok = this->db->openConnection(SQLite::Connection::ReadWrite);
+    if (ok) {
+        ok = keepFalse(ok, this->db->createFunction("removeImage", removeImage, nullptr));
+    }
+    return ok;
 }
 
 bool Database::openReadOnly() {
-    return this->db->openConnection(SQLite::Connection::ReadOnly);
+    bool ok = this->db->openConnection(SQLite::Connection::ReadOnly);
+    if (ok) {
+        ok = keepFalse(ok, this->db->createFunction("removeImage", removeImage, nullptr));
+    }
+    return ok;
 }
 
 void Database::close() {
@@ -1593,30 +1628,35 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str, int limit) {
 }
 
 // ===== Misc. Queries ===== //
-std::vector<std::string> Database::getAllSongPaths() {
-    std::vector<std::string> v;
+std::vector< std::pair<std::string, unsigned int> > Database::getAllSongFileInfo(bool & success) {
+    std::vector< std::pair<std::string, unsigned int> > v;
+
     // Check we can read
     if (this->db->connectionType() == SQLite::Connection::None) {
-        this->setErrorMsg("[getAllSongPaths] No open connection");
+        this->setErrorMsg("[getAllSongFileInfo] No open connection");
+        success = false;
         return v;
     }
 
-    // Create a SongInfo for each entry
-    bool ok = this->db->prepareQuery("SELECT path FROM Songs;");
-    ok = keepFalse(ok, this->db->executeQuery());
+    // Create a pair for each entry
+    bool ok = this->db->prepareAndExecuteQuery("SELECT path, modified FROM Songs ORDER BY path;");
     if (!ok) {
-        this->setErrorMsg("[getAllSongPaths] Unable to query for all songs");
+        this->setErrorMsg("[getAllSongFileInfo] Unable to query file information for all songs");
+        success = false;
         return v;
     }
     while (ok && this->db->hasRow()) {
         std::string path;
+        int modified;
         ok = this->db->getString(0, path);
+        ok = keepFalse(ok, this->db->getInt(1, modified));
         if (ok) {
-            v.push_back(path);
+            v.push_back(std::make_pair(path, modified));
         }
         ok = keepFalse(ok, this->db->nextRow());
     }
 
+    success = true;
     v.shrink_to_fit();
     return v;
 }
@@ -1688,29 +1728,6 @@ ArtistID Database::getArtistIDForSong(SongID id) {
         this->setErrorMsg("[getArtistIDForSong] An error occurred reading the id");
     }
     return aID;
-}
-
-unsigned int Database::getModifiedTimeForPath(std::string & path) {
-    // Check we can read
-    if (this->db->connectionType() == SQLite::Connection::None) {
-        this->setErrorMsg("[getModifiedTimeForPath] No open connection");
-        return 0;
-    }
-
-    // Query modified time
-    int time = 0;
-    bool ok = this->db->prepareQuery("SELECT modified FROM Songs WHERE path = ?;");
-    ok = keepFalse(ok, this->db->bindString(0, path));
-    ok = keepFalse(ok, this->db->executeQuery());
-    if (ok && this->db->hasRow()) {
-        ok = this->db->getInt(0, time);
-    }
-    if (!ok) {
-        this->setErrorMsg("[getModifiedTimeForPath] An error occurred querying modified time");
-        return 0;
-    }
-
-    return time;
 }
 
 SongID Database::getSongIDForPath(std::string & path) {

@@ -55,6 +55,8 @@ class SQLite {
         // It does not try to open a connection!
         SQLite(const std::string &);
 
+        // Bind the given function to sqlite (name, function pointer, user data)
+        bool createFunction(const std::string &, void (*)(sqlite3_context *, int, sqlite3_value **), void *);
         // Returns the last logged error message (blank if no error)
         std::string errorMsg();
         // Set whether to ignore constraint errors (don't interpret them as errors)

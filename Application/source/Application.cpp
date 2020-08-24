@@ -2,15 +2,12 @@
 #include "ui/screen/Fullscreen.hpp"
 #include "ui/screen/Home.hpp"
 #include "ui/screen/Splash.hpp"
+#include "utils/NX.hpp"
 
 namespace Main {
-    Application::Application() {
+    Application::Application() : database_(SyncDatabase(new Database())) {
         // Prepare theme
         this->theme_ = new Theme();
-
-        // Open database (actually an object that wraps every method call with a mutex)
-        this->database_ = DatabaseWrapper(new Database(), std::bind(&std::mutex::lock, &this->dbMutex), std::bind(&std::mutex::unlock, &this->dbMutex));
-        this->database_->migrate();
 
         // Create sysmodule object (will attempt connection)
         this->sysmodule_ = new Sysmodule();
@@ -32,6 +29,9 @@ namespace Main {
         this->scHome = new Screen::Home(this);
         this->scFull = new Screen::Fullscreen(this);
         this->setScreen(ScreenID::Splash);
+
+        // Mark that we're playing media
+        Utils::NX::setPlayingMedia(true);
     }
 
     void Application::setHoldDelay(int i) {
@@ -86,7 +86,7 @@ namespace Main {
         this->database_->openReadOnly();
     }
 
-    const DatabaseWrapper & Application::database() {
+    const SyncDatabase & Application::database() {
         return this->database_;
     }
 
@@ -113,6 +113,9 @@ namespace Main {
     }
 
     Application::~Application() {
+        // Mark that we're no longer playing media
+        Utils::NX::setPlayingMedia(false);
+
         // Delete screens
         delete this->scFull;
         delete this->scHome;
