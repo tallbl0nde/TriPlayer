@@ -1,6 +1,7 @@
 #include "Application.hpp"
 #include "LibraryScanner.hpp"
 #include "ui/screen/Splash.hpp"
+#include "utils/NX.hpp"
 #include "utils/Utils.hpp"
 
 namespace Screen {
@@ -253,7 +254,9 @@ namespace Screen {
             case Sysmodule::Error::None:
                 // Start searching for file
                 this->future = std::async(std::launch::async, [this](){
+                    Utils::NX::setCPUBoost(true);
                     this->scanLibrary();
+                    Utils::NX::setCPUBoost(false);
                 });
                 return;
 

@@ -2,6 +2,7 @@
 #include "ui/screen/Fullscreen.hpp"
 #include "ui/screen/Home.hpp"
 #include "ui/screen/Splash.hpp"
+#include "utils/NX.hpp"
 
 namespace Main {
     Application::Application() : database_(SyncDatabase(new Database())) {
@@ -32,6 +33,9 @@ namespace Main {
         this->scHome = new Screen::Home(this);
         this->scFull = new Screen::Fullscreen(this);
         this->setScreen(ScreenID::Splash);
+
+        // Mark that we're playing media
+        Utils::NX::setPlayingMedia(true);
     }
 
     void Application::setHoldDelay(int i) {
@@ -113,6 +117,9 @@ namespace Main {
     }
 
     Application::~Application() {
+        // Mark that we're no longer playing media
+        Utils::NX::setPlayingMedia(false);
+
         // Delete screens
         delete this->scFull;
         delete this->scHome;

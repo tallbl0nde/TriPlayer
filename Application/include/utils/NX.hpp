@@ -22,6 +22,14 @@ namespace Utils::NX {
     // Create switch keyboard with provided parameters
     // Returns true if successful, false otherwise
     bool getUserInput(Keyboard &);
+
+    // Enable/disable CPU boost
+    // Does nothing if state matches
+    void setCPUBoost(bool);
+
+    // Enable/disable 'media playing' flag
+    // Does nothing if state matches
+    void setPlayingMedia(bool);
 };
 
 #endif

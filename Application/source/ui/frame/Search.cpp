@@ -44,7 +44,10 @@ namespace Frame {
         this->threadDone = false;
         this->showSearching();
         this->searchThread = std::async(std::launch::async, [this, copy]() -> bool {
-           return this->searchDatabase(copy);
+            Utils::NX::setCPUBoost(true);
+            bool ok = this->searchDatabase(copy);
+            Utils::NX::setCPUBoost(false);
+            return ok;
         });
     }
 
