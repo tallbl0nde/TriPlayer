@@ -22,7 +22,17 @@ namespace Screen {
     }
 
     void Splash::scanLibrary() {
+        // Ensure the database is up to date
+        this->app->lockDatabase();
+        bool ok = this->app->database()->migrate();
+        this->app->unlockDatabase();
+        if (!ok) {
+            this->currentStage = ScanStage::Error;
+            return;
+        }
+
         // First create the LibraryScanner object
+        this->app->database()->openReadOnly();
         LibraryScanner scanner = LibraryScanner(this->app->database(), "/music");
 
         // Get files on SD card and analyze what actions need to be taken

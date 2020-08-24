@@ -9,10 +9,6 @@ namespace Main {
         // Prepare theme
         this->theme_ = new Theme();
 
-        // Migrate database (already created)
-        this->database_->migrate();
-        this->database_->openReadOnly();
-
         // Create sysmodule object (will attempt connection)
         this->sysmodule_ = new Sysmodule();
         // Continue in another thread
