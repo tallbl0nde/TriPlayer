@@ -1,8 +1,8 @@
 #include <algorithm>
 #include "db/Database.hpp"
+#include "db/extensions/okapi_bm25.h"
+#include "db/extensions/Spellfix.h"
 #include "db/migrations/Migration.hpp"
-#include "db/okapi_bm25.h"
-#include "db/Spellfix.h"
 #include "Log.hpp"
 #include "utils/FS.hpp"
 #include "utils/Search.hpp"

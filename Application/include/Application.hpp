@@ -3,7 +3,7 @@
 
 #include "db/SyncDatabase.hpp"
 #include <future>
-#include "sysmodule/Sysmodule.hpp"
+#include "Sysmodule.hpp"
 #include "ui/Theme.hpp"
 
 // Forward declaration because cyclic dependency /shrug

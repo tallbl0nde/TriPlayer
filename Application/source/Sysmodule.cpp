@@ -2,7 +2,7 @@
 #include <limits>
 #include "Log.hpp"
 #include "Protocol.hpp"
-#include "sysmodule/Sysmodule.hpp"
+#include "Sysmodule.hpp"
 
 // Macro for adding delimiter
 #define DELIM std::string(1, Protocol::Delimiter)
