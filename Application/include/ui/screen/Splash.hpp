@@ -16,6 +16,7 @@ namespace Screen {
         private:
             // Stages in the library scan
             enum class ScanStage {
+                Launch,         // Not scanning yet
                 Files,          // Searching for file changes
                 Metadata,       // Extracting metadata from files
                 Database,       // Updating database to match filesystem
@@ -38,8 +39,13 @@ namespace Screen {
             Aether::Text * percent;
             Aether::Animation * animation;
             Aether::Text * hint;
+            Aether::BorderButton * launch;
+            Aether::BorderButton * quit;
 
             // Helper functions to update UI
+            void setErrorConnect();
+            void setErrorVersion();
+            void setScanLaunch();
             void setScanFiles();
             void setScanMetadata();
             void setScanDatabase();

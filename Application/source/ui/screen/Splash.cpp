@@ -88,13 +88,89 @@ namespace Screen {
         return;
     }
 
-    void Splash::setScanFiles() {
-        this->heading->setString("Preparing your library...");
+    void Splash::setErrorConnect() {
+        this->heading->setString("Unable to connect to sysmodule");
         this->heading->setX(640 - this->heading->w()/2);
+        this->heading->setHidden(false);
+        this->subheading->setString("Press 'Launch' to attempt to start it in the background");
+        this->subheading->setX(640 - this->subheading->w()/2);
+        this->subheading->setHidden(false);
+        this->launch->setHidden(false);
+        this->launch->setX(470);
+        this->quit->setHidden(false);
+        this->quit->setX(650);
+        this->setFocused(this->launch);
+    }
+
+    void Splash::setErrorVersion() {
+        // Indicate wrong version
+        this->heading->setString("The sysmodule and application versions do not match");
+        this->heading->setX(640 - this->heading->w()/2);
+        this->heading->setHidden(false);
+        this->subheading->setString("Please ensure that all components of TriPlayer are up to date");
+        this->subheading->setX(640 - this->subheading->w()/2);
+        this->subheading->setHidden(false);
+        this->launch->setHidden(true);
+        this->quit->setHidden(false);
+        this->quit->setX(640 - this->quit->w()/2);
+        this->setFocused(this->quit);
+    }
+
+    void Splash::setScanLaunch() {
+        // Initialize all variables too
+        this->currentFile = 0;
+        this->estRemaining = 0;
+        this->fatalError = false;
+        this->lastFile = 0;
+        this->currentStage = ScanStage::Launch;
+        this->lastStage = ScanStage::Launch;
+
+        this->animation->setHidden(true);
+        this->heading->setHidden(true);
+        this->subheading->setHidden(true);
         this->hint->setHidden(true);
         this->progress->setHidden(true);
         this->percent->setHidden(true);
         this->subheading->setHidden(true);
+        this->launch->setHidden(true);
+        this->quit->setHidden(true);
+
+        // Take action based on sysmodule status
+        switch (this->app->sysmodule()->error()) {
+            case Sysmodule::Error::None:
+                // Start searching for file
+                this->currentStage = ScanStage::Files;
+                this->future = std::async(std::launch::async, [this](){
+                    Utils::NX::setCPUBoost(true);
+                    this->scanLibrary();
+                    Utils::NX::setCPUBoost(false);
+                });
+                return;
+
+            case Sysmodule::Error::DifferentVersion:
+                this->setErrorVersion();
+                this->fatalError = true;
+                break;
+
+            default:
+                // All other errors represent a connection issue
+                this->setErrorConnect();
+                this->fatalError = true;
+                break;
+        }
+    }
+
+    void Splash::setScanFiles() {
+        this->heading->setString("Preparing your library...");
+        this->heading->setX(640 - this->heading->w()/2);
+        this->heading->setHidden(false);
+        this->animation->setHidden(true);
+        this->hint->setHidden(true);
+        this->progress->setHidden(true);
+        this->percent->setHidden(true);
+        this->subheading->setHidden(true);
+        this->launch->setHidden(true);
+        this->quit->setHidden(true);
     }
 
     void Splash::setScanMetadata() {
@@ -111,6 +187,8 @@ namespace Screen {
         this->animation->setX(this->progress->x() - 60);
         this->progress->setHidden(false);
         this->hint->setHidden(false);
+        this->launch->setHidden(true);
+        this->quit->setHidden(true);
     }
 
     void Splash::setScanDatabase() {
@@ -120,6 +198,8 @@ namespace Screen {
         this->animation->setX(620);
         this->progress->setHidden(true);
         this->percent->setHidden(true);
+        this->launch->setHidden(true);
+        this->quit->setHidden(true);
     }
 
     void Splash::setScanArt() {
@@ -129,18 +209,24 @@ namespace Screen {
         this->subheading->setHidden(false);
         this->subheading->setString("0 albums processed");
         this->subheading->setX(640 - this->subheading->w()/2);
+        this->launch->setHidden(true);
+        this->quit->setHidden(true);
     }
 
     void Splash::setScanError() {
+        this->heading->setHidden(false);
         this->heading->setString("An unexpected error occurred");
         this->heading->setX(640 - this->heading->w()/2);
         this->subheading->setHidden(false);
-        this->subheading->setString("Press + to exit");
+        this->subheading->setString("Check the log files for more information");
         this->subheading->setX(640 - this->subheading->w()/2);
         this->animation->setHidden(true);
         this->progress->setHidden(true);
         this->percent->setHidden(true);
         this->hint->setHidden(true);
+        this->launch->setHidden(true);
+        this->quit->setHidden(false);
+        this->quit->setX(640 - this->quit->w()/2);
     }
 
     void Splash::update(uint32_t dt) {
@@ -150,8 +236,12 @@ namespace Screen {
         ScanStage stage = this->currentStage;
         if (stage != this->lastStage) {
             switch (stage) {
-                case ScanStage::Files:
+                case ScanStage::Launch:
                     // Never called
+                    break;
+
+                case ScanStage::Files:
+                    this->setScanFiles();
                     break;
 
                 case ScanStage::Metadata:
@@ -250,46 +340,20 @@ namespace Screen {
         this->hint->setColour(this->app->theme()->muted());
         this->addElement(this->hint);
 
-        // Initialize all variables
-        this->currentFile = 0;
-        this->estRemaining = 0;
-        this->fatalError = false;
-        this->lastFile = 0;
-        this->currentStage = ScanStage::Files;
-        this->lastStage = ScanStage::Files;
-        this->setScanFiles();
+        this->launch = new Aether::BorderButton(0, 610, 160, 60, 2, "Launch", 26, [this]() {
+            this->app->sysmodule()->launch();
+            this->setScanLaunch();
+            std::this_thread::sleep_for(std::chrono::seconds(2));   // Wait for the sysmodule to launch
+            this->app->sysmodule()->reconnect();
+        });
+        this->addElement(this->launch);
 
-        // Take action based on sysmodule heading
-        switch (this->app->sysmodule()->error()) {
-            case Sysmodule::Error::None:
-                // Start searching for file
-                this->future = std::async(std::launch::async, [this](){
-                    Utils::NX::setCPUBoost(true);
-                    this->scanLibrary();
-                    Utils::NX::setCPUBoost(false);
-                });
-                return;
+        this->quit = new Aether::BorderButton(0, this->launch->y(), 160, 60, 2, "Quit", 26, [this]() {
+            this->app->exit();
+        });
+        this->addElement(this->quit);
 
-            case Sysmodule::Error::DifferentVersion:
-                // Indicate wrong version
-                this->heading->setString("The sysmodule and application versions do not match");
-                this->subheading->setString("Please ensure that all components of TriPlayer are up to date");
-                this->fatalError = true;
-                break;
-
-            default:
-                // All other errors represent a connection issue
-                this->heading->setString("Couldn't connect to the sysmodule");
-                this->subheading->setString("Check that it is enabled and reboot if this still occurs");
-                this->fatalError = true;
-                break;
-        }
-
-        // If an error occurred reposition the text elements
-        this->heading->setX(640 - this->heading->w()/2);
-        this->subheading->setX(640 - this->subheading->w()/2);
-        this->subheading->setHidden(false);
-        this->animation->setHidden(true);
+        this->setScanLaunch();
     }
 
     void Splash::onUnload() {
@@ -300,5 +364,7 @@ namespace Screen {
         this->removeElement(this->percent);
         this->removeElement(this->animation);
         this->removeElement(this->hint);
+        this->removeElement(this->launch);
+        this->removeElement(this->quit);
     }
 };
