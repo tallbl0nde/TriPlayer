@@ -4,6 +4,12 @@
 #include <string>
 
 namespace Utils::NX {
+    // Start required Switch services
+    void startServices();
+
+    // Stop any started services
+    void stopServices();
+
     // Keyboard options
     struct Keyboard {
         std::string buffer;     // Keyboard buffer (read on creation and filled on exit)
@@ -30,6 +36,14 @@ namespace Utils::NX {
     // Enable/disable 'media playing' flag
     // Does nothing if state matches
     void setPlayingMedia(bool);
+
+    // Launch the program with the given program id
+    // Returns true on success, false otherwise
+    bool launchProgram(unsigned long long);
+
+    // Terminate the program with the given program id
+    // Returns true on success, false otherwise
+    bool terminateProgram(unsigned long long);
 };
 
 #endif

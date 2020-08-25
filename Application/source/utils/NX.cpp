@@ -1,7 +1,20 @@
+#include "Log.hpp"
 #include <switch.h>
 #include "utils/NX.hpp"
 
 namespace Utils::NX {
+    void startServices() {
+        pmshellInitialize();
+        romfsInit();
+        socketInitializeDefault();
+    }
+
+    void stopServices() {
+        pmshellExit();
+        socketExit();
+        romfsExit();
+    }
+
     bool getUserInput(Keyboard & k) {
         SwkbdConfig kb;
         char * out = new char[k.maxLength + 1];
@@ -63,5 +76,33 @@ namespace Utils::NX {
 
         appletSetMediaPlaybackState(enable);
         media = enable;
+    }
+
+    bool launchProgram(unsigned long long programID) {
+        // Create struct to pass
+        NcmProgramLocation location;
+        location.program_id = programID;
+        location.storageID = NcmStorageId_None;
+
+        // Attempt to launch
+        u64 pid;
+        Result rc = pmshellLaunchProgram(PmLaunchFlag_None, &location, &pid);
+        if (R_FAILED(rc)) {
+            Log::writeError("[NX] Failed to launch program with ID: " + std::to_string(programID));
+            return false;
+
+        } else {
+            Log::writeInfo("[NX] Launched program with ID: " + std::to_string(programID) + ", it has pid: " + std::to_string(pid));
+            return true;
+        }
+    }
+
+    bool terminateProgram(unsigned long long programID) {
+        Result rc = pmshellTerminateProgram(programID);
+        if (R_FAILED(rc)) {
+            Log::writeError("[NX] Failed to terminate program with ID: " + std::to_string(programID));
+            return false;
+        }
+        return true;
     }
 };

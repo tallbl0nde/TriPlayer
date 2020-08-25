@@ -3,6 +3,10 @@
 #include "Log.hpp"
 #include "Protocol.hpp"
 #include "Sysmodule.hpp"
+#include "utils/NX.hpp"
+
+// Program ID of sysmodule
+#define PROGRAM_ID 0x01000054726900FF
 
 // Macro for adding delimiter
 #define DELIM std::string(1, Protocol::Delimiter)
@@ -51,6 +55,10 @@ Sysmodule::Error Sysmodule::error() {
     return this->error_;
 }
 
+bool Sysmodule::launch() {
+    return Utils::NX::launchProgram(PROGRAM_ID);
+}
+
 void Sysmodule::reconnect() {
     std::scoped_lock<std::mutex> mtx(this->writeMutex);
 
@@ -87,6 +95,10 @@ void Sysmodule::reconnect() {
     // If we reach here we're connected successfully!
     Log::writeSuccess("[SYSMODULE] Connection established!");
     this->error_ = Error::None;
+}
+
+bool Sysmodule::terminate() {
+    return Utils::NX::terminateProgram(PROGRAM_ID);
 }
 
 void Sysmodule::process() {

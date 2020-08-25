@@ -3,6 +3,7 @@
 #include "utils/Curl.hpp"
 #include "utils/FS.hpp"
 #include "utils/MP3.hpp"
+#include "utils/NX.hpp"
 
 // Folder paths
 #define MAIN_FOLDER "/switch/TriPlayer/"
@@ -25,8 +26,7 @@ int main(void) {
     Log::writeSuccess("=== Application Launched ===");
 
     // Start services
-    romfsInit();
-    socketInitializeDefault();
+    Utils::NX::startServices();
     Utils::Curl::init();
     Utils::MP3::init();
 
@@ -38,8 +38,7 @@ int main(void) {
     // Stop services
     Utils::MP3::exit();
     Utils::Curl::exit();
-    socketExit();
-    romfsExit();
+    Utils::NX::stopServices();
 
     return 0;
 }

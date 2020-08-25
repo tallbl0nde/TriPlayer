@@ -65,8 +65,12 @@ class Sysmodule {
 
         // Returns type of error occurred
         Error error();
+        // Uses syscalls to try to launch the sysmodule
+        bool launch();
         // Drops current connection if there is one and attempts to reconnect
         void reconnect();
+        // Uses syscalls to try and terminate the sysmodule
+        bool terminate();
 
         // Main function which updates state when replies received
         void process();
