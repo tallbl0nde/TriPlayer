@@ -20,9 +20,9 @@ all:
 	# @mkdir -p sdcard/switch/.overlays
 	# @cp Overlay/ovl-triplayer.ovl sdcard/switch/.overlays
 
-	@mkdir -p sdcard/atmosphere/contents/01000054726900FF/flags
-	@touch sdcard/atmosphere/contents/01000054726900FF/flags/boot2.flag
-	@cp Sysmodule/sys-triplayer.nsp sdcard/atmosphere/contents/01000054726900FF/exefs.nsp
+	@mkdir -p sdcard/atmosphere/contents/4200000000000FFF/flags
+	@touch sdcard/atmosphere/contents/4200000000000FFF/flags/boot2.flag
+	@cp Sysmodule/sys-triplayer.nsp sdcard/atmosphere/contents/4200000000000FFF/exefs.nsp
 
 	@echo -e '\033[1m>> Done! Copy ./sdcard to the root of your SD Card :)\033[0m'
 

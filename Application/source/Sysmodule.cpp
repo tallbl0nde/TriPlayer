@@ -6,7 +6,7 @@
 #include "utils/NX.hpp"
 
 // Program ID of sysmodule
-#define PROGRAM_ID 0x01000054726900FF
+#define PROGRAM_ID 0x4200000000000FFF
 
 // Macro for adding delimiter
 #define DELIM std::string(1, Protocol::Delimiter)

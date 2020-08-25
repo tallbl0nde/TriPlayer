@@ -164,7 +164,7 @@ namespace Screen {
         this->heading->setString("Preparing your library...");
         this->heading->setX(640 - this->heading->w()/2);
         this->heading->setHidden(false);
-        this->animation->setHidden(true);
+        this->animation->setHidden(false);
         this->hint->setHidden(true);
         this->progress->setHidden(true);
         this->percent->setHidden(true);
@@ -342,9 +342,9 @@ namespace Screen {
 
         this->launch = new Aether::BorderButton(0, 610, 160, 60, 2, "Launch", 26, [this]() {
             this->app->sysmodule()->launch();
-            this->setScanLaunch();
-            std::this_thread::sleep_for(std::chrono::seconds(2));   // Wait for the sysmodule to launch
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));   // Wait for the sysmodule to launch
             this->app->sysmodule()->reconnect();
+            this->setScanLaunch();
         });
         this->addElement(this->launch);
 
