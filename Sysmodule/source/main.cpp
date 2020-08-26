@@ -50,8 +50,8 @@ void __appInit(void) {
     }
     fsdevMountSdmc();
 
-    Log::openFile(LOG_FILE, Log::Level::Success);
-    Log::writeSuccess("=== Sysmodule started! ===");
+    // Open the log file, defaulting to Warning level
+    Log::openFile(LOG_FILE, Log::Level::Warning);
 
     // Sockets use small buffers
     constexpr SocketInitConfig sockCfg = {

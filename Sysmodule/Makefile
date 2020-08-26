@@ -24,20 +24,22 @@ include $(DEVKITPRO)/libnx/switch_rules
 # BUILD: Directory where object files & intermediate files will be placed
 # INCLUDES: List of directories containing header files
 # SOURCES: List of directories containing source code
-# ROMFS: Directory containing data to be added to RomFS
+# DATA: Directory containing binary data
 # LIBS: Libraries to link against
 # LIBDIRS: Directories of libraries
 #---------------------------------------------------------------------------------
 TARGET		:=	sys-triplayer
 BUILD		:=	build
-INCLUDES	:=	include ../Common/include
+INCLUDES	:=	include build/hdrs ../Common/include ../Common/libs/minIni/minIni/dev
 SOURCES		:=	source 	../Common/source
+DATA		:=	data
 LIBS		:=	-lnx -lSQLite -lm -lmpg123 `freetype-config --libs`
 LIBDIRS		:=	$(PORTLIBS) $(LIBNX) $(CURDIR)/../Common/libs/SQLite
 
 #---------------------------------------------------------------------------------
 # Options for code generation
 #---------------------------------------------------------------------------------
+HEADDIR		:=  $(BUILD)/hdrs
 OBJDIR		:=	$(BUILD)/objs
 DEPDIR		:=	$(BUILD)/deps
 ARCH		:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
@@ -59,6 +61,9 @@ CXXFLAGS	:=	$(CFLAGS) -fno-rtti -std=gnu++17 -fno-exceptions
 #----------------------------------------------------------------------------------------------------------------------
 # Definition of variables which store file locations
 #----------------------------------------------------------------------------------------------------------------------
+BINFILES	:= $(shell find $(DATA)/ -type f)
+OFILES_BIN	:= $(addsuffix .o,$(BINFILES:$(DATA)/%=$(OBJDIR)/%))
+HFILES_BIN	:= $(addsuffix .h,$(subst .,_,$(BINFILES:$(DATA)/%=$(HEADDIR)/%)))
 CFILES		:= $(foreach dir,$(SOURCES),$(shell find $(dir)/ -name "*.c"))
 CPPFILES	:= $(foreach dir,$(SOURCES),$(shell find $(dir)/ -name "*.cpp"))
 OFILES		:= $(filter %.o, $(foreach dir,$(SOURCES),$(CPPFILES:$(dir)/%.cpp=$(OBJDIR)/%.o)))
@@ -78,15 +83,26 @@ endif
 #----------------------------------------------------------------------------------------------------------------------
 # Define few virtual make targets
 #----------------------------------------------------------------------------------------------------------------------
-.PHONY: all clean
+.PHONY: all clean $(HEADDIR)
+#----------------------------------------------------------------------------------------------------------------------
+
+#----------------------------------------------------------------------------------------------------------------------
+# Compile the .nsp (sysmodule) from all intermediate files
 #----------------------------------------------------------------------------------------------------------------------
 all:	$(OUTPUT).nsp
 $(OUTPUT).nsp:	$(OUTPUT).nso $(OUTPUT).npdm
 $(OUTPUT).nso:	$(OUTPUT).elf
 $(OUTPUT).elf:	$(OFILES)
-	@$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
+	@$(LD) $(LDFLAGS) $(OFILES) $(OFILES_BIN) $(LIBPATHS) $(LIBS) -o $@
 $(OUTPUT).npdm: $(APP_JSON)
 	@npdmtool $< $@
+#----------------------------------------------------------------------------------------------------------------------
+
+#----------------------------------------------------------------------------------------------------------------------
+# Compile all necessary .o files
+#----------------------------------------------------------------------------------------------------------------------
+$(OFILES):	$(OFILES_BIN) $(HFILES_BIN)
+$(HFILES_BIN): | $(HEADDIR)
 
 .SECONDEXPANSION:
 define crule
@@ -111,8 +127,22 @@ clean:
 	@rm -rf $(BUILD) $(CURDIR)/exefs $(TARGET).nsp $(TARGET).nso $(TARGET).npdm $(TARGET).elf
 
 #----------------------------------------------------------------------------------------------------------------------
-# Define rule recipe `$(TREE)` (creates directories for .o and .d files)
+# Rules to create build directories
 #----------------------------------------------------------------------------------------------------------------------
 $(TREE): %:
 	@mkdir -p $@
 	@mkdir -p $(@:$(OBJDIR)%=$(DEPDIR)%)
+$(HEADDIR):
+	@mkdir -p $@
+
+#----------------------------------------------------------------------------------------------------------------------
+# Rules to convert .ini in /data to .o
+#----------------------------------------------------------------------------------------------------------------------
+$(HEADDIR)/%_ini.h:	$(DATA)/%.ini
+	@echo "extern const unsigned char" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' -e 's/[^A-Za-z0-9_]/_/g')`"_end[];" > $@
+	@echo "extern const unsigned char" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' -e 's/[^A-Za-z0-9_]/_/g')`"[];" >> $@
+	@echo "extern const unsigned long" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' -e 's/[^A-Za-z0-9_]/_/g')`_size";" >> $@
+
+$(OBJDIR)/%.ini.o:	$(DATA)/%.ini
+	@echo "Converting $<..."
+	@bin2s $< | $(AS) -o $(@)

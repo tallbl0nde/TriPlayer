@@ -5,6 +5,8 @@
 #include "sources/MP3.hpp"
 #include "utils/FS.hpp"
 
+// Path to config file on SD Card
+#define CONFIG_PATH "/config/TriPlayer/sys_config.ini"
 // Interval (in seconds) to test if DB file is accessible
 #define DB_TEST_INTERVAL 2
 // Number of seconds to wait before previous becomes (back to start)
@@ -14,6 +16,7 @@
 
 MainService::MainService() {
     this->audio = Audio::getInstance();
+    this->cfg = new Config(CONFIG_PATH);
     this->dbLocked = false;
     this->muteLevel = 0.0;
     this->pressTime = std::time(nullptr);
@@ -651,6 +654,7 @@ void MainService::socketThread() {
 }
 
 MainService::~MainService() {
+    delete this->cfg;
     delete this->db;
     delete this->listener;
     delete this->queue;

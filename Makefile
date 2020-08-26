@@ -1,6 +1,8 @@
 .PHONY: all clean
 
 all:
+	@echo -e '\033[1m>> Common (minIni)\033[0m'
+	@$(MAKE) -s -C Common/libs/minIni
 	@echo -e '\033[1m>> Common (Splash)\033[0m'
 	@$(MAKE) -s -C Common/libs/splash
 	@echo -e '\033[1m>> Common (SQLite)\033[0m'
@@ -27,10 +29,12 @@ all:
 	@echo -e '\033[1m>> Done! Copy ./sdcard to the root of your SD Card :)\033[0m'
 
 clean:
-	@echo -e '\033[1m>> Common (SQLite)\033[0m'
-	@$(MAKE) -s -C Common/libs/SQLite clean
+	@echo -e '\033[1m>> Common (minIni)\033[0m'
+	@$(MAKE) -s -C Common/libs/minIni clean
 	@echo -e '\033[1m>> Common (Splash)\033[0m'
 	@$(MAKE) -s -C Common/libs/splash clean
+	@echo -e '\033[1m>> Common (SQLite)\033[0m'
+	@$(MAKE) -s -C Common/libs/SQLite clean
 	@echo -e '\033[1m>> Application\033[0m'
 	@$(MAKE) -s -C Application/ clean-all
 	@echo -e '\033[1m>> Overlay\033[0m'
