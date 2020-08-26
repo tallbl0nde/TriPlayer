@@ -137,7 +137,7 @@ class Sysmodule {
         void sendGetPlayingFrom();
         void sendSetPlayingFrom(const std::string &);
         void sendReleaseDBLock();
-
+        void sendReloadConfig();
         // ======
 
         // Call to 'join' thread (stops main loop)

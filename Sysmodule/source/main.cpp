@@ -91,6 +91,9 @@ void __appExit(void) {
     // Socket
     socketExit();
 
+    // Close log
+    Log::closeFile();
+
     // FS
     fsdevUnmountAll();
     fsExit();

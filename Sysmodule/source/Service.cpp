@@ -16,7 +16,6 @@
 
 MainService::MainService() {
     this->audio = Audio::getInstance();
-    this->cfg = new Config(CONFIG_PATH);
     this->dbLocked = false;
     this->muteLevel = 0.0;
     this->pressTime = std::time(nullptr);
@@ -25,6 +24,10 @@ MainService::MainService() {
     this->seekTo = -1;
     this->source = nullptr;
     this->songAction = SongAction::Nothing;
+
+    // Read and set config
+    this->cfg = new Config(CONFIG_PATH);
+    this->updateConfig();
 
     // Create listening socket (exit if error occurred)
     this->listener = new Socket::Listener(Protocol::Port);
@@ -36,6 +39,14 @@ MainService::MainService() {
     } else {
         this->db = nullptr;
     }
+}
+
+void MainService::updateConfig() {
+    Log::setLogLevel(this->cfg->logLevel());
+
+    std::scoped_lock<std::shared_mutex> sMtx(this->sMutex);
+    MP3::setAccurateSeek(this->cfg->MP3AccurateSeek());
+    MP3::setEqualizer(this->cfg->MP3Equalizer());
 }
 
 void MainService::commandThread(Socket::Transfer * socket) {
@@ -427,6 +438,12 @@ void MainService::commandThread(Socket::Transfer * socket) {
             case Protocol::Command::ReleaseDBLock:
                 // Mark the database as unlocked
                 this->dbLocked = false;
+                reply = std::to_string(0);
+                break;
+
+            case Protocol::Command::ReloadConfig:
+                // This locks relevant mutexes, etc.
+                this->updateConfig();
                 reply = std::to_string(0);
                 break;
 

@@ -33,8 +33,8 @@ BUILD		:=	build
 INCLUDES	:=	include build/hdrs ../Common/include ../Common/libs/minIni/minIni/dev
 SOURCES		:=	source 	../Common/source
 DATA		:=	data
-LIBS		:=	-lnx -lSQLite -lm -lmpg123 `freetype-config --libs`
-LIBDIRS		:=	$(PORTLIBS) $(LIBNX) $(CURDIR)/../Common/libs/SQLite
+LIBS		:=	-lnx -lSQLite -lm -lmpg123 -lminIni `freetype-config --libs`
+LIBDIRS		:=	$(PORTLIBS) $(LIBNX) $(CURDIR)/../Common/libs/SQLite $(CURDIR)/../Common/libs/minIni
 
 #---------------------------------------------------------------------------------
 # Options for code generation
@@ -101,7 +101,8 @@ $(OUTPUT).npdm: $(APP_JSON)
 #----------------------------------------------------------------------------------------------------------------------
 # Compile all necessary .o files
 #----------------------------------------------------------------------------------------------------------------------
-$(OFILES):	$(OFILES_BIN) $(HFILES_BIN)
+$(OFILES): | $(OFILES_BIN)
+$(OFILES_BIN): $(HFILES_BIN)
 $(HFILES_BIN): | $(HEADDIR)
 
 .SECONDEXPANSION:
@@ -139,9 +140,9 @@ $(HEADDIR):
 # Rules to convert .ini in /data to .o
 #----------------------------------------------------------------------------------------------------------------------
 $(HEADDIR)/%_ini.h:	$(DATA)/%.ini
-	@echo "extern const unsigned char" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' -e 's/[^A-Za-z0-9_]/_/g')`"_end[];" > $@
-	@echo "extern const unsigned char" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' -e 's/[^A-Za-z0-9_]/_/g')`"[];" >> $@
-	@echo "extern const unsigned long" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' -e 's/[^A-Za-z0-9_]/_/g')`_size";" >> $@
+	@echo "#include <cstddef>\nextern const uint8_t" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' -e 's/[^A-Za-z0-9_]/_/g')`"_end[];" > $@
+	@echo "extern const uint8_t" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' -e 's/[^A-Za-z0-9_]/_/g')`"[];" >> $@
+	@echo "extern const uint32_t" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' -e 's/[^A-Za-z0-9_]/_/g')`_size";" >> $@
 
 $(OBJDIR)/%.ini.o:	$(DATA)/%.ini
 	@echo "Converting $<..."

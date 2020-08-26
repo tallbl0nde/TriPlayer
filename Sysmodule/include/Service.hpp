@@ -65,6 +65,9 @@ class MainService {
         std::mutex dbMutex;
         std::atomic<bool> dbLocked;
 
+        // Reads config from disk and sets up relevant objects
+        void updateConfig();
+
         // Function run by transfer sockets
         void commandThread(Socket::Transfer *);
 

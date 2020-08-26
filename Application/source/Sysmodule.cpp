@@ -611,6 +611,14 @@ void Sysmodule::sendReleaseDBLock() {
     });
 }
 
+void Sysmodule::sendReloadConfig() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::ReloadConfig), [this](std::string s) {
+        if (std::stoi(s) != 0) {
+            // throw error
+        }
+    });
+}
+
 void Sysmodule::exit() {
     this->exit_ = true;
 }
