@@ -2,6 +2,7 @@
 
 Source::Source() {
     this->channels_ = 0;
+    this->done_ = false;
     this->sampleRate_ = 0;
     this->totalSamples_ = 1;    // avoid NaN
     this->valid_ = true;

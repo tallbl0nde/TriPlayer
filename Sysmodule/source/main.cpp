@@ -83,6 +83,7 @@ void __appExit(void) {
     // In reverse order
 
     // Audio
+    MP3::freeLib();
     audrenStopAudioRenderer();
     delete Audio::getInstance();
     audrenExit();
