@@ -1,6 +1,7 @@
 #include "Application.hpp"
 #include "ui/screen/Fullscreen.hpp"
 #include "ui/screen/Home.hpp"
+#include "ui/screen/Settings.hpp"
 #include "ui/screen/Splash.hpp"
 #include "utils/NX.hpp"
 
@@ -31,9 +32,10 @@ namespace Main {
         this->display->setShowFPS(true);
 
         // Setup screens
-        this->scSplash = new Screen::Splash(this);
-        this->scHome = new Screen::Home(this);
         this->scFull = new Screen::Fullscreen(this);
+        this->scHome = new Screen::Home(this);
+        this->scSettings = new Screen::Settings(this);
+        this->scSplash = new Screen::Splash(this);
         this->setScreen(ScreenID::Splash);
 
         // Mark that we're playing media
@@ -58,16 +60,20 @@ namespace Main {
 
     void Application::setScreen(ScreenID s) {
         switch (s) {
-            case Splash:
-                this->display->setScreen(this->scSplash);
+            case Fullscreen:
+                this->display->setScreen(this->scFull);
                 break;
 
             case Home:
                 this->display->setScreen(this->scHome);
                 break;
 
-            case Fullscreen:
-                this->display->setScreen(this->scFull);
+            case Settings:
+                this->display->setScreen(this->scSettings);
+                break;
+
+            case Splash:
+                this->display->setScreen(this->scSplash);
                 break;
         }
     }
@@ -129,6 +135,7 @@ namespace Main {
         // Delete screens
         delete this->scFull;
         delete this->scHome;
+        delete this->scSettings;
         delete this->scSplash;
 
         // Cleanup Aether after screens are deleted

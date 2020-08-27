@@ -461,7 +461,8 @@ namespace Screen {
         this->sideSettings->setActiveColour(this->app->theme()->accent());
         this->sideSettings->setInactiveColour(this->app->theme()->FG());
         this->sideSettings->setCallback([this](){
-            // change to settings screen
+            this->app->pushScreen();
+            this->app->setScreen(Main::ScreenID::Settings);
         });
         this->sideContainer->addElement(this->sideSettings);
         this->addElement(this->container);

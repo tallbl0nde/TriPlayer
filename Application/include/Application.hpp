@@ -9,17 +9,19 @@
 
 // Forward declaration because cyclic dependency /shrug
 namespace Screen {
-    class Home;
-    class Splash;
     class Fullscreen;
+    class Home;
+    class Settings;
+    class Splash;
 };
 
 namespace Main {
     // Enumeration for screens (allows for easy switching)
     enum ScreenID {
+        Fullscreen,
         Home,
-        Splash,
-        Fullscreen
+        Settings,
+        Splash
     };
 
     // The Application class represents the "root" object of the app. It stores/handles all states
@@ -32,6 +34,7 @@ namespace Main {
             // Screens of the app
             Screen::Fullscreen * scFull;
             Screen::Home * scHome;
+            Screen::Settings * scSettings;
             Screen::Splash * scSplash;
 
             // Config object (used to interact with config files)
