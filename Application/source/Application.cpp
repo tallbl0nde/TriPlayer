@@ -4,8 +4,14 @@
 #include "ui/screen/Splash.hpp"
 #include "utils/NX.hpp"
 
+// Path to config file
+#define APP_CONFIG_PATH "/config/TriPlayer/app_config.ini"
+
 namespace Main {
     Application::Application() : database_(SyncDatabase(new Database())) {
+        // Load config (app only at this stage)
+        this->config_ = new Config(APP_CONFIG_PATH);
+
         // Prepare theme
         this->theme_ = new Theme();
 
@@ -86,6 +92,10 @@ namespace Main {
         this->database_->openReadOnly();
     }
 
+    Config * Application::config() {
+        return this->config_;
+    }
+
     const SyncDatabase & Application::database() {
         return this->database_;
     }
@@ -128,6 +138,9 @@ namespace Main {
         this->sysmodule_->exit();
         this->sysThread.get();
         delete this->sysmodule_;
+
+        // Cleanup config object
+        delete this->config_;
 
         // The database will be closed here as the wrapper goes out of scope
     }

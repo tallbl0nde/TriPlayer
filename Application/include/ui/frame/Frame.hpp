@@ -2,6 +2,7 @@
 #define FRAME_FRAME_HPP
 
 #include "Aether/Aether.hpp"
+#include "Types.hpp"
 
 namespace Main {
     class Application;

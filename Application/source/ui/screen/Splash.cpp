@@ -138,7 +138,7 @@ namespace Screen {
         // Take action based on sysmodule status
         switch (this->app->sysmodule()->error()) {
             case Sysmodule::Error::None:
-                // Start searching for file
+                // Start searching for files
                 this->currentStage = ScanStage::Files;
                 this->future = std::async(std::launch::async, [this](){
                     Utils::NX::setCPUBoost(true);

@@ -1,6 +1,7 @@
 #ifndef APPLICATION_HPP
 #define APPLICATION_HPP
 
+#include "Config.hpp"
 #include "db/SyncDatabase.hpp"
 #include <future>
 #include "Sysmodule.hpp"
@@ -32,6 +33,9 @@ namespace Main {
             Screen::Fullscreen * scFull;
             Screen::Home * scHome;
             Screen::Splash * scSplash;
+
+            // Config object (used to interact with config files)
+            Config * config_;
 
             // Database object (all calls are wrapped with a mutex)
             SyncDatabase database_;
@@ -68,6 +72,8 @@ namespace Main {
             void lockDatabase();
             void unlockDatabase();
 
+            // Returns config pointer
+            Config * config();
             // Returns database object
             const SyncDatabase & database();
             // Returns sysmodule pointer
