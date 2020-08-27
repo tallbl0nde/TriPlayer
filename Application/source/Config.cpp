@@ -12,7 +12,104 @@ Config::Config(const std::string & path) {
     }
 
     this->ini = new minIni(path);
+    this->readConfig();
+
     this->sysIni = nullptr;
+}
+
+void Config::readConfig() {
+    // Temporary variables
+    std::string str;
+
+    // Version::version
+    this->version_ = this->ini->geti("Version", "version", -1);
+    if (this->version_ < 0) {
+        Log::writeError("[CONFIG] Failed to get .ini version");
+    }
+
+    // General::confirm_clear_queue
+    this->confirmClearQueue_ = this->ini->getbool("General", "confirm_clear_queue");
+
+    // General::confirm_exit
+    this->confirmExit_ = this->ini->getbool("General", "confirm_exit");
+
+    // General::initial_frame
+    str = this->ini->gets("General", "initial_frame");
+    if (str.empty()) {
+        Log::writeError("[CONFIG] Failed to get initial_frame");
+    }
+    if (str == "Playlists") {
+        this->initialFrame_ = Frame::Type::Playlists;
+    } else if (str == "Albums") {
+        this->initialFrame_ = Frame::Type::Albums;
+    } else if (str == "Artists") {
+        this->initialFrame_ = Frame::Type::Artists;
+    } else {
+        this->initialFrame_ = Frame::Type::Songs;
+    }
+
+    // General::log_level
+    str = this->ini->gets("General", "log_level");
+    if (str.empty()) {
+        Log::writeError("[CONFIG] Failed to get log_level");
+    }
+    if (str == "None") {
+        this->logLevel_ = Log::Level::None;
+    } else if (str == "Success") {
+        this->logLevel_ = Log::Level::Success;
+    } else if (str == "Error") {
+        this->logLevel_ = Log::Level::Error;
+    } else if (str == "Info") {
+        this->logLevel_ = Log::Level::Info;
+    } else {
+        this->logLevel_ = Log::Level::Warning;
+    }
+
+    // General::scan_on_launch
+    this->scanOnLaunch_ = this->ini->getbool("General", "scan_on_launch");
+
+    // General::set_queue_max
+    this->setQueueMax_ = this->ini->geti("General", "set_queue_max", -42069);
+    if (this->setQueueMax_ < -1) {
+        Log::writeError("[CONFIG] Failed to get set_queue_max");
+        this->setQueueMax_ = -1;
+    }
+
+    // Appearance::accent_colour
+
+    // Appearance::show_touch_controls
+    this->showTouchControls_ = this->ini->getbool("General", "show_touch_controls");
+
+    // Search::max_playlists
+    this->searchMaxPlaylists_ = this->ini->geti("Search", "max_playlists", -42069);
+    if (this->searchMaxPlaylists_ < -1) {
+        Log::writeError("[CONFIG] Failed to get (Search) max_playlists");
+        this->searchMaxPlaylists_ = -1;
+    }
+
+    // Search::max_artists
+    this->searchMaxArtists_ = this->ini->geti("Search", "max_artists", -42069);
+    if (this->searchMaxArtists_ < -1) {
+        Log::writeError("[CONFIG] Failed to get (Search) max_artists");
+        this->searchMaxArtists_ = -1;
+    }
+
+    // Search::max_albums
+    this->searchMaxAlbums_ = this->ini->geti("Search", "max_albums", -42069);
+    if (this->searchMaxAlbums_ < -1) {
+        Log::writeError("[CONFIG] Failed to get (Search) max_albums");
+        this->searchMaxAlbums_ = -1;
+    }
+
+    // Search::max_songs
+    this->searchMaxSongs_ = this->ini->geti("Search", "max_songs", -42069);
+    if (this->searchMaxSongs_ < -1) {
+        Log::writeError("[CONFIG] Failed to get (Search) max_songs");
+        this->searchMaxSongs_ = -1;
+    }
+
+    // Advanced::auto_launch_service
+    this->autoLaunchService_ = this->ini->getbool("Advanced", "auto_launch_service");
 }
 
 bool Config::prepareSys(const std::string & sysPath) {
@@ -27,64 +124,49 @@ bool Config::prepareSys(const std::string & sysPath) {
 }
 
 int Config::version() {
-    int version = this->ini->geti("Version", "version", -1);
-    if (version < 0) {
-        Log::writeError("[CONFIG] Failed to get .ini version");
-    }
-    return version;
+    return this->version_;
 }
 
 bool Config::setVersion(const int v) {
     bool ok = this->ini->put("Version", "version", v);
     if (!ok) {
         Log::writeError("[CONFIG] Failed to set .ini version");
+    } else {
+        this->version_ = v;
     }
     return ok;
 }
 
 bool Config::confirmClearQueue() {
-    return this->ini->getbool("General", "confirm_clear_queue");
+    return this->confirmClearQueue_;
 }
 
 bool Config::setConfirmClearQueue(const bool b) {
     bool ok = this->ini->put("General", "confirm_clear_queue", (b ? "Yes" : "No"));
     if (!ok) {
         Log::writeError("[CONFIG] Failed to set confirm_clear_queue");
+    } else {
+        this->confirmClearQueue_ = b;
     }
     return ok;
 }
 
 bool Config::confirmExit() {
-    return this->ini->getbool("General", "confirm_exit");
+    return this->confirmExit_;
 }
 
 bool Config::setConfirmExit(const bool b) {
     bool ok = this->ini->put("General", "confirm_exit", (b ? "Yes" : "No"));
     if (!ok) {
         Log::writeError("[CONFIG] Failed to set confirm_exit");
+    } else {
+        this->confirmExit_ = b;
     }
     return ok;
 }
 
 Frame::Type Config::initialFrame() {
-    const std::string str = this->ini->gets("General", "initial_frame");
-    if (str.empty()) {
-        Log::writeError("[CONFIG] Failed to get initial_frame");
-        return Frame::Type::Songs;
-    }
-
-    if (str == "Playlists") {
-        return Frame::Type::Playlists;
-
-    } else if (str == "Albums") {
-        return Frame::Type::Albums;
-
-    } else if (str == "Artists") {
-        return Frame::Type::Artists;
-    }
-
-    // If some other value just return Songs
-    return Frame::Type::Songs;
+    return this->initialFrame_;
 }
 
 bool Config::setInitialFrame(const Frame::Type t) {
@@ -114,33 +196,14 @@ bool Config::setInitialFrame(const Frame::Type t) {
     bool ok = this->ini->put("General", "initial_frame", str);
     if (!ok) {
         Log::writeError("[CONFIG] Failed to set initial_frame");
+    } else {
+        this->initialFrame_ = t;
     }
     return ok;
 }
 
 Log::Level Config::logLevel() {
-    std::string str = this->ini->gets("General", "log_level");
-    if (str.empty()) {
-        Log::writeError("[CONFIG] Failed to get log_level");
-        return Log::Level::Warning;
-    }
-
-    if (str == "None") {
-        return Log::Level::None;
-
-    } else if (str == "Success") {
-        return Log::Level::Success;
-
-    } else if (str == "Error") {
-        return Log::Level::Error;
-
-    } else if (str == "Info") {
-        return Log::Level::Info;
-
-    }
-
-    // Return Warning if some unknown value
-    return Log::Level::Warning;
+    return this->logLevel_;
 }
 
 bool Config::setLogLevel(const Log::Level l) {
@@ -170,41 +233,42 @@ bool Config::setLogLevel(const Log::Level l) {
     bool ok = this->ini->put("General", "log_level", str);
     if (!ok) {
         Log::writeError("[CONFIG] Failed to set log_level");
+    } else {
+        this->logLevel_ = l;
     }
     return ok;
 }
 
 bool Config::scanOnLaunch() {
-    return this->ini->getbool("General", "scan_on_launch");
+    return this->scanOnLaunch_;
 }
 
 bool Config::setScanOnLaunch(const bool b) {
     bool ok = this->ini->put("General", "scan_on_launch", (b ? "Yes" : "No"));
     if (!ok) {
         Log::writeError("[CONFIG] Failed to set scan_on_launch");
+    } else {
+        this->scanOnLaunch_ = b;
     }
     return ok;
 }
 
 int Config::setQueueMax() {
-    int max = this->ini->geti("General", "set_queue_max", -42069);
-    if (max < -1) {
-        Log::writeError("[CONFIG] Failed to get set_queue_max");
-        return -1;
-    }
-    return max;
+    return this->setQueueMax_;
 }
 
 bool Config::setSetQueueMax(const int v) {
     bool ok = this->ini->put("General", "set_queue_max", v);
     if (!ok) {
         Log::writeError("[CONFIG] Failed to set set_queue_max");
+    } else {
+        this->setQueueMax_ = v;
     }
     return ok;
 }
 
 // AccentColour Config::accentColour() {
-
+    // return this->accentColour_;
 // }
 
 // bool Config::setAccentColour(AccentColour) {
@@ -212,93 +276,85 @@ bool Config::setSetQueueMax(const int v) {
 //}
 
 bool Config::showTouchControls() {
-    return this->ini->getbool("General", "show_touch_controls");
+    return this->showTouchControls_;
 }
 
 bool Config::setShowTouchControls(const bool b) {
     bool ok = this->ini->put("Appearance", "show_touch_controls", (b ? "Yes" : "No"));
     if (!ok) {
         Log::writeError("[CONFIG] Failed to set (Appearance) show_touch_controls");
+    } else {
+        this->showTouchControls_ = b;
     }
     return ok;
 }
 
 int Config::searchMaxPlaylists() {
-    int max = this->ini->geti("Search", "max_playlists", -42069);
-    if (max < -1) {
-        Log::writeError("[CONFIG] Failed to get (Search) max_playlists");
-        return -1;
-    }
-    return max;
+    return this->searchMaxPlaylists_;
 }
 
 bool Config::setSearchMaxPlaylists(const int i) {
     bool ok = this->ini->put("Search", "max_playlists", i);
     if (!ok) {
         Log::writeError("[CONFIG] Failed to set (Search) max_playlists");
+    } else {
+        this->searchMaxPlaylists_ = i;
     }
     return ok;
 }
 
 int Config::searchMaxArtists() {
-    int max = this->ini->geti("Search", "max_artists", -42069);
-    if (max < -1) {
-        Log::writeError("[CONFIG] Failed to get (Search) max_artists");
-        return -1;
-    }
-    return max;
+    return this->searchMaxArtists_;
 }
 
 bool Config::setSearchMaxArtists(const int i) {
     bool ok = this->ini->put("Search", "max_artists", i);
     if (!ok) {
         Log::writeError("[CONFIG] Failed to set (Search) max_artists");
+    } else {
+        this->searchMaxArtists_ = i;
     }
     return ok;
 }
 
 int Config::searchMaxAlbums() {
-    int max = this->ini->geti("Search", "max_albums", -42069);
-    if (max < -1) {
-        Log::writeError("[CONFIG] Failed to get (Search) max_albums");
-        return -1;
-    }
-    return max;
+    return this->searchMaxAlbums_;
 }
 
 bool Config::setSearchMaxAlbums(const int i) {
     bool ok = this->ini->put("Search", "max_albums", i);
     if (!ok) {
         Log::writeError("[CONFIG] Failed to set (Search) max_albums");
+    } else {
+        this->searchMaxAlbums_ = i;
     }
     return ok;
 }
 
 int Config::searchMaxSongs() {
-    int max = this->ini->geti("Search", "max_songs", -42069);
-    if (max < -1) {
-        Log::writeError("[CONFIG] Failed to get (Search) max_songs");
-        return -1;
-    }
-    return max;
+    return this->searchMaxSongs_;
 }
 
 bool Config::setSearchMaxSongs(const int i) {
     bool ok = this->ini->put("Search", "max_songs", i);
     if (!ok) {
         Log::writeError("[CONFIG] Failed to set (Search) max_songs");
+    } else {
+        this->searchMaxSongs_ = i;
     }
     return ok;
 }
 
 bool Config::autoLaunchService() {
-    return this->ini->getbool("Advanced", "auto_launch_service");
+    return this->autoLaunchService_;
 }
 
 bool Config::setAutoLaunchService(const bool b) {
     bool ok = this->ini->put("Advanced", "auto_launch_service", (b ? "Yes" : "No"));
     if (!ok) {
         Log::writeError("[CONFIG] Failed to set (Advanced) auto_launch_service");
+    } else {
+        this->autoLaunchService_ = b;
     }
     return ok;
 }

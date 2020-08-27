@@ -17,6 +17,29 @@ class Config {
         minIni * ini;
         minIni * sysIni;
 
+        // Cache of each key/value (read in on construction)
+        int version_;
+
+        bool confirmClearQueue_;
+        bool confirmExit_;
+        Frame::Type initialFrame_;
+        Log::Level logLevel_;
+        bool scanOnLaunch_;
+        int setQueueMax_;
+
+        // AccentColour accentColour_;
+        bool showTouchControls_;
+
+        int searchMaxPlaylists_;
+        int searchMaxArtists_;
+        int searchMaxAlbums_;
+        int searchMaxSongs_;
+
+        bool autoLaunchService_;
+
+        // Read all values from app .ini
+        void readConfig();
+
     public:
         // Takes path to config file, copying from romfs
         // if it doesn't exist
