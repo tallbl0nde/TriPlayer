@@ -56,6 +56,44 @@ namespace Utils::NX {
         return success;
     }
 
+    bool getUserInput(Numpad & n) {
+        if (n.maxDigits > 32) {
+            n.maxDigits = 32;
+        }
+
+        SwkbdConfig kb;
+        char * out = new char[n.maxDigits + 1];
+        bool success = false;
+
+        // Create initial object
+        if (R_SUCCEEDED(swkbdCreate(&kb, 0))) {
+            swkbdConfigSetType(&kb, SwkbdType_NumPad);
+            swkbdConfigSetBlurBackground(&kb, 1);
+            swkbdConfigSetHeaderText(&kb, n.heading.c_str());
+            swkbdConfigSetSubText(&kb, n.subHeading.c_str());
+            swkbdConfigSetStringLenMax(&kb, n.maxDigits);
+            swkbdConfigSetTextDrawType(&kb, SwkbdTextDrawType_Line);
+            if (n.allowNegative) {
+                swkbdConfigSetLeftOptionalSymbolKey(&kb, "-");
+            }
+            if (n.allowDecimal) {
+                swkbdConfigSetRightOptionalSymbolKey(&kb, ".");
+            }
+
+            if (R_SUCCEEDED(swkbdShow(&kb, out, n.maxDigits))) {
+                success = true;
+            }
+            swkbdClose(&kb);
+        }
+
+        if (success) {
+            n.value = std::strtol(out, nullptr, 10);
+        }
+
+        delete[] out;
+        return success;
+    }
+
     static bool boost = false;
     void setCPUBoost(bool enable) {
         // Only set if different state
