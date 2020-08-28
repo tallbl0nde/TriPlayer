@@ -1,5 +1,10 @@
 #include "Application.hpp"
+#include "ui/frame/settings/AppAdvanced.hpp"
+#include "ui/frame/settings/AppAppearance.hpp"
 #include "ui/frame/settings/AppGeneral.hpp"
+#include "ui/frame/settings/AppSearch.hpp"
+#include "ui/frame/settings/SysGeneral.hpp"
+#include "ui/frame/settings/SysMP3.hpp"
 #include "ui/screen/Settings.hpp"
 
 // Pixels between each entry in the sidebar
@@ -38,22 +43,32 @@ namespace Screen {
 
     void Settings::setupAppAppearance() {
         this->buttonAppAppearance->setActivated(true);
+        this->frame = new Frame::Settings::AppAppearance(this->app);
+        this->addElement(this->frame);
     }
 
     void Settings::setupAppSearch() {
         this->buttonAppSearch->setActivated(true);
+        this->frame = new Frame::Settings::AppSearch(this->app);
+        this->addElement(this->frame);
     }
 
     void Settings::setupAppAdvanced() {
         this->buttonAppAdvanced->setActivated(true);
+        this->frame = new Frame::Settings::AppAdvanced(this->app);
+        this->addElement(this->frame);
     }
 
     void Settings::setupSysGeneral() {
         this->buttonSysGeneral->setActivated(true);
+        this->frame = new Frame::Settings::SysGeneral(this->app);
+        this->addElement(this->frame);
     }
 
     void Settings::setupSysMP3() {
         this->buttonSysMP3->setActivated(true);
+        this->frame = new Frame::Settings::SysMP3(this->app);
+        this->addElement(this->frame);
     }
 
     void Settings::onLoad() {

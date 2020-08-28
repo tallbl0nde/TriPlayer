@@ -76,6 +76,25 @@ void Config::readConfig() {
     }
 
     // Appearance::accent_colour
+    str = this->ini->gets("Appearance", "accent_colour");
+    if (str.empty()) {
+        Log::writeError("[CONFIG] Failed to get (Appearance) accent_colour");
+    }
+    if (str == "Red") {
+        this->accentColour_ = Theme::Colour::Red;
+    } else if (str == "Orange") {
+        this->accentColour_ = Theme::Colour::Orange;
+    } else if (str == "Yellow") {
+        this->accentColour_ = Theme::Colour::Yellow;
+    } else if (str == "Green") {
+        this->accentColour_ = Theme::Colour::Green;
+    } else if (str == "Purple") {
+        this->accentColour_ = Theme::Colour::Purple;
+    } else if (str == "Pink") {
+        this->accentColour_ = Theme::Colour::Pink;
+    } else {
+        this->accentColour_ = Theme::Colour::Blue;
+    }
 
     // Appearance::show_touch_controls
     this->showTouchControls_ = this->ini->getbool("General", "show_touch_controls");
@@ -267,13 +286,19 @@ bool Config::setSetQueueMax(const int v) {
     return ok;
 }
 
-// AccentColour Config::accentColour() {
-    // return this->accentColour_;
-// }
+Theme::Colour Config::accentColour() {
+    return this->accentColour_;
+}
 
-// bool Config::setAccentColour(AccentColour) {
-//
-//}
+bool Config::setAccentColour(Theme::Colour c) {
+    bool ok = this->ini->put("Appearance", "accent_colour", Theme::colourToString(c));
+    if (!ok) {
+        Log::writeError("[CONFIG] Failed to set (Appearance) accent_colour");
+    } else {
+        this->accentColour_ = c;
+    }
+    return ok;
+}
 
 bool Config::showTouchControls() {
     return this->showTouchControls_;

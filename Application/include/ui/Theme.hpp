@@ -3,40 +3,56 @@
 
 #include "Aether/Aether.hpp"
 
-namespace Main {
-    // Stores colours for the current theme
-    class Theme {
-        private:
-            Aether::Colour bottomBG_;
-            Aether::Colour popupBG_;
-            Aether::Colour sideBG_;
+// Stores colours for the current theme
+class Theme {
+    public:
+        // Accent colour presets
+        enum class Colour {
+            Red,
+            Orange,
+            Yellow,
+            Green,
+            Blue,
+            Purple,
+            Pink
+        };
 
-            Aether::Colour muted_;
-            Aether::Colour muted2_;
+        // Return string equivalent of colour enum
+        static std::string colourToString(const Colour);
 
-            Aether::Colour FG_;
+    private:
+        Aether::Colour bottomBG_;
+        Aether::Colour popupBG_;
+        Aether::Colour sideBG_;
 
-            Aether::Colour accent_;
+        Aether::Colour muted_;
+        Aether::Colour muted2_;
 
-            Aether::Colour selected_;
+        Aether::Colour FG_;
 
-        public:
-            // Sets colours (for now)
-            Theme();
+        Aether::Colour accent_;
 
-            // Returns private members
-            Aether::Colour bottomBG();
-            Aether::Colour popupBG();
-            Aether::Colour sideBG();
-            Aether::Colour muted();
-            Aether::Colour muted2();
-            Aether::Colour FG();
-            Aether::Colour heading();
-            Aether::Colour mutedText();
-            Aether::Colour mutedLine();
-            Aether::Colour accent();
-            Aether::Colour selected();
-    };
+        Aether::Colour selected_;
+
+    public:
+        // Sets colours (for now)
+        Theme();
+
+        // Set accent colour using enum
+        void setAccent(Colour);
+
+        // Returns private members
+        Aether::Colour bottomBG();
+        Aether::Colour popupBG();
+        Aether::Colour sideBG();
+        Aether::Colour muted();
+        Aether::Colour muted2();
+        Aether::Colour FG();
+        Aether::Colour heading();
+        Aether::Colour mutedText();
+        Aether::Colour mutedLine();
+        Aether::Colour accent();
+        Aether::Colour selected();
 };
 
 #endif

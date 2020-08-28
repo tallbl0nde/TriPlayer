@@ -98,7 +98,11 @@ void Sysmodule::reconnect() {
 }
 
 bool Sysmodule::terminate() {
-    return Utils::NX::terminateProgram(PROGRAM_ID);
+    bool ok = Utils::NX::terminateProgram(PROGRAM_ID);
+    if (ok) {
+        this->error_ = Error::LostConnection;
+    }
+    return ok;
 }
 
 void Sysmodule::process() {

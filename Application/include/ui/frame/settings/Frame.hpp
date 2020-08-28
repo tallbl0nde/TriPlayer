@@ -19,13 +19,15 @@ namespace Frame::Settings {
             // Pointer to main object
             Main::Application * app;
 
+            // Add a button to the list
+            void addButton(const std::string &, std::function<void()>);
+            // Add a comment to the list
+            void addComment(const std::string &);
             // Add a 'yes/no' list entry
             // First arg is string to show
             // Second arg is function to call to check value
             // Third arg is function to call to set new value
             void addToggle(const std::string &, std::function<bool()>, std::function<void(bool)>);
-            // Add a comment to the list
-            void addComment(const std::string &);
 
             // Open the numpad and get a numeric input
             // Returns whether successful or not

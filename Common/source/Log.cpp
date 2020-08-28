@@ -36,6 +36,35 @@ namespace Log {
         level = l;
     }
 
+    std::string levelToString(const Level l) {
+        std::string str = "?";
+        switch (l) {
+            case Log::Level::Info:
+                str = "Info";
+                break;
+
+            case Log::Level::Success:
+                str = "Success";
+                break;
+
+            case Log::Level::Warning:
+                str = "Warning";
+                break;
+
+            case Log::Level::Error:
+                str = "Error";
+                break;
+
+            case Log::Level::None:
+                str = "None";
+                break;
+
+            default:
+                break;
+        }
+        return str;
+    }
+
     bool openFile(std::string f, Level l) {
         level = l;
 

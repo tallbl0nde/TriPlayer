@@ -19,6 +19,10 @@ namespace Log {
     // Adjust log level
     void setLogLevel(Level);
 
+    // Return string representing log level
+    // Returns '?' if an unexpected value is passed
+    std::string levelToString(const Level);
+
     // Open/close file for writing
     bool openFile(std::string, Level = Level::Info);
     void closeFile();

@@ -3,6 +3,7 @@
 
 #include "Log.hpp"
 #include "ui/frame/Frame.hpp"
+#include "ui/Theme.hpp"
 
 // Forward declarations as we only need the types here
 class minIni;
@@ -27,7 +28,7 @@ class Config {
         bool scanOnLaunch_;
         int setQueueMax_;
 
-        // AccentColour accentColour_;
+        Theme::Colour accentColour_;
         bool showTouchControls_;
 
         int searchMaxPlaylists_;
@@ -77,8 +78,8 @@ class Config {
         bool setSetQueueMax(const int);
 
         // Accent colour
-        // AccentColour accentColour();
-        // bool setAccentColour(AccentColour);
+        Theme::Colour accentColour();
+        bool setAccentColour(Theme::Colour);
 
         // Whether to show back/quit touch buttons
         bool showTouchControls();

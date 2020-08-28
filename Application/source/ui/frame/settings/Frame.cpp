@@ -17,6 +17,18 @@ namespace Frame::Settings {
         this->list->addElement(new Aether::ListSeparator());
     }
 
+    void Frame::addButton(const std::string & str, std::function<void()> f) {
+        Aether::ListButton * btn = new Aether::ListButton(str, f);
+        btn->setColours(this->app->theme()->muted2(), this->app->theme()->FG());
+        this->list->addElement(btn);
+    }
+
+    void Frame::addComment(const std::string & str) {
+        Aether::ListComment * cmt = new Aether::ListComment(str);
+        cmt->setTextColour(this->app->theme()->muted());
+        this->list->addElement(cmt);
+    }
+
     void Frame::addToggle(const std::string & str, std::function<bool()> get, std::function<void(bool)> set) {
         // Get current value
         bool b = get();
@@ -38,12 +50,6 @@ namespace Frame::Settings {
         opt->setValueColour(b ? this->app->theme()->accent() : this->app->theme()->muted());
 
         this->list->addElement(opt);
-    }
-
-    void Frame::addComment(const std::string & str) {
-        Aether::ListComment * cmt = new Aether::ListComment(str);
-        cmt->setTextColour(this->app->theme()->muted());
-        this->list->addElement(cmt);
     }
 
     bool Frame::getNumberInput(int & val, const std::string & heading = "", const std::string & sub = "") {

@@ -29,36 +29,6 @@ static std::string frameToString(Frame::Type f) {
     return str;
 }
 
-// Helper to convert Log level to string
-static std::string logToString(Log::Level l) {
-    std::string str = "?";
-    switch (l) {
-        case Log::Level::Info:
-            str = "Info";
-            break;
-
-        case Log::Level::Success:
-            str = "Success";
-            break;
-
-        case Log::Level::Warning:
-            str = "Warning";
-            break;
-
-        case Log::Level::Error:
-            str = "Error";
-            break;
-
-        case Log::Level::None:
-            str = "None";
-            break;
-
-        default:
-            break;
-    }
-    return str;
-}
-
 namespace Frame::Settings {
     AppGeneral::AppGeneral(Main::Application * a) : Frame(a) {
         // Temporary variables
@@ -91,7 +61,7 @@ namespace Frame::Settings {
         this->addComment("The section to show when the app is launched.");
 
         // General::log_level
-        opt = new Aether::ListOption("Logging Level", logToString(cfg->logLevel()), nullptr);
+        opt = new Aether::ListOption("Logging Level", Log::levelToString(cfg->logLevel()), nullptr);
         opt->setCallback([this, opt]() {
             this->showLogLevelList(opt);
         });
@@ -165,7 +135,7 @@ namespace Frame::Settings {
         // Add entries
         for (size_t i = 0; i < 5; i++) {
             Log::Level level = array[i];
-            std::string str = logToString(level);
+            std::string str = Log::levelToString(level);
             this->ovlList->addEntry(str, [this, opt, str, level]() {
                 opt->setValue(str);
                 this->app->config()->setLogLevel(level);
