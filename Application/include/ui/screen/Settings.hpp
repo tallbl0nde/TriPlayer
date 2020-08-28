@@ -7,6 +7,10 @@ namespace Main {
     class Application;
 };
 
+namespace Frame::Settings {
+    class Frame;
+};
+
 namespace Screen {
     // Settings screen contains everything required to alter
     // either the app, overlay or sysmodule's config
@@ -22,7 +26,7 @@ namespace Screen {
 
             // Containers
             Aether::List * sidebarList;
-            Aether::List * mainList;
+            Frame::Settings::Frame * frame;
 
             // Sidebar buttons
             CustomElm::SideButton * buttonAppGeneral;

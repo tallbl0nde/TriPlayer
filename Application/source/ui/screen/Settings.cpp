@@ -1,8 +1,7 @@
 #include "Application.hpp"
+#include "ui/frame/settings/AppGeneral.hpp"
 #include "ui/screen/Settings.hpp"
 
-// Padding either side of list
-#define LIST_PADDING 50
 // Pixels between each entry in the sidebar
 #define SIDEBAR_SEP 5
 
@@ -27,50 +26,13 @@ namespace Screen {
         this->buttonAppAdvanced->setActivated(false);
         this->buttonSysGeneral->setActivated(false);
         this->buttonSysMP3->setActivated(false);
-        this->mainList->removeAllElements();
+        this->removeElement(this->frame);
     }
 
     void Settings::setupAppGeneral() {
         this->buttonAppGeneral->setActivated(true);
-
-        // Temporary pointers to elements
-        Aether::ListOption * opt;
-        Aether::ListComment * cmt;
-        this->mainList->addElement(new Aether::ListSeparator());
-
-        // General::confirm_clear_queue
-        bool b = this->app->config()->confirmClearQueue();
-        opt = new Aether::ListOption("Confirm Clearing Queue", (b ? "Yes": "No"), nullptr);
-        opt->setCallback([this, opt]() {
-            bool b = this->app->config()->confirmClearQueue();
-            this->app->config()->setConfirmClearQueue(!b);
-            opt->setValue(!b ? "Yes" : "No");
-            opt->setValueColour((!b ? this->app->theme()->accent() : this->app->theme()->muted()));
-        });
-        opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), (b ? this->app->theme()->accent() : this->app->theme()->muted()));
-        this->mainList->addElement(opt);
-
-        cmt = new Aether::ListComment("Show a popup confirming that you want to clear the queue when playing a new song.");
-        cmt->setTextColour(this->app->theme()->muted());
-        this->mainList->addElement(cmt);
-
-        // General::confirm_exit
-        b = this->app->config()->confirmExit();
-        opt = new Aether::ListOption("Confirm Exit", (b ? "Yes": "No"), nullptr);
-        opt->setCallback([this, opt]() {
-            bool b = this->app->config()->confirmExit();
-            this->app->config()->setConfirmExit(!b);
-            opt->setValue(!b ? "Yes" : "No");
-            opt->setValueColour((!b ? this->app->theme()->accent() : this->app->theme()->muted()));
-        });
-        opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), (b ? this->app->theme()->accent() : this->app->theme()->muted()));
-        this->mainList->addElement(opt);
-
-        cmt = new Aether::ListComment("Show a confirmation dialog when going to exit the app.");
-        cmt->setTextColour(this->app->theme()->muted());
-        this->mainList->addElement(cmt);
-
-        // General::initial_frame
+        this->frame = new Frame::Settings::AppGeneral(this->app);
+        this->addElement(this->frame);
     }
 
     void Settings::setupAppAppearance() {
@@ -180,20 +142,17 @@ namespace Screen {
 
         this->addElement(this->sidebarList);
 
-        // Create the list for the main section of the screen
-        this->mainList = new Aether::List(this->sidebarBg->x() + this->sidebarBg->w() + LIST_PADDING, this->y(), this->w() - this->sidebarBg->w() - 2*LIST_PADDING, this->h());
-        this->addElement(this->mainList);
-
         // Start on first tab!
+        this->frame = nullptr;
         this->setupNew();
         this->setupAppGeneral();
     }
 
     void Settings::onUnload() {
+        this->removeElement(this->frame);
         this->removeElement(this->bg);
         this->removeElement(this->sidebarGradient);
         this->removeElement(this->sidebarBg);
         this->removeElement(this->sidebarList);
-        this->removeElement(this->mainList);
     }
 };
