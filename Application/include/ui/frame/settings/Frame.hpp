@@ -27,6 +27,10 @@ namespace Frame::Settings {
             // Add a comment to the list
             void addComment(const std::string &);
 
+            // Open the numpad and get a numeric input
+            // Returns whether successful or not
+            bool getNumberInput(int &, const std::string &, const std::string &);
+
         public:
             // Constructor takes pointer to app object and creates list
             Frame(Main::Application *);

@@ -3,6 +3,7 @@
 #include "ui/screen/Settings.hpp"
 
 // Pixels between each entry in the sidebar
+#define SIDE_PADDING 20
 #define SIDEBAR_SEP 5
 
 namespace Screen {
@@ -59,15 +60,15 @@ namespace Screen {
         // Create background textures
         this->bg = new Aether::Image(0, 0, "romfs:/bg/main.png");
         this->addElement(this->bg);
-        this->sidebarGradient = new Aether::Image(310, 15, "romfs:/misc/sidegradient.png");
+        this->sidebarGradient = new Aether::Image(350, 15, "romfs:/misc/sidegradient.png");
         this->sidebarGradient->setColour(Aether::Colour{255, 255, 255, 200});
         this->addElement(this->sidebarGradient);
-        this->sidebarBg = new Aether::Rectangle(0, 0, 310, 720);
+        this->sidebarBg = new Aether::Rectangle(0, 0, 350, 720);
         this->sidebarBg->setColour(this->app->theme()->sideBG());
         this->addElement(this->sidebarBg);
 
         // Sidebar contains a list of SideButtons
-        this->sidebarList = new Aether::List(this->sidebarBg->x(), this->sidebarBg->y(), this->sidebarBg->w(), this->sidebarBg->h(), Aether::Padding::FitScrollbar);
+        this->sidebarList = new Aether::List(this->sidebarBg->x() + SIDE_PADDING, this->sidebarBg->y(), this->sidebarBg->w() - 2*SIDE_PADDING, this->sidebarBg->h(), Aether::Padding::FitScrollbar);
 
         // Application (general)
         this->buttonAppGeneral = new CustomElm::SideButton(0, 0, 100);
