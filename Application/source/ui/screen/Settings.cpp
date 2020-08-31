@@ -11,6 +11,9 @@
 #define SIDE_PADDING 20
 #define SIDEBAR_SEP 5
 
+// Path to sysmodule config
+#define SYS_CONFIG "/config/TriPlayer/sys_config.ini"
+
 namespace Screen {
     Settings::Settings(Main::Application * a) : Aether::Screen() {
         this->app = a;
@@ -157,6 +160,9 @@ namespace Screen {
         this->sidebarList->addElement(this->buttonSysMP3);
 
         this->addElement(this->sidebarList);
+
+        // Ensure we have loaded the sysmodule config
+        this->app->config()->prepareSys(SYS_CONFIG);
 
         // Start on first tab!
         this->frame = nullptr;

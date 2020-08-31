@@ -16,5 +16,39 @@ namespace Frame::Settings {
         this->addComment("This is recommended to be disabled as accurate seeking is quite slow. 'Fuzzy' seeking isn't 100% accurate but is good enough for most tracks.");
 
         // Equalizer
+        this->addButton("Equalizer", [this]() {
+            this->showEqualizer();
+        });
+
+        // Setup overlay
+        this->ovlEQ = new CustomOvl::Equalizer("Equalizer");
+        this->ovlEQ->setApplyLabel("Apply");
+        this->ovlEQ->setBackLabel("Back");
+        this->ovlEQ->setOKLabel("OK");
+        this->ovlEQ->setBackgroundColour(this->app->theme()->popupBG());
+        this->ovlEQ->setHeadingColour(this->app->theme()->FG());
+        this->ovlEQ->setLineColour(this->app->theme()->muted());
+        this->ovlEQ->setSliderBackgroundColour(this->app->theme()->muted2());
+        this->ovlEQ->setSliderForegroundColour(this->app->theme()->accent());
+        this->ovlEQ->setSliderKnobColour(this->app->theme()->FG());
+        this->ovlEQ->setApplyCallback([this]() {
+            std::array<float, 32> arr = this->ovlEQ->getValues();
+            for (size_t i = 0; i < arr.size(); i++) {
+                arr[i] /= 50.0;
+            }
+            this->app->config()->setSysMP3Equalizer(arr);
+            this->app->sysmodule()->sendReloadConfig();
+        });
+    }
+
+    void SysMP3::showEqualizer() {
+        // Set initial values and add
+        std::array<float, 32> arr = this->app->config()->sysMP3Equalizer();
+        this->ovlEQ->setValues(arr);
+        this->app->addOverlay(this->ovlEQ);
+    }
+
+    SysMP3::~SysMP3() {
+        delete this->ovlEQ;
     }
 };
