@@ -77,7 +77,7 @@ std::array<float, 32> Config::MP3Equalizer() {
         idx = row*8;
         char * tok = strtok(cstr, ", ");
         while (tok != nullptr && idx < (row+1)*8) {
-            eq[idx] = strtol(tok, nullptr, 10);
+            eq[idx] = strtof(tok, nullptr);
             idx++;
             tok = strtok(nullptr, ", ");
         }

@@ -10,10 +10,9 @@ namespace CustomOvl {
         private:
             // Array of vertical sliders forming equalizer
             std::array<CustomElm::VSlider *, 32> sliders;
+            std::array<Aether::Text *, 32> sliderIndexes;
 
-            std::string labelApply;       // Label for apply button
-            std::string labelBack;        // Label for back button
-            std::string labelOK;          // Label for OK button
+            Aether::ControlItem * reset, * apply, * back, * ok;
             Aether::Controls * ctrl;      // Pointer to controls
             Aether::List * list;          // Pointer to list
             Aether::Rectangle * rect;     // Pointer to main rectangle
@@ -23,13 +22,15 @@ namespace CustomOvl {
 
             // Callback when apply is pressed
             std::function<void()> applyCallback;
+            std::function<void()> resetCallback;
 
         public:
             // Renders + positions elements
             Equalizer(const std::string &);
 
-            // Set callback for apply button
+            // Set callbacks
             void setApplyCallback(std::function<void()>);
+            void setResetCallback(std::function<void()>);
 
             // Return values of sliders in order
             std::array<float, 32> getValues();
@@ -40,6 +41,7 @@ namespace CustomOvl {
             // Set strings
             void setApplyLabel(const std::string &);
             void setBackLabel(const std::string &);
+            void setResetLabel(const std::string &);
             void setOKLabel(const std::string &);
 
             // Set colours

@@ -25,6 +25,7 @@ namespace Frame::Settings {
         this->ovlEQ->setApplyLabel("Apply");
         this->ovlEQ->setBackLabel("Back");
         this->ovlEQ->setOKLabel("OK");
+        this->ovlEQ->setResetLabel("Reset");
         this->ovlEQ->setBackgroundColour(this->app->theme()->popupBG());
         this->ovlEQ->setHeadingColour(this->app->theme()->FG());
         this->ovlEQ->setLineColour(this->app->theme()->muted());
@@ -33,11 +34,13 @@ namespace Frame::Settings {
         this->ovlEQ->setSliderKnobColour(this->app->theme()->FG());
         this->ovlEQ->setApplyCallback([this]() {
             std::array<float, 32> arr = this->ovlEQ->getValues();
-            for (size_t i = 0; i < arr.size(); i++) {
-                arr[i] /= 50.0;
-            }
             this->app->config()->setSysMP3Equalizer(arr);
             this->app->sysmodule()->sendReloadConfig();
+        });
+        this->ovlEQ->setResetCallback([this]() {
+            std::array<float, 32> arr;
+            arr.fill(1.0f);
+            this->ovlEQ->setValues(arr);
         });
     }
 
