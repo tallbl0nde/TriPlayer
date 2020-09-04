@@ -16,8 +16,6 @@
 namespace Screen {
     Home::Home(Main::Application * a) : Screen() {
         this->app = a;
-        this->backOneFrame = 0;
-        this->playingID = -1;
 
         // Attempt the following in order when B is pressed:
         // 1. Shift focus from the player to the main frame
@@ -45,10 +43,6 @@ namespace Screen {
                 this->setFocussed(this->container);
             }
         });
-
-        // Create dimming element
-        this->playerDim = new Aether::Rectangle(0, 0, 1280, 590);
-        this->playerDim->setColour(Aether::Colour{0, 0, 0, 130});
     }
 
     void Home::backCallback() {
@@ -314,6 +308,10 @@ namespace Screen {
     }
 
     void Home::onLoad() {
+        // Create dimming element
+        this->playerDim = new Aether::Rectangle(0, 0, 1280, 590);
+        this->playerDim->setColour(Aether::Colour{0, 0, 0, 130});
+
         // Add background images
         this->bg = new Aether::Image(0, 0, "romfs:/bg/main.png");
         this->addElement(this->bg);
@@ -450,8 +448,6 @@ namespace Screen {
             }
         });
         this->sideContainer->addElement(this->sideQueue);
-        this->sideContainer->setFocussed(this->sideSongs);
-        this->container->addElement(this->sideContainer);
         this->sideSeparator3 = new Aether::Rectangle(30, this->sideQueue->y() + 70, 250, 1);
         this->sideSeparator3->setColour(this->app->theme()->muted2());
         this->sideContainer->addElement(this->sideSeparator3);
@@ -465,6 +461,8 @@ namespace Screen {
             this->app->setScreen(Main::ScreenID::Settings);
         });
         this->sideContainer->addElement(this->sideSettings);
+        this->sideContainer->setFocussed(this->sideSongs);
+        this->container->addElement(this->sideContainer);
         this->addElement(this->container);
 
         // === PLAYER ===
@@ -518,7 +516,10 @@ namespace Screen {
         this->changeFrame(Frame::Type::Songs, Frame::Action::Reset);
         this->container->setFocussed(this->frame);
 
+        // Init vars
         this->addToPlMenu = nullptr;
+        this->backOneFrame = 0;
+        this->playingID = -1;
     }
 
     void Home::onUnload() {
@@ -532,6 +533,9 @@ namespace Screen {
         }
 
         // The rest of this isn't necessary in this context but it's good to do so
+        this->removeElement(this->bg);
+        this->removeElement(this->sidegrad);
+        this->removeElement(this->sideBg);
         this->removeElement(this->playerDim);
         this->removeElement(this->player);
         this->removeElement(this->container);

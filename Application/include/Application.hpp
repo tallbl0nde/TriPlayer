@@ -70,6 +70,7 @@ namespace Main {
             void pushScreen();
             // Pop screen from stack
             void popScreen();
+            void dropScreen();
 
             // Helper functions for database
             void lockDatabase();

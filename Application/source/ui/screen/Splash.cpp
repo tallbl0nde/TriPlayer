@@ -304,9 +304,9 @@ namespace Screen {
         this->addElement(this->bg);
 
         // Add all other elements
-        Aether::Text * t = new Aether::Text(560, 315, "Version " + std::string(VER_STRING), 26);
-        t->setColour(this->app->theme()->FG());
-        this->addElement(t);
+        this->version = new Aether::Text(560, 315, "Version " + std::string(VER_STRING), 26);
+        this->version->setColour(this->app->theme()->FG());
+        this->addElement(this->version);
 
         this->heading = new Aether::Text(640, 520, "", 26);
         this->heading->setColour(this->app->theme()->FG());
@@ -353,11 +353,18 @@ namespace Screen {
         });
         this->addElement(this->quit);
 
+        // Attempt to launch sysmodule if config option is set true
+        if (this->app->sysmodule()->error() == Sysmodule::Error::NotConnected && this->app->config()->autoLaunchService()) {
+            this->launch->callback()();
+            return;
+        }
+
         this->setScanLaunch();
     }
 
     void Splash::onUnload() {
         this->removeElement(this->bg);
+        this->removeElement(this->version);
         this->removeElement(this->heading);
         this->removeElement(this->subheading);
         this->removeElement(this->progress);

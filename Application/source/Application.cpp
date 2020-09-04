@@ -87,6 +87,10 @@ namespace Main {
         this->display->popScreen();
     }
 
+    void Application::dropScreen() {
+        this->display->dropScreen();
+    }
+
     void Application::lockDatabase() {
         this->database_->close();
         this->sysmodule_->waitRequestDBLock();

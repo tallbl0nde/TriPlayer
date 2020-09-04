@@ -33,6 +33,7 @@ namespace Screen {
 
             // UI elements
             Aether::Image * bg;
+            Aether::Text * version;
             Aether::Text * heading;
             Aether::Text * subheading;
             Aether::RoundProgressBar * progress;

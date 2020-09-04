@@ -25,10 +25,10 @@ namespace Frame::Settings {
 
         // Scan now
         this->addButton("Scan Now", [this]() {
-            // fix this
-            // this->app->popScreen();
-            // this->app->setScreen(Main::ScreenID::Splash);
+            this->app->popScreen();
+            this->app->setScreen(Main::ScreenID::Splash);
         });
+        this->addComment("Immediately scan your library for changes.");
         this->list->addElement(new Aether::ListSeparator());
 
         // Remove redundant images
