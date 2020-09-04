@@ -133,6 +133,9 @@ class Database {
         std::vector<Metadata::Song> searchSongs(const std::string, int = -1);
 
         // ===== Misc. Queries ===== //
+        // Returns a vector of strings containing all referenced images
+        // Empty if no image paths stored or an error occurred (bool set false on error, true on success)
+        std::vector<std::string> getAllImagePaths(bool &);
         // Returns a vector of pairs (file path, modified time) for all songs
         // Empty if no songs or error occurred (bool set false on error, true on success)
         std::vector< std::pair<std::string, unsigned int> > getAllSongFileInfo(bool &);

@@ -1628,6 +1628,42 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str, int limit) {
 }
 
 // ===== Misc. Queries ===== //
+std::vector<std::string> Database::getAllImagePaths(bool & success) {
+    std::vector<std::string> v;
+
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getAllImagePaths] No open connection");
+        success = false;
+        return v;
+    }
+
+    // Get all paths by iterating over tables
+    std::string tables[3] = {"Playlists", "Artists", "Albums"};
+    for (size_t i = 0; i < 3; i++) {
+        // Query database
+        bool ok = this->db->prepareAndExecuteQuery("SELECT image_path FROM " + tables[i] + " ORDER BY image_path;");
+        if (!ok) {
+            this->setErrorMsg("[getAllImagePaths] Couldn't read from " + tables[i] + " table");
+            success = false;
+            return v;
+        }
+
+        // Iterate over returned rows
+        while (ok && this->db->hasRow()) {
+            std::string str;
+            ok = this->db->getString(0, str);
+            if (ok) {
+                v.push_back(str);
+            }
+            ok = keepFalse(ok, this->db->nextRow());
+        }
+    }
+
+    success = true;
+    return v;
+}
+
 std::vector< std::pair<std::string, unsigned int> > Database::getAllSongFileInfo(bool & success) {
     std::vector< std::pair<std::string, unsigned int> > v;
 
