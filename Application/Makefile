@@ -98,9 +98,10 @@ endif
 #----------------------------------------------------------------------------------------------------------------------
 all: $(OUTPUT).nro
 $(OUTPUT).nro:	$(OUTPUT).elf $(OUTPUT).nacp
-$(OUTPUT).elf:	$(OFILES) | libs
+$(OUTPUT).elf:	$(OFILES)
 	@echo Linking $(TARGET).elf
 	@$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
+$(OFILES): | libs
 
 .SECONDEXPANSION:
 define crule

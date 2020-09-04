@@ -55,6 +55,7 @@ namespace Frame::Settings {
     bool Frame::getNumberInput(int & val, const std::string & heading = "", const std::string & sub = "") {
         // Configure and open numpad
         Utils::NX::Numpad numpad;
+        numpad.value = val;
         numpad.maxDigits = 5;
         numpad.allowNegative = true;
         numpad.allowDecimal = false;

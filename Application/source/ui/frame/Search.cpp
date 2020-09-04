@@ -261,10 +261,10 @@ namespace Frame {
         }
 
         // Search for each type of entry and return
-        this->playlists = this->app->database()->searchPlaylists(phrase);
-        this->artists = this->app->database()->searchArtists(phrase);
-        this->albums = this->app->database()->searchAlbums(phrase);
-        this->songs = this->app->database()->searchSongs(phrase);
+        this->playlists = this->app->database()->searchPlaylists(phrase, this->app->config()->searchMaxPlaylists());
+        this->artists = this->app->database()->searchArtists(phrase, this->app->config()->searchMaxArtists());
+        this->albums = this->app->database()->searchAlbums(phrase, this->app->config()->searchMaxAlbums());
+        this->songs = this->app->database()->searchSongs(phrase, this->app->config()->searchMaxSongs());
         return true;
     }
 

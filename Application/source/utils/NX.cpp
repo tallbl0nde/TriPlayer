@@ -68,6 +68,8 @@ namespace Utils::NX {
         // Create initial object
         if (R_SUCCEEDED(swkbdCreate(&kb, 0))) {
             swkbdConfigSetType(&kb, SwkbdType_NumPad);
+            swkbdConfigSetInitialText(&kb, std::to_string(n.value).c_str());
+            swkbdConfigSetInitialCursorPos(&kb, 1);
             swkbdConfigSetBlurBackground(&kb, 1);
             swkbdConfigSetHeaderText(&kb, n.heading.c_str());
             swkbdConfigSetSubText(&kb, n.subHeading.c_str());

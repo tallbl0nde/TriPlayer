@@ -10,7 +10,7 @@ namespace Frame::Settings {
         // Search::max_playlists
         opt = new Aether::ListOption("Playlist Limit", std::to_string(cfg->searchMaxPlaylists()), nullptr);
         opt->setCallback([this, cfg, opt]() {
-            int val;
+            int val = cfg->searchMaxPlaylists();
             if (this->getNumberInput(val, "Playlist Limit", "")) {
                 val = (val < -1 ? -1 : val);
                 if (cfg->setSearchMaxPlaylists(val)) {
@@ -24,7 +24,7 @@ namespace Frame::Settings {
         // Search::max_albums
         opt = new Aether::ListOption("Album Limit", std::to_string(cfg->searchMaxAlbums()), nullptr);
         opt->setCallback([this, cfg, opt]() {
-            int val;
+            int val = cfg->searchMaxAlbums();
             if (this->getNumberInput(val, "Album Limit", "")) {
                 val = (val < -1 ? -1 : val);
                 if (cfg->setSearchMaxAlbums(val)) {
@@ -38,7 +38,7 @@ namespace Frame::Settings {
         // Search::max_artists
         opt = new Aether::ListOption("Artist Limit", std::to_string(cfg->searchMaxArtists()), nullptr);
         opt->setCallback([this, cfg, opt]() {
-            int val;
+            int val = cfg->searchMaxArtists();
             if (this->getNumberInput(val, "Artist Limit", "")) {
                 val = (val < -1 ? -1 : val);
                 if (cfg->setSearchMaxArtists(val)) {
@@ -52,7 +52,7 @@ namespace Frame::Settings {
         // Search::max_songs
         opt = new Aether::ListOption("Song Limit", std::to_string(cfg->searchMaxSongs()), nullptr);
         opt->setCallback([this, cfg, opt]() {
-            int val;
+            int val = cfg->searchMaxSongs();
             if (this->getNumberInput(val, "Song Limit", "")) {
                 val = (val < -1 ? -1 : val);
                 if (cfg->setSearchMaxSongs(val)) {
