@@ -14,6 +14,10 @@ class Database {
         SQLite * db;
         // String describing last error
         std::string error_;
+        // Number of phrases to generate when searching
+        unsigned int searchPhrases;
+        // Maximum 'spellfix score' to permit for searches
+        unsigned int searchScore;
 
         // Indicates whether search_update has been set to 1
         // Used to avoid repeated UPDATE queries
@@ -37,6 +41,10 @@ class Database {
         bool migrate();
         // Returns the last error that occurred (blank if no error has occurred)
         std::string error();
+        // Set the maximum number of phrases to search with (higher means a 'broader' search)
+        void setSearchPhraseCount(const unsigned int);
+        // Set the maximum 'spellfix score' to use for searches (higher means less accurate)
+        void setSpellfixScore(const unsigned int);
 
         // ===== Connection Management ===== //
         // Open the database read-write (will block until available)

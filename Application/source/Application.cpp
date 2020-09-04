@@ -10,8 +10,10 @@
 
 namespace Main {
     Application::Application() : database_(SyncDatabase(new Database())) {
-        // Load config (app only at this stage)
+        // Load config
         this->config_ = new Config(APP_CONFIG_PATH);
+        this->database_->setSpellfixScore(this->config_->searchMaxScore());
+        this->database_->setSearchPhraseCount(this->config_->searchMaxPhrases());
 
         // Prepare theme
         this->theme_ = new Theme();

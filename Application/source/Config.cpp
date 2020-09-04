@@ -127,6 +127,20 @@ void Config::readConfig() {
         this->searchMaxSongs_ = -1;
     }
 
+    // Search::max_score
+    this->searchMaxScore_ = this->ini->geti("Search", "max_score", -42069);
+    if (this->searchMaxScore_ < 0) {
+        Log::writeError("[CONFIG] Failed to get (Search) max_score");
+        this->searchMaxScore_ = 130;
+    }
+
+    // Search::max_phrases
+    this->searchMaxPhrases_ = this->ini->geti("Search", "max_phrases", -42069);
+    if (this->searchMaxPhrases_ < 0) {
+        Log::writeError("[CONFIG] Failed to get (Search) max_phrases");
+        this->searchMaxPhrases_ = 8;
+    }
+
     // Advanced::auto_launch_service
     this->autoLaunchService_ = this->ini->getbool("Advanced", "auto_launch_service");
 }
@@ -366,6 +380,34 @@ bool Config::setSearchMaxSongs(const int i) {
         Log::writeError("[CONFIG] Failed to set (Search) max_songs");
     } else {
         this->searchMaxSongs_ = i;
+    }
+    return ok;
+}
+
+int Config::searchMaxScore() {
+    return this->searchMaxScore_;
+}
+
+bool Config::setSearchMaxScore(const int i) {
+    bool ok = this->ini->put("Search", "max_score", i);
+    if (!ok) {
+        Log::writeError("[CONFIG] Failed to set (Search) max_score");
+    } else {
+        this->searchMaxScore_ = i;
+    }
+    return ok;
+}
+
+int Config::searchMaxPhrases() {
+    return this->searchMaxPhrases_;
+}
+
+bool Config::setSearchMaxPhrases(const int i) {
+    bool ok = this->ini->put("Search", "max_phrases", i);
+    if (!ok) {
+        Log::writeError("[CONFIG] Failed to set (Search) max_phrases");
+    } else {
+        this->searchMaxPhrases_ = i;
     }
     return ok;
 }

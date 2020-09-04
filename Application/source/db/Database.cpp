@@ -14,12 +14,8 @@
 #define DB_PATH "/switch/TriPlayer/data.sqlite3"
 // Version of the database (database begins with zero from 'template', so this started at 1)
 #define DB_VERSION 6
-// Maximum number of phrases to search for using spellfixed strings
-#define SEARCH_PHRASES 8
 // Maximum number of spellfixed words to allow per word (i.e. pick the top x words)
 #define SPELLFIX_LIMIT 6
-// Maximum 'spellfix score' allowed when fixing a word
-#define SPELLFIX_SCORE 130
 // Location of template file
 #define TEMPLATE_DB_PATH "romfs:/db/template.sqlite3"
 
@@ -69,6 +65,8 @@ Database::Database() {
 
     // Set variables
     this->error_ = "";
+    this->searchPhrases = 8;
+    this->searchScore = 130;
     this->updateMarked = false;
 }
 
@@ -191,6 +189,14 @@ bool Database::migrate() {
     return ok;
 }
 
+void Database::setSearchPhraseCount(const unsigned int p) {
+    this->searchPhrases = p;
+}
+
+void Database::setSpellfixScore(const unsigned int s) {
+    this->searchScore = s;
+}
+
 void Database::setErrorMsg(const std::string & msg = "") {
     // Set error message to provided one
     if (msg.length() > 0) {
@@ -286,7 +292,7 @@ std::vector<std::string> Database::getSearchPhrases(const std::string & table, s
         // Use string concatenation here as you can't bind a table name (I know it's not ideal but the names are hard coded at least)
         bool ok = this->db->prepareQuery("SELECT word, score FROM " + table + " WHERE word MATCH ? AND SCORE < ? LIMIT ?;");
         ok = keepFalse(ok, this->db->bindString(0, words[i]));
-        ok = keepFalse(ok, this->db->bindInt(1, SPELLFIX_SCORE));
+        ok = keepFalse(ok, this->db->bindInt(1, this->searchScore));
         ok = keepFalse(ok, this->db->bindInt(2, SPELLFIX_LIMIT));
         ok = keepFalse(ok, this->db->executeQuery());
         if (!ok) {
@@ -315,7 +321,7 @@ std::vector<std::string> Database::getSearchPhrases(const std::string & table, s
     }
 
     // Get top number of phrases (sorted best first)
-    return Utils::Search::getPhrases(suggestions, SEARCH_PHRASES);
+    return Utils::Search::getPhrases(suggestions, this->searchPhrases);
 }
 
 // ===== Connection Management ===== //

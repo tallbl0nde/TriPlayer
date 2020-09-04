@@ -52,12 +52,12 @@ namespace Frame::Settings {
         this->list->addElement(opt);
     }
 
-    bool Frame::getNumberInput(int & val, const std::string & heading = "", const std::string & sub = "") {
+    bool Frame::getNumberInput(int & val, const std::string & heading = "", const std::string & sub = "", const bool neg = false) {
         // Configure and open numpad
         Utils::NX::Numpad numpad;
         numpad.value = val;
         numpad.maxDigits = 5;
-        numpad.allowNegative = true;
+        numpad.allowNegative = neg;
         numpad.allowDecimal = false;
         numpad.heading = heading;
         numpad.subHeading = sub;

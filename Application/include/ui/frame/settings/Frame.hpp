@@ -31,7 +31,7 @@ namespace Frame::Settings {
 
             // Open the numpad and get a numeric input
             // Returns whether successful or not
-            bool getNumberInput(int &, const std::string &, const std::string &);
+            bool getNumberInput(int &, const std::string &, const std::string &, const bool);
 
         public:
             // Constructor takes pointer to app object and creates list

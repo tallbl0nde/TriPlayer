@@ -35,6 +35,8 @@ class Config {
         int searchMaxArtists_;
         int searchMaxAlbums_;
         int searchMaxSongs_;
+        int searchMaxPhrases_;
+        int searchMaxScore_;
 
         bool autoLaunchService_;
 
@@ -94,6 +96,14 @@ class Config {
         bool setSearchMaxAlbums(const int);
         int searchMaxSongs();
         bool setSearchMaxSongs(const int);
+
+        // Minimum search score
+        int searchMaxScore();
+        bool setSearchMaxScore(const int);
+
+        // Maximum search phrases
+        int searchMaxPhrases();
+        bool setSearchMaxPhrases(const int);
 
         // Whether to try to launch service automatically
         // if not running on launch
