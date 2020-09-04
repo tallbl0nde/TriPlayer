@@ -109,15 +109,12 @@ namespace CustomElm {
     }
 
     void VSlider::setValue(float val) {
-        float old = this->value_;
         this->value_ = (val < 0.0 ? 0.0 : (val > 100.0 ? 100.0 : val));
-        if (old != this->value_) {
-            int h = this->barFg->texH() * (this->value_/100.0);
-            this->barFg->setY(this->barBg->y() + this->barBg->h() - h);
-            this->barFg->setH(h);
-            this->barFg->setMask(0, this->barFg->texH() - h, this->barFg->texW(), h);
-        }
-        this->knob->setY(this->barBg->y() + this->barBg->h() - ((this->value_/100.0) * this->barBg->h()) - this->knob->yDiameter()/2);
+        int h = this->barFg->texH() * (this->value_/100.0);
+        this->barFg->setY(this->barBg->y() + this->barBg->h() - h);
+        this->barFg->setH(h);
+        this->barFg->setMask(0, this->barFg->texH() - h, this->barFg->texW(), h);
+        this->knob->setY(this->barBg->y() + this->barBg->h() - h - this->knob->yDiameter()/2);
     }
 
     void VSlider::setNudge(float n) {

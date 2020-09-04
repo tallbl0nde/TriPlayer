@@ -26,6 +26,7 @@ namespace Main {
         this->display = new Aether::Display();
         this->display->setBackgroundColour(0, 0, 0);
         this->display->setFont("romfs:/Quicksand.ttf");
+        this->display->setFontSpacing(0.9);
         this->display->setHighlightColours(Aether::Colour{255, 255, 255, 0}, this->theme_->selected());
         this->setHighlightAnimation(nullptr);
         this->display->setFadeIn();

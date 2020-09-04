@@ -51,7 +51,7 @@ namespace Frame::Settings {
 
         // Get log levels for creation
         Log::Level array[5] = {Log::Level::Info, Log::Level::Success, Log::Level::Warning, Log::Level::Error, Log::Level::None};
-        Log::Level current = this->app->config()->logLevel();
+        Log::Level current = this->app->config()->sysLogLevel();
 
         // Add entries
         for (size_t i = 0; i < 5; i++) {
@@ -59,7 +59,7 @@ namespace Frame::Settings {
             std::string str = Log::levelToString(level);
             this->ovlList->addEntry(str, [this, opt, str, level]() {
                 opt->setValue(str);
-                this->app->config()->setLogLevel(level);
+                this->app->config()->setSysLogLevel(level);
                 this->app->sysmodule()->sendReloadConfig();
             }, current == level);
         }
