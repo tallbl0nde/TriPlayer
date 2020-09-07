@@ -2,6 +2,7 @@
 #define SCREEN_SETTINGS_HPP
 
 #include "ui/element/SideButton.hpp"
+#include "ui/screen/Screen.hpp"
 
 namespace Main {
     class Application;
@@ -14,11 +15,8 @@ namespace Frame::Settings {
 namespace Screen {
     // Settings screen contains everything required to alter
     // either the app, overlay or sysmodule's config
-    class Settings : public Aether::Screen {
+    class Settings : public Screen {
         private:
-            // Pointer to application object
-            Main::Application * app;
-
             // Background elements
             Aether::Image * bg;
             Aether::Image * sidebarGradient;

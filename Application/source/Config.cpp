@@ -96,9 +96,6 @@ void Config::readConfig() {
         this->accentColour_ = Theme::Colour::Blue;
     }
 
-    // Appearance::show_touch_controls
-    this->showTouchControls_ = this->ini->getbool("General", "show_touch_controls");
-
     // Search::max_playlists
     this->searchMaxPlaylists_ = this->ini->geti("Search", "max_playlists", -42069);
     if (this->searchMaxPlaylists_ < -1) {
@@ -310,20 +307,6 @@ bool Config::setAccentColour(Theme::Colour c) {
         Log::writeError("[CONFIG] Failed to set (Appearance) accent_colour");
     } else {
         this->accentColour_ = c;
-    }
-    return ok;
-}
-
-bool Config::showTouchControls() {
-    return this->showTouchControls_;
-}
-
-bool Config::setShowTouchControls(const bool b) {
-    bool ok = this->ini->put("Appearance", "show_touch_controls", (b ? "Yes" : "No"));
-    if (!ok) {
-        Log::writeError("[CONFIG] Failed to set (Appearance) show_touch_controls");
-    } else {
-        this->showTouchControls_ = b;
     }
     return ok;
 }

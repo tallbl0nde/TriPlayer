@@ -20,9 +20,7 @@
 #define UPDATE_CLOCK_PERIOD 500
 
 namespace Screen {
-    Fullscreen::Fullscreen(Main::Application * a) : Screen() {
-        this->app = a;
-
+    Fullscreen::Fullscreen(Main::Application * a) : Screen(a) {
         // Close this screen when B is pressed
         this->onButtonPress(Aether::Button::B, [this]() {
             this->app->popScreen();

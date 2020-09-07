@@ -5,9 +5,7 @@
 #include "utils/Utils.hpp"
 
 namespace Screen {
-    Splash::Splash(Main::Application * a) : Screen() {
-        this->app = a;
-
+    Splash::Splash(Main::Application * a) : Screen(a) {
         // Can only exit on an error
         this->onButtonPress(Aether::Button::B, [this](){
             if (this->fatalError) {

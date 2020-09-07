@@ -35,10 +35,10 @@ namespace Main {
         this->display->setShowFPS(true);
 
         // Setup screens
-        this->scFull = new Screen::Fullscreen(this);
-        this->scHome = new Screen::Home(this);
-        this->scSettings = new Screen::Settings(this);
-        this->scSplash = new Screen::Splash(this);
+        this->screens[static_cast<int>(ScreenID::Fullscreen)] = new Screen::Fullscreen(this);
+        this->screens[static_cast<int>(ScreenID::Home)] = new Screen::Home(this);
+        this->screens[static_cast<int>(ScreenID::Settings)] = new Screen::Settings(this);
+        this->screens[static_cast<int>(ScreenID::Splash)] = new Screen::Splash(this);
         this->setScreen(ScreenID::Splash);
 
         // Mark that we're playing media
@@ -52,7 +52,7 @@ namespace Main {
     void Application::setHighlightAnimation(std::function<Aether::Colour(uint32_t)> f) {
         // Set to default animation
         if (f == nullptr) {
-            f = Aether::Theme::Dark.highlightFunc;
+            f = this->theme_->highlightFunc();
         }
         this->display->setHighlightAnimation(f);
     }
@@ -62,23 +62,7 @@ namespace Main {
     }
 
     void Application::setScreen(ScreenID s) {
-        switch (s) {
-            case Fullscreen:
-                this->display->setScreen(this->scFull);
-                break;
-
-            case Home:
-                this->display->setScreen(this->scHome);
-                break;
-
-            case Settings:
-                this->display->setScreen(this->scSettings);
-                break;
-
-            case Splash:
-                this->display->setScreen(this->scSplash);
-                break;
-        }
+        this->display->setScreen(this->screens[static_cast<int>(s)]);
     }
 
     void Application::pushScreen() {
@@ -91,6 +75,12 @@ namespace Main {
 
     void Application::dropScreen() {
         this->display->dropScreen();
+    }
+
+    void Application::updateScreenTheme() {
+        for (Screen::Screen * s : this->screens) {
+            s->updateColours();
+        }
     }
 
     void Application::lockDatabase() {
@@ -140,10 +130,9 @@ namespace Main {
         Utils::NX::setPlayingMedia(false);
 
         // Delete screens
-        delete this->scFull;
-        delete this->scHome;
-        delete this->scSettings;
-        delete this->scSplash;
+        for (Screen::Screen * s : this->screens) {
+            delete s;
+        }
 
         // Cleanup Aether after screens are deleted
         delete this->display;

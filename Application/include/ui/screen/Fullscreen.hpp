@@ -4,6 +4,7 @@
 #include "ui/element/Image.hpp"
 #include "ui/element/RoundButton.hpp"
 #include "ui/element/Slider.hpp"
+#include "ui/screen/Screen.hpp"
 
 namespace Main {
     class Application;
@@ -11,11 +12,8 @@ namespace Main {
 
 namespace Screen {
     // Fullscreen player
-    class Fullscreen : public Aether::Screen {
+    class Fullscreen : public Screen {
         private:
-            // Pointer to application object
-            Main::Application * app;
-
             // Playing from
             Aether::Element * noteElement;
             Aether::Image * note;

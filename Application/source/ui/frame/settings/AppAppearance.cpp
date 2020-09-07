@@ -16,13 +16,6 @@ namespace Frame::Settings {
         this->list->addElement(opt);
         this->list->addElement(new Aether::ListSeparator(20));
 
-        // Appearance::show_touch_controls
-        this->addToggle("Show Touch Controls", [cfg]() -> bool {
-            return cfg->showTouchControls();
-        }, [cfg](bool b) {
-            cfg->setShowTouchControls(b);
-        });
-
         // Overlays
         this->ovlList = new Aether::PopupList("");
         this->ovlList->setBackLabel("Back");
@@ -47,8 +40,13 @@ namespace Frame::Settings {
             Theme::Colour col = array[i];
             std::string str = Theme::colourToString(col);
             this->ovlList->addEntry(str, [this, opt, str, col]() {
+                // Update config
                 opt->setValue(str);
                 this->app->config()->setAccentColour(col);
+
+                // Actually update colours
+                this->app->setHighlightAnimation(nullptr);
+                this->app->updateScreenTheme();
             }, current == col);
         }
 

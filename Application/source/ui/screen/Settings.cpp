@@ -15,9 +15,7 @@
 #define SYS_CONFIG "/config/TriPlayer/sys_config.ini"
 
 namespace Screen {
-    Settings::Settings(Main::Application * a) : Aether::Screen() {
-        this->app = a;
-
+    Settings::Settings(Main::Application * a) : Screen(a) {
         // Call backCallback() when B is pressed
         this->onButtonPress(Aether::Button::B, [this]() {
             this->backCallback();

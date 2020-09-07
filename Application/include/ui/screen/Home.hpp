@@ -5,6 +5,7 @@
 #include "ui/element/SideButton.hpp"
 #include "ui/overlay/AddToPlaylist.hpp"
 #include "ui/frame/Frame.hpp"
+#include "ui/screen/Screen.hpp"
 #include <stack>
 
 namespace Main {
@@ -13,7 +14,7 @@ namespace Main {
 
 namespace Screen {
     // Main screen (houses side menu, player and frames)
-    class Home : public Aether::Screen {
+    class Home : public Screen {
         private:
             // Struct pair for a frame and next type
             struct FrameTuple {
@@ -21,9 +22,6 @@ namespace Screen {
                 Frame::Type type;      // Type of the frame stored in this pair
                 Frame::Type pushedType;     // Type of next frame on stack (i.e. what pushed this frame on the stack?)
             };
-
-            // Pointer to application object
-            Main::Application * app;
 
             // This screen handles the Add to Playlist menu as it's seen on all frames
             CustomOvl::AddToPlaylist * addToPlMenu;

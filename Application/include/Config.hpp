@@ -29,7 +29,6 @@ class Config {
         int setQueueMax_;
 
         Theme::Colour accentColour_;
-        bool showTouchControls_;
 
         int searchMaxPlaylists_;
         int searchMaxArtists_;
@@ -82,10 +81,6 @@ class Config {
         // Accent colour
         Theme::Colour accentColour();
         bool setAccentColour(Theme::Colour);
-
-        // Whether to show back/quit touch buttons
-        bool showTouchControls();
-        bool setShowTouchControls(const bool);
 
         // Limits for search result entries (-1 indicates no limit)
         int searchMaxPlaylists();

@@ -1,6 +1,7 @@
 #ifndef APPLICATION_HPP
 #define APPLICATION_HPP
 
+#include <array>
 #include "Config.hpp"
 #include "db/SyncDatabase.hpp"
 #include <future>
@@ -9,19 +10,16 @@
 
 // Forward declaration because cyclic dependency /shrug
 namespace Screen {
-    class Fullscreen;
-    class Home;
-    class Settings;
-    class Splash;
+    class Screen;
 };
 
 namespace Main {
     // Enumeration for screens (allows for easy switching)
-    enum ScreenID {
-        Fullscreen,
-        Home,
-        Settings,
-        Splash
+    enum class ScreenID {
+        Fullscreen = 0,
+        Home = 1,
+        Settings = 2,
+        Splash = 3
     };
 
     // The Application class represents the "root" object of the app. It stores/handles all states
@@ -32,10 +30,7 @@ namespace Main {
             Aether::Display * display;
 
             // Screens of the app
-            Screen::Fullscreen * scFull;
-            Screen::Home * scHome;
-            Screen::Settings * scSettings;
-            Screen::Splash * scSplash;
+            std::array<Screen::Screen *, 4> screens;
 
             // Config object (used to interact with config files)
             Config * config_;
@@ -64,13 +59,12 @@ namespace Main {
             // Element is not deleted when closed!
             void addOverlay(Aether::Overlay *);
 
-            // Pass screen enum to change to it
+            // Screen manipulation functions
             void setScreen(ScreenID);
-            // Push current screen on stack (i.e. keep in memory)
             void pushScreen();
-            // Pop screen from stack
             void popScreen();
             void dropScreen();
+            void updateScreenTheme();
 
             // Helper functions for database
             void lockDatabase();

@@ -30,7 +30,7 @@ class Theme {
 
         Aether::Colour FG_;
 
-        Aether::Colour accent_;
+        Colour accentColour;
 
         Aether::Colour selected_;
 
@@ -53,6 +53,7 @@ class Theme {
         Aether::Colour mutedLine();
         Aether::Colour accent();
         Aether::Colour selected();
+        std::function<Aether::Colour(uint32_t)> highlightFunc();
 };
 
 #endif

@@ -3,6 +3,7 @@
 
 #include "Aether/Aether.hpp"
 #include <future>
+#include "ui/screen/Screen.hpp"
 
 namespace Main {
     class Application;
@@ -12,7 +13,7 @@ namespace Screen {
     // The 'Splash' screen is shown when the application is launched.
     // It is displayed while the library is scanned and the database
     // is updated. It portrays the progress of the update.
-    class Splash : public Aether::Screen {
+    class Splash : public Screen {
         private:
             // Stages in the library scan
             enum class ScanStage {
@@ -24,9 +25,6 @@ namespace Screen {
                 Done,           // Everything is done
                 Error           // An error occurred during the scan
             };
-
-            // Pointer to main app object
-            Main::Application * app;
 
             // Set true when an error has occurred (allows exit)
             bool fatalError;

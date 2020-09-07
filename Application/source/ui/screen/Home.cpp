@@ -14,9 +14,7 @@
 #include "ui/screen/Home.hpp"
 
 namespace Screen {
-    Home::Home(Main::Application * a) : Screen() {
-        this->app = a;
-
+    Home::Home(Main::Application * a) : Screen(a) {
         // Attempt the following in order when B is pressed:
         // 1. Shift focus from the player to the main frame
         // 2. Delete the current frame and pop one from the stack
