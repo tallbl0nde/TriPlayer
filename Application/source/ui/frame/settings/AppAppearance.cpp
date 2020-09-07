@@ -47,6 +47,7 @@ namespace Frame::Settings {
                 // Actually update colours
                 this->app->theme()->setAccent(col);
                 opt->setValueColour(this->app->theme()->accent());
+                this->ovlList->setHighlightColour(this->app->theme()->accent());
                 this->app->setHighlightAnimation(nullptr);
                 this->app->updateScreenTheme();
             }, current == col);

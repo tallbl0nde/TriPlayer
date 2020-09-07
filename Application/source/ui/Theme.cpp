@@ -77,11 +77,11 @@ Aether::Colour Theme::FG() {
 Aether::Colour Theme::accent() {
     switch (this->accentColour) {
         case Colour::Red:
-            return Aether::Colour{255, 25, 65, 255};
+            return Aether::Colour{255, 35, 55, 255};
             break;
 
         case Colour::Orange:
-            return Aether::Colour{255, 170, 30, 255};
+            return Aether::Colour{255, 120, 30, 255};
             break;
 
         case Colour::Yellow:
@@ -97,7 +97,7 @@ Aether::Colour Theme::accent() {
             break;
 
         case Colour::Purple:
-            return Aether::Colour{150, 0, 225, 255};
+            return Aether::Colour{190, 70, 245, 255};
             break;
 
         case Colour::Pink:
@@ -117,20 +117,23 @@ std::function<Aether::Colour(uint32_t)> Theme::highlightFunc() {
     Aether::Colour h2;
     switch (this->accentColour) {
         case Colour::Red:
-            h1 = Aether::Colour{150, 10, 10, 255};
-            h2 = Aether::Colour{255, 55, 65, 255};
+            h1 = Aether::Colour{140, 10, 10, 255};
+            h2 = Aether::Colour{255, 25, 25, 255};
             break;
 
         case Colour::Orange:
-
+            h1 = Aether::Colour{150, 50, 0, 255};
+            h2 = Aether::Colour{255, 95, 15, 255};
             break;
 
         case Colour::Yellow:
-
+            h1 = Aether::Colour{140, 140, 0, 255};
+            h2 = Aether::Colour{255, 255, 40, 255};
             break;
 
         case Colour::Green:
-
+            h1 = Aether::Colour{10, 135, 60, 255};
+            h2 = Aether::Colour{50, 255, 80, 255};
             break;
 
         case Colour::Blue:
@@ -139,11 +142,13 @@ std::function<Aether::Colour(uint32_t)> Theme::highlightFunc() {
             break;
 
         case Colour::Purple:
-
+            h1 = Aether::Colour{105, 25, 140, 255};
+            h2 = Aether::Colour{220, 90, 255, 255};
             break;
 
         case Colour::Pink:
-
+            h1 = Aether::Colour{170, 50, 170, 255};
+            h2 = Aether::Colour{255, 105, 245, 255};
             break;
     }
 

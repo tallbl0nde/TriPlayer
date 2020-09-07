@@ -415,6 +415,7 @@ namespace Screen {
         // Initialize variables
         this->albumArt = nullptr;
         this->interpolatePos = 0.0d;
+        this->oldBackground = Aether::Colour{0, 0, 0, 255};
         this->currentBackground = Aether::Colour{0, 0, 0, 255};
         this->targetBackground = this->currentBackground;
         this->buttonMs = 0;
