@@ -61,6 +61,9 @@ namespace Frame {
             // Constructor sets strings and forms list using database
             Playlists(Main::Application *);
 
+            // Update colours
+            void updateColours();
+
             // Handles checking for file browser things
             void update(uint32_t);
 

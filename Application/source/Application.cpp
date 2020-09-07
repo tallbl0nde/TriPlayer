@@ -17,6 +17,7 @@ namespace Main {
 
         // Prepare theme
         this->theme_ = new Theme();
+        this->theme_->setAccent(this->config_->accentColour());
 
         // Create sysmodule object (will attempt connection)
         this->sysmodule_ = new Sysmodule();

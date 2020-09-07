@@ -2,6 +2,7 @@
 #define SCREEN_SPLASH_HPP
 
 #include "Aether/Aether.hpp"
+#include <array>
 #include <future>
 #include "ui/screen/Screen.hpp"
 
@@ -37,6 +38,7 @@ namespace Screen {
             Aether::RoundProgressBar * progress;
             Aether::Text * percent;
             Aether::Animation * animation;
+            std::array<Aether::Image *, 50> animFrames;
             Aether::Text * hint;
             Aether::BorderButton * launch;
             Aether::BorderButton * quit;
@@ -71,6 +73,9 @@ namespace Screen {
 
         public:
             Splash(Main::Application *);
+
+            // Update colours
+            void updateColours();
 
             // Update contains logic to update UI based on loading status
             void update(uint32_t);

@@ -486,6 +486,10 @@ namespace Frame {
         this->pushedIdx = -1;
     }
 
+    void Playlists::updateColours() {
+        this->newButton->setFillColour(this->app->theme()->accent());
+    }
+
     Playlists::~Playlists() {
         delete this->browser;
         delete this->menu;

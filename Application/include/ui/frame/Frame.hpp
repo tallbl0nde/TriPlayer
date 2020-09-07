@@ -58,6 +58,9 @@ namespace Frame {
             // Passed app pointer for sysmodule + theme
             Frame(Main::Application *);
 
+            // Call to update colours
+            virtual void updateColours();
+
             // Called when the frame is pushed onto the screen's stack
             // Passed next frame type
             virtual void onPush(Type);

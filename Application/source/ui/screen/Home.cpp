@@ -238,6 +238,36 @@ namespace Screen {
         Screen::update(dt);
     }
 
+    void Home::updateColours() {
+        if (!this->isLoaded) {
+            return;
+        }
+
+        // Update screen colours
+        this->sideSearch->setActiveColour(this->app->theme()->accent());
+        this->sidePlaylists->setActiveColour(this->app->theme()->accent());
+        this->sideSongs->setActiveColour(this->app->theme()->accent());
+        this->sideArtists->setActiveColour(this->app->theme()->accent());
+        this->sideAlbums->setActiveColour(this->app->theme()->accent());
+        this->sideQueue->setActiveColour(this->app->theme()->accent());
+        this->sideSettings->setActiveColour(this->app->theme()->accent());
+        this->player->setAccentColour(this->app->theme()->accent());
+
+        // Now also update current frame and all on stack
+        this->frame->updateColours();
+        std::stack<FrameTuple> tmp;
+        while (!this->frameStack.empty()) {
+            tmp.push(this->frameStack.top());
+            this->frameStack.pop();
+        }
+
+        while (!tmp.empty()) {
+            this->frameStack.push(tmp.top());
+            tmp.top().frame->updateColours();
+            tmp.pop();
+        }
+    }
+
     void Home::finalizeState() {
         // Set the frame's callbacks
         this->frame->setShowAddToPlaylistFunc([this](std::function<void(PlaylistID)> f) {
@@ -306,6 +336,8 @@ namespace Screen {
     }
 
     void Home::onLoad() {
+        Screen::onLoad();
+
         // Create dimming element
         this->playerDim = new Aether::Rectangle(0, 0, 1280, 590);
         this->playerDim->setColour(Aether::Colour{0, 0, 0, 130});
@@ -521,6 +553,8 @@ namespace Screen {
     }
 
     void Home::onUnload() {
+        Screen::onUnload();
+
         delete this->addToPlMenu;
 
         // Ensure all frames are deleted

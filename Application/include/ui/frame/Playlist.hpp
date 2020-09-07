@@ -26,6 +26,7 @@ namespace Frame {
             bool goBack;
 
             // UI elements
+            Aether::FilledButton * playButton;
             Aether::Container * btns;
             Aether::Text * emptyMsg;
             Aether::Image * image;
@@ -50,6 +51,9 @@ namespace Frame {
         public:
             // The constructor takes the ID of the playlist to show
             Playlist(Main::Application *, PlaylistID);
+
+            // Update colours
+            void updateColours();
 
             // Check when we need to change frame
             void update(uint32_t);

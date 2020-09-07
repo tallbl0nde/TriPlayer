@@ -29,7 +29,7 @@ namespace Screen {
 
     Aether::Colour Fullscreen::highlightColour(uint32_t t) {
         // Get the original highlight colour
-        Aether::Colour colour = Aether::Theme::Dark.highlightFunc(t);
+        Aether::Colour colour = this->app->theme()->highlightFunc()(t);
 
         // Adjust the alpha based on time since button press
         if (this->buttonMs < 0) {
@@ -281,6 +281,8 @@ namespace Screen {
     }
 
     void Fullscreen::onLoad() {
+        Screen::onLoad();
+
         // === BACKGROUND ===
         this->gradient = new Aether::Image(0, 0, "romfs:/bg/gradient.png");
         this->addElement(this->gradient);
@@ -420,6 +422,8 @@ namespace Screen {
     }
 
     void Fullscreen::onUnload() {
+        Screen::onUnload();
+
         // Remove added elements
         this->removeElement(this->noteElement);
         this->removeElement(this->playingFrom);

@@ -117,7 +117,8 @@ std::function<Aether::Colour(uint32_t)> Theme::highlightFunc() {
     Aether::Colour h2;
     switch (this->accentColour) {
         case Colour::Red:
-
+            h1 = Aether::Colour{150, 10, 10, 255};
+            h2 = Aether::Colour{255, 55, 65, 255};
             break;
 
         case Colour::Orange:

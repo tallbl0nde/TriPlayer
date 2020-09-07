@@ -15,6 +15,7 @@ namespace Frame {
             Metadata::Artist metadata;
 
             // Pointers to elements that get updated
+            Aether::FilledButton * saveButton;
             CustomElm::TextBox * name;
             CustomElm::TextBox * imagePath;
             Aether::Image * image;
@@ -48,6 +49,9 @@ namespace Frame {
         public:
             // The constructor takes the ID of the artist to show
             ArtistInfo(Main::Application *, ArtistID);
+
+            // Update colours
+            void updateColours();
 
             // Checks for thread updates
             void update(uint32_t);

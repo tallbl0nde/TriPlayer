@@ -82,6 +82,9 @@ namespace Screen {
             // Pass type, action to take and ID to pass to frame (not always used)
             void changeFrame(Frame::Type, Frame::Action, int = -1);
 
+            // Update frame colours
+            void updateColours();
+
             // Update player values
             void update(uint32_t);
 

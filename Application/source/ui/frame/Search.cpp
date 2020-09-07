@@ -300,7 +300,7 @@ namespace Frame {
         for (size_t i = 1; i <= 50; i++) {
             Aether::Image * im = new Aether::Image(anim->x(), anim->y(), "romfs:/anim/infload/" + std::to_string(i) + ".png");
             im->setWH(40, 20);
-            im->setColour(Aether::Colour{0, 255, 255, 255});
+            im->setColour(this->app->theme()->accent());
             anim->addElement(im);
         }
         anim->setAnimateSpeed(50);

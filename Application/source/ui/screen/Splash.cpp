@@ -227,6 +227,15 @@ namespace Screen {
         this->quit->setX(640 - this->quit->w()/2);
     }
 
+    void Splash::updateColours() {
+        if (this->isLoaded) {
+            this->progress->setForegroundColour(this->app->theme()->accent());
+            for (size_t i = 0; i < this->animFrames.size(); i++) {
+                this->animFrames[i]->setColour(this->app->theme()->accent());
+            }
+        }
+    }
+
     void Splash::update(uint32_t dt) {
         Screen::update(dt);
 
@@ -297,6 +306,8 @@ namespace Screen {
     }
 
     void Splash::onLoad() {
+        Screen::onLoad();
+
         // Set background
         this->bg = new Aether::Image(0, 0, "romfs:/bg/splash.png");
         this->addElement(this->bg);
@@ -324,13 +335,13 @@ namespace Screen {
         this->addElement(this->percent);
 
         this->animation = new Aether::Animation(620, 600, 40, 20);
-        for (size_t i = 1; i <= 50; i++) {
-            Aether::Image * im = new Aether::Image(this->animation->x(), this->animation->y(), "romfs:/anim/infload/" + std::to_string(i) + ".png");
-            im->setWH(40, 20);
-            im->setColour(this->app->theme()->accent());
-            this->animation->addElement(im);
+        for (size_t i = 0; i < this->animFrames.size(); i++) {
+            this->animFrames[i] = new Aether::Image(this->animation->x(), this->animation->y(), "romfs:/anim/infload/" + std::to_string(i+1) + ".png");
+            this->animFrames[i]->setWH(40, 20);
+            this->animFrames[i]->setColour(this->app->theme()->accent());
+            this->animation->addElement(this->animFrames[i]);
         }
-        animation->setAnimateSpeed(50);
+        this->animation->setAnimateSpeed(50);
         this->addElement(this->animation);
 
         this->hint = new Aether::Text(640, 685, "Please don't quit until the scan is complete!", 18);
@@ -361,6 +372,7 @@ namespace Screen {
     }
 
     void Splash::onUnload() {
+        Screen::onUnload();
         this->removeElement(this->bg);
         this->removeElement(this->version);
         this->removeElement(this->heading);

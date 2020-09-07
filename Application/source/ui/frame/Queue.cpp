@@ -430,6 +430,10 @@ namespace Frame {
         this->app->addOverlay(this->menu);
     }
 
+    void Queue::updateColours() {
+        this->playingElm->setTextColour(this->app->theme()->accent());
+    }
+
     Queue::~Queue() {
         delete this->menu;
     }

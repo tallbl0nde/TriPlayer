@@ -15,12 +15,19 @@ namespace Screen {
             // Main app pointer
             Main::Application * app;
 
+            // Set true when screen is 'loaded'
+            bool isLoaded;
+
         public:
             // Constructor accepts pointer to application object
             Screen(Main::Application *);
 
             // Called to update colours used without the need of recreation
             virtual void updateColours();
+
+            // Sets isLoaded bool
+            void onLoad();
+            void onUnload();
     };
 };
 

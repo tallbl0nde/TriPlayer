@@ -52,6 +52,9 @@ namespace Screen {
             // Constructor takes pointer to app object
             Settings(Main::Application *);
 
+            // Update colours
+            void updateColours();
+
             // onLoad creates all shared elements
             void onLoad();
 

@@ -28,6 +28,7 @@ namespace Frame {
             Metadata::Playlist metadata;
 
             // Pointers to elements that get updated
+            Aether::FilledButton * saveButton;
             CustomElm::TextBox * name;
             CustomElm::TextBox * imagePath;
             Aether::Image * image;
@@ -56,6 +57,9 @@ namespace Frame {
         public:
             // The constructor takes the ID of the playlist to show
             PlaylistInfo(Main::Application *, PlaylistID);
+
+            // Update colours
+            void updateColours();
 
             // Checks for thread updates
             void update(uint32_t);

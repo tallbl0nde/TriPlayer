@@ -130,12 +130,12 @@ namespace Frame {
         this->addElement(button);
 
         // Save button
-        Aether::FilledButton * save = new Aether::FilledButton(button->x() - this->w()*0.01 - 75, button->y() + button->h() + 25, 150, 50, "Save", 26, [this]() {
+        this->saveButton = new Aether::FilledButton(button->x() - this->w()*0.01 - 75, button->y() + button->h() + 25, 150, 50, "Save", 26, [this]() {
             this->saveChanges();
         });
-        save->setFillColour(this->app->theme()->accent());
-        save->setTextColour(Aether::Colour{0, 0, 0, 255});
-        this->addElement(save);
+        this->saveButton->setFillColour(this->app->theme()->accent());
+        this->saveButton->setTextColour(Aether::Colour{0, 0, 0, 255});
+        this->addElement(this->saveButton);
 
         this->checkFB = false;
         this->browser = nullptr;
@@ -436,6 +436,10 @@ namespace Frame {
             this->newImagePath = path;
             this->dlBuffer.clear();
         }
+    }
+
+    void AlbumInfo::updateColours() {
+        this->saveButton->setFillColour(this->app->theme()->accent());
     }
 
     AlbumInfo::~AlbumInfo() {

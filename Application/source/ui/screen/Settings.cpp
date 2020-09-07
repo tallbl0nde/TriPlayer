@@ -72,7 +72,20 @@ namespace Screen {
         this->addElement(this->frame);
     }
 
+    void Settings::updateColours() {
+        if (this->isLoaded) {
+            this->buttonAppGeneral->setActiveColour(this->app->theme()->accent());
+            this->buttonAppAppearance->setActiveColour(this->app->theme()->accent());
+            this->buttonAppSearch->setActiveColour(this->app->theme()->accent());
+            this->buttonAppAdvanced->setActiveColour(this->app->theme()->accent());
+            this->buttonSysGeneral->setActiveColour(this->app->theme()->accent());
+            this->buttonSysMP3->setActiveColour(this->app->theme()->accent());
+        }
+    }
+
     void Settings::onLoad() {
+        Screen::onLoad();
+
         // Create background textures
         this->bg = new Aether::Image(0, 0, "romfs:/bg/main.png");
         this->addElement(this->bg);
@@ -169,6 +182,7 @@ namespace Screen {
     }
 
     void Settings::onUnload() {
+        Screen::onUnload();
         this->removeElement(this->frame);
         this->removeElement(this->bg);
         this->removeElement(this->sidebarGradient);

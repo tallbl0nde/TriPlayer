@@ -41,6 +41,10 @@ namespace Frame {
         this->addElement(this->list);
     }
 
+    void Frame::updateColours() {
+
+    }
+
     void Frame::onPush(Type t) {
         // Do nothing by default
     }
