@@ -72,30 +72,37 @@ namespace Screen {
         this->oldBackground = this->currentBackground;
         this->interpolatePos = 0.0d;
 
-        // Now create a surface and get colours
+        // Now create a surface and get colours (if needed)
+        bool useDefault = !this->app->config()->autoPlayerPalette();
         SDL_Surface * image = SDLHelper::renderImageS(path);
-        Utils::Splash::Palette palette = Utils::Splash::getPaletteForSurface(image);
-        if (!palette.invalid) {
-            // Set matching colours if valid
-            if (palette.bgLight) {
-                this->primary = palette.background;
-                this->secondary = Utils::Splash::changeLightness(this->primary, -20);
-                this->tertiary = Utils::Splash::changeLightness(this->secondary, -20);
-            } else {
-                this->primary = palette.primary;
-                this->secondary = palette.secondary;
-                this->tertiary = Utils::Splash::changeLightness(this->secondary, -10);
-                this->tertiary.a = 200;
-            }
-            palette.background.a = (palette.bgLight ? 150 : 255);
-            this->targetBackground = palette.background;
 
-        } else {
-            // Otherwise set defaults
+        if (!useDefault) {
+            Utils::Splash::Palette palette = Utils::Splash::getPaletteForSurface(image);
+            if (!palette.invalid) {
+                // Set matching colours if valid
+                if (palette.bgLight) {
+                    this->primary = palette.background;
+                    this->secondary = Utils::Splash::changeLightness(this->primary, -20);
+                    this->tertiary = Utils::Splash::changeLightness(this->secondary, -20);
+                } else {
+                    this->primary = palette.primary;
+                    this->secondary = palette.secondary;
+                    this->tertiary = Utils::Splash::changeLightness(this->secondary, -10);
+                    this->tertiary.a = 200;
+                }
+                palette.background.a = (palette.bgLight ? 150 : 255);
+                this->targetBackground = palette.background;
+            } else {
+                useDefault = true;
+            }
+        }
+
+        // Otherwise set defaults
+        if (useDefault) {
             this->primary = this->app->theme()->FG();
-            this->secondary = this->app->theme()->muted();
-            this->tertiary = this->app->theme()->muted2();
-            this->targetBackground = Aether::Colour{150, 255, 255, 255};
+            this->secondary = this->app->theme()->accent();
+            this->tertiary = this->app->theme()->muted();
+            this->targetBackground = Aether::Colour{90, 90, 90, 255};
         }
 
         // Add image and set colours
@@ -104,6 +111,12 @@ namespace Screen {
         this->albumArt->setColour(Aether::Colour{255, 255, 255, 0});
         this->addElement(this->albumArt);
         this->setColours();
+
+        // If we're using default colours we want to use a slightly different scheme
+        if (useDefault) {
+            this->artist->setColour(this->app->theme()->muted());
+            this->seekBar->setBarBackgroundColour(this->app->theme()->muted2());
+        }
     }
 
     bool Fullscreen::handleEvent(Aether::InputEvent * e) {

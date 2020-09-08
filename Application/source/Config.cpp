@@ -96,6 +96,9 @@ void Config::readConfig() {
         this->accentColour_ = Theme::Colour::Blue;
     }
 
+    // Appearance::auto_player_palette
+    this->autoPlayerPalette_ = this->ini->getbool("Appearance", "auto_player_palette");
+
     // Search::max_playlists
     this->searchMaxPlaylists_ = this->ini->geti("Search", "max_playlists", -42069);
     if (this->searchMaxPlaylists_ < -1) {
@@ -307,6 +310,20 @@ bool Config::setAccentColour(Theme::Colour c) {
         Log::writeError("[CONFIG] Failed to set (Appearance) accent_colour");
     } else {
         this->accentColour_ = c;
+    }
+    return ok;
+}
+
+bool Config::autoPlayerPalette() {
+    return this->autoPlayerPalette_;
+}
+
+bool Config::setAutoPlayerPalette(const bool b) {
+    bool ok = this->ini->put("Appearance", "auto_player_palette", (b ? "Yes" : "No"));
+    if (!ok) {
+        Log::writeError("[CONFIG] Failed to set (Appearance) auto_player_palette");
+    } else {
+        this->autoPlayerPalette_ = b;
     }
     return ok;
 }

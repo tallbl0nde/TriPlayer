@@ -29,6 +29,7 @@ class Config {
         int setQueueMax_;
 
         Theme::Colour accentColour_;
+        bool autoPlayerPalette_;
 
         int searchMaxPlaylists_;
         int searchMaxArtists_;
@@ -81,6 +82,10 @@ class Config {
         // Accent colour
         Theme::Colour accentColour();
         bool setAccentColour(Theme::Colour);
+
+        // Auto player palette
+        bool autoPlayerPalette();
+        bool setAutoPlayerPalette(const bool);
 
         // Limits for search result entries (-1 indicates no limit)
         int searchMaxPlaylists();

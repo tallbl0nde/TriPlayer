@@ -14,7 +14,15 @@ namespace Frame::Settings {
         });
         opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), this->app->theme()->accent());
         this->list->addElement(opt);
-        this->list->addElement(new Aether::ListSeparator(20));
+        this->list->addElement(new Aether::ListSeparator());
+
+        // Appearance::auto_player_palette
+        this->addToggle("Automatic Player Palette", [cfg]() -> bool {
+            return cfg->autoPlayerPalette();
+        }, [cfg](bool b) {
+            cfg->setAutoPlayerPalette(b);
+        });
+        this->addComment("Adjust the colour palette on the fullscreen player to match colours in the current song's album art. The default colour scheme will be used if this is disabled.");
 
         // Overlays
         this->ovlList = new Aether::PopupList("");
