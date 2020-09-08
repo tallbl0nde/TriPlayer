@@ -99,6 +99,9 @@ void Config::readConfig() {
     // Appearance::auto_player_palette
     this->autoPlayerPalette_ = this->ini->getbool("Appearance", "auto_player_palette");
 
+    // Appearance::show_touch_controls
+    this->showTouchControls_ = this->ini->getbool("Appearance", "show_touch_controls");
+
     // Search::max_playlists
     this->searchMaxPlaylists_ = this->ini->geti("Search", "max_playlists", -42069);
     if (this->searchMaxPlaylists_ < -1) {
@@ -324,6 +327,20 @@ bool Config::setAutoPlayerPalette(const bool b) {
         Log::writeError("[CONFIG] Failed to set (Appearance) auto_player_palette");
     } else {
         this->autoPlayerPalette_ = b;
+    }
+    return ok;
+}
+
+bool Config::showTouchControls() {
+    return this->showTouchControls_;
+}
+
+bool Config::setShowTouchControls(const bool b) {
+    bool ok = this->ini->put("Appearance", "show_touch_controls", (b ? "Yes" : "No"));
+    if (!ok) {
+        Log::writeError("[CONFIG] Failed to set (Appearance) show_touch_controls");
+    } else {
+        this->showTouchControls_ = b;
     }
     return ok;
 }

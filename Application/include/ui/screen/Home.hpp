@@ -36,6 +36,7 @@ namespace Screen {
             Aether::Image * backIcon;
             Aether::Text * backText;
             Aether::Element * backButton;
+            Aether::Container * touchContainer;
             Aether::Container * sideContainer;
             Aether::Rectangle * sideBg;
             CustomElm::SideButton * sideSearch;

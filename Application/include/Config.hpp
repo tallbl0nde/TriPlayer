@@ -30,6 +30,7 @@ class Config {
 
         Theme::Colour accentColour_;
         bool autoPlayerPalette_;
+        bool showTouchControls_;
 
         int searchMaxPlaylists_;
         int searchMaxArtists_;
@@ -86,6 +87,10 @@ class Config {
         // Auto player palette
         bool autoPlayerPalette();
         bool setAutoPlayerPalette(const bool);
+
+        // Whether to show back/quit touch buttons
+        bool showTouchControls();
+        bool setShowTouchControls(const bool);
 
         // Limits for search result entries (-1 indicates no limit)
         int searchMaxPlaylists();

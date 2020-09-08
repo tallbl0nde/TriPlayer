@@ -234,6 +234,10 @@ namespace Screen {
             this->backButton->setTouchable(true);
         }
 
+        // Show/hide touch section based on config value
+        this->touchContainer->setHidden(!this->app->config()->showTouchControls());
+        this->sideContainer->setY(this->app->config()->showTouchControls() ? 0 : -65);
+
         // Now update elements
         Screen::update(dt);
     }
@@ -357,14 +361,15 @@ namespace Screen {
 
         // === SIDEBAR ===
         this->sideContainer = new Aether::Container(0, 0, 310, 590);
+        this->touchContainer = new Aether::Container(this->sideContainer->x(), this->sideContainer->y(), this->sideContainer->w(), 65);
 
         // Navigation outlines
         Aether::Rectangle * r = new Aether::Rectangle(15, 65, 280, 1);
         r->setColour(this->app->theme()->muted2());
-        this->sideContainer->addElement(r);
+        this->touchContainer->addElement(r);
         r = new Aether::Rectangle(155, 10, 1, 45);
         r->setColour(this->app->theme()->muted2());
-        this->sideContainer->addElement(r);
+        this->touchContainer->addElement(r);
 
         // Back
         this->backButton = new Aether::Element(0, 0, 155, 65);
@@ -379,7 +384,7 @@ namespace Screen {
             this->backCallback();
         });
         this->backButton->setSelectable(false);
-        this->sideContainer->addElement(this->backButton);
+        this->touchContainer->addElement(this->backButton);
 
         // Quit
         Aether::Element * quitButton = new Aether::Element(155, 0, 155, 65);
@@ -395,7 +400,8 @@ namespace Screen {
             this->app->exit();
         });
         quitButton->setSelectable(false);
-        this->sideContainer->addElement(quitButton);
+        this->touchContainer->addElement(quitButton);
+        this->sideContainer->addElement(this->touchContainer);
 
         // Navigation list
         this->sideSearch = new CustomElm::SideButton(10, 80, 290);

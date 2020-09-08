@@ -14,7 +14,7 @@ namespace Frame::Settings {
         });
         opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), this->app->theme()->accent());
         this->list->addElement(opt);
-        this->list->addElement(new Aether::ListSeparator());
+        this->addComment("Change the accent used throughout the application.");
 
         // Appearance::auto_player_palette
         this->addToggle("Automatic Player Palette", [cfg]() -> bool {
@@ -23,6 +23,15 @@ namespace Frame::Settings {
             cfg->setAutoPlayerPalette(b);
         });
         this->addComment("Adjust the colour palette on the fullscreen player to match colours in the current song's album art. The default colour scheme will be used if this is disabled.");
+        this->list->addElement(new Aether::ListSeparator());
+
+        // Appearance::show_touch_controls
+        this->addToggle("Show Touch Controls", [cfg]() -> bool {
+            return cfg->showTouchControls();
+        }, [cfg](bool b) {
+            cfg->setShowTouchControls(b);
+        });
+        this->addComment("Show/hide the touch controls in the top left of the application. This is solely for appearance, you may consider disabling this if you mainly use the controller to navigate.");
 
         // Overlays
         this->ovlList = new Aether::PopupList("");
