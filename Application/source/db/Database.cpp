@@ -1659,7 +1659,7 @@ std::vector<std::string> Database::getAllImagePaths(bool & success) {
         while (ok && this->db->hasRow()) {
             std::string str;
             ok = this->db->getString(0, str);
-            if (ok) {
+            if (ok && !str.empty()) {
                 v.push_back(str);
             }
             ok = keepFalse(ok, this->db->nextRow());

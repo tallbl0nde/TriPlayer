@@ -205,6 +205,10 @@ namespace Screen {
                 this->player->setTrackName(m.title);
                 this->player->setTrackArtist(m.artist);
                 this->player->setDuration(m.duration);
+            } else {
+                this->player->setTrackName("Nothing playing!");
+                this->player->setTrackArtist("Play a song");
+                this->player->setDuration(0);
             }
 
             // Change album cover
@@ -555,7 +559,7 @@ namespace Screen {
         // Init vars
         this->addToPlMenu = nullptr;
         this->backOneFrame = 0;
-        this->playingID = -1;
+        this->playingID = -100;     // This number needs to be less than -1, as >= -1 are valid values
     }
 
     void Home::onUnload() {

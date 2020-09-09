@@ -22,12 +22,12 @@ namespace CustomElm {
         this->albumCover = new Aether::Image(10, 600, "romfs:/misc/noalbum.png");
         this->albumCover->setWH(110, 110);
         this->addElement(this->albumCover);
-        this->trackName = new Aether::Text(140, 625, "Nothing playing!", 24);
+        this->trackName = new Aether::Text(140, 625, "", 24);
         this->trackName->setScroll(true);
         this->trackName->setScrollSpeed(35);
         this->trackName->setScrollWaitTime(1200);
         this->addElement(this->trackName);
-        this->trackArtist = new Aether::Text(140, 660, "Play a song", 18);
+        this->trackArtist = new Aether::Text(140, 660, "", 18);
         this->addElement(this->trackArtist);
         this->trackArtistDots = new Aether::Text(0, 0, "...", 18);
         this->trackArtistDots->setHidden(true);

@@ -107,6 +107,10 @@ namespace Frame::Settings {
         // Get list of all files in folder
         std::vector<std::string> folderFiles;
         for (auto & entry: std::filesystem::recursive_directory_iterator("/switch/TriPlayer/images/")) {
+            if (entry.is_directory()) {
+                continue;
+            }
+
             folderFiles.push_back(entry.path());
         }
         std::sort(folderFiles.begin(), folderFiles.end());

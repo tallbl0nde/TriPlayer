@@ -21,6 +21,7 @@ namespace Frame::Settings {
         this->addButton("Restart Sysmodule", [this]() {
             if (this->app->sysmodule()->terminate()) {
                 this->app->sysmodule()->launch();
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
             }
         });
         this->addComment("Restart the sysmodule and wait for it to reload.");
