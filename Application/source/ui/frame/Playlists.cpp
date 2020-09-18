@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "Paths.hpp"
 #include "ui/element/listitem/Playlist.hpp"
 #include "ui/frame/Playlists.hpp"
 #include "ui/overlay/FileBrowser.hpp"
@@ -7,21 +8,15 @@
 #include "utils/FS.hpp"
 #include "utils/Utils.hpp"
 
-#include "Log.hpp"
-
 // New Playlist button dimensions
 #define BUTTON_F 26
 #define BUTTON_W 250
 #define BUTTON_H 50
 
-// Location of default image
-#define DEFAULT_IMAGE "romfs:/misc/noplaylist.png"
 // Default path for file browser
 #define FILE_BROWSER_ROOT "/"
 // Accepted image extensions
 static const std::vector<std::string> FILE_EXTENSIONS = {".jpg", ".jpeg", ".jfif", ".png", ".JPG", ".JPEG", ".JFIF", ".PNG"};
-// Save location of images
-#define SAVE_LOCATION "/switch/TriPlayer/images/playlist/"
 
 namespace Frame {
     Playlists::Playlists(Main::Application * a) : Frame(a) {
@@ -57,7 +52,7 @@ namespace Frame {
     }
 
     CustomElm::ListItem::Playlist * Playlists::getListItem(const Metadata::Playlist & m) {
-        CustomElm::ListItem::Playlist * l = new CustomElm::ListItem::Playlist(m.imagePath.empty() ? DEFAULT_IMAGE : m.imagePath);
+        CustomElm::ListItem::Playlist * l = new CustomElm::ListItem::Playlist(m.imagePath.empty() ? Path::App::DefaultArtFile : m.imagePath);
 
         // Set styling parameters
         l->setNameString(m.name);
@@ -375,8 +370,8 @@ namespace Frame {
             std::string rand;
             do {
                 rand = Utils::randomString(10);
-            } while (Utils::Fs::fileExists(SAVE_LOCATION + rand + ext));
-            this->newData.imagePath = SAVE_LOCATION + rand + ext;
+            } while (Utils::Fs::fileExists(Path::App::PlaylistImageFolder + rand + ext));
+            this->newData.imagePath = Path::App::PlaylistImageFolder + rand + ext;
         }
 
         // Commit changes to db (acquires lock and then writes)

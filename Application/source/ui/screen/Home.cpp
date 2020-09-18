@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "Paths.hpp"
 #include "ui/frame/Album.hpp"
 #include "ui/frame/Albums.hpp"
 #include "ui/frame/AlbumInfo.hpp"
@@ -211,7 +212,7 @@ namespace Screen {
                     this->player->setDuration(m.duration);
                     AlbumID id = this->app->database()->getAlbumIDForSong(m.ID);
                     Metadata::Album md = this->app->database()->getAlbumMetadataForID(id);
-                    this->player->setAlbumCover(new Aether::Image(0, 0, md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath));
+                    this->player->setAlbumCover(new Aether::Image(0, 0, md.imagePath.empty() ? Path::App::DefaultArtFile : md.imagePath));
                     updated = true;
                 }
             }
@@ -221,7 +222,7 @@ namespace Screen {
                 this->player->setTrackName("Nothing playing!");
                 this->player->setTrackArtist("Play a song");
                 this->player->setDuration(0);
-                this->player->setAlbumCover(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
+                this->player->setAlbumCover(new Aether::Image(0, 0, Path::App::DefaultArtFile));
             }
         }
 

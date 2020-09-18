@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "Paths.hpp"
 #include "ui/frame/settings/AppAdvanced.hpp"
 #include "ui/frame/settings/AppAppearance.hpp"
 #include "ui/frame/settings/AppGeneral.hpp"
@@ -10,9 +11,6 @@
 // Pixels between each entry in the sidebar
 #define SIDE_PADDING 20
 #define SIDEBAR_SEP 5
-
-// Path to sysmodule config
-#define SYS_CONFIG "/config/TriPlayer/sys_config.ini"
 
 namespace Screen {
     Settings::Settings(Main::Application * a) : Screen(a) {
@@ -173,7 +171,7 @@ namespace Screen {
         this->addElement(this->sidebarList);
 
         // Ensure we have loaded the sysmodule config
-        this->app->config()->prepareSys(SYS_CONFIG);
+        this->app->config()->prepareSys(Path::Sys::ConfigFile);
 
         // Start on first tab!
         this->frame = nullptr;

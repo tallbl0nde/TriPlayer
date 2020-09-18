@@ -1,27 +1,26 @@
 #include "Application.hpp"
 #include "Log.hpp"
+#include "Paths.hpp"
 #include "utils/FS.hpp"
-
-// Folder paths
-#define MAIN_FOLDER "/switch/TriPlayer/"
-#define ALBUM_IMAGES MAIN_FOLDER "images/album"
-#define ARTIST_IMAGES MAIN_FOLDER "images/artist"
-#define PLAYLIST_IMAGES MAIN_FOLDER "images/playlist"
-
-// Log name
-#define LOG_FILE "application.log"
+#include "utils/NX.hpp"
 
 int main(void) {
     // Ensure directories exist
-    Utils::Fs::createPath(MAIN_FOLDER);
-    Utils::Fs::createPath(ALBUM_IMAGES);
-    Utils::Fs::createPath(ARTIST_IMAGES);
-    Utils::Fs::createPath(PLAYLIST_IMAGES);
+    Utils::Fs::createPath(Path::Common::ConfigFolder);
+    Utils::Fs::createPath(Path::Common::SwitchFolder);
+    Utils::Fs::createPath(Path::App::AlbumImageFolder);
+    Utils::Fs::createPath(Path::App::ArtistImageFolder);
+    Utils::Fs::createPath(Path::App::PlaylistImageFolder);
+
+    // Start switch related services early
+    Utils::NX::startServices();
 
     // Start actual 'app' execution
     Main::Application * app = new Main::Application();
     app->run();
     delete app;
+
+    Utils::NX::stopServices();
 
     return 0;
 }

@@ -1,12 +1,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <future>
+#include "Paths.hpp"
 #include "Service.hpp"
 #include "sources/MP3.hpp"
 #include "utils/FS.hpp"
 
-// Path to config file on SD Card
-#define CONFIG_PATH "/config/TriPlayer/sys_config.ini"
 // Interval (in seconds) to test if DB file is accessible
 #define DB_TEST_INTERVAL 2
 // Number of seconds to wait before previous becomes (back to start)
@@ -26,7 +25,7 @@ MainService::MainService() {
     this->songAction = SongAction::Nothing;
 
     // Read and set config
-    this->cfg = new Config(CONFIG_PATH);
+    this->cfg = new Config(Path::Sys::ConfigFile);
     this->updateConfig();
 
     // Create listening socket (exit if error occurred)

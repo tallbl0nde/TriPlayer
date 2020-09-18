@@ -3,14 +3,12 @@
 #include <future>
 #include "LibraryScanner.hpp"
 #include "Log.hpp"
+#include "Paths.hpp"
 #include "utils/Fs.hpp"
 #include "utils/Image.hpp"
 #include "utils/MP3.hpp"
 #include "utils/Timer.hpp"
 #include "utils/Utils.hpp"
-
-// Location to save album art to
-#define SAVE_LOCATION "/switch/TriPlayer/images/album/"
 
 // Number of threads to use for scanning audio files
 // For my library 2 threads instead of one sped up scanning by ~5%
@@ -44,8 +42,8 @@ std::string LibraryScanner::parseAlbumArt(const std::string & path) {
     std::string filename;
     do {
         filename = Utils::randomString(10);
-    } while (Utils::Fs::fileExists(SAVE_LOCATION + filename + ".png"));
-    filename = SAVE_LOCATION + filename + ".png";
+    } while (Utils::Fs::fileExists(Path::App::AlbumImageFolder + filename + ".png"));
+    filename = Path::App::AlbumImageFolder + filename + ".png";
     bool ok = Utils::Fs::writeFile(filename, image);
     if (!ok) {
         Log::writeError("[SCAN] [ART] Unable to write image to file: " + filename);

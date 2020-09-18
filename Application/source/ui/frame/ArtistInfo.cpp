@@ -1,17 +1,14 @@
 #include "Application.hpp"
+#include "Paths.hpp"
 #include "ui/frame/ArtistInfo.hpp"
 #include "ui/element/TextBox.hpp"
 #include "utils/FS.hpp"
 #include "utils/Utils.hpp"
 
-// Location of default image
-#define DEFAULT_IMAGE "romfs:/misc/noartist.png"
 // Default path for file browser
 #define FILE_BROWSER_ROOT "/"
 // Accepted image extensions
 static const std::vector<std::string> FILE_EXTENSIONS = {".jpg", ".jpeg", ".jfif", ".png", ".JPG", ".JPEG", ".JFIF", ".PNG"};
-// Save location of images
-#define SAVE_LOCATION "/switch/TriPlayer/images/artist/"
 
 // This whole file/frame is a mess behind the scenes :P
 namespace Frame {
@@ -82,13 +79,13 @@ namespace Frame {
         this->imagePath = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.62, 50);
         this->imagePath->setBoxColour(this->app->theme()->muted2());
         this->imagePath->setTextColour(this->app->theme()->muted());
-        this->imagePath->setString(this->metadata.imagePath.empty() ? DEFAULT_IMAGE : this->metadata.imagePath);
+        this->imagePath->setString(this->metadata.imagePath.empty() ? Path::App::DefaultArtistFile : this->metadata.imagePath);
         this->imagePath->setSelectable(false);
         this->imagePath->setTouchable(false);
         this->addElement(this->imagePath);
 
         // Image
-        this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), (this->metadata.imagePath.empty() ? DEFAULT_IMAGE : this->metadata.imagePath));
+        this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), (this->metadata.imagePath.empty() ? Path::App::DefaultArtistFile : this->metadata.imagePath));
         this->image->setWH(this->w()*0.18, this->w()*0.18);
         this->addElement(this->image);
 
@@ -331,10 +328,10 @@ namespace Frame {
         this->dlBuffer.clear();
         this->newImagePath.clear();
         this->removeElement(this->image);
-        this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), DEFAULT_IMAGE);
+        this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), Path::App::DefaultArtistFile);
         this->image->setWH(this->w()*0.18, this->w()*0.18);
         this->addElement(this->image);
-        this->imagePath->setString(DEFAULT_IMAGE);
+        this->imagePath->setString(Path::App::DefaultArtistFile);
     }
 
     void ArtistInfo::updateImageFromDL() {
@@ -347,7 +344,7 @@ namespace Frame {
         // Update new image path (everything just has extension .png)
         this->updateImage = true;
         this->newImagePath.clear();
-        this->imagePath->setString(SAVE_LOCATION + std::to_string(this->metadata.tadbID) + ".png");
+        this->imagePath->setString(Path::App::ArtistImageFolder + std::to_string(this->metadata.tadbID) + ".png");
     }
 
     void ArtistInfo::updateImageFromPath(const std::string & path) {
@@ -372,8 +369,8 @@ namespace Frame {
             std::string rand;
             do {
                 rand = Utils::randomString(10);
-            } while (Utils::Fs::fileExists(SAVE_LOCATION + rand + ext));
-            this->imagePath->setString(SAVE_LOCATION + rand + ext);
+            } while (Utils::Fs::fileExists(Path::App::ArtistImageFolder + rand + ext));
+            this->imagePath->setString(Path::App::ArtistImageFolder + rand + ext);
             this->newImagePath = path;
             this->dlBuffer.clear();
         }

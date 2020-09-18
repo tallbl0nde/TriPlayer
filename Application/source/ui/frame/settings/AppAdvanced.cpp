@@ -1,13 +1,10 @@
 #include "Application.hpp"
 #include <filesystem>
+#include "Paths.hpp"
 #include "ui/frame/settings/AppAdvanced.hpp"
 #include "ui/overlay/ProgressBox.hpp"
 #include "utils/FS.hpp"
 #include "utils/metadata/Metadata.hpp"
-
-// Image locations
-#define ARTIST_IMAGE_LOCATION "/switch/TriPlayer/images/artist/"
-#define ALBUM_IMAGE_LOCATION "/switch/TriPlayer/images/album/"
 
 namespace Frame::Settings {
     AppAdvanced::AppAdvanced(Main::Application * a) : Frame(a) {
@@ -149,7 +146,7 @@ namespace Frame::Settings {
             buffer.clear();
             if (Metadata::downloadAlbumImage(albums[i].name, buffer, id) == Metadata::DownloadResult::Success) {
                 // If successful, write to file
-                std::string filename = ALBUM_IMAGE_LOCATION + std::to_string(id) + ".png";
+                std::string filename = Path::App::AlbumImageFolder + std::to_string(id) + ".png";
                 if (!Utils::Fs::writeFile(filename, buffer)) {
                     continue;
                 }
@@ -192,7 +189,7 @@ namespace Frame::Settings {
             buffer.clear();
             if (Metadata::downloadArtistImage(artists[i].name, buffer, id) == Metadata::DownloadResult::Success) {
                 // If successful, write to file
-                std::string filename = ARTIST_IMAGE_LOCATION + std::to_string(id) + ".png";
+                std::string filename = Path::App::ArtistImageFolder + std::to_string(id) + ".png";
                 if (!Utils::Fs::writeFile(filename, buffer)) {
                     continue;
                 }

@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "Paths.hpp"
 #include "ui/screen/Fullscreen.hpp"
 #include "utils/Splash.hpp"
 #include "utils/Utils.hpp"
@@ -268,7 +269,7 @@ namespace Screen {
             // Change album cover
             AlbumID id = this->app->database()->getAlbumIDForSong(m.ID);
             Metadata::Album md = this->app->database()->getAlbumMetadataForID(id);
-            this->updateImage(md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath);
+            this->updateImage(md.imagePath.empty() ? Path::App::DefaultArtFile : md.imagePath);
         }
 
         // Update the seekbar

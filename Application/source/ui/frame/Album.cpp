@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "Paths.hpp"
 #include "ui/element/listitem/AlbumSong.hpp"
 #include "ui/frame/Album.hpp"
 #include "ui/overlay/ArtistList.hpp"
@@ -37,7 +38,7 @@ namespace Frame {
         }
 
         // Populate with Album's data
-        Aether::Image * image = new Aether::Image(this->x() + 50, this->y() + 50, this->metadata.imagePath.empty() ? "romfs:/misc/noalbum.png" : this->metadata.imagePath);
+        Aether::Image * image = new Aether::Image(this->x() + 50, this->y() + 50, this->metadata.imagePath.empty() ? Path::App::DefaultArtFile : this->metadata.imagePath);
         image->setWH(IMAGE_SIZE, IMAGE_SIZE);
         this->addElement(image);
         this->heading->setString(this->metadata.name);
@@ -271,7 +272,7 @@ namespace Frame {
         // Song metadata
         this->songMenu->setMainText(this->songs[pos].title);
         this->songMenu->setSubText(this->songs[pos].artist);
-        this->songMenu->setImage(new Aether::Image(0, 0, this->metadata.imagePath.empty() ? "romfs:/misc/noalbum.png" : this->metadata.imagePath));
+        this->songMenu->setImage(new Aether::Image(0, 0, this->metadata.imagePath.empty() ? Path::App::DefaultArtFile : this->metadata.imagePath));
 
         // Add to Queue
         CustomElm::MenuButton * b = new CustomElm::MenuButton();

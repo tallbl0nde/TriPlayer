@@ -1,3 +1,4 @@
+#include "Paths.hpp"
 #include "ui/element/Player.hpp"
 #include "utils/Utils.hpp"
 
@@ -19,7 +20,7 @@ namespace CustomElm {
         this->addElement(this->playerBg);
 
         // Album/song playing
-        this->albumCover = new Aether::Image(10, 600, "romfs:/misc/noalbum.png");
+        this->albumCover = new Aether::Image(10, 600, Path::App::DefaultArtFile);
         this->albumCover->setWH(110, 110);
         this->addElement(this->albumCover);
         this->trackName = new Aether::Text(140, 625, "", 24);

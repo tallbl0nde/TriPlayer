@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "Paths.hpp"
 #include "ui/screen/Fullscreen.hpp"
 #include "ui/screen/Home.hpp"
 #include "ui/screen/Settings.hpp"
@@ -7,24 +8,18 @@
 #include "utils/MP3.hpp"
 #include "utils/NX.hpp"
 
-// Path to config file
-#define APP_CONFIG_PATH "/config/TriPlayer/app_config.ini"
-// Path to log file
-#define LOG_FILE "/switch/TriPlayer/application.log"
-
 namespace Main {
     Application::Application() : database_(SyncDatabase(new Database())) {
         // Load config
-        this->config_ = new Config(APP_CONFIG_PATH);
+        this->config_ = new Config(Path::App::ConfigFile);
         this->database_->setSpellfixScore(this->config_->searchMaxScore());
         this->database_->setSearchPhraseCount(this->config_->searchMaxPhrases());
 
         // Start logging
-        Log::openFile(LOG_FILE, this->config_->logLevel());
+        Log::openFile(Path::App::LogFile, this->config_->logLevel());
         Log::writeWarning("=== Application Launched ===");
 
         // Start services
-        Utils::NX::startServices();
         Utils::Curl::init();
         Utils::MP3::init();
 
@@ -163,7 +158,6 @@ namespace Main {
         // Stop services
         Utils::MP3::exit();
         Utils::Curl::exit();
-        Utils::NX::stopServices();
 
         // The database will be closed here as the wrapper goes out of scope
     }

@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "Paths.hpp"
 #include "ui/element/GridItem.hpp"
 #include "ui/element/listitem/Artist.hpp"
 #include "ui/element/ScrollableGrid.hpp"
@@ -26,7 +27,7 @@ namespace Frame {
         std::vector<Metadata::Album> m = this->app->database()->getAllAlbumMetadata();
         if (m.size() > 0) {
             for (size_t i = 0; i < m.size(); i++) {
-                std::string img = (m[i].imagePath.empty() ? "romfs:/misc/noalbum.png" : m[i].imagePath);
+                std::string img = (m[i].imagePath.empty() ? Path::App::DefaultArtFile : m[i].imagePath);
                 CustomElm::GridItem * l = new CustomElm::GridItem(img);
                 l->setMainString(m[i].name);
                 l->setSubString(m[i].artist);
@@ -107,7 +108,7 @@ namespace Frame {
         this->albumMenu->addSeparator(this->app->theme()->muted2());
 
         // Album metadata
-        this->albumMenu->setImage(new Aether::Image(0, 0, m.imagePath.empty() ? "romfs:/misc/noalbum.png" : m.imagePath));
+        this->albumMenu->setImage(new Aether::Image(0, 0, m.imagePath.empty() ? Path::App::DefaultArtFile : m.imagePath));
         this->albumMenu->setMainText(m.name);
         this->albumMenu->setSubText(m.artist);
 

@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "Paths.hpp"
 #include "ui/element/GridItem.hpp"
 #include "ui/element/HorizontalList.hpp"
 #include "ui/element/ListHeadingCount.hpp"
@@ -184,7 +185,7 @@ namespace Frame {
         // Create horizontal list and populate with items
         CustomElm::HorizontalList * hlist = new CustomElm::HorizontalList(this->list->x(), 0, this->list->w(), 250);
         for (size_t i = 0; i < this->albums.size(); i++) {
-            std::string img = (this->albums[i].imagePath.empty() ? "romfs:/misc/noalbum.png" : this->albums[i].imagePath);
+            std::string img = (this->albums[i].imagePath.empty() ? Path::App::DefaultArtFile : this->albums[i].imagePath);
             CustomElm::GridItem * l = new CustomElm::GridItem(img);
             l->setMainString(this->albums[i].name);
             l->setSubString(this->albums[i].artist);
@@ -492,7 +493,7 @@ namespace Frame {
 
         // Album metadata
         Metadata::Album m = this->app->database()->getAlbumMetadataForID(id);
-        this->menu->setImage(new Aether::Image(0, 0, m.imagePath.empty() ? "romfs:/misc/noalbum.png" : m.imagePath));
+        this->menu->setImage(new Aether::Image(0, 0, m.imagePath.empty() ? Path::App::DefaultArtFile : m.imagePath));
         this->menu->setMainText(m.name);
         this->menu->setSubText(m.artist);
 
@@ -600,7 +601,7 @@ namespace Frame {
         this->menu->setSubText(m.artist);
         AlbumID aID = this->app->database()->getAlbumIDForSong(m.ID);
         Metadata::Album md = this->app->database()->getAlbumMetadataForID(aID);
-        this->menu->setImage(new Aether::Image(0, 0, md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath));
+        this->menu->setImage(new Aether::Image(0, 0, md.imagePath.empty() ? Path::App::DefaultArtFile : md.imagePath));
 
         // Add to Queue
         CustomElm::MenuButton * b = new CustomElm::MenuButton();

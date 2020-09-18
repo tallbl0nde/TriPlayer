@@ -4,14 +4,11 @@
 #include "db/extensions/Spellfix.h"
 #include "db/migrations/Migration.hpp"
 #include "Log.hpp"
+#include "Paths.hpp"
 #include "utils/FS.hpp"
 #include "utils/Search.hpp"
 #include "utils/Utils.hpp"
 
-// Location of backup file
-#define BACKUP_PATH "/switch/TriPlayer/data_old.sqlite3"
-// Location of the database file
-#define DB_PATH "/switch/TriPlayer/data.sqlite3"
 // Version of the database (database begins with zero from 'template', so this started at 1)
 #define DB_VERSION 6
 // Maximum number of spellfixed words to allow per word (i.e. pick the top x words)
@@ -46,8 +43,8 @@ void removeImage(sqlite3_context * pCtx, int argc, sqlite3_value ** argv) {
 Database::Database() {
     // Copy the template if the database doesn't exist
     // Needed as SQLite spits IO errors otherwise
-    if (!Utils::Fs::fileExists(DB_PATH)) {
-        if (!Utils::Fs::copyFile(TEMPLATE_DB_PATH, DB_PATH)) {
+    if (!Utils::Fs::fileExists(Path::Common::DatabaseFile)) {
+        if (!Utils::Fs::copyFile(TEMPLATE_DB_PATH, Path::Common::DatabaseFile)) {
             Log::writeError("[DB] Fatal error: unable to copy template database");
         } else {
             Log::writeSuccess("[DB] Copied template database successfully");
@@ -55,7 +52,7 @@ Database::Database() {
     }
 
     // Create the database object
-    this->db = new SQLite(DB_PATH);
+    this->db = new SQLite(Path::Common::DatabaseFile);
     this->db->ignoreConstraints(true);
 
     // Load the spellfix1 extension
@@ -101,7 +98,7 @@ bool Database::migrate() {
     // Otherwise let's first backup the current database
     if (version > 0 && ok) {
         this->close();
-        if (!Utils::Fs::copyFile(DB_PATH, BACKUP_PATH)) {
+        if (!Utils::Fs::copyFile(Path::Common::DatabaseFile, Path::Common::DatabaseBackupFile)) {
             this->setErrorMsg("An error occurred backing up the database");
             return false;
         } else {

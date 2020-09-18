@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "Paths.hpp"
 #include "ui/element/TextBox.hpp"
 #include "ui/frame/PlaylistInfo.hpp"
 #include "ui/overlay/FileBrowser.hpp"
@@ -6,15 +7,11 @@
 #include "utils/MP3.hpp"
 #include "utils/Utils.hpp"
 
-// Location of default image
-#define DEFAULT_IMAGE "romfs:/misc/noplaylist.png"
 // Default path for file browser
 #define FILE_BROWSER_ROOT "/"
 // Accepted image extensions
 static const std::vector<std::string> FILE_EXTENSIONS_AUD = {".mp3", ".MP3"};
 static const std::vector<std::string> FILE_EXTENSIONS_IMG = {".jpg", ".jpeg", ".jfif", ".png", ".JPG", ".JPEG", ".JFIF", ".PNG"};
-// Save location of images
-#define SAVE_LOCATION "/switch/TriPlayer/images/playlist/"
 
 // This whole file/frame is a mess behind the scenes :P
 namespace Frame {
@@ -85,13 +82,13 @@ namespace Frame {
         this->imagePath = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.62, 50);
         this->imagePath->setBoxColour(this->app->theme()->muted2());
         this->imagePath->setTextColour(this->app->theme()->muted());
-        this->imagePath->setString(this->metadata.imagePath.empty() ? DEFAULT_IMAGE : this->metadata.imagePath);
+        this->imagePath->setString(this->metadata.imagePath.empty() ? Path::App::DefaultArtistFile : this->metadata.imagePath);
         this->imagePath->setSelectable(false);
         this->imagePath->setTouchable(false);
         this->addElement(this->imagePath);
 
         // Image
-        this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), (this->metadata.imagePath.empty() ? DEFAULT_IMAGE : this->metadata.imagePath));
+        this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), (this->metadata.imagePath.empty() ? Path::App::DefaultArtistFile : this->metadata.imagePath));
         this->image->setWH(this->w()*0.18, this->w()*0.18);
         this->addElement(this->image);
 
@@ -269,10 +266,10 @@ namespace Frame {
         this->dlBuffer.clear();
         this->newImagePath.clear();
         this->removeElement(this->image);
-        this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), DEFAULT_IMAGE);
+        this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), Path::App::DefaultArtistFile);
         this->image->setWH(this->w()*0.18, this->w()*0.18);
         this->addElement(this->image);
-        this->imagePath->setString(DEFAULT_IMAGE);
+        this->imagePath->setString(Path::App::DefaultArtistFile);
     }
 
     void PlaylistInfo::updateImageFromID3(const std::string & path) {
@@ -303,9 +300,9 @@ namespace Frame {
             std::string rand;
             do {
                 rand = Utils::randomString(10);
-            } while (Utils::Fs::fileExists(SAVE_LOCATION + rand + ".png"));
+            } while (Utils::Fs::fileExists(Path::App::PlaylistImageFolder + rand + ".png"));
             this->newImagePath.clear();
-            this->imagePath->setString(SAVE_LOCATION + rand + ".png");
+            this->imagePath->setString(Path::App::PlaylistImageFolder + rand + ".png");
         }
     }
 
@@ -331,8 +328,8 @@ namespace Frame {
             std::string rand;
             do {
                 rand = Utils::randomString(10);
-            } while (Utils::Fs::fileExists(SAVE_LOCATION + rand + ext));
-            this->imagePath->setString(SAVE_LOCATION + rand + ext);
+            } while (Utils::Fs::fileExists(Path::App::PlaylistImageFolder + rand + ext));
+            this->imagePath->setString(Path::App::PlaylistImageFolder + rand + ext);
             this->newImagePath = path;
             this->dlBuffer.clear();
         }

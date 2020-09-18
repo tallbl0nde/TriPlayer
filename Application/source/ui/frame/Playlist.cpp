@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "Paths.hpp"
 #include "ui/element/listitem/Song.hpp"
 #include "ui/frame/Playlist.hpp"
 #include "ui/overlay/ItemMenu.hpp"
@@ -282,7 +283,7 @@ namespace Frame {
         this->songMenu->setSubText(this->songs[pos].song.artist);
         AlbumID id = this->app->database()->getAlbumIDForSong(this->songs[pos].song.ID);
         Metadata::Album md = this->app->database()->getAlbumMetadataForID(id);
-        this->songMenu->setImage(new Aether::Image(0, 0, md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath));
+        this->songMenu->setImage(new Aether::Image(0, 0, md.imagePath.empty() ? Path::App::DefaultArtFile : md.imagePath));
 
         // Add to Queue
         CustomElm::MenuButton * b = new CustomElm::MenuButton();
