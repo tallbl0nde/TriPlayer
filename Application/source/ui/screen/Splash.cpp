@@ -29,6 +29,12 @@ namespace Screen {
             return;
         }
 
+        // Skip scanning if the config option is set
+        if (!this->app->config()->scanOnLaunch()) {
+            this->currentStage = ScanStage::Done;
+            return;
+        }
+
         // First create the LibraryScanner object
         this->app->database()->openReadOnly();
         LibraryScanner scanner = LibraryScanner(this->app->database(), "/music");

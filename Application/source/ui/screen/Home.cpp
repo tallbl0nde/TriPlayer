@@ -200,21 +200,29 @@ namespace Screen {
         SongID id = this->app->sysmodule()->currentSong();
         if (id != this->playingID) {
             this->playingID = id;
-            Metadata::Song m = this->app->database()->getSongMetadataForID(id);
-            if (m.ID != -1) {
-                this->player->setTrackName(m.title);
-                this->player->setTrackArtist(m.artist);
-                this->player->setDuration(m.duration);
-            } else {
+            bool updated = false;
+            if (id > -1) {
+                Metadata::Song m = this->app->database()->getSongMetadataForID(id);
+
+                // Repeated check as ID is set negative on error
+                if (m.ID > -1) {
+                    this->player->setTrackName(m.title);
+                    this->player->setTrackArtist(m.artist);
+                    this->player->setDuration(m.duration);
+                    AlbumID id = this->app->database()->getAlbumIDForSong(m.ID);
+                    Metadata::Album md = this->app->database()->getAlbumMetadataForID(id);
+                    this->player->setAlbumCover(new Aether::Image(0, 0, md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath));
+                    updated = true;
+                }
+            }
+
+            // Use default text if an error occurs or the ID is negative
+            if (!updated) {
                 this->player->setTrackName("Nothing playing!");
                 this->player->setTrackArtist("Play a song");
                 this->player->setDuration(0);
+                this->player->setAlbumCover(new Aether::Image(0, 0, "romfs:/misc/noalbum.png"));
             }
-
-            // Change album cover
-            AlbumID id = this->app->database()->getAlbumIDForSong(m.ID);
-            Metadata::Album md = this->app->database()->getAlbumMetadataForID(id);
-            this->player->setAlbumCover(new Aether::Image(0, 0, md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath));
         }
 
         // Show/hide dimming element based on current state
@@ -553,7 +561,7 @@ namespace Screen {
         // Set songs active
         this->frame = nullptr;
         this->frameType = Frame::Type::None;
-        this->changeFrame(Frame::Type::Songs, Frame::Action::Reset);
+        this->changeFrame(this->app->config()->initialFrame(), Frame::Action::Reset);
         this->container->setFocussed(this->frame);
 
         // Init vars

@@ -80,11 +80,12 @@ namespace Frame::Settings {
         // General::set_queue_max
         opt = new Aether::ListOption("Initial Queue Size", std::to_string(cfg->setQueueMax()), nullptr);
         opt->setCallback([this, cfg, opt]() {
-            int val;
-            if (this->getNumberInput(val, "Initial Queue Size", "", false)) {
+            int val = cfg->setQueueMax();
+            if (this->getNumberInput(val, "Initial Queue Size", "", true)) {
                 val = (val < -1 ? -1 : (val > 65535 ? 65535 : val));
                 if (cfg->setSetQueueMax(val)) {
                     opt->setValue(std::to_string(val));
+                    this->app->sysmodule()->setQueueLimit(val);
                 }
             }
         });
@@ -137,8 +138,10 @@ namespace Frame::Settings {
             Log::Level level = array[i];
             std::string str = Log::levelToString(level);
             this->ovlList->addEntry(str, [this, opt, str, level]() {
-                opt->setValue(str);
-                this->app->config()->setLogLevel(level);
+                if (this->app->config()->setLogLevel(level)) {
+                    opt->setValue(str);
+                    Log::setLogLevel(level);
+                }
             }, current == level);
         }
 

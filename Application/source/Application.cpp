@@ -3,10 +3,14 @@
 #include "ui/screen/Home.hpp"
 #include "ui/screen/Settings.hpp"
 #include "ui/screen/Splash.hpp"
+#include "utils/Curl.hpp"
+#include "utils/MP3.hpp"
 #include "utils/NX.hpp"
 
 // Path to config file
 #define APP_CONFIG_PATH "/config/TriPlayer/app_config.ini"
+// Path to log file
+#define LOG_FILE "/switch/TriPlayer/application.log"
 
 namespace Main {
     Application::Application() : database_(SyncDatabase(new Database())) {
@@ -15,12 +19,22 @@ namespace Main {
         this->database_->setSpellfixScore(this->config_->searchMaxScore());
         this->database_->setSearchPhraseCount(this->config_->searchMaxPhrases());
 
+        // Start logging
+        Log::openFile(LOG_FILE, this->config_->logLevel());
+        Log::writeWarning("=== Application Launched ===");
+
+        // Start services
+        Utils::NX::startServices();
+        Utils::Curl::init();
+        Utils::MP3::init();
+
         // Prepare theme
         this->theme_ = new Theme();
         this->theme_->setAccent(this->config_->accentColour());
 
         // Create sysmodule object (will attempt connection)
         this->sysmodule_ = new Sysmodule();
+        this->sysmodule_->setQueueLimit(this->config_->setQueueMax());
         // Continue in another thread
         this->sysThread = std::async(std::launch::async, &Sysmodule::process, this->sysmodule_);
 
@@ -145,6 +159,11 @@ namespace Main {
 
         // Cleanup config object
         delete this->config_;
+
+        // Stop services
+        Utils::MP3::exit();
+        Utils::Curl::exit();
+        Utils::NX::stopServices();
 
         // The database will be closed here as the wrapper goes out of scope
     }
