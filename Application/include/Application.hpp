@@ -32,6 +32,10 @@ namespace Main {
             // Screens of the app
             std::array<Screen::Screen *, 4> screens;
 
+            // Overlay to show when prompting to exit
+            Aether::MessageBox * exitPrompt;
+            void createExitPrompt();
+
             // Config object (used to interact with config files)
             Config * config_;
 

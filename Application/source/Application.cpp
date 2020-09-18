@@ -42,7 +42,9 @@ namespace Main {
         this->display->setHighlightColours(Aether::Colour{255, 255, 255, 0}, this->theme_->selected());
         this->setHighlightAnimation(nullptr);
         this->display->setFadeIn();
+        this->display->setFadeOut();
         this->display->setShowFPS(true);
+        this->exitPrompt = nullptr;
 
         // Setup screens
         this->screens[static_cast<int>(ScreenID::Fullscreen)] = new Screen::Fullscreen(this);
@@ -53,6 +55,26 @@ namespace Main {
 
         // Mark that we're playing media
         Utils::NX::setPlayingMedia(true);
+    }
+
+    void Application::createExitPrompt() {
+        this->exitPrompt = new Aether::MessageBox();
+        this->exitPrompt->setLineColour(this->theme_->muted2());
+        this->exitPrompt->setRectangleColour(this->theme_->popupBG());
+        this->exitPrompt->addLeftButton("Cancel", [this]() {
+            this->exitPrompt->close();
+        });
+        this->exitPrompt->addRightButton("Exit", [this]() {
+            this->display->exit();
+        });
+        this->exitPrompt->setTextColour(this->theme_->accent());
+        Aether::Element * body = new Aether::Element(0, 0, 700);
+        Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "Are you sure you want to exit?", 24, 620);
+        tips->setColour(this->theme_->FG());
+        body->addElement(tips);
+        body->setH(tips->h() + 80);
+        this->exitPrompt->setBody(body);
+        this->exitPrompt->setBodySize(body->w(), body->h());
     }
 
     void Application::setHoldDelay(int i) {
@@ -132,7 +154,16 @@ namespace Main {
     }
 
     void Application::exit() {
-        this->display->exit();
+        // Check if we need to display a popup
+        if (this->config_->confirmExit()) {
+            delete this->exitPrompt;
+            this->createExitPrompt();
+            this->addOverlay(this->exitPrompt);
+
+        // Otherwise just exit
+        } else {
+            this->display->exit();
+        }
     }
 
     Application::~Application() {
@@ -143,6 +174,9 @@ namespace Main {
         for (Screen::Screen * s : this->screens) {
             delete s;
         }
+
+        // Delete overlay
+        delete this->exitPrompt;
 
         // Cleanup Aether after screens are deleted
         delete this->display;
