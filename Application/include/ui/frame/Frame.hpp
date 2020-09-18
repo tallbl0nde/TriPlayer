@@ -52,6 +52,7 @@ namespace Frame {
             Main::Application * app;
             // Pointers to callbacks set below
             std::function<void(Type, Action, int)> changeFrame;
+            std::function<void(const std::string &, const std::vector<SongID> &, const size_t)> playNewQueue;
             std::function<void(std::function<void(PlaylistID)>)> showAddToPlaylist;
 
         public:
@@ -70,6 +71,8 @@ namespace Frame {
 
             // Passed a function to call when wanting to add a frame
             void setChangeFrameFunc(std::function<void(Type, Action, int)>);
+            // Passed a function to call when wanting to set a new play queue
+            void setPlayNewQueueFunc(std::function<void(const std::string &, const std::vector<SongID> &, const size_t)>);
             // Passed a function to call when wanting to add to playlist
             void setShowAddToPlaylistFunc(std::function<void(std::function<void(PlaylistID)>)>);
     };

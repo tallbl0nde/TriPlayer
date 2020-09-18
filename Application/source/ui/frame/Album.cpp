@@ -144,10 +144,7 @@ namespace Frame {
         for (size_t i = 0; i < this->songs.size(); i++) {
             ids.push_back(this->songs[i].ID);
         }
-        this->app->sysmodule()->sendSetPlayingFrom(this->metadata.name);
-        this->app->sysmodule()->sendSetQueue(ids);
-        this->app->sysmodule()->sendSetSongIdx(pos);
-        this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+        this->playNewQueue(this->metadata.name, ids, pos);
     }
 
     void Album::createArtistsList() {

@@ -56,10 +56,7 @@ namespace Frame {
             for (size_t i = 0; i < v.size(); i++) {
                 ids.push_back(v[i].ID);
             }
-            this->app->sysmodule()->sendSetPlayingFrom(m.name);
-            this->app->sysmodule()->sendSetQueue(ids);
-            this->app->sysmodule()->sendSetSongIdx(0);
-            this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+            this->playNewQueue(m.name, ids, 0);
         });
         this->playButton->setFillColour(this->app->theme()->accent());
         this->playButton->setTextColour(Aether::Colour{0, 0, 0, 255});
@@ -214,10 +211,7 @@ namespace Frame {
             for (size_t i = 0; i < v.size(); i++) {
                 ids.push_back(v[i].ID);
             }
-            this->app->sysmodule()->sendSetPlayingFrom(m.name);
-            this->app->sysmodule()->sendSetQueue(ids);
-            this->app->sysmodule()->sendSetSongIdx(0);
-            this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+            this->playNewQueue(m.name, ids, 0);
             this->albumMenu->close();
         });
         this->albumMenu->addButton(b);

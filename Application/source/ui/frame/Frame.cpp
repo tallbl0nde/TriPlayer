@@ -42,7 +42,7 @@ namespace Frame {
     }
 
     void Frame::updateColours() {
-
+        // Do nothing by default
     }
 
     void Frame::onPush(Type t) {
@@ -55,6 +55,10 @@ namespace Frame {
 
     void Frame::setChangeFrameFunc(std::function<void(Type, Action, int)> f) {
         this->changeFrame = f;
+    }
+
+    void Frame::setPlayNewQueueFunc(std::function<void(const std::string &, const std::vector<SongID> &, const size_t)> f) {
+        this->playNewQueue = f;
     }
 
     void Frame::setShowAddToPlaylistFunc(std::function<void(std::function<void(PlaylistID)>)> f) {

@@ -235,10 +235,7 @@ namespace Frame {
             l->setTextColour(this->app->theme()->FG());
             std::string phrase = keyboard.buffer;
             l->setCallback([this, phrase, i](){
-                this->app->sysmodule()->sendSetPlayingFrom("'" + phrase + "'");
-                this->app->sysmodule()->sendSetQueue(this->songIDs);
-                this->app->sysmodule()->sendSetSongIdx(i);
-                this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+                this->playNewQueue("'" + phrase + "'", this->songIDs, i);
             });
             SongID id = this->songs[i].ID;
             l->setMoreCallback([this, id]() {
@@ -343,10 +340,7 @@ namespace Frame {
                 for (size_t i = 0; i < v.size(); i++) {
                     ids.push_back(v[i].song.ID);
                 }
-                this->app->sysmodule()->sendSetPlayingFrom(m.name);
-                this->app->sysmodule()->sendSetQueue(ids);
-                this->app->sysmodule()->sendSetSongIdx(0);
-                this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+                this->playNewQueue(m.name, ids, 0);
             }
             this->menu->close();
         });
@@ -428,10 +422,7 @@ namespace Frame {
             for (size_t i = 0; i < v.size(); i++) {
                 ids.push_back(v[i].ID);
             }
-            this->app->sysmodule()->sendSetPlayingFrom(m.name);
-            this->app->sysmodule()->sendSetQueue(ids);
-            this->app->sysmodule()->sendSetSongIdx(0);
-            this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+            this->playNewQueue(m.name, ids, 0);
             this->menu->close();
         });
         this->menu->addButton(b);
@@ -509,10 +500,7 @@ namespace Frame {
             for (size_t i = 0; i < v.size(); i++) {
                 ids.push_back(v[i].ID);
             }
-            this->app->sysmodule()->sendSetPlayingFrom(m.name);
-            this->app->sysmodule()->sendSetQueue(ids);
-            this->app->sysmodule()->sendSetSongIdx(0);
-            this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+            this->playNewQueue(m.name, ids, 0);
             this->menu->close();
         });
         this->menu->addButton(b);

@@ -213,10 +213,7 @@ namespace Frame {
                 for (size_t i = 0; i < v.size(); i++) {
                     ids.push_back(v[i].song.ID);
                 }
-                this->app->sysmodule()->sendSetPlayingFrom(this->items[pos].meta.name);
-                this->app->sysmodule()->sendSetQueue(ids);
-                this->app->sysmodule()->sendSetSongIdx(0);
-                this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+                this->playNewQueue(this->items[pos].meta.name, ids, 0);
             }
             this->menu->close();
         });

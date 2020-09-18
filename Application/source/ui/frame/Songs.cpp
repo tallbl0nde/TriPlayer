@@ -25,10 +25,7 @@ namespace Frame {
                 l->setMoreColour(this->app->theme()->muted());
                 l->setTextColour(this->app->theme()->FG());
                 l->setCallback([this, i](){
-                    this->app->sysmodule()->sendSetPlayingFrom("Your Songs");
-                    this->app->sysmodule()->sendSetQueue(this->songIDs);
-                    this->app->sysmodule()->sendSetSongIdx(i);
-                    this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+                    this->playNewQueue("Your Songs", this->songIDs, i);
                 });
                 SongID id = m[i].ID;
                 l->setMoreCallback([this, id]() {

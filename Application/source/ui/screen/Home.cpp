@@ -19,7 +19,7 @@ namespace Screen {
         // Attempt the following in order when B is pressed:
         // 1. Shift focus from the player to the main frame
         // 2. Delete the current frame and pop one from the stack
-        // 3. Show exit prompt
+        // 3. (Attempt to) exit the app
         this->onButtonPress(Aether::Button::B, [this]() {
             if (this->focussed() == this->player) {
                 this->setFocussed(this->container);
@@ -28,7 +28,6 @@ namespace Screen {
                 this->backCallback();
 
             } else {
-                // I'll put a prompt here one day
                 this->app->exit();
             }
         });
@@ -93,6 +92,33 @@ namespace Screen {
 
         // Finally show menu
         this->app->addOverlay(this->addToPlMenu);
+    }
+
+    void Home::showConfirmQueue(const std::string & str, const std::vector<SongID> & ids, const size_t pos) {
+        // Always recreate prompt
+        delete this->confirmQueue;
+        this->confirmQueue = new Aether::MessageBox();
+        this->confirmQueue->setLineColour(this->app->theme()->muted2());
+        this->confirmQueue->setRectangleColour(this->app->theme()->popupBG());
+        this->confirmQueue->addLeftButton("Cancel", [this]() {
+            this->confirmQueue->close();
+        });
+        this->confirmQueue->addRightButton("OK", [this, str, ids, pos]() {
+            this->confirmQueue->close();
+            this->app->sysmodule()->sendSetPlayingFrom(str);
+            this->app->sysmodule()->sendSetQueue(ids);
+            this->app->sysmodule()->sendSetSongIdx(pos);
+            this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+        });
+        this->confirmQueue->setTextColour(this->app->theme()->accent());
+        Aether::Element * body = new Aether::Element(0, 0, 700);
+        Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "This action will clear the current play queue. Do you wish to continue?", 24, 620);
+        tips->setColour(this->app->theme()->FG());
+        body->addElement(tips);
+        body->setH(tips->h() + 80);
+        this->confirmQueue->setBody(body);
+        this->confirmQueue->setBodySize(body->w(), body->h());
+        this->app->addOverlay(this->confirmQueue);
     }
 
     void Home::changeFrame(Frame::Type t, Frame::Action a, int id) {
@@ -287,11 +313,21 @@ namespace Screen {
 
     void Home::finalizeState() {
         // Set the frame's callbacks
-        this->frame->setShowAddToPlaylistFunc([this](std::function<void(PlaylistID)> f) {
-            this->showAddToPlaylist(f);
-        });
         this->frame->setChangeFrameFunc([this](Frame::Type t, Frame::Action a, int id) {
             this->changeFrame(t, a, id);
+        });
+        this->frame->setPlayNewQueueFunc([this](const std::string & str, const std::vector<SongID> & ids, const size_t pos) {
+            if (this->app->config()->confirmClearQueue()) {
+                this->showConfirmQueue(str, ids, pos);
+            } else {
+                this->app->sysmodule()->sendSetPlayingFrom(str);
+                this->app->sysmodule()->sendSetQueue(ids);
+                this->app->sysmodule()->sendSetSongIdx(pos);
+                this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+            }
+        });
+        this->frame->setShowAddToPlaylistFunc([this](std::function<void(PlaylistID)> f) {
+            this->showAddToPlaylist(f);
         });
 
         // Mark the container non-selectable so the highlight won't jump to it
@@ -568,6 +604,7 @@ namespace Screen {
         // Init vars
         this->addToPlMenu = nullptr;
         this->backOneFrame = 0;
+        this->confirmQueue = nullptr;
         this->playingID = -100;     // This number needs to be less than -1, as >= -1 are valid values
     }
 
@@ -575,6 +612,7 @@ namespace Screen {
         Screen::onUnload();
 
         delete this->addToPlMenu;
+        delete this->confirmQueue;
 
         // Ensure all frames are deleted
         this->container->removeElement(this->frame);

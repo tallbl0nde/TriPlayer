@@ -23,8 +23,9 @@ namespace Screen {
                 Frame::Type pushedType;     // Type of next frame on stack (i.e. what pushed this frame on the stack?)
             };
 
-            // This screen handles the Add to Playlist menu as it's seen on all frames
+            // This screen handles overlays seen on all frames
             CustomOvl::AddToPlaylist * addToPlMenu;
+            Aether::MessageBox * confirmQueue;
 
             // Misc
             Aether::Container * container;
@@ -72,16 +73,19 @@ namespace Screen {
             // Undoes finalizeState()
             void resetState();
 
-        public:
-            Home(Main::Application *);
+            // Changes to the type of frame provided
+            // Pass type, action to take and ID to pass to frame (not always used)
+            void changeFrame(Frame::Type, Frame::Action, int = -1);
 
             // Shows 'Add to Playlist' menu and assigns given callback
             // Done here as every frame can call it with the same behaviour
             void showAddToPlaylist(std::function<void(PlaylistID)>);
 
-            // Changes to the type of frame provided
-            // Pass type, action to take and ID to pass to frame (not always used)
-            void changeFrame(Frame::Type, Frame::Action, int = -1);
+            // Shows 'Confirm queue' overlay and adds to queue
+            void showConfirmQueue(const std::string &, const std::vector<SongID> &, const size_t);
+
+        public:
+            Home(Main::Application *);
 
             // Update frame colours
             void updateColours();
