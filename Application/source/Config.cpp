@@ -75,6 +75,9 @@ void Config::readConfig() {
         this->setQueueMax_ = -1;
     }
 
+    // General::skip_with_lr
+    this->skipWithLR_ = this->ini->getbool("General", "skip_with_lr");
+
     // Appearance::accent_colour
     str = this->ini->gets("Appearance", "accent_colour");
     if (str.empty()) {
@@ -299,6 +302,20 @@ bool Config::setSetQueueMax(const int v) {
         Log::writeError("[CONFIG] Failed to set set_queue_max");
     } else {
         this->setQueueMax_ = v;
+    }
+    return ok;
+}
+
+bool Config::skipWithLR() {
+    return this->skipWithLR_;
+}
+
+bool Config::setSkipWithLR(bool b) {
+    bool ok = this->ini->put("General", "skip_with_lr", (b ? "Yes" : "No"));
+    if (!ok) {
+        Log::writeError("[CONFIG] Failed to set skip_with_lr");
+    } else {
+        this->skipWithLR_ = b;
     }
     return ok;
 }

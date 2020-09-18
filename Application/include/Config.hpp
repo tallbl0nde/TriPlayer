@@ -27,6 +27,7 @@ class Config {
         Log::Level logLevel_;
         bool scanOnLaunch_;
         int setQueueMax_;
+        bool skipWithLR_;
 
         Theme::Colour accentColour_;
         bool autoPlayerPalette_;
@@ -79,6 +80,10 @@ class Config {
         // Maximum number of songs to set in queue when playing a new song
         int setQueueMax();
         bool setSetQueueMax(const int);
+
+        // Whether to use L/R to skip
+        bool skipWithLR();
+        bool setSkipWithLR(const bool);
 
         // Accent colour
         Theme::Colour accentColour();

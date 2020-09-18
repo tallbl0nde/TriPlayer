@@ -77,6 +77,14 @@ namespace Frame::Settings {
         });
         this->addComment("This should remain enabled unless you have a really large library that doesn't change and the initial scan takes too long. No support will be given if this option is disabled, as an out-of-date database will cause bad things to happen.");
 
+        // General::skip_with_lr
+        this->addToggle("Skip with L/R", [cfg]() -> bool {
+            return cfg->skipWithLR();
+        }, [cfg](bool b) {
+            cfg->setSkipWithLR(b);
+        });
+        this->addComment("Use L/R to skip backwards/forwards in the queue. This is only functional within the application.");
+
         // General::set_queue_max
         opt = new Aether::ListOption("Initial Queue Size", std::to_string(cfg->setQueueMax()), nullptr);
         opt->setCallback([this, cfg, opt]() {
