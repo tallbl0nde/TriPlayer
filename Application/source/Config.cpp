@@ -65,16 +65,6 @@ void Config::readConfig() {
         this->logLevel_ = Log::Level::Warning;
     }
 
-    // General::scan_on_launch
-    this->scanOnLaunch_ = this->ini->getbool("General", "scan_on_launch");
-
-    // General::set_queue_max
-    this->setQueueMax_ = this->ini->geti("General", "set_queue_max", -42069);
-    if (this->setQueueMax_ < -1) {
-        Log::writeError("[CONFIG] Failed to get set_queue_max");
-        this->setQueueMax_ = -1;
-    }
-
     // General::skip_with_lr
     this->skipWithLR_ = this->ini->getbool("General", "skip_with_lr");
 
@@ -105,6 +95,9 @@ void Config::readConfig() {
     // Appearance::show_touch_controls
     this->showTouchControls_ = this->ini->getbool("Appearance", "show_touch_controls");
 
+    // Metadata::scan_on_launch
+    this->scanOnLaunch_ = this->ini->getbool("Metadata", "scan_on_launch");
+
     // Search::max_playlists
     this->searchMaxPlaylists_ = this->ini->geti("Search", "max_playlists", -42069);
     if (this->searchMaxPlaylists_ < -1) {
@@ -133,22 +126,29 @@ void Config::readConfig() {
         this->searchMaxSongs_ = -1;
     }
 
-    // Search::max_score
-    this->searchMaxScore_ = this->ini->geti("Search", "max_score", -42069);
+    // Advanced::auto_launch_service
+    this->autoLaunchService_ = this->ini->getbool("Advanced", "auto_launch_service");
+
+    // Advanced::set_queue_max
+    this->setQueueMax_ = this->ini->geti("Advanced", "set_queue_max", -42069);
+    if (this->setQueueMax_ < -1) {
+        Log::writeError("[CONFIG] Failed to get set_queue_max");
+        this->setQueueMax_ = -1;
+    }
+
+    // Advanced::search_max_score
+    this->searchMaxScore_ = this->ini->geti("Advanced", "search_max_score", -42069);
     if (this->searchMaxScore_ < 0) {
-        Log::writeError("[CONFIG] Failed to get (Search) max_score");
+        Log::writeError("[CONFIG] Failed to get (Advanced) search_max_score");
         this->searchMaxScore_ = 130;
     }
 
-    // Search::max_phrases
-    this->searchMaxPhrases_ = this->ini->geti("Search", "max_phrases", -42069);
+    // Advanced::search_max_phrases
+    this->searchMaxPhrases_ = this->ini->geti("Advanced", "search_max_phrases", -42069);
     if (this->searchMaxPhrases_ < 0) {
-        Log::writeError("[CONFIG] Failed to get (Search) max_phrases");
+        Log::writeError("[CONFIG] Failed to get (Advanced) search_max_phrases");
         this->searchMaxPhrases_ = 8;
     }
-
-    // Advanced::auto_launch_service
-    this->autoLaunchService_ = this->ini->getbool("Advanced", "auto_launch_service");
 }
 
 bool Config::prepareSys(const std::string & sysPath) {
@@ -278,34 +278,6 @@ bool Config::setLogLevel(const Log::Level l) {
     return ok;
 }
 
-bool Config::scanOnLaunch() {
-    return this->scanOnLaunch_;
-}
-
-bool Config::setScanOnLaunch(const bool b) {
-    bool ok = this->ini->put("General", "scan_on_launch", (b ? "Yes" : "No"));
-    if (!ok) {
-        Log::writeError("[CONFIG] Failed to set scan_on_launch");
-    } else {
-        this->scanOnLaunch_ = b;
-    }
-    return ok;
-}
-
-int Config::setQueueMax() {
-    return this->setQueueMax_;
-}
-
-bool Config::setSetQueueMax(const int v) {
-    bool ok = this->ini->put("General", "set_queue_max", v);
-    if (!ok) {
-        Log::writeError("[CONFIG] Failed to set set_queue_max");
-    } else {
-        this->setQueueMax_ = v;
-    }
-    return ok;
-}
-
 bool Config::skipWithLR() {
     return this->skipWithLR_;
 }
@@ -358,6 +330,20 @@ bool Config::setShowTouchControls(const bool b) {
         Log::writeError("[CONFIG] Failed to set (Appearance) show_touch_controls");
     } else {
         this->showTouchControls_ = b;
+    }
+    return ok;
+}
+
+bool Config::scanOnLaunch() {
+    return this->scanOnLaunch_;
+}
+
+bool Config::setScanOnLaunch(const bool b) {
+    bool ok = this->ini->put("Metadata", "scan_on_launch", (b ? "Yes" : "No"));
+    if (!ok) {
+        Log::writeError("[CONFIG] Failed to set (Metadata) scan_on_launch");
+    } else {
+        this->scanOnLaunch_ = b;
     }
     return ok;
 }
@@ -418,14 +404,42 @@ bool Config::setSearchMaxSongs(const int i) {
     return ok;
 }
 
+bool Config::autoLaunchService() {
+    return this->autoLaunchService_;
+}
+
+bool Config::setAutoLaunchService(const bool b) {
+    bool ok = this->ini->put("Advanced", "auto_launch_service", (b ? "Yes" : "No"));
+    if (!ok) {
+        Log::writeError("[CONFIG] Failed to set (Advanced) auto_launch_service");
+    } else {
+        this->autoLaunchService_ = b;
+    }
+    return ok;
+}
+
+int Config::setQueueMax() {
+    return this->setQueueMax_;
+}
+
+bool Config::setSetQueueMax(const int v) {
+    bool ok = this->ini->put("Advanced", "set_queue_max", v);
+    if (!ok) {
+        Log::writeError("[CONFIG] Failed to set (Advanced) set_queue_max");
+    } else {
+        this->setQueueMax_ = v;
+    }
+    return ok;
+}
+
 int Config::searchMaxScore() {
     return this->searchMaxScore_;
 }
 
 bool Config::setSearchMaxScore(const int i) {
-    bool ok = this->ini->put("Search", "max_score", i);
+    bool ok = this->ini->put("Advanced", "search_max_score", i);
     if (!ok) {
-        Log::writeError("[CONFIG] Failed to set (Search) max_score");
+        Log::writeError("[CONFIG] Failed to set (Advanced) search_max_score");
     } else {
         this->searchMaxScore_ = i;
     }
@@ -437,25 +451,11 @@ int Config::searchMaxPhrases() {
 }
 
 bool Config::setSearchMaxPhrases(const int i) {
-    bool ok = this->ini->put("Search", "max_phrases", i);
+    bool ok = this->ini->put("Advanced", "search_max_phrases", i);
     if (!ok) {
-        Log::writeError("[CONFIG] Failed to set (Search) max_phrases");
+        Log::writeError("[CONFIG] Failed to set (Advanced) search_max_phrases");
     } else {
         this->searchMaxPhrases_ = i;
-    }
-    return ok;
-}
-
-bool Config::autoLaunchService() {
-    return this->autoLaunchService_;
-}
-
-bool Config::setAutoLaunchService(const bool b) {
-    bool ok = this->ini->put("Advanced", "auto_launch_service", (b ? "Yes" : "No"));
-    if (!ok) {
-        Log::writeError("[CONFIG] Failed to set (Advanced) auto_launch_service");
-    } else {
-        this->autoLaunchService_ = b;
     }
     return ok;
 }

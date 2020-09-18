@@ -113,8 +113,8 @@ Aether::Colour Theme::selected() {
 
 std::function<Aether::Colour(uint32_t)> Theme::highlightFunc() {
     // Copy colours in case object is destroyed
-    Aether::Colour h1;
-    Aether::Colour h2;
+    Aether::Colour h1 = Aether::Colour{255, 255, 255, 255};
+    Aether::Colour h2 = Aether::Colour{255, 255, 255, 255};
     switch (this->accentColour) {
         case Colour::Red:
             h1 = Aether::Colour{140, 10, 10, 255};

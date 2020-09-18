@@ -28,7 +28,7 @@ namespace Screen {
                 this->backCallback();
 
             } else {
-                this->app->exit();
+                this->app->exit(false);
             }
         });
 
@@ -317,7 +317,7 @@ namespace Screen {
             this->changeFrame(t, a, id);
         });
         this->frame->setPlayNewQueueFunc([this](const std::string & str, const std::vector<SongID> & ids, const size_t pos) {
-            if (this->app->config()->confirmClearQueue()) {
+            if (this->app->config()->confirmClearQueue() && !this->app->sysmodule()->queue().empty()) {
                 this->showConfirmQueue(str, ids, pos);
             } else {
                 this->app->sysmodule()->sendSetPlayingFrom(str);
@@ -445,8 +445,7 @@ namespace Screen {
         quitIcon->setColour(this->app->theme()->FG());
         quitButton->addElement(quitIcon);
         quitButton->setCallback([this]() {
-            // Have a prompt
-            this->app->exit();
+            this->app->exit(false);
         });
         quitButton->setSelectable(false);
         this->touchContainer->addElement(quitButton);

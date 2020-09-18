@@ -9,12 +9,12 @@ namespace Screen {
         // Can only exit on an error
         this->onButtonPress(Aether::Button::B, [this](){
             if (this->fatalError) {
-                this->app->exit();
+                this->app->exit(true);
             }
         });
         this->onButtonPress(Aether::Button::PLUS, [this](){
             if (this->fatalError) {
-                this->app->exit();
+                this->app->exit(true);
             }
         });
     }
@@ -364,7 +364,7 @@ namespace Screen {
         this->addElement(this->launch);
 
         this->quit = new Aether::BorderButton(0, this->launch->y(), 160, 60, 2, "Quit", 26, [this]() {
-            this->app->exit();
+            this->app->exit(true);
         });
         this->addElement(this->quit);
 

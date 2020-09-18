@@ -50,6 +50,7 @@ namespace Frame::Settings {
             cfg->setConfirmExit(b);
         });
         this->addComment("Show a dialog to confirm you want to exit the app.");
+        this->list->addElement(new Aether::ListSeparator());
 
         // General::initial_frame
         opt = new Aether::ListOption("Initial Section", frameToString(cfg->initialFrame()), nullptr);
@@ -60,6 +61,15 @@ namespace Frame::Settings {
         this->list->addElement(opt);
         this->addComment("The section to show when the app is launched.");
 
+        // General::skip_with_lr
+        this->addToggle("Skip with L/R", [cfg]() -> bool {
+            return cfg->skipWithLR();
+        }, [cfg](bool b) {
+            cfg->setSkipWithLR(b);
+        });
+        this->addComment("Use L/R to skip backwards/forwards in the queue. This is only functional within the application.");
+        this->list->addElement(new Aether::ListSeparator());
+
         // General::log_level
         opt = new Aether::ListOption("Logging Level", Log::levelToString(cfg->logLevel()), nullptr);
         opt->setCallback([this, opt]() {
@@ -68,38 +78,6 @@ namespace Frame::Settings {
         opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), this->app->theme()->accent());
         this->list->addElement(opt);
         this->addComment("This only adjusts the application's log level, not the sysmodule's. Each level will log it and the levels below (e.g. Warning will log both Warning and Error messages). Info should only be used for debugging purposes, as it logs a LOT of information and slows down the app.");
-
-        // General::scan_on_launch
-        this->addToggle("Scan Library on Launch", [cfg]() -> bool {
-            return cfg->scanOnLaunch();
-        }, [cfg](bool b) {
-            cfg->setScanOnLaunch(b);
-        });
-        this->addComment("This should remain enabled unless you have a really large library that doesn't change and the initial scan takes too long. No support will be given if this option is disabled, as an out-of-date database will cause bad things to happen.");
-
-        // General::skip_with_lr
-        this->addToggle("Skip with L/R", [cfg]() -> bool {
-            return cfg->skipWithLR();
-        }, [cfg](bool b) {
-            cfg->setSkipWithLR(b);
-        });
-        this->addComment("Use L/R to skip backwards/forwards in the queue. This is only functional within the application.");
-
-        // General::set_queue_max
-        opt = new Aether::ListOption("Initial Queue Size", std::to_string(cfg->setQueueMax()), nullptr);
-        opt->setCallback([this, cfg, opt]() {
-            int val = cfg->setQueueMax();
-            if (this->getNumberInput(val, "Initial Queue Size", "", true)) {
-                val = (val < -1 ? -1 : (val > 65535 ? 65535 : val));
-                if (cfg->setSetQueueMax(val)) {
-                    opt->setValue(std::to_string(val));
-                    this->app->sysmodule()->setQueueLimit(val);
-                }
-            }
-        });
-        opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), this->app->theme()->accent());
-        this->list->addElement(opt);
-        this->addComment("Number of songs to create a queue with when playing a song/album/etc. A negative number indicates no limit.");
 
         // Overlays
         this->ovlList = new Aether::PopupList("");

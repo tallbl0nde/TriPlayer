@@ -85,8 +85,8 @@ namespace Main {
 
             // Handles display loop
             void run();
-            // Call to stop display loop
-            void exit();
+            // Call to stop display loop (set true to force close)
+            void exit(const bool);
 
             // Destructor frees memory and quits Aether
             ~Application();

@@ -27,26 +27,35 @@ namespace Screen {
             Frame::Settings::Frame * frame;
 
             // Sidebar buttons
+            CustomElm::SideButton * buttonBack;
             CustomElm::SideButton * buttonAppGeneral;
             CustomElm::SideButton * buttonAppAppearance;
+            CustomElm::SideButton * buttonAppMetadata;
             CustomElm::SideButton * buttonAppSearch;
             CustomElm::SideButton * buttonAppAdvanced;
             CustomElm::SideButton * buttonSysGeneral;
             CustomElm::SideButton * buttonSysMP3;
+            CustomElm::SideButton * buttonAbout;
 
             // Functions to set up each section
             void setupNew();
 
             void setupAppGeneral();
             void setupAppAppearance();
+            void setupAppMetadata();
             void setupAppSearch();
             void setupAppAdvanced();
 
             void setupSysGeneral();
             void setupSysMP3();
 
+            void setupAbout();
+
             // Function called to go 'back'
             void backCallback();
+
+            // Helpers to create list element
+            void addHeading(const std::string &);
 
         public:
             // Constructor takes pointer to app object

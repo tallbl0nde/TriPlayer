@@ -25,22 +25,23 @@ class Config {
         bool confirmExit_;
         Frame::Type initialFrame_;
         Log::Level logLevel_;
-        bool scanOnLaunch_;
-        int setQueueMax_;
         bool skipWithLR_;
 
         Theme::Colour accentColour_;
         bool autoPlayerPalette_;
         bool showTouchControls_;
 
+        bool scanOnLaunch_;
+
         int searchMaxPlaylists_;
         int searchMaxArtists_;
         int searchMaxAlbums_;
         int searchMaxSongs_;
-        int searchMaxPhrases_;
-        int searchMaxScore_;
 
         bool autoLaunchService_;
+        int setQueueMax_;
+        int searchMaxPhrases_;
+        int searchMaxScore_;
 
         // Read all values from app .ini
         void readConfig();
@@ -73,14 +74,6 @@ class Config {
         Log::Level logLevel();
         bool setLogLevel(const Log::Level);
 
-        // Scan library for changes on launch
-        bool scanOnLaunch();
-        bool setScanOnLaunch(const bool);
-
-        // Maximum number of songs to set in queue when playing a new song
-        int setQueueMax();
-        bool setSetQueueMax(const int);
-
         // Whether to use L/R to skip
         bool skipWithLR();
         bool setSkipWithLR(const bool);
@@ -97,6 +90,10 @@ class Config {
         bool showTouchControls();
         bool setShowTouchControls(const bool);
 
+        // Scan library for changes on launch
+        bool scanOnLaunch();
+        bool setScanOnLaunch(const bool);
+
         // Limits for search result entries (-1 indicates no limit)
         int searchMaxPlaylists();
         bool setSearchMaxPlaylists(const int);
@@ -107,6 +104,15 @@ class Config {
         int searchMaxSongs();
         bool setSearchMaxSongs(const int);
 
+        // Whether to try to launch service automatically
+        // if not running on launch
+        bool autoLaunchService();
+        bool setAutoLaunchService(const bool);
+
+        // Maximum number of songs to set in queue when playing a new song
+        int setQueueMax();
+        bool setSetQueueMax(const int);
+
         // Minimum search score
         int searchMaxScore();
         bool setSearchMaxScore(const int);
@@ -114,11 +120,6 @@ class Config {
         // Maximum search phrases
         int searchMaxPhrases();
         bool setSearchMaxPhrases(const int);
-
-        // Whether to try to launch service automatically
-        // if not running on launch
-        bool autoLaunchService();
-        bool setAutoLaunchService(const bool);
 
         // === Sysmodule Config === //
         // All methods start with sys*

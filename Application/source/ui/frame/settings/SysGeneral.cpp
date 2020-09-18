@@ -30,7 +30,7 @@ namespace Frame::Settings {
         this->addButton("Stop Sysmodule", [this]() {
             // Only close the app if it was actually successful
             if (this->app->sysmodule()->terminate()) {
-                this->app->exit();
+                this->app->exit(true);
             }
         });
         this->addComment("Safely stop the sysmodule and close the application.");

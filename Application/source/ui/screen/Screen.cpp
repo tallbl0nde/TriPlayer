@@ -17,6 +17,11 @@ namespace Screen {
                 this->app->sysmodule()->sendNext();
             }
         });
+
+        // Assign + to exit
+        this->onButtonPress(Aether::Button::PLUS, [this]() {
+            this->app->exit(false);
+        });
     }
 
     void Screen::updateColours() {

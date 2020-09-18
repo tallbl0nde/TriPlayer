@@ -153,9 +153,9 @@ namespace Main {
         }
     }
 
-    void Application::exit() {
+    void Application::exit(bool force = false) {
         // Check if we need to display a popup
-        if (this->config_->confirmExit()) {
+        if (!force && this->config_->confirmExit()) {
             delete this->exitPrompt;
             this->createExitPrompt();
             this->addOverlay(this->exitPrompt);
