@@ -485,21 +485,21 @@ void MainService::exit() {
 
 void MainService::gpioEventThread() {
     // Prepare gpio
-    if (!NX::initializeGpio()) {
+    if (!NX::Gpio::prepare()) {
         Log::writeWarning("[GPIO] Couldn't prepare session, unable to pause when headset unplugged!");
         return;
     }
 
     // Loop until the service has signalled to exit
     while (!this->exit_) {
-        if (NX::gpioHeadsetUnplugged()) {
+        if (NX::Gpio::headsetUnplugged()) {
             this->audio->pause();
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(POLL_INTERVAL));
     }
 
     // Cleanup
-    NX::exitGpio();
+    NX::Gpio::cleanup();
 }
 
 void MainService::playbackThread() {
@@ -652,20 +652,20 @@ void MainService::playbackThread() {
 
 void MainService::sleepEventThread() {
     // Prepare psc
-    if (!NX::initializePsc()) {
+    if (!NX::Psc::prepare()) {
         Log::writeWarning("[PSC] Couldn't prepare session, unable to pause when entering sleep!");
         return;
     }
 
     // Loop until the service has signalled to exit
     while (!this->exit_) {
-        if (NX::pscEnteringSleep(POLL_INTERVAL)) {
+        if (NX::Psc::enteringSleep(POLL_INTERVAL)) {
             this->audio->pause();
         }
     }
 
     // Cleanup
-    NX::exitPsc();
+    NX::Psc::cleanup();
 }
 
 void MainService::socketThread() {
