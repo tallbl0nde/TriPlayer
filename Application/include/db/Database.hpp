@@ -14,6 +14,10 @@ class Database {
         SQLite * db;
         // String describing last error
         std::string error_;
+        // Number of phrases to generate when searching
+        unsigned int searchPhrases;
+        // Maximum 'spellfix score' to permit for searches
+        unsigned int searchScore;
 
         // Indicates whether search_update has been set to 1
         // Used to avoid repeated UPDATE queries
@@ -37,6 +41,10 @@ class Database {
         bool migrate();
         // Returns the last error that occurred (blank if no error has occurred)
         std::string error();
+        // Set the maximum number of phrases to search with (higher means a 'broader' search)
+        void setSearchPhraseCount(const unsigned int);
+        // Set the maximum 'spellfix score' to use for searches (higher means less accurate)
+        void setSpellfixScore(const unsigned int);
 
         // ===== Connection Management ===== //
         // Open the database read-write (will block until available)
@@ -133,6 +141,9 @@ class Database {
         std::vector<Metadata::Song> searchSongs(const std::string, int = -1);
 
         // ===== Misc. Queries ===== //
+        // Returns a vector of strings containing all referenced images
+        // Empty if no image paths stored or an error occurred (bool set false on error, true on success)
+        std::vector<std::string> getAllImagePaths(bool &);
         // Returns a vector of pairs (file path, modified time) for all songs
         // Empty if no songs or error occurred (bool set false on error, true on success)
         std::vector< std::pair<std::string, unsigned int> > getAllSongFileInfo(bool &);

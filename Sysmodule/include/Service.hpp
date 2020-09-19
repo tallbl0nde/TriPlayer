@@ -6,6 +6,7 @@
 #include <deque>
 #include <shared_mutex>
 #include "Audio.hpp"
+#include "Config.hpp"
 #include "Database.hpp"
 #include "PlayQueue.hpp"
 #include "Protocol.hpp"
@@ -15,17 +16,19 @@
 // Class which manages all actions taken when receiving a command
 // Essentially encapsulates everything
 class MainService {
-    // Enum specifying what action to take when changing a song (i.e. getting a new source)
-    enum class SongAction {
-        Previous,   // Go to the last song in the queue (if there is one)
-        Next,       // Skip to the next song in the queue (if there is one)
-        Replay,     // Restart the currently playing song
-        Nothing     // Do nothing
-    };
-
     private:
+        // Enum specifying what action to take when changing a song (i.e. getting a new source)
+        enum class SongAction {
+            Previous,   // Go to the last song in the queue (if there is one)
+            Next,       // Skip to the next song in the queue (if there is one)
+            Replay,     // Restart the currently playing song
+            Nothing     // Do nothing
+        };
+
         // Audio instance
         Audio * audio;
+        // Config object
+        Config * cfg;
         // Database object
         Database * db;
         // Main queue of songs
@@ -61,6 +64,9 @@ class MainService {
         // Variables used for 'locking' DB access
         std::mutex dbMutex;
         std::atomic<bool> dbLocked;
+
+        // Reads config from disk and sets up relevant objects
+        void updateConfig();
 
         // Function run by transfer sockets
         void commandThread(Socket::Transfer *);

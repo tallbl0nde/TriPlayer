@@ -66,6 +66,9 @@ namespace Frame {
             // Constructor sets strings and forms list using database and queue
             Queue(Main::Application *);
 
+            // Update colours
+            void updateColours();
+
             // Update the list when the queue changes
             void update(uint32_t);
 

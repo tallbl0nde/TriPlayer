@@ -30,6 +30,7 @@ class Sysmodule {
 
         std::atomic<Error> error_;
         std::atomic<bool> exit_;
+        std::atomic<int> limit_;
         std::chrono::steady_clock::time_point lastUpdateTime;
 
         // === Status vars ===
@@ -71,6 +72,8 @@ class Sysmodule {
         void reconnect();
         // Uses syscalls to try and terminate the sysmodule
         bool terminate();
+        // Set a limit on the number of songs to queue (negative indicates no limit)
+        void setQueueLimit(int);
 
         // Main function which updates state when replies received
         void process();
@@ -137,7 +140,7 @@ class Sysmodule {
         void sendGetPlayingFrom();
         void sendSetPlayingFrom(const std::string &);
         void sendReleaseDBLock();
-
+        void sendReloadConfig();
         // ======
 
         // Call to 'join' thread (stops main loop)

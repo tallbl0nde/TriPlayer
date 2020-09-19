@@ -1,6 +1,8 @@
 #ifndef APPLICATION_HPP
 #define APPLICATION_HPP
 
+#include <array>
+#include "Config.hpp"
 #include "db/SyncDatabase.hpp"
 #include <future>
 #include "Sysmodule.hpp"
@@ -8,17 +10,16 @@
 
 // Forward declaration because cyclic dependency /shrug
 namespace Screen {
-    class Home;
-    class Splash;
-    class Fullscreen;
+    class Screen;
 };
 
 namespace Main {
     // Enumeration for screens (allows for easy switching)
-    enum ScreenID {
-        Home,
-        Splash,
-        Fullscreen
+    enum class ScreenID {
+        Fullscreen = 0,
+        Home = 1,
+        Settings = 2,
+        Splash = 3
     };
 
     // The Application class represents the "root" object of the app. It stores/handles all states
@@ -29,9 +30,14 @@ namespace Main {
             Aether::Display * display;
 
             // Screens of the app
-            Screen::Fullscreen * scFull;
-            Screen::Home * scHome;
-            Screen::Splash * scSplash;
+            std::array<Screen::Screen *, 4> screens;
+
+            // Overlay to show when prompting to exit
+            Aether::MessageBox * exitPrompt;
+            void createExitPrompt();
+
+            // Config object (used to interact with config files)
+            Config * config_;
 
             // Database object (all calls are wrapped with a mutex)
             SyncDatabase database_;
@@ -57,17 +63,19 @@ namespace Main {
             // Element is not deleted when closed!
             void addOverlay(Aether::Overlay *);
 
-            // Pass screen enum to change to it
+            // Screen manipulation functions
             void setScreen(ScreenID);
-            // Push current screen on stack (i.e. keep in memory)
             void pushScreen();
-            // Pop screen from stack
             void popScreen();
+            void dropScreen();
+            void updateScreenTheme();
 
             // Helper functions for database
             void lockDatabase();
             void unlockDatabase();
 
+            // Returns config pointer
+            Config * config();
             // Returns database object
             const SyncDatabase & database();
             // Returns sysmodule pointer
@@ -77,8 +85,8 @@ namespace Main {
 
             // Handles display loop
             void run();
-            // Call to stop display loop
-            void exit();
+            // Call to stop display loop (set true to force close)
+            void exit(const bool);
 
             // Destructor frees memory and quits Aether
             ~Application();

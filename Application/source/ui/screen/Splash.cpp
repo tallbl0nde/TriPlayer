@@ -5,18 +5,16 @@
 #include "utils/Utils.hpp"
 
 namespace Screen {
-    Splash::Splash(Main::Application * a) : Screen() {
-        this->app = a;
-
+    Splash::Splash(Main::Application * a) : Screen(a) {
         // Can only exit on an error
         this->onButtonPress(Aether::Button::B, [this](){
             if (this->fatalError) {
-                this->app->exit();
+                this->app->exit(true);
             }
         });
         this->onButtonPress(Aether::Button::PLUS, [this](){
             if (this->fatalError) {
-                this->app->exit();
+                this->app->exit(true);
             }
         });
     }
@@ -28,6 +26,12 @@ namespace Screen {
         this->app->unlockDatabase();
         if (!ok) {
             this->currentStage = ScanStage::Error;
+            return;
+        }
+
+        // Skip scanning if the config option is set
+        if (!this->app->config()->scanOnLaunch()) {
+            this->currentStage = ScanStage::Done;
             return;
         }
 
@@ -138,7 +142,7 @@ namespace Screen {
         // Take action based on sysmodule status
         switch (this->app->sysmodule()->error()) {
             case Sysmodule::Error::None:
-                // Start searching for file
+                // Start searching for files
                 this->currentStage = ScanStage::Files;
                 this->future = std::async(std::launch::async, [this](){
                     Utils::NX::setCPUBoost(true);
@@ -229,6 +233,15 @@ namespace Screen {
         this->quit->setX(640 - this->quit->w()/2);
     }
 
+    void Splash::updateColours() {
+        if (this->isLoaded) {
+            this->progress->setForegroundColour(this->app->theme()->accent());
+            for (size_t i = 0; i < this->animFrames.size(); i++) {
+                this->animFrames[i]->setColour(this->app->theme()->accent());
+            }
+        }
+    }
+
     void Splash::update(uint32_t dt) {
         Screen::update(dt);
 
@@ -299,14 +312,16 @@ namespace Screen {
     }
 
     void Splash::onLoad() {
+        Screen::onLoad();
+
         // Set background
         this->bg = new Aether::Image(0, 0, "romfs:/bg/splash.png");
         this->addElement(this->bg);
 
         // Add all other elements
-        Aether::Text * t = new Aether::Text(560, 315, "Version " + std::string(VER_STRING), 26);
-        t->setColour(this->app->theme()->FG());
-        this->addElement(t);
+        this->version = new Aether::Text(560, 315, "Version " + std::string(VER_STRING), 26);
+        this->version->setColour(this->app->theme()->FG());
+        this->addElement(this->version);
 
         this->heading = new Aether::Text(640, 520, "", 26);
         this->heading->setColour(this->app->theme()->FG());
@@ -326,13 +341,13 @@ namespace Screen {
         this->addElement(this->percent);
 
         this->animation = new Aether::Animation(620, 600, 40, 20);
-        for (size_t i = 1; i <= 50; i++) {
-            Aether::Image * im = new Aether::Image(this->animation->x(), this->animation->y(), "romfs:/anim/infload/" + std::to_string(i) + ".png");
-            im->setWH(40, 20);
-            im->setColour(this->app->theme()->accent());
-            this->animation->addElement(im);
+        for (size_t i = 0; i < this->animFrames.size(); i++) {
+            this->animFrames[i] = new Aether::Image(this->animation->x(), this->animation->y(), "romfs:/anim/infload/" + std::to_string(i+1) + ".png");
+            this->animFrames[i]->setWH(40, 20);
+            this->animFrames[i]->setColour(this->app->theme()->accent());
+            this->animation->addElement(this->animFrames[i]);
         }
-        animation->setAnimateSpeed(50);
+        this->animation->setAnimateSpeed(50);
         this->addElement(this->animation);
 
         this->hint = new Aether::Text(640, 685, "Please don't quit until the scan is complete!", 18);
@@ -349,15 +364,23 @@ namespace Screen {
         this->addElement(this->launch);
 
         this->quit = new Aether::BorderButton(0, this->launch->y(), 160, 60, 2, "Quit", 26, [this]() {
-            this->app->exit();
+            this->app->exit(true);
         });
         this->addElement(this->quit);
+
+        // Attempt to launch sysmodule if config option is set true
+        if (this->app->sysmodule()->error() == Sysmodule::Error::NotConnected && this->app->config()->autoLaunchService()) {
+            this->launch->callback()();
+            return;
+        }
 
         this->setScanLaunch();
     }
 
     void Splash::onUnload() {
+        Screen::onUnload();
         this->removeElement(this->bg);
+        this->removeElement(this->version);
         this->removeElement(this->heading);
         this->removeElement(this->subheading);
         this->removeElement(this->progress);

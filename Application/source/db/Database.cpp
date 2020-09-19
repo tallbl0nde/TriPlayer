@@ -4,22 +4,15 @@
 #include "db/extensions/Spellfix.h"
 #include "db/migrations/Migration.hpp"
 #include "Log.hpp"
+#include "Paths.hpp"
 #include "utils/FS.hpp"
 #include "utils/Search.hpp"
 #include "utils/Utils.hpp"
 
-// Location of backup file
-#define BACKUP_PATH "/switch/TriPlayer/data_old.sqlite3"
-// Location of the database file
-#define DB_PATH "/switch/TriPlayer/data.sqlite3"
 // Version of the database (database begins with zero from 'template', so this started at 1)
 #define DB_VERSION 6
-// Maximum number of phrases to search for using spellfixed strings
-#define SEARCH_PHRASES 8
 // Maximum number of spellfixed words to allow per word (i.e. pick the top x words)
 #define SPELLFIX_LIMIT 6
-// Maximum 'spellfix score' allowed when fixing a word
-#define SPELLFIX_SCORE 130
 // Location of template file
 #define TEMPLATE_DB_PATH "romfs:/db/template.sqlite3"
 
@@ -50,8 +43,8 @@ void removeImage(sqlite3_context * pCtx, int argc, sqlite3_value ** argv) {
 Database::Database() {
     // Copy the template if the database doesn't exist
     // Needed as SQLite spits IO errors otherwise
-    if (!Utils::Fs::fileExists(DB_PATH)) {
-        if (!Utils::Fs::copyFile(TEMPLATE_DB_PATH, DB_PATH)) {
+    if (!Utils::Fs::fileExists(Path::Common::DatabaseFile)) {
+        if (!Utils::Fs::copyFile(TEMPLATE_DB_PATH, Path::Common::DatabaseFile)) {
             Log::writeError("[DB] Fatal error: unable to copy template database");
         } else {
             Log::writeSuccess("[DB] Copied template database successfully");
@@ -59,7 +52,7 @@ Database::Database() {
     }
 
     // Create the database object
-    this->db = new SQLite(DB_PATH);
+    this->db = new SQLite(Path::Common::DatabaseFile);
     this->db->ignoreConstraints(true);
 
     // Load the spellfix1 extension
@@ -69,6 +62,8 @@ Database::Database() {
 
     // Set variables
     this->error_ = "";
+    this->searchPhrases = 8;
+    this->searchScore = 130;
     this->updateMarked = false;
 }
 
@@ -103,7 +98,7 @@ bool Database::migrate() {
     // Otherwise let's first backup the current database
     if (version > 0 && ok) {
         this->close();
-        if (!Utils::Fs::copyFile(DB_PATH, BACKUP_PATH)) {
+        if (!Utils::Fs::copyFile(Path::Common::DatabaseFile, Path::Common::DatabaseBackupFile)) {
             this->setErrorMsg("An error occurred backing up the database");
             return false;
         } else {
@@ -189,6 +184,14 @@ bool Database::migrate() {
     }
     this->close();
     return ok;
+}
+
+void Database::setSearchPhraseCount(const unsigned int p) {
+    this->searchPhrases = p;
+}
+
+void Database::setSpellfixScore(const unsigned int s) {
+    this->searchScore = s;
 }
 
 void Database::setErrorMsg(const std::string & msg = "") {
@@ -286,7 +289,7 @@ std::vector<std::string> Database::getSearchPhrases(const std::string & table, s
         // Use string concatenation here as you can't bind a table name (I know it's not ideal but the names are hard coded at least)
         bool ok = this->db->prepareQuery("SELECT word, score FROM " + table + " WHERE word MATCH ? AND SCORE < ? LIMIT ?;");
         ok = keepFalse(ok, this->db->bindString(0, words[i]));
-        ok = keepFalse(ok, this->db->bindInt(1, SPELLFIX_SCORE));
+        ok = keepFalse(ok, this->db->bindInt(1, this->searchScore));
         ok = keepFalse(ok, this->db->bindInt(2, SPELLFIX_LIMIT));
         ok = keepFalse(ok, this->db->executeQuery());
         if (!ok) {
@@ -315,7 +318,7 @@ std::vector<std::string> Database::getSearchPhrases(const std::string & table, s
     }
 
     // Get top number of phrases (sorted best first)
-    return Utils::Search::getPhrases(suggestions, SEARCH_PHRASES);
+    return Utils::Search::getPhrases(suggestions, this->searchPhrases);
 }
 
 // ===== Connection Management ===== //
@@ -1628,6 +1631,42 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str, int limit) {
 }
 
 // ===== Misc. Queries ===== //
+std::vector<std::string> Database::getAllImagePaths(bool & success) {
+    std::vector<std::string> v;
+
+    // Check we can read
+    if (this->db->connectionType() == SQLite::Connection::None) {
+        this->setErrorMsg("[getAllImagePaths] No open connection");
+        success = false;
+        return v;
+    }
+
+    // Get all paths by iterating over tables
+    std::string tables[3] = {"Playlists", "Artists", "Albums"};
+    for (size_t i = 0; i < 3; i++) {
+        // Query database
+        bool ok = this->db->prepareAndExecuteQuery("SELECT image_path FROM " + tables[i] + " ORDER BY image_path;");
+        if (!ok) {
+            this->setErrorMsg("[getAllImagePaths] Couldn't read from " + tables[i] + " table");
+            success = false;
+            return v;
+        }
+
+        // Iterate over returned rows
+        while (ok && this->db->hasRow()) {
+            std::string str;
+            ok = this->db->getString(0, str);
+            if (ok && !str.empty()) {
+                v.push_back(str);
+            }
+            ok = keepFalse(ok, this->db->nextRow());
+        }
+    }
+
+    success = true;
+    return v;
+}
+
 std::vector< std::pair<std::string, unsigned int> > Database::getAllSongFileInfo(bool & success) {
     std::vector< std::pair<std::string, unsigned int> > v;
 

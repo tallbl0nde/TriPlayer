@@ -1,29 +1,43 @@
-#ifndef MP3_HPP
-#define MP3_HPP
+#ifndef SOURCES_MP3_HPP
+#define SOURCES_MP3_HPP
 
-#include <mpg123.h>
+#include <array>
 #include <string>
 #include "sources/Source.hpp"
 
+// Forward declaration as we only need the pointer here
+typedef struct mpg123_handle_struct mpg123_handle;
+
 // Extends Source to support MP3 files
+// This class is not thread-safe!
 class MP3 : public Source {
     private:
         // mpg123 instance
-        mpg123_handle * mpg;
+        static mpg123_handle * mpg;
+
+        // Logs most recent error
+        static void logErrorMsg();
 
     public:
-        // Initialize mpg123 library
-        static bool initLib();
-
         // Takes path to a .mp3 file
-        MP3(std::string);
+        MP3(const std::string &);
 
         size_t decode(unsigned char *, size_t);
         void seek(size_t);
         size_t tell();
 
-        // Closes file and frees mpg123
+        // Closes associated file
         ~MP3();
+
+        // Initialize mpg123
+        static bool initLib();
+        // Cleanup mpg123
+        static void freeLib();
+
+        // Set seek method
+        static bool setAccurateSeek(const bool);
+        // Set the equalizer for decoding
+        static bool setEqualizer(const std::array<float, 32> &);
 };
 
 #endif

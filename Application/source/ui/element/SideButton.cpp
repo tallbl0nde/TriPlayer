@@ -11,6 +11,15 @@ namespace CustomElm {
         this->isActive = false;
     }
 
+    void SideButton::positionElements() {
+        this->text->setX(this->icon ? this->x() + 60 : this->x() + 20);
+        this->text->setW(this->text->texW());
+        if (this->text->texW() > (this->x() + this->w()) - this->text->x()) {
+            this->text->setW((this->x() + this->w()) - this->text->x());
+        }
+        this->text->setY(this->y() + (this->h() - this->text->h())/2);
+    }
+
     void SideButton::setInactiveColour(Aether::Colour c) {
         this->inactive = c;
         if (!this->isActive) {
@@ -44,10 +53,7 @@ namespace CustomElm {
 
     void SideButton::setText(std::string s) {
         this->text->setString(s);
-        if (this->text->w() > (this->x() + this->w()) - this->text->x()) {
-            this->text->setW((this->x() + this->w()) - this->text->x());
-        }
-        this->text->setY(this->y() + (this->h() - this->text->h())/2);
+        this->positionElements();
     }
 
     void SideButton::setActivated(bool b) {
@@ -65,5 +71,10 @@ namespace CustomElm {
             this->text->setColour(this->inactive);
             this->rect->setHidden(true);
         }
+    }
+
+    void SideButton::setW(int w) {
+        Aether::Element::setW(w);
+        this->positionElements();
     }
 };

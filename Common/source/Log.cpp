@@ -1,14 +1,12 @@
+#include <atomic>
 #include <ctime>
 #include "Log.hpp"
 #include <mutex>
 
-// Path to log flag
-#define LOG_FLAG "/config/TriPlayer/log.flag"
-
 // Log file pointer
-static FILE * file;
+static FILE * file = nullptr;
 // Log level
-static Log::Level level;
+static std::atomic<Log::Level> level = Log::Level::None;
 // Mutex to handle actually writing to file
 static std::mutex mutex;
 
@@ -34,15 +32,43 @@ namespace Log {
         return level;
     }
 
+    void setLogLevel(Level l) {
+        level = l;
+    }
+
+    std::string levelToString(const Level l) {
+        std::string str = "?";
+        switch (l) {
+            case Log::Level::Info:
+                str = "Info";
+                break;
+
+            case Log::Level::Success:
+                str = "Success";
+                break;
+
+            case Log::Level::Warning:
+                str = "Warning";
+                break;
+
+            case Log::Level::Error:
+                str = "Error";
+                break;
+
+            case Log::Level::None:
+                str = "None";
+                break;
+
+            default:
+                break;
+        }
+        return str;
+    }
+
     bool openFile(std::string f, Level l) {
         level = l;
 
-        // Check if flag is present
-        if (access(LOG_FLAG, F_OK) == -1) {
-            return false;
-        }
-
-        // Open log file if flag exists
+        // Open log file
         file = fopen(f.c_str(), "a");
         if (file == nullptr) {
             return false;

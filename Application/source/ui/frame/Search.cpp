@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "Paths.hpp"
 #include "ui/element/GridItem.hpp"
 #include "ui/element/HorizontalList.hpp"
 #include "ui/element/ListHeadingCount.hpp"
@@ -184,7 +185,7 @@ namespace Frame {
         // Create horizontal list and populate with items
         CustomElm::HorizontalList * hlist = new CustomElm::HorizontalList(this->list->x(), 0, this->list->w(), 250);
         for (size_t i = 0; i < this->albums.size(); i++) {
-            std::string img = (this->albums[i].imagePath.empty() ? "romfs:/misc/noalbum.png" : this->albums[i].imagePath);
+            std::string img = (this->albums[i].imagePath.empty() ? Path::App::DefaultArtFile : this->albums[i].imagePath);
             CustomElm::GridItem * l = new CustomElm::GridItem(img);
             l->setMainString(this->albums[i].name);
             l->setSubString(this->albums[i].artist);
@@ -234,10 +235,7 @@ namespace Frame {
             l->setTextColour(this->app->theme()->FG());
             std::string phrase = keyboard.buffer;
             l->setCallback([this, phrase, i](){
-                this->app->sysmodule()->sendSetPlayingFrom("'" + phrase + "'");
-                this->app->sysmodule()->sendSetQueue(this->songIDs);
-                this->app->sysmodule()->sendSetSongIdx(i);
-                this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+                this->playNewQueue("'" + phrase + "'", this->songIDs, i);
             });
             SongID id = this->songs[i].ID;
             l->setMoreCallback([this, id]() {
@@ -261,10 +259,10 @@ namespace Frame {
         }
 
         // Search for each type of entry and return
-        this->playlists = this->app->database()->searchPlaylists(phrase);
-        this->artists = this->app->database()->searchArtists(phrase);
-        this->albums = this->app->database()->searchAlbums(phrase);
-        this->songs = this->app->database()->searchSongs(phrase);
+        this->playlists = this->app->database()->searchPlaylists(phrase, this->app->config()->searchMaxPlaylists());
+        this->artists = this->app->database()->searchArtists(phrase, this->app->config()->searchMaxArtists());
+        this->albums = this->app->database()->searchAlbums(phrase, this->app->config()->searchMaxAlbums());
+        this->songs = this->app->database()->searchSongs(phrase, this->app->config()->searchMaxSongs());
         return true;
     }
 
@@ -300,7 +298,7 @@ namespace Frame {
         for (size_t i = 1; i <= 50; i++) {
             Aether::Image * im = new Aether::Image(anim->x(), anim->y(), "romfs:/anim/infload/" + std::to_string(i) + ".png");
             im->setWH(40, 20);
-            im->setColour(Aether::Colour{0, 255, 255, 255});
+            im->setColour(this->app->theme()->accent());
             anim->addElement(im);
         }
         anim->setAnimateSpeed(50);
@@ -342,10 +340,7 @@ namespace Frame {
                 for (size_t i = 0; i < v.size(); i++) {
                     ids.push_back(v[i].song.ID);
                 }
-                this->app->sysmodule()->sendSetPlayingFrom(m.name);
-                this->app->sysmodule()->sendSetQueue(ids);
-                this->app->sysmodule()->sendSetSongIdx(0);
-                this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+                this->playNewQueue(m.name, ids, 0);
             }
             this->menu->close();
         });
@@ -427,10 +422,7 @@ namespace Frame {
             for (size_t i = 0; i < v.size(); i++) {
                 ids.push_back(v[i].ID);
             }
-            this->app->sysmodule()->sendSetPlayingFrom(m.name);
-            this->app->sysmodule()->sendSetQueue(ids);
-            this->app->sysmodule()->sendSetSongIdx(0);
-            this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+            this->playNewQueue(m.name, ids, 0);
             this->menu->close();
         });
         this->menu->addButton(b);
@@ -492,7 +484,7 @@ namespace Frame {
 
         // Album metadata
         Metadata::Album m = this->app->database()->getAlbumMetadataForID(id);
-        this->menu->setImage(new Aether::Image(0, 0, m.imagePath.empty() ? "romfs:/misc/noalbum.png" : m.imagePath));
+        this->menu->setImage(new Aether::Image(0, 0, m.imagePath.empty() ? Path::App::DefaultArtFile : m.imagePath));
         this->menu->setMainText(m.name);
         this->menu->setSubText(m.artist);
 
@@ -508,10 +500,7 @@ namespace Frame {
             for (size_t i = 0; i < v.size(); i++) {
                 ids.push_back(v[i].ID);
             }
-            this->app->sysmodule()->sendSetPlayingFrom(m.name);
-            this->app->sysmodule()->sendSetQueue(ids);
-            this->app->sysmodule()->sendSetSongIdx(0);
-            this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+            this->playNewQueue(m.name, ids, 0);
             this->menu->close();
         });
         this->menu->addButton(b);
@@ -600,7 +589,7 @@ namespace Frame {
         this->menu->setSubText(m.artist);
         AlbumID aID = this->app->database()->getAlbumIDForSong(m.ID);
         Metadata::Album md = this->app->database()->getAlbumMetadataForID(aID);
-        this->menu->setImage(new Aether::Image(0, 0, md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath));
+        this->menu->setImage(new Aether::Image(0, 0, md.imagePath.empty() ? Path::App::DefaultArtFile : md.imagePath));
 
         // Add to Queue
         CustomElm::MenuButton * b = new CustomElm::MenuButton();

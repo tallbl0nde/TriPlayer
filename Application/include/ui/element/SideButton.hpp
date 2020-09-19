@@ -18,6 +18,8 @@ namespace CustomElm {
             Aether::Colour inactive;
             Aether::Colour active;
 
+            void positionElements();
+
         public:
             // X, Y, W
             SideButton(int, int, int);
@@ -32,6 +34,8 @@ namespace CustomElm {
 
             // Set (in)active
             void setActivated(bool);
+
+            void setW(int);
     };
 };
 

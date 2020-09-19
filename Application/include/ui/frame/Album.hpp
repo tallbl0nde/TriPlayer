@@ -20,6 +20,7 @@ namespace Frame {
             CustomOvl::ItemMenu * songMenu;
 
             // Cached data
+            Aether::FilledButton * playButton;
             Metadata::Album metadata;
             bool oneArtist;
             std::vector<Metadata::Song> songs;
@@ -35,6 +36,9 @@ namespace Frame {
         public:
             // The constructor takes the ID of the artist to show
             Album(Main::Application *, AlbumID);
+
+            // Update colours
+            void updateColours();
 
             // Delete created overlays
             ~Album();

@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "Paths.hpp"
 #include "ui/element/listitem/AlbumSong.hpp"
 #include "ui/frame/Album.hpp"
 #include "ui/overlay/ArtistList.hpp"
@@ -37,7 +38,7 @@ namespace Frame {
         }
 
         // Populate with Album's data
-        Aether::Image * image = new Aether::Image(this->x() + 50, this->y() + 50, this->metadata.imagePath.empty() ? "romfs:/misc/noalbum.png" : this->metadata.imagePath);
+        Aether::Image * image = new Aether::Image(this->x() + 50, this->y() + 50, this->metadata.imagePath.empty() ? Path::App::DefaultArtFile : this->metadata.imagePath);
         image->setWH(IMAGE_SIZE, IMAGE_SIZE);
         this->addElement(image);
         this->heading->setString(this->metadata.name);
@@ -57,13 +58,13 @@ namespace Frame {
         this->subTotal->setXY(this->heading->x() + 2, this->heading->y() + this->heading->h());
 
         // Play and 'more' buttons
-        Aether::FilledButton * playButton = new Aether::FilledButton(this->subTotal->x(), this->subTotal->y() + this->subTotal->h() + 20, BUTTON_W, BUTTON_H, "Play", BUTTON_F, [this]() {
+        this->playButton = new Aether::FilledButton(this->subTotal->x(), this->subTotal->y() + this->subTotal->h() + 20, BUTTON_W, BUTTON_H, "Play", BUTTON_F, [this]() {
             this->playAlbum(0);
         });
-        playButton->setFillColour(this->app->theme()->accent());
-        playButton->setTextColour(Aether::Colour{0, 0, 0, 255});
+        this->playButton->setFillColour(this->app->theme()->accent());
+        this->playButton->setTextColour(Aether::Colour{0, 0, 0, 255});
 
-        Aether::BorderButton * moreButton = new Aether::BorderButton(playButton->x() + playButton->w() + 20, playButton->y(), BUTTON_H, BUTTON_H, 2, "", BUTTON_F, [this]() {
+        Aether::BorderButton * moreButton = new Aether::BorderButton(this->playButton->x() + this->playButton->w() + 20, this->playButton->y(), BUTTON_H, BUTTON_H, 2, "", BUTTON_F, [this]() {
             this->createAlbumMenu();
         });
         moreButton->setBorderColour(this->app->theme()->FG());
@@ -73,8 +74,8 @@ namespace Frame {
         dots->setColour(this->app->theme()->FG());
         moreButton->addElement(dots);
 
-        Aether::Container * c = new Aether::Container(playButton->x(), playButton->y(), moreButton->x() + moreButton->w() - playButton->x(), playButton->h());
-        c->addElement(playButton);
+        Aether::Container * c = new Aether::Container(this->playButton->x(), this->playButton->y(), moreButton->x() + moreButton->w() - this->playButton->x(), this->playButton->h());
+        c->addElement(this->playButton);
         c->addElement(moreButton);
         this->addElement(c);
 
@@ -143,10 +144,7 @@ namespace Frame {
         for (size_t i = 0; i < this->songs.size(); i++) {
             ids.push_back(this->songs[i].ID);
         }
-        this->app->sysmodule()->sendSetPlayingFrom(this->metadata.name);
-        this->app->sysmodule()->sendSetQueue(ids);
-        this->app->sysmodule()->sendSetSongIdx(pos);
-        this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+        this->playNewQueue(this->metadata.name, ids, pos);
     }
 
     void Album::createArtistsList() {
@@ -271,7 +269,7 @@ namespace Frame {
         // Song metadata
         this->songMenu->setMainText(this->songs[pos].title);
         this->songMenu->setSubText(this->songs[pos].artist);
-        this->songMenu->setImage(new Aether::Image(0, 0, this->metadata.imagePath.empty() ? "romfs:/misc/noalbum.png" : this->metadata.imagePath));
+        this->songMenu->setImage(new Aether::Image(0, 0, this->metadata.imagePath.empty() ? Path::App::DefaultArtFile : this->metadata.imagePath));
 
         // Add to Queue
         CustomElm::MenuButton * b = new CustomElm::MenuButton();
@@ -334,6 +332,10 @@ namespace Frame {
         // Finalize the menu
         this->songMenu->addButton(nullptr);
         this->app->addOverlay(this->songMenu);
+    }
+
+    void Album::updateColours() {
+        this->playButton->setFillColour(this->app->theme()->accent());
     }
 
     Album::~Album() {

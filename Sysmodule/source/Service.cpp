@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <future>
+#include "Paths.hpp"
 #include "Service.hpp"
 #include "sources/MP3.hpp"
 #include "utils/FS.hpp"
@@ -23,6 +24,10 @@ MainService::MainService() {
     this->source = nullptr;
     this->songAction = SongAction::Nothing;
 
+    // Read and set config
+    this->cfg = new Config(Path::Sys::ConfigFile);
+    this->updateConfig();
+
     // Create listening socket (exit if error occurred)
     this->listener = new Socket::Listener(Protocol::Port);
     this->exit_ = !this->listener->isListening();
@@ -33,6 +38,14 @@ MainService::MainService() {
     } else {
         this->db = nullptr;
     }
+}
+
+void MainService::updateConfig() {
+    Log::setLogLevel(this->cfg->logLevel());
+
+    std::scoped_lock<std::shared_mutex> sMtx(this->sMutex);
+    MP3::setAccurateSeek(this->cfg->MP3AccurateSeek());
+    MP3::setEqualizer(this->cfg->MP3Equalizer());
 }
 
 void MainService::commandThread(Socket::Transfer * socket) {
@@ -427,6 +440,12 @@ void MainService::commandThread(Socket::Transfer * socket) {
                 reply = std::to_string(0);
                 break;
 
+            case Protocol::Command::ReloadConfig:
+                // This locks relevant mutexes, etc.
+                this->updateConfig();
+                reply = std::to_string(0);
+                break;
+
             case Protocol::Command::Reset: {
                 // Need to lock everything!!
                 std::scoped_lock<std::shared_mutex> sMtx(this->sMutex);
@@ -651,6 +670,7 @@ void MainService::socketThread() {
 }
 
 MainService::~MainService() {
+    delete this->cfg;
     delete this->db;
     delete this->listener;
     delete this->queue;

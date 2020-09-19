@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "Paths.hpp"
 #include "ui/screen/Fullscreen.hpp"
 #include "utils/Splash.hpp"
 #include "utils/Utils.hpp"
@@ -20,9 +21,7 @@
 #define UPDATE_CLOCK_PERIOD 500
 
 namespace Screen {
-    Fullscreen::Fullscreen(Main::Application * a) : Screen() {
-        this->app = a;
-
+    Fullscreen::Fullscreen(Main::Application * a) : Screen(a) {
         // Close this screen when B is pressed
         this->onButtonPress(Aether::Button::B, [this]() {
             this->app->popScreen();
@@ -31,7 +30,7 @@ namespace Screen {
 
     Aether::Colour Fullscreen::highlightColour(uint32_t t) {
         // Get the original highlight colour
-        Aether::Colour colour = Aether::Theme::Dark.highlightFunc(t);
+        Aether::Colour colour = this->app->theme()->highlightFunc()(t);
 
         // Adjust the alpha based on time since button press
         if (this->buttonMs < 0) {
@@ -74,30 +73,37 @@ namespace Screen {
         this->oldBackground = this->currentBackground;
         this->interpolatePos = 0.0d;
 
-        // Now create a surface and get colours
+        // Now create a surface and get colours (if needed)
+        bool useDefault = !this->app->config()->autoPlayerPalette();
         SDL_Surface * image = SDLHelper::renderImageS(path);
-        Utils::Splash::Palette palette = Utils::Splash::getPaletteForSurface(image);
-        if (!palette.invalid) {
-            // Set matching colours if valid
-            if (palette.bgLight) {
-                this->primary = palette.background;
-                this->secondary = Utils::Splash::changeLightness(this->primary, -20);
-                this->tertiary = Utils::Splash::changeLightness(this->secondary, -20);
-            } else {
-                this->primary = palette.primary;
-                this->secondary = palette.secondary;
-                this->tertiary = Utils::Splash::changeLightness(this->secondary, -10);
-                this->tertiary.a = 200;
-            }
-            palette.background.a = (palette.bgLight ? 150 : 255);
-            this->targetBackground = palette.background;
 
-        } else {
-            // Otherwise set defaults
+        if (!useDefault) {
+            Utils::Splash::Palette palette = Utils::Splash::getPaletteForSurface(image);
+            if (!palette.invalid) {
+                // Set matching colours if valid
+                if (palette.bgLight) {
+                    this->primary = palette.background;
+                    this->secondary = Utils::Splash::changeLightness(this->primary, -20);
+                    this->tertiary = Utils::Splash::changeLightness(this->secondary, -20);
+                } else {
+                    this->primary = palette.primary;
+                    this->secondary = palette.secondary;
+                    this->tertiary = Utils::Splash::changeLightness(this->secondary, -10);
+                    this->tertiary.a = 200;
+                }
+                palette.background.a = (palette.bgLight ? 150 : 255);
+                this->targetBackground = palette.background;
+            } else {
+                useDefault = true;
+            }
+        }
+
+        // Otherwise set defaults
+        if (useDefault) {
             this->primary = this->app->theme()->FG();
-            this->secondary = this->app->theme()->muted();
-            this->tertiary = this->app->theme()->muted2();
-            this->targetBackground = Aether::Colour{150, 255, 255, 255};
+            this->secondary = this->app->theme()->accent();
+            this->tertiary = this->app->theme()->muted();
+            this->targetBackground = Aether::Colour{90, 90, 90, 255};
         }
 
         // Add image and set colours
@@ -106,6 +112,12 @@ namespace Screen {
         this->albumArt->setColour(Aether::Colour{255, 255, 255, 0});
         this->addElement(this->albumArt);
         this->setColours();
+
+        // If we're using default colours we want to use a slightly different scheme
+        if (useDefault) {
+            this->artist->setColour(this->app->theme()->muted());
+            this->seekBar->setBarBackgroundColour(this->app->theme()->muted2());
+        }
     }
 
     bool Fullscreen::handleEvent(Aether::InputEvent * e) {
@@ -257,7 +269,7 @@ namespace Screen {
             // Change album cover
             AlbumID id = this->app->database()->getAlbumIDForSong(m.ID);
             Metadata::Album md = this->app->database()->getAlbumMetadataForID(id);
-            this->updateImage(md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath);
+            this->updateImage(md.imagePath.empty() ? Path::App::DefaultArtFile : md.imagePath);
         }
 
         // Update the seekbar
@@ -283,6 +295,8 @@ namespace Screen {
     }
 
     void Fullscreen::onLoad() {
+        Screen::onLoad();
+
         // === BACKGROUND ===
         this->gradient = new Aether::Image(0, 0, "romfs:/bg/gradient.png");
         this->addElement(this->gradient);
@@ -415,6 +429,7 @@ namespace Screen {
         // Initialize variables
         this->albumArt = nullptr;
         this->interpolatePos = 0.0d;
+        this->oldBackground = Aether::Colour{0, 0, 0, 255};
         this->currentBackground = Aether::Colour{0, 0, 0, 255};
         this->targetBackground = this->currentBackground;
         this->buttonMs = 0;
@@ -422,6 +437,8 @@ namespace Screen {
     }
 
     void Fullscreen::onUnload() {
+        Screen::onUnload();
+
         // Remove added elements
         this->removeElement(this->noteElement);
         this->removeElement(this->playingFrom);

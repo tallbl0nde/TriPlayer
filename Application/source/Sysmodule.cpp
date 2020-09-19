@@ -28,6 +28,7 @@ Sysmodule::Sysmodule() {
     this->connector = new Socket::Connector(Protocol::Port);
     this->connector->setTimeout(Protocol::Timeout);
     this->error_ = Error::Unknown;
+    this->limit_ = -1;
     this->socket = nullptr;
     this->reconnect();
 
@@ -98,7 +99,15 @@ void Sysmodule::reconnect() {
 }
 
 bool Sysmodule::terminate() {
-    return Utils::NX::terminateProgram(PROGRAM_ID);
+    bool ok = Utils::NX::terminateProgram(PROGRAM_ID);
+    if (ok) {
+        this->error_ = Error::LostConnection;
+    }
+    return ok;
+}
+
+void Sysmodule::setQueueLimit(int limit) {
+    this->limit_ = limit;
 }
 
 void Sysmodule::process() {
@@ -410,14 +419,20 @@ void Sysmodule::sendGetQueue(const size_t s, const size_t e) {
 }
 
 void Sysmodule::sendSetQueue(const std::vector<SongID> & q) {
-    if (q.size() == 0) {
+    if (q.size() == 0 || this->limit_ == 0) {
         return;
     }
 
     // Construct string first
     std::string seq;
     size_t size = q.size();
+    bool hasLimit = (this->limit_ >= 0);
     for (size_t i = 0; i < size; i++) {
+        // Stop if we reach the config limit
+        if (hasLimit && i >= (size_t)this->limit_) {
+            break;
+        }
+
         seq.push_back(Protocol::Delimiter);
         seq += std::to_string(q[i]);
     }
@@ -605,6 +620,14 @@ void Sysmodule::sendSetPlayingFrom(const std::string & str) {
 
 void Sysmodule::sendReleaseDBLock() {
     this->addToWriteQueue(std::to_string((int)Protocol::Command::ReleaseDBLock), [this](std::string s) {
+        if (std::stoi(s) != 0) {
+            // throw error
+        }
+    });
+}
+
+void Sysmodule::sendReloadConfig() {
+    this->addToWriteQueue(std::to_string((int)Protocol::Command::ReloadConfig), [this](std::string s) {
         if (std::stoi(s) != 0) {
             // throw error
         }

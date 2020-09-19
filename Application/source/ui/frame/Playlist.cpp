@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "Paths.hpp"
 #include "ui/element/listitem/Song.hpp"
 #include "ui/frame/Playlist.hpp"
 #include "ui/overlay/ItemMenu.hpp"
@@ -49,13 +50,13 @@ namespace Frame {
         this->subTotal->setXY(this->heading->x() + 2, this->heading->y() + this->heading->h());
 
         // Play and 'more' buttons
-        Aether::FilledButton * playButton = new Aether::FilledButton(this->heading->x(), this->heading->y() + this->heading->h() + 45, BUTTON_W, BUTTON_H, "Play", BUTTON_F, [this]() {
+        this->playButton = new Aether::FilledButton(this->heading->x(), this->heading->y() + this->heading->h() + 45, BUTTON_W, BUTTON_H, "Play", BUTTON_F, [this]() {
             this->playPlaylist(0);
         });
-        playButton->setFillColour(this->app->theme()->accent());
-        playButton->setTextColour(Aether::Colour{0, 0, 0, 255});
+        this->playButton->setFillColour(this->app->theme()->accent());
+        this->playButton->setTextColour(Aether::Colour{0, 0, 0, 255});
 
-        Aether::BorderButton * moreButton = new Aether::BorderButton(playButton->x() + playButton->w() + 20, playButton->y(), BUTTON_H, BUTTON_H, 2, "", BUTTON_F, [this]() {
+        Aether::BorderButton * moreButton = new Aether::BorderButton(this->playButton->x() + this->playButton->w() + 20, this->playButton->y(), BUTTON_H, BUTTON_H, 2, "", BUTTON_F, [this]() {
             this->createPlaylistMenu();
         });
         moreButton->setBorderColour(this->app->theme()->FG());
@@ -65,8 +66,8 @@ namespace Frame {
         dots->setColour(this->app->theme()->FG());
         moreButton->addElement(dots);
 
-        this->btns = new Aether::Container(playButton->x(), playButton->y(), moreButton->x() + moreButton->w() - playButton->x(), playButton->h());
-        this->btns->addElement(playButton);
+        this->btns = new Aether::Container(this->playButton->x(), this->playButton->y(), moreButton->x() + moreButton->w() - this->playButton->x(), this->playButton->h());
+        this->btns->addElement(this->playButton);
         this->btns->addElement(moreButton);
         this->addElement(this->btns);
 
@@ -79,7 +80,7 @@ namespace Frame {
         // Populate list
         this->refreshList();
         this->setFocused(this->btns);
-        this->btns->setFocused(playButton);
+        this->btns->setFocused(this->playButton);
     }
 
     void Playlist::playPlaylist(size_t pos) {
@@ -88,10 +89,7 @@ namespace Frame {
             for (size_t i = 0; i < this->songs.size(); i++) {
                 ids.push_back(this->songs[i].song.ID);
             }
-            this->app->sysmodule()->sendSetPlayingFrom(this->metadata.name);
-            this->app->sysmodule()->sendSetQueue(ids);
-            this->app->sysmodule()->sendSetSongIdx(pos);
-            this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+            this->playNewQueue(this->metadata.name, ids, pos);
         }
     }
 
@@ -282,7 +280,7 @@ namespace Frame {
         this->songMenu->setSubText(this->songs[pos].song.artist);
         AlbumID id = this->app->database()->getAlbumIDForSong(this->songs[pos].song.ID);
         Metadata::Album md = this->app->database()->getAlbumMetadataForID(id);
-        this->songMenu->setImage(new Aether::Image(0, 0, md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath));
+        this->songMenu->setImage(new Aether::Image(0, 0, md.imagePath.empty() ? Path::App::DefaultArtFile : md.imagePath));
 
         // Add to Queue
         CustomElm::MenuButton * b = new CustomElm::MenuButton();
@@ -399,6 +397,10 @@ namespace Frame {
             this->heading->setString(m.name);
             this->metadata = m;
         }
+    }
+
+    void Playlist::updateColours() {
+        this->playButton->setFillColour(this->app->theme()->accent());
     }
 
     Playlist::~Playlist() {

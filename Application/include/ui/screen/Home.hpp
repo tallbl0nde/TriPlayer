@@ -5,6 +5,7 @@
 #include "ui/element/SideButton.hpp"
 #include "ui/overlay/AddToPlaylist.hpp"
 #include "ui/frame/Frame.hpp"
+#include "ui/screen/Screen.hpp"
 #include <stack>
 
 namespace Main {
@@ -13,7 +14,7 @@ namespace Main {
 
 namespace Screen {
     // Main screen (houses side menu, player and frames)
-    class Home : public Aether::Screen {
+    class Home : public Screen {
         private:
             // Struct pair for a frame and next type
             struct FrameTuple {
@@ -22,11 +23,9 @@ namespace Screen {
                 Frame::Type pushedType;     // Type of next frame on stack (i.e. what pushed this frame on the stack?)
             };
 
-            // Pointer to application object
-            Main::Application * app;
-
-            // This screen handles the Add to Playlist menu as it's seen on all frames
+            // This screen handles overlays seen on all frames
             CustomOvl::AddToPlaylist * addToPlMenu;
+            Aether::MessageBox * confirmQueue;
 
             // Misc
             Aether::Container * container;
@@ -38,6 +37,7 @@ namespace Screen {
             Aether::Image * backIcon;
             Aether::Text * backText;
             Aether::Element * backButton;
+            Aether::Container * touchContainer;
             Aether::Container * sideContainer;
             Aether::Rectangle * sideBg;
             CustomElm::SideButton * sideSearch;
@@ -73,16 +73,22 @@ namespace Screen {
             // Undoes finalizeState()
             void resetState();
 
-        public:
-            Home(Main::Application *);
+            // Changes to the type of frame provided
+            // Pass type, action to take and ID to pass to frame (not always used)
+            void changeFrame(Frame::Type, Frame::Action, int = -1);
 
             // Shows 'Add to Playlist' menu and assigns given callback
             // Done here as every frame can call it with the same behaviour
             void showAddToPlaylist(std::function<void(PlaylistID)>);
 
-            // Changes to the type of frame provided
-            // Pass type, action to take and ID to pass to frame (not always used)
-            void changeFrame(Frame::Type, Frame::Action, int = -1);
+            // Shows 'Confirm queue' overlay and adds to queue
+            void showConfirmQueue(const std::string &, const std::vector<SongID> &, const size_t);
+
+        public:
+            Home(Main::Application *);
+
+            // Update frame colours
+            void updateColours();
 
             // Update player values
             void update(uint32_t);

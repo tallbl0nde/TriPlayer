@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "Paths.hpp"
 #include "ui/element/GridItem.hpp"
 #include "ui/element/ScrollableGrid.hpp"
 #include "ui/frame/Artist.hpp"
@@ -49,21 +50,18 @@ namespace Frame {
         this->subTotal->setXY(this->heading->x() + 2, this->heading->y() + this->heading->h());
 
         // Play and 'more' buttons
-        Aether::FilledButton * playButton = new Aether::FilledButton(this->subTotal->x(), this->subTotal->y() + this->subTotal->h() + 20, BUTTON_W, BUTTON_H, "Play", BUTTON_F, [this, m]() {
+        this->playButton = new Aether::FilledButton(this->subTotal->x(), this->subTotal->y() + this->subTotal->h() + 20, BUTTON_W, BUTTON_H, "Play", BUTTON_F, [this, m]() {
             std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForArtist(m.ID);
             std::vector<SongID> ids;
             for (size_t i = 0; i < v.size(); i++) {
                 ids.push_back(v[i].ID);
             }
-            this->app->sysmodule()->sendSetPlayingFrom(m.name);
-            this->app->sysmodule()->sendSetQueue(ids);
-            this->app->sysmodule()->sendSetSongIdx(0);
-            this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+            this->playNewQueue(m.name, ids, 0);
         });
-        playButton->setFillColour(this->app->theme()->accent());
-        playButton->setTextColour(Aether::Colour{0, 0, 0, 255});
+        this->playButton->setFillColour(this->app->theme()->accent());
+        this->playButton->setTextColour(Aether::Colour{0, 0, 0, 255});
 
-        Aether::BorderButton * moreButton = new Aether::BorderButton(playButton->x() + playButton->w() + 20, playButton->y(), BUTTON_H, BUTTON_H, 2, "", BUTTON_F, [this, id]() {
+        Aether::BorderButton * moreButton = new Aether::BorderButton(this->playButton->x() + this->playButton->w() + 20, this->playButton->y(), BUTTON_H, BUTTON_H, 2, "", BUTTON_F, [this, id]() {
             this->createArtistMenu(id);
         });
         moreButton->setBorderColour(this->app->theme()->FG());
@@ -73,8 +71,8 @@ namespace Frame {
         dots->setColour(this->app->theme()->FG());
         moreButton->addElement(dots);
 
-        Aether::Container * c = new Aether::Container(playButton->x(), playButton->y(), moreButton->x() + moreButton->w() - playButton->x(), playButton->h());
-        c->addElement(playButton);
+        Aether::Container * c = new Aether::Container(this->playButton->x(), this->playButton->y(), moreButton->x() + moreButton->w() - this->playButton->x(), this->playButton->h());
+        c->addElement(this->playButton);
         c->addElement(moreButton);
         this->addElement(c);
 
@@ -90,7 +88,7 @@ namespace Frame {
 
             // Populate grid with albums
             for (size_t i = 0; i < md.size(); i++) {
-                CustomElm::GridItem * l = new CustomElm::GridItem(md[i].imagePath.empty() ? "romfs:/misc/noalbum.png" : md[i].imagePath);
+                CustomElm::GridItem * l = new CustomElm::GridItem(md[i].imagePath.empty() ? Path::App::DefaultArtFile : md[i].imagePath);
                 l->setMainString(md[i].name);
                 std::string str = std::to_string(md[i].songCount) + (md[i].songCount == 1 ? " song" : " songs");
                 l->setSubString(str);
@@ -197,7 +195,7 @@ namespace Frame {
         this->albumMenu->addSeparator(this->app->theme()->muted2());
 
         // Album metadata
-        this->albumMenu->setImage(new Aether::Image(0, 0, m.imagePath.empty() ? "romfs:/misc/noalbum.png" : m.imagePath));
+        this->albumMenu->setImage(new Aether::Image(0, 0, m.imagePath.empty() ? Path::App::DefaultArtFile : m.imagePath));
         this->albumMenu->setMainText(m.name);
         this->albumMenu->setSubText(m.artist);
 
@@ -213,10 +211,7 @@ namespace Frame {
             for (size_t i = 0; i < v.size(); i++) {
                 ids.push_back(v[i].ID);
             }
-            this->app->sysmodule()->sendSetPlayingFrom(m.name);
-            this->app->sysmodule()->sendSetQueue(ids);
-            this->app->sysmodule()->sendSetSongIdx(0);
-            this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+            this->playNewQueue(m.name, ids, 0);
             this->albumMenu->close();
         });
         this->albumMenu->addButton(b);
@@ -272,6 +267,10 @@ namespace Frame {
         // Finalize the menu
         this->albumMenu->addButton(nullptr);
         this->app->addOverlay(this->albumMenu);
+    }
+
+    void Artist::updateColours() {
+        this->playButton->setFillColour(this->app->theme()->accent());
     }
 
     Artist::~Artist() {

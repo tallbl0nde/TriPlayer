@@ -47,6 +47,7 @@ namespace Protocol {
         SetPlayingFrom,     // Set 'playing from' text (allows 100 chars)   // String to set                                    // Set string (maybe be substring if too long)
         RequestDBLock,      // Requests exclusive access to DB (blocks)     // Nothing                                          // Result code (0 = success)
         ReleaseDBLock,      // Releases exclusive access to DB              // Nothing                                          // Result code (0 = success)
+        ReloadConfig,       // Get the sysmodule to update it's config      // Nothing                                          // Result code (0 = success)
         Reset               // Reinitialize sysmodule (except socket)       // Nothing                                          // Version of sysmodule
     };
 

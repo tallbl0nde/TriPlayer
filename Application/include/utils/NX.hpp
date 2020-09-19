@@ -29,6 +29,20 @@ namespace Utils::NX {
     // Returns true if successful, false otherwise
     bool getUserInput(Keyboard &);
 
+    // Numpad options
+    struct Numpad {
+        int value;              // Value entered
+        size_t maxDigits;       // Maximum number of digits allowed (limits to 32)
+        std::string heading;
+        std::string subHeading;
+        bool allowNegative;     // Whether to allow negative numbers
+        bool allowDecimal;      // Set true to allow floating point numbers
+    };
+
+    // Create switch numpad with provided parameters
+    // Returns true if successful, false otherwise
+    bool getUserInput(Numpad &);
+
     // Enable/disable CPU boost
     // Does nothing if state matches
     void setCPUBoost(bool);

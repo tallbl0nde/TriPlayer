@@ -1,8 +1,7 @@
 #include "Database.hpp"
 #include "Log.hpp"
+#include "Paths.hpp"
 
-// Location of the database file
-#define DB_PATH "/switch/TriPlayer/data.sqlite3"
 // Version of the database (database begins with zero from 'template', so this started at 1)
 #define DB_VERSION 6
 
@@ -13,7 +12,7 @@ bool keepFalse(const bool & a, const bool & b) {
 
 Database::Database() {
     // Create the database object
-    this->db = new SQLite(DB_PATH);
+    this->db = new SQLite(Path::Common::DatabaseFile);
 }
 
 bool Database::getVersion(int & version) {

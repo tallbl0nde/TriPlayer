@@ -2,8 +2,6 @@
 
 // Amount of pixels either side of bar to accept as touch
 #define LEEWAY 10
-// Amount touch can vary (in height px) before being 'let go'
-#define THRESHOLD 50
 
 namespace CustomElm {
     Slider::Slider(int x, int y, int w, int h, int bh) : Aether::Element(x, y, w, h) {

@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "Paths.hpp"
 #include "ui/frame/Album.hpp"
 #include "ui/frame/Albums.hpp"
 #include "ui/frame/AlbumInfo.hpp"
@@ -14,15 +15,11 @@
 #include "ui/screen/Home.hpp"
 
 namespace Screen {
-    Home::Home(Main::Application * a) : Screen() {
-        this->app = a;
-        this->backOneFrame = 0;
-        this->playingID = -1;
-
+    Home::Home(Main::Application * a) : Screen(a) {
         // Attempt the following in order when B is pressed:
         // 1. Shift focus from the player to the main frame
         // 2. Delete the current frame and pop one from the stack
-        // 3. Show exit prompt
+        // 3. (Attempt to) exit the app
         this->onButtonPress(Aether::Button::B, [this]() {
             if (this->focussed() == this->player) {
                 this->setFocussed(this->container);
@@ -31,8 +28,7 @@ namespace Screen {
                 this->backCallback();
 
             } else {
-                // I'll put a prompt here one day
-                this->app->exit();
+                this->app->exit(false);
             }
         });
 
@@ -45,10 +41,6 @@ namespace Screen {
                 this->setFocussed(this->container);
             }
         });
-
-        // Create dimming element
-        this->playerDim = new Aether::Rectangle(0, 0, 1280, 590);
-        this->playerDim->setColour(Aether::Colour{0, 0, 0, 130});
     }
 
     void Home::backCallback() {
@@ -100,6 +92,33 @@ namespace Screen {
 
         // Finally show menu
         this->app->addOverlay(this->addToPlMenu);
+    }
+
+    void Home::showConfirmQueue(const std::string & str, const std::vector<SongID> & ids, const size_t pos) {
+        // Always recreate prompt
+        delete this->confirmQueue;
+        this->confirmQueue = new Aether::MessageBox();
+        this->confirmQueue->setLineColour(this->app->theme()->muted2());
+        this->confirmQueue->setRectangleColour(this->app->theme()->popupBG());
+        this->confirmQueue->addLeftButton("Cancel", [this]() {
+            this->confirmQueue->close();
+        });
+        this->confirmQueue->addRightButton("OK", [this, str, ids, pos]() {
+            this->confirmQueue->close();
+            this->app->sysmodule()->sendSetPlayingFrom(str);
+            this->app->sysmodule()->sendSetQueue(ids);
+            this->app->sysmodule()->sendSetSongIdx(pos);
+            this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+        });
+        this->confirmQueue->setTextColour(this->app->theme()->accent());
+        Aether::Element * body = new Aether::Element(0, 0, 700);
+        Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "This action will clear the current play queue. Do you wish to continue?", 24, 620);
+        tips->setColour(this->app->theme()->FG());
+        body->addElement(tips);
+        body->setH(tips->h() + 80);
+        this->confirmQueue->setBody(body);
+        this->confirmQueue->setBodySize(body->w(), body->h());
+        this->app->addOverlay(this->confirmQueue);
     }
 
     void Home::changeFrame(Frame::Type t, Frame::Action a, int id) {
@@ -208,17 +227,29 @@ namespace Screen {
         SongID id = this->app->sysmodule()->currentSong();
         if (id != this->playingID) {
             this->playingID = id;
-            Metadata::Song m = this->app->database()->getSongMetadataForID(id);
-            if (m.ID != -1) {
-                this->player->setTrackName(m.title);
-                this->player->setTrackArtist(m.artist);
-                this->player->setDuration(m.duration);
+            bool updated = false;
+            if (id > -1) {
+                Metadata::Song m = this->app->database()->getSongMetadataForID(id);
+
+                // Repeated check as ID is set negative on error
+                if (m.ID > -1) {
+                    this->player->setTrackName(m.title);
+                    this->player->setTrackArtist(m.artist);
+                    this->player->setDuration(m.duration);
+                    AlbumID id = this->app->database()->getAlbumIDForSong(m.ID);
+                    Metadata::Album md = this->app->database()->getAlbumMetadataForID(id);
+                    this->player->setAlbumCover(new Aether::Image(0, 0, md.imagePath.empty() ? Path::App::DefaultArtFile : md.imagePath));
+                    updated = true;
+                }
             }
 
-            // Change album cover
-            AlbumID id = this->app->database()->getAlbumIDForSong(m.ID);
-            Metadata::Album md = this->app->database()->getAlbumMetadataForID(id);
-            this->player->setAlbumCover(new Aether::Image(0, 0, md.imagePath.empty() ? "romfs:/misc/noalbum.png" : md.imagePath));
+            // Use default text if an error occurs or the ID is negative
+            if (!updated) {
+                this->player->setTrackName("Nothing playing!");
+                this->player->setTrackArtist("Play a song");
+                this->player->setDuration(0);
+                this->player->setAlbumCover(new Aether::Image(0, 0, Path::App::DefaultArtFile));
+            }
         }
 
         // Show/hide dimming element based on current state
@@ -242,17 +273,61 @@ namespace Screen {
             this->backButton->setTouchable(true);
         }
 
+        // Show/hide touch section based on config value
+        this->touchContainer->setHidden(!this->app->config()->showTouchControls());
+        this->sideContainer->setY(this->app->config()->showTouchControls() ? 0 : -65);
+
         // Now update elements
         Screen::update(dt);
     }
 
+    void Home::updateColours() {
+        if (!this->isLoaded) {
+            return;
+        }
+
+        // Update screen colours
+        this->sideSearch->setActiveColour(this->app->theme()->accent());
+        this->sidePlaylists->setActiveColour(this->app->theme()->accent());
+        this->sideSongs->setActiveColour(this->app->theme()->accent());
+        this->sideArtists->setActiveColour(this->app->theme()->accent());
+        this->sideAlbums->setActiveColour(this->app->theme()->accent());
+        this->sideQueue->setActiveColour(this->app->theme()->accent());
+        this->sideSettings->setActiveColour(this->app->theme()->accent());
+        this->player->setAccentColour(this->app->theme()->accent());
+
+        // Now also update current frame and all on stack
+        this->frame->updateColours();
+        std::stack<FrameTuple> tmp;
+        while (!this->frameStack.empty()) {
+            tmp.push(this->frameStack.top());
+            this->frameStack.pop();
+        }
+
+        while (!tmp.empty()) {
+            this->frameStack.push(tmp.top());
+            tmp.top().frame->updateColours();
+            tmp.pop();
+        }
+    }
+
     void Home::finalizeState() {
         // Set the frame's callbacks
-        this->frame->setShowAddToPlaylistFunc([this](std::function<void(PlaylistID)> f) {
-            this->showAddToPlaylist(f);
-        });
         this->frame->setChangeFrameFunc([this](Frame::Type t, Frame::Action a, int id) {
             this->changeFrame(t, a, id);
+        });
+        this->frame->setPlayNewQueueFunc([this](const std::string & str, const std::vector<SongID> & ids, const size_t pos) {
+            if (this->app->config()->confirmClearQueue() && !this->app->sysmodule()->queue().empty()) {
+                this->showConfirmQueue(str, ids, pos);
+            } else {
+                this->app->sysmodule()->sendSetPlayingFrom(str);
+                this->app->sysmodule()->sendSetQueue(ids);
+                this->app->sysmodule()->sendSetSongIdx(pos);
+                this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
+            }
+        });
+        this->frame->setShowAddToPlaylistFunc([this](std::function<void(PlaylistID)> f) {
+            this->showAddToPlaylist(f);
         });
 
         // Mark the container non-selectable so the highlight won't jump to it
@@ -314,6 +389,12 @@ namespace Screen {
     }
 
     void Home::onLoad() {
+        Screen::onLoad();
+
+        // Create dimming element
+        this->playerDim = new Aether::Rectangle(0, 0, 1280, 590);
+        this->playerDim->setColour(Aether::Colour{0, 0, 0, 130});
+
         // Add background images
         this->bg = new Aether::Image(0, 0, "romfs:/bg/main.png");
         this->addElement(this->bg);
@@ -329,14 +410,15 @@ namespace Screen {
 
         // === SIDEBAR ===
         this->sideContainer = new Aether::Container(0, 0, 310, 590);
+        this->touchContainer = new Aether::Container(this->sideContainer->x(), this->sideContainer->y(), this->sideContainer->w(), 65);
 
         // Navigation outlines
         Aether::Rectangle * r = new Aether::Rectangle(15, 65, 280, 1);
         r->setColour(this->app->theme()->muted2());
-        this->sideContainer->addElement(r);
+        this->touchContainer->addElement(r);
         r = new Aether::Rectangle(155, 10, 1, 45);
         r->setColour(this->app->theme()->muted2());
-        this->sideContainer->addElement(r);
+        this->touchContainer->addElement(r);
 
         // Back
         this->backButton = new Aether::Element(0, 0, 155, 65);
@@ -351,7 +433,7 @@ namespace Screen {
             this->backCallback();
         });
         this->backButton->setSelectable(false);
-        this->sideContainer->addElement(this->backButton);
+        this->touchContainer->addElement(this->backButton);
 
         // Quit
         Aether::Element * quitButton = new Aether::Element(155, 0, 155, 65);
@@ -363,11 +445,11 @@ namespace Screen {
         quitIcon->setColour(this->app->theme()->FG());
         quitButton->addElement(quitIcon);
         quitButton->setCallback([this]() {
-            // Have a prompt
-            this->app->exit();
+            this->app->exit(false);
         });
         quitButton->setSelectable(false);
-        this->sideContainer->addElement(quitButton);
+        this->touchContainer->addElement(quitButton);
+        this->sideContainer->addElement(this->touchContainer);
 
         // Navigation list
         this->sideSearch = new CustomElm::SideButton(10, 80, 290);
@@ -450,8 +532,6 @@ namespace Screen {
             }
         });
         this->sideContainer->addElement(this->sideQueue);
-        this->sideContainer->setFocussed(this->sideSongs);
-        this->container->addElement(this->sideContainer);
         this->sideSeparator3 = new Aether::Rectangle(30, this->sideQueue->y() + 70, 250, 1);
         this->sideSeparator3->setColour(this->app->theme()->muted2());
         this->sideContainer->addElement(this->sideSeparator3);
@@ -461,9 +541,12 @@ namespace Screen {
         this->sideSettings->setActiveColour(this->app->theme()->accent());
         this->sideSettings->setInactiveColour(this->app->theme()->FG());
         this->sideSettings->setCallback([this](){
-            // change to settings screen
+            this->app->pushScreen();
+            this->app->setScreen(Main::ScreenID::Settings);
         });
         this->sideContainer->addElement(this->sideSettings);
+        this->sideContainer->setFocussed(this->sideSongs);
+        this->container->addElement(this->sideContainer);
         this->addElement(this->container);
 
         // === PLAYER ===
@@ -514,14 +597,21 @@ namespace Screen {
         // Set songs active
         this->frame = nullptr;
         this->frameType = Frame::Type::None;
-        this->changeFrame(Frame::Type::Songs, Frame::Action::Reset);
+        this->changeFrame(this->app->config()->initialFrame(), Frame::Action::Reset);
         this->container->setFocussed(this->frame);
 
+        // Init vars
         this->addToPlMenu = nullptr;
+        this->backOneFrame = 0;
+        this->confirmQueue = nullptr;
+        this->playingID = -100;     // This number needs to be less than -1, as >= -1 are valid values
     }
 
     void Home::onUnload() {
+        Screen::onUnload();
+
         delete this->addToPlMenu;
+        delete this->confirmQueue;
 
         // Ensure all frames are deleted
         this->container->removeElement(this->frame);
@@ -531,6 +621,9 @@ namespace Screen {
         }
 
         // The rest of this isn't necessary in this context but it's good to do so
+        this->removeElement(this->bg);
+        this->removeElement(this->sidegrad);
+        this->removeElement(this->sideBg);
         this->removeElement(this->playerDim);
         this->removeElement(this->player);
         this->removeElement(this->container);

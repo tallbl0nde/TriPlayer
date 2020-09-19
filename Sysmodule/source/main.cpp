@@ -3,9 +3,6 @@
 #include "Service.hpp"
 #include "sources/MP3.hpp"
 
-// Path to log file
-#define LOG_FILE "/switch/TriPlayer/sysmodule.log"
-
 // Heap size:
 // DB: ~0.5MB
 // Queue: ~0.2MB
@@ -50,8 +47,8 @@ void __appInit(void) {
     }
     fsdevMountSdmc();
 
-    Log::openFile(LOG_FILE, Log::Level::Success);
-    Log::writeSuccess("=== Sysmodule started! ===");
+    // Open the log file, defaulting to Warning level
+    Log::openFile("/switch/TriPlayer/sysmodule.log", Log::Level::Warning);
 
     // Sockets use small buffers
     constexpr SocketInitConfig sockCfg = {
@@ -83,12 +80,16 @@ void __appExit(void) {
     // In reverse order
 
     // Audio
+    MP3::freeLib();
     audrenStopAudioRenderer();
     delete Audio::getInstance();
     audrenExit();
 
     // Socket
     socketExit();
+
+    // Close log
+    Log::closeFile();
 
     // FS
     fsdevUnmountAll();

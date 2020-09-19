@@ -1,2 +1,3 @@
 Application/source/db/Spellfix.c linguist-vendored
+Application/source/db/okapi_bm25.c linguist-vendored
 Common/libs/SQLite/* linguist-vendored
