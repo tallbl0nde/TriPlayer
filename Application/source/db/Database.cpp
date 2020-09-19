@@ -1641,8 +1641,8 @@ std::vector<std::string> Database::getAllImagePaths(bool & success) {
         return v;
     }
 
-    // Get all paths by iterating over tables
-    std::string tables[3] = {"Playlists", "Artists", "Albums"};
+    // Get all paths by iterating over tables (alphabetically)
+    std::string tables[3] = {"Albums", "Artists", "Playlists"};
     for (size_t i = 0; i < 3; i++) {
         // Query database
         bool ok = this->db->prepareAndExecuteQuery("SELECT image_path FROM " + tables[i] + " ORDER BY image_path;");

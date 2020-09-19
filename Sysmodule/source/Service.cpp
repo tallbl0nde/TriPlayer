@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <future>
+#include "NX.hpp"
 #include "Paths.hpp"
 #include "Service.hpp"
 #include "sources/MP3.hpp"
@@ -8,6 +9,8 @@
 
 // Interval (in seconds) to test if DB file is accessible
 #define DB_TEST_INTERVAL 2
+// Number of milliseconds between polling system state
+#define POLL_INTERVAL 10
 // Number of seconds to wait before previous becomes (back to start)
 #define PREV_WAIT 2
 // Max size of sub-queue (requires 20kB)
@@ -480,6 +483,25 @@ void MainService::exit() {
     this->exit_ = true;
 }
 
+void MainService::gpioEventThread() {
+    // Prepare gpio
+    if (!NX::initializeGpio()) {
+        Log::writeWarning("[GPIO] Couldn't prepare session, unable to pause when headset unplugged!");
+        return;
+    }
+
+    // Loop until the service has signalled to exit
+    while (!this->exit_) {
+        if (NX::gpioHeadsetUnplugged()) {
+            this->audio->pause();
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(POLL_INTERVAL));
+    }
+
+    // Cleanup
+    NX::exitGpio();
+}
+
 void MainService::playbackThread() {
     while (!this->exit_) {
         std::unique_lock<std::shared_mutex> sMtx(this->sMutex);
@@ -626,6 +648,24 @@ void MainService::playbackThread() {
             svcSleepThread(5E+7);
         }
     }
+}
+
+void MainService::sleepEventThread() {
+    // Prepare psc
+    if (!NX::initializePsc()) {
+        Log::writeWarning("[PSC] Couldn't prepare session, unable to pause when entering sleep!");
+        return;
+    }
+
+    // Loop until the service has signalled to exit
+    while (!this->exit_) {
+        if (NX::pscEnteringSleep(POLL_INTERVAL)) {
+            this->audio->pause();
+        }
+    }
+
+    // Cleanup
+    NX::exitPsc();
 }
 
 void MainService::socketThread() {

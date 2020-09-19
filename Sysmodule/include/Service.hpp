@@ -78,8 +78,12 @@ class MainService {
         // Call to exit and prepare for deletion (will stop loop)
         void exit();
 
+        // Listens for 'headphones unplugged' event and pauses playback
+        void gpioEventThread();
         // Handles decoding and shifting between songs due to commands
         void playbackThread();
+        // Listens for 'sleep' event and pauses playback
+        void sleepEventThread();
         // Listens for connections and spawns new threads for each connection
         void socketThread();
 

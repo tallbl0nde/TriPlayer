@@ -41,6 +41,14 @@ void __appInit(void) {
         fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
     }
 
+    // Get + set system firmware version
+    if (R_SUCCEEDED(setsysInitialize())) {
+        SetSysFirmwareVersion fw;
+        setsysGetFirmwareVersion(&fw);
+        hosversionSet(MAKEHOSVERSION(fw.major, fw.minor, fw.micro));
+        setsysExit();
+    }
+
     // FS + Log
     if (R_FAILED(fsInitialize())) {
         fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
@@ -68,6 +76,16 @@ void __appInit(void) {
         Log::writeError("[SOCKET] Failed to initialize sockets!");
     }
 
+    // GPIO
+    if (R_FAILED(gpioInitialize())) {
+        Log::writeWarning("[GPIO] Failed to initialize service");
+    }
+
+    // PSC (power service)
+    if (R_FAILED(pscmInitialize())) {
+        Log::writeWarning("[PSCM] Failed to initialize service");
+    }
+
     // Audio
     audrenInitialize(&audrenCfg);
     Audio::getInstance();
@@ -84,6 +102,10 @@ void __appExit(void) {
     audrenStopAudioRenderer();
     delete Audio::getInstance();
     audrenExit();
+
+    // PSC (power service)
+    pscmExit();
+    gpioExit();
 
     // Socket
     socketExit();
@@ -103,8 +125,12 @@ int main(int argc, char * argv[]) {
 
     // Start audio thread
     std::future<void> audioThread = std::async(std::launch::async, &Audio::process, Audio::getInstance());
+    // Start gpio thread
+    std::future<void> gpioThread = std::async(std::launch::async, &MainService::gpioEventThread, s);
     // Start decoding thread
     std::future<void> playbackThread = std::async(std::launch::async, &MainService::playbackThread, s);
+    // Start power thread
+    // std::future<void> powerThread = std::async(std::launch::async, &MainService::sleepEventThread, s);
 
     // This thread is responsible for handling communication
     s->socketThread();
@@ -112,7 +138,9 @@ int main(int argc, char * argv[]) {
     // Join threads (only run after service has exit signal)
     Audio::getInstance()->exit();
     audioThread.get();
+    gpioThread.get();
     playbackThread.get();
+    powerThread.get();
 
     // Now that it's done we can delete!
     delete s;
