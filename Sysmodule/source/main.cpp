@@ -1,6 +1,7 @@
 #include "NX.hpp"
 #include "Service.hpp"
 #include "sources/MP3.hpp"
+#include <switch.h>
 
 // Heap size:
 // DB: ~0.5MB
@@ -74,7 +75,7 @@ int main(int argc, char * argv[]) {
     // Spawn threads
     NX::Thread::create("audio", audioThread, Audio::getInstance());
     NX::Thread::create("gpio", serviceGpioThread, service);
-    NX::Thread::create("playback", servicePlaybackThread, service);
+    NX::Thread::create("playback", servicePlaybackThread, service, 0x4000);
     // NX::Thread::create("power", servicePowerThread, service);
 
     // Use this thread to handle communication

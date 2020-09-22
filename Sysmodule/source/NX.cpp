@@ -82,6 +82,26 @@ namespace NX {
             return false;
         }
 
+        // Audio
+        constexpr AudioRendererConfig audrenCfg = {
+            .output_rate     = AudioRendererOutputRate_48kHz,
+            .num_voices      = 4,
+            .num_effects     = 0,
+            .num_sinks       = 1,
+            .num_mix_objs    = 1,
+            .num_mix_buffers = 2,
+        };
+        rc = audrenInitialize(&audrenCfg);
+        if (R_SUCCEEDED(rc)) {
+            Audio * audio = Audio::getInstance();
+            audrenStartAudioRenderer();
+            audrenInitialized = audio->initialized();
+        }
+        if (!audrenInitialized) {
+            logError("audio", rc);
+            return false;
+        }
+
         // GPIO
         rc = gpioInitialize();
         if (R_SUCCEEDED(rc)) {
@@ -98,18 +118,6 @@ namespace NX {
 
         } else {
             logError("pscm", rc);
-        }
-
-        // Audio
-        rc = audrenInitialize(&audrenCfg);
-        if (R_SUCCEEDED(rc)) {
-            Audio::getInstance();
-            audrenStartAudioRenderer();
-            audrenInitialized = true;
-
-        } else {
-            logError("audio", rc);
-            return false;
         }
 
         // We don't care if gpio or pscm don't initialize
@@ -300,18 +308,21 @@ namespace NX {
     };
 
     namespace Thread {
-        constexpr size_t threadStackSize = 0x5000;                    // Size of each thread's stack (bytes)
+        constexpr size_t threadDefaultStackSize = 0x1000;             // Size of each thread's stack (bytes)
         static std::unordered_map<std::string, ::Thread> threads;     // Map from name/id to thread object
 
-        bool create(const std::string & id, void(*func)(void *), void * arg) {
+        bool create(const std::string & id, void(*func)(void *), void * arg, const size_t size) {
             // Don't start if thread exists
             if (threads.count(id) > 0) {
                 return false;
             }
 
+            // Use default stack size if zero passed
+            size_t stackSize = (size == 0 ? threadDefaultStackSize : size);
+
             // Create thread
             ::Thread thread;
-            Result rc = threadCreate(&thread, func, arg, nullptr, threadStackSize, 0x2C, -2);
+            Result rc = threadCreate(&thread, func, arg, nullptr, stackSize, 0x2C, -2);
             if (R_FAILED(rc)) {
                 logError("thread (" + id + ")", rc);
                 return false;
@@ -337,6 +348,14 @@ namespace NX {
             threads.erase(id);
             threadWaitForExit(&thread);
             threadClose(&thread);
+        }
+
+        void sleepNano(const size_t ns) {
+            svcSleepThread(ns);
+        }
+
+        void sleepMilli(const size_t ms) {
+            sleepNano(ms * 1000000);
         }
     }
 };

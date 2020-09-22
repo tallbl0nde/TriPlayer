@@ -22,7 +22,7 @@ static void writeString(std::string msg) {
     std::strftime(buf, sizeof(buf), "[%T] ", t);
 
     // Lock stream and write!
-    std::lock_guard<std::mutex> mtx(mutex);
+    std::scoped_lock<std::mutex> mtx(mutex);
     fprintf(file, "%s%s\n", buf, msg.c_str());
     fflush(file);
 }

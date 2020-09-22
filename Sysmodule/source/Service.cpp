@@ -369,15 +369,15 @@ void MainService::commandThread(Socket::Transfer * socket) {
                     s = Protocol::Status::Playing;
                 } else {
                     switch (audio->status()) {
-                        case AudioStatus::Playing:
+                        case Audio::Status::Playing:
                             s = Protocol::Status::Playing;
                             break;
 
-                        case AudioStatus::Paused:
+                        case Audio::Status::Paused:
                             s = Protocol::Status::Paused;
                             break;
 
-                        case AudioStatus::Stopped:
+                        case Audio::Status::Stopped:
                             s = Protocol::Status::Stopped;
                             break;
                     }
@@ -495,7 +495,7 @@ void MainService::gpioEventThread() {
         if (NX::Gpio::headsetUnplugged()) {
             this->audio->pause();
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(POLL_INTERVAL));
+        NX::Thread::sleepMilli(POLL_INTERVAL);
     }
 
     // Cleanup
@@ -557,7 +557,7 @@ void MainService::playbackThread() {
                 std::unique_lock<std::mutex> mtx(this->dbMutex);
                 std::chrono::steady_clock::time_point last = std::chrono::steady_clock::now();
                 while (this->dbLocked) {
-                    svcSleepThread(5E+7);
+                    NX::Thread::sleepMilli(50);
                     std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
                     if (std::chrono::duration_cast< std::chrono::duration<double> >(now - last).count() > DB_TEST_INTERVAL) {
                         if (Utils::Fs::fileAccessible("/switch/TriPlayer/data.sqlite3")) {
@@ -601,7 +601,7 @@ void MainService::playbackThread() {
 
             // If the source is not corrupt and not done decode into an available buffer
             if (this->source->valid() && !this->source->done()) {
-                u8 * buf = new u8[this->audio->bufferSize()];
+                uint8_t * buf = new uint8_t[this->audio->bufferSize()];
                 size_t dec = this->source->decode(buf, this->audio->bufferSize());
                 sMtx.unlock();
 
@@ -613,20 +613,13 @@ void MainService::playbackThread() {
 
                     // Sleep if no buffer is available (duration depends on state)
                     } else {
-                        if (this->audio->status() == AudioStatus::Paused) {
-                            // 20 milliseconds
-                            svcSleepThread(20E+6);
-
-                        } else {
-                            // 2 milliseconds
-                            svcSleepThread(2E+6);
-                        }
+                        NX::Thread::sleepMilli((this->audio->status() == Audio::Status::Paused ? 20 : 5));
                     }
                 }
                 delete[] buf;
 
             // Otherwise if the source is not corrupt and has finished being decoded, wait until the audio device has finished playing it's buffers
-            } else if (this->source->valid() && this->source->done() && this->audio->status() != AudioStatus::Stopped) {
+            } else if (this->source->valid() && this->source->done() && this->audio->status() != Audio::Status::Stopped) {
                 sleep = true;
 
             // If not valid attempt to move to change song
@@ -658,7 +651,7 @@ void MainService::playbackThread() {
 
         // Sleep if no action is required
         if (sleep) {
-            svcSleepThread(50E+6);
+            NX::Thread::sleepMilli(50);
         }
     }
 }
@@ -715,7 +708,7 @@ void MainService::socketThread() {
         }
 
         // Sleep for 100ms and then check again
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        NX::Thread::sleepMilli(100);
     }
 
     // If we've been signaled to exit wait for the listening thread to finish

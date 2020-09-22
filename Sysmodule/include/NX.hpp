@@ -34,11 +34,16 @@ namespace NX {
     namespace Thread {
         // Start a new thread with the given function and argument
         // Uses given id to identify a thread
-        bool create(const std::string &, void (*)(void *), void *);
+        // Params: ID, function, argument, stack size (use default if zero passed)
+        bool create(const std::string &, void (*)(void *), void *, const size_t = 0);
 
         // Wait for the given thread to exit and return
         // Uses given id to identify thread
         void join(const std::string &);
+
+        // Sleep the calling thread
+        void sleepMilli(const size_t);
+        void sleepNano(const size_t);
     }
 };
 

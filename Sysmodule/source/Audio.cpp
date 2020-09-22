@@ -1,18 +1,19 @@
 #include "Audio.hpp"
+#include <cstdlib>
 #include <cstring>
-#include <malloc.h>
 #include "Log.hpp"
+#include "NX.hpp"
+#include <switch.h>
 
-// Number of buffers
-#define BUFFER_COUNT 4
-// Size of a single buffer (in bytes)
-#define BUFFER_SIZE 0x3C00  // 15kB
-// Number of audio channels to output (shouldn't need to change)
-#define OUT_CHANNELS 2
-// Real size of a buffer
-#define REAL_SIZE ((BUFFER_SIZE + (AUDREN_MEMPOOL_ALIGNMENT - 1)) &~ (AUDREN_MEMPOOL_ALIGNMENT - 1))
+constexpr size_t bufferSize = 0x3C00;       // Size of each buffer (15kB)
+constexpr size_t maxBuffers = 4;            // Maximum number of buffer slots
+constexpr size_t outputChannels = 2;        // Number of channels to output (should always be 2)
 
-Audio * Audio::instance = nullptr;
+Audio * Audio::instance = nullptr;          // Our singleton instance
+static AudioDriver drv;                     // Audio output driver (should be safe as this is a singleton class)
+
+// Real size of a buffer due to alignment
+constexpr size_t realSize = ((bufferSize + (AUDREN_MEMPOOL_ALIGNMENT - 1)) &~ (AUDREN_MEMPOOL_ALIGNMENT - 1));
 
 Audio::Audio() {
     this->nextBuf = 0;
@@ -21,20 +22,28 @@ Audio::Audio() {
     this->memPool = nullptr;
     this->sampleOffset = 0;
     this->sink = -1;
-    this->status_ = AudioStatus::Stopped;
+    this->status_ = Status::Stopped;
     this->success = true;
     this->voice = -1;
     this->vol = 100.0;
 
     // Create the driver
-    Result rc = audrvCreate(&this->drv, &audrenCfg, OUT_CHANNELS);
+    constexpr AudioRendererConfig audrenCfg = {
+        .output_rate     = AudioRendererOutputRate_48kHz,
+        .num_voices      = 4,
+        .num_effects     = 0,
+        .num_sinks       = 1,
+        .num_mix_objs    = 1,
+        .num_mix_buffers = 2,
+    };
+    Result rc = audrvCreate(&drv, &audrenCfg, outputChannels);
     if (R_FAILED(rc)) {
         this->success = false;
         Log::writeError("[AUDIO] Unable to create driver!");
     }
 
     // Create wave buffers
-    this->waveBuf = new AudioDriverWaveBuf[BUFFER_COUNT];
+    this->waveBuf = new AudioDriverWaveBuf[maxBuffers];
     if (this->waveBuf == nullptr) {
         delete[] this->waveBuf;
         this->success = false;
@@ -43,10 +52,10 @@ Audio::Audio() {
 
     // Allocate memory pool and align
     if (this->success) {
-        this->memPool = new u8 *[BUFFER_COUNT];
+        this->memPool = new uint8_t *[maxBuffers];
         bool error = false;
-        for (int i = 0; i < BUFFER_COUNT; i++) {
-            this->memPool[i] = (u8 *) memalign(AUDREN_MEMPOOL_ALIGNMENT, REAL_SIZE);
+        for (size_t i = 0; i < maxBuffers; i++) {
+            this->memPool[i] = static_cast<uint8_t *>(aligned_alloc(AUDREN_MEMPOOL_ALIGNMENT, realSize));
             if (this->memPool[i] == nullptr) {
                 error = true;
                 break;
@@ -55,25 +64,25 @@ Audio::Audio() {
 
         if (error) {
             this->success = false;
-            for (int i = 0; i < BUFFER_COUNT; i++) {
+            for (size_t i = 0; i < maxBuffers; i++) {
                 free(this->memPool[i]);
             }
             delete[] this->memPool;
             delete[] this->waveBuf;
-            audrvClose(&this->drv);
-            Log::writeError("[AUDIO] Unable to allocate memory pool (size: " + std::to_string(BUFFER_COUNT) + "x" + std::to_string(REAL_SIZE) + ")");
+            audrvClose(&drv);
+            Log::writeError("[AUDIO] Unable to allocate memory pool (size: " + std::to_string(maxBuffers) + "x" + std::to_string(realSize) + ")");
         }
     }
 
     // Register memory pools with driver and set sink
     if (this->success) {
-        for (int i = 0; i < BUFFER_COUNT; i++) {
-            int id = audrvMemPoolAdd(&this->drv, this->memPool[i], REAL_SIZE);
-            audrvMemPoolAttach(&this->drv, id);
+        for (size_t i = 0; i < maxBuffers; i++) {
+            int id = audrvMemPoolAdd(&drv, this->memPool[i], realSize);
+            audrvMemPoolAttach(&drv, id);
         }
-        const u8 sinkChannels[OUT_CHANNELS] = {0, 1};
-        this->sink = audrvDeviceSinkAdd(&this->drv, AUDREN_DEFAULT_DEVICE_NAME, 2, sinkChannels);
-        audrvUpdate(&this->drv);
+        const uint8_t sinkChannels[outputChannels] = {0, 1};
+        this->sink = audrvDeviceSinkAdd(&drv, AUDREN_DEFAULT_DEVICE_NAME, 2, sinkChannels);
+        audrvUpdate(&drv);
         this->exit_ = false;
         Log::writeSuccess("[AUDIO] Audio object created successfully");
     }
@@ -96,50 +105,50 @@ void Audio::exit() {
 
 void Audio::newSong(long rate, int channels) {
     this->stop();
+    std::scoped_lock<std::mutex> mtx(this->mutex);
     this->sampleOffset = 0;
 
-    std::lock_guard<std::mutex> mtx(this->mutex);
     // Drop previous voice
     if (this->voice >= 0) {
-        audrvVoiceDrop(&this->drv, this->voice);
-        audrvUpdate(&this->drv);
+        audrvVoiceDrop(&drv, this->voice);
+        audrvUpdate(&drv);
         this->voice = -1;
     }
 
     // Create voice matching rate and channels
     this->channels = channels;
     this->voice = 0;
-    bool b = audrvVoiceInit(&this->drv, this->voice, this->channels, PcmFormat_Int16, rate);
+    bool b = audrvVoiceInit(&drv, this->voice, this->channels, PcmFormat_Int16, rate);
     if (!b) {
         this->voice = -1;
         Log::writeError("[AUDIO] Failed to init a new voice!");
     } else {
         // Set volume levels
-        audrvVoiceSetDestinationMix(&this->drv, this->voice, AUDREN_FINAL_MIX_ID);
+        audrvVoiceSetDestinationMix(&drv, this->voice, AUDREN_FINAL_MIX_ID);
         if (this->channels == 1) {
             // Mono audio
-            audrvVoiceSetMixFactor(&this->drv, this->voice, 1.0f, 0, 0);
-            audrvVoiceSetMixFactor(&this->drv, this->voice, 1.0f, 0, 1);
+            audrvVoiceSetMixFactor(&drv, this->voice, 1.0f, 0, 0);
+            audrvVoiceSetMixFactor(&drv, this->voice, 1.0f, 0, 1);
         } else {
             // Stereo-o-o
-            audrvVoiceSetMixFactor(&this->drv, this->voice, 1.0f, 0, 0);
-            audrvVoiceSetMixFactor(&this->drv, this->voice, 0.0f, 0, 1);
-            audrvVoiceSetMixFactor(&this->drv, this->voice, 0.0f, 1, 0);
-            audrvVoiceSetMixFactor(&this->drv, this->voice, 1.0f, 1, 1);
+            audrvVoiceSetMixFactor(&drv, this->voice, 1.0f, 0, 0);
+            audrvVoiceSetMixFactor(&drv, this->voice, 0.0f, 0, 1);
+            audrvVoiceSetMixFactor(&drv, this->voice, 0.0f, 1, 0);
+            audrvVoiceSetMixFactor(&drv, this->voice, 1.0f, 1, 1);
         }
         Log::writeInfo("[AUDIO] Created a new voice");
     }
     Log::writeInfo("[AUDIO] Rate: " + std::to_string(rate) +  ", Channels: " + std::to_string(channels));
 }
 
-void Audio::addBuffer(u8 * buf, size_t sz) {
+void Audio::addBuffer(uint8_t * buf, size_t sz) {
     // Ensure appropriate size and a buffer is available
-    if (sz > REAL_SIZE || sz == 0 || !this->bufferAvailable()) {
+    if (sz > realSize || sz == 0 || !this->bufferAvailable()) {
         return;
     }
 
     // Copy contents into mempool
-    std::lock_guard<std::mutex> mtx(this->mutex);
+    std::scoped_lock<std::mutex> mtx(this->mutex);
     std::memcpy(this->memPool[this->nextBuf], buf, sz);
     armDCacheFlush(this->memPool[this->nextBuf], sz);
 
@@ -148,62 +157,62 @@ void Audio::addBuffer(u8 * buf, size_t sz) {
     this->waveBuf[this->nextBuf].size = sz;
     this->waveBuf[this->nextBuf].start_sample_offset = 0;
     this->waveBuf[this->nextBuf].end_sample_offset = sz/(2 * this->channels);
-    audrvVoiceAddWaveBuf(&this->drv, this->voice, &this->waveBuf[this->nextBuf]);
+    audrvVoiceAddWaveBuf(&drv, this->voice, &this->waveBuf[this->nextBuf]);
 
     // Move to next buffer
-    this->nextBuf = (this->nextBuf + 1) % BUFFER_COUNT;
+    this->nextBuf = (this->nextBuf + 1) % maxBuffers;
 
     // Indicate playing
-    if (this->status_ == AudioStatus::Stopped) {
-        audrvVoiceStart(&this->drv, this->voice);
-        this->status_ = AudioStatus::Playing;
+    if (this->status_ == Status::Stopped) {
+        audrvVoiceStart(&drv, this->voice);
+        this->status_ = Status::Playing;
     }
 }
 
 bool Audio::bufferAvailable() {
-    std::lock_guard<std::mutex> mtx(this->mutex);
+    std::scoped_lock<std::mutex> mtx(this->mutex);
     return (this->waveBuf[this->nextBuf].state == AudioDriverWaveBufState_Done);
 }
 
 size_t Audio::bufferSize() {
-    return REAL_SIZE;
+    return realSize;
 }
 
 void Audio::resume() {
-    if (this->status_ == AudioStatus::Paused) {
-        std::lock_guard<std::mutex> mtx(this->mutex);
-        audrvVoiceSetPaused(&this->drv, this->voice, false);
-        audrvUpdate(&this->drv);
-        this->status_ = AudioStatus::Playing;
+    if (this->status_ == Status::Paused) {
+        std::scoped_lock<std::mutex> mtx(this->mutex);
+        audrvVoiceSetPaused(&drv, this->voice, false);
+        audrvUpdate(&drv);
+        this->status_ = Status::Playing;
     }
 }
 
 void Audio::pause() {
-    if (this->status_ == AudioStatus::Playing) {
-        std::lock_guard<std::mutex> mtx(this->mutex);
-        audrvVoiceSetPaused(&this->drv, this->voice, true);
-        audrvUpdate(&this->drv);
-        this->status_ = AudioStatus::Paused;
+    if (this->status_ == Status::Playing) {
+        std::scoped_lock<std::mutex> mtx(this->mutex);
+        audrvVoiceSetPaused(&drv, this->voice, true);
+        audrvUpdate(&drv);
+        this->status_ = Status::Paused;
     }
 }
 
 void Audio::stop() {
-    std::lock_guard<std::mutex> mtx(this->mutex);
+    std::scoped_lock<std::mutex> mtx(this->mutex);
     if (this->voice >= 0) {
-        this->sampleOffset += audrvVoiceGetPlayedSampleCount(&this->drv, this->voice);
-        audrvVoiceStop(&this->drv, this->voice);
-        audrvUpdate(&this->drv);
+        this->sampleOffset += audrvVoiceGetPlayedSampleCount(&drv, this->voice);
+        audrvVoiceStop(&drv, this->voice);
+        audrvUpdate(&drv);
     }
 
     // Indicate buffers are 'empty'
-    for (int i = 0; i < BUFFER_COUNT; i++) {
+    for (size_t i = 0; i < maxBuffers; i++) {
         this->waveBuf[i].state = AudioDriverWaveBufState_Done;
     }
     this->nextBuf = 0;
-    this->status_ = AudioStatus::Stopped;
+    this->status_ = Status::Stopped;
 }
 
-AudioStatus Audio::status() {
+Audio::Status Audio::status() {
     return this->status_;
 }
 
@@ -212,12 +221,12 @@ int Audio::samplesPlayed() {
         return this->sampleOffset;
     }
 
-    std::lock_guard<std::mutex> mtx(this->mutex);
-    return (this->sampleOffset + audrvVoiceGetPlayedSampleCount(&this->drv, this->voice));
+    std::scoped_lock<std::mutex> mtx(this->mutex);
+    return (this->sampleOffset + audrvVoiceGetPlayedSampleCount(&drv, this->voice));
 }
 
 void Audio::setSamplesPlayed(int s) {
-    std::lock_guard<std::mutex> mtx(this->mutex);
+    std::scoped_lock<std::mutex> mtx(this->mutex);
     this->sampleOffset = s;
 }
 
@@ -231,22 +240,22 @@ void Audio::setVolume(double v) {
         return;
     }
 
-    std::lock_guard<std::mutex> mtx(this->mutex);
+    std::scoped_lock<std::mutex> mtx(this->mutex);
     this->vol = v;
-    audrvMixSetVolume(&this->drv, this->sink, this->vol/100.0);
+    audrvMixSetVolume(&drv, this->sink, this->vol/100.0);
     Log::writeInfo("[AUDIO] Volume set to " + std::to_string(this->vol));
 }
 
 void Audio::process() {
     while (!this->exit_) {
         switch (this->status_) {
-            case AudioStatus::Playing: {
+            case Status::Playing: {
                 std::unique_lock<std::mutex> mtx(this->mutex);
-                audrvUpdate(&this->drv);
+                audrvUpdate(&drv);
                 audrenWaitFrame();
 
                 // Check if we need to move to stopped state (no more buffers)
-                int lastBuf = ((this->nextBuf - 1) < 0 ? BUFFER_COUNT-1 : this->nextBuf - 1);
+                int lastBuf = ((this->nextBuf - 1) < 0 ? maxBuffers-1 : this->nextBuf - 1);
                 if (this->waveBuf[lastBuf].state == AudioDriverWaveBufState_Done) {
                     mtx.unlock();
                     this->stop();
@@ -254,10 +263,10 @@ void Audio::process() {
                 break;
             }
 
-            case AudioStatus::Paused:
-            case AudioStatus::Stopped:
-                // Sleep if not doing anything for 20 milliseconds
-                svcSleepThread(2E+6);
+            case Status::Paused:
+            case Status::Stopped:
+                // Sleep if not doing anything
+                NX::Thread::sleepMilli(5);
                 break;
         }
     }
@@ -267,16 +276,16 @@ Audio::~Audio() {
     if (this->success) {
         // Drop voice
         if (this->voice >= 0) {
-            audrvVoiceStop(&this->drv, this->voice);
-            audrvVoiceDrop(&this->drv, this->voice);
+            audrvVoiceStop(&drv, this->voice);
+            audrvVoiceDrop(&drv, this->voice);
         }
 
         // Free stuff
-        for (int i = 0; i < BUFFER_COUNT; i++) {
+        for (size_t i = 0; i < maxBuffers; i++) {
             free(this->memPool[i]);
         }
         delete[] this->memPool;
-        audrvClose(&this->drv);
+        audrvClose(&drv);
         delete[] this->waveBuf;
     }
     Audio::instance = nullptr;
