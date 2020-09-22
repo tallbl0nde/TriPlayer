@@ -5,7 +5,7 @@
 // Heap size:
 // DB: ~0.5MB
 // Queue: ~0.2MB
-// MP3: ~0.5MB
+// MP3: ~0.3MB
 // Sockets: ~0.5MB
 #define INNER_HEAP_SIZE (size_t)(2 * 1024 * 1024)
 

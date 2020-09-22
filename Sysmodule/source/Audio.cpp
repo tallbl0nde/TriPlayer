@@ -4,9 +4,9 @@
 #include "Log.hpp"
 
 // Number of buffers
-#define BUFFER_COUNT 5
+#define BUFFER_COUNT 4
 // Size of a single buffer (in bytes)
-#define BUFFER_SIZE 0xA000  // 40kB
+#define BUFFER_SIZE 0x3C00  // 15kB
 // Number of audio channels to output (shouldn't need to change)
 #define OUT_CHANNELS 2
 // Real size of a buffer
@@ -133,15 +133,15 @@ void Audio::newSong(long rate, int channels) {
 }
 
 void Audio::addBuffer(u8 * buf, size_t sz) {
-    // Ensure below allocated size
+    // Ensure appropriate size and a buffer is available
     if (sz > REAL_SIZE || sz == 0 || !this->bufferAvailable()) {
         return;
     }
 
-    std::lock_guard<std::mutex> mtx(this->mutex);
     // Copy contents into mempool
-    armDCacheFlush(this->memPool[this->nextBuf], sz);
+    std::lock_guard<std::mutex> mtx(this->mutex);
     std::memcpy(this->memPool[this->nextBuf], buf, sz);
+    armDCacheFlush(this->memPool[this->nextBuf], sz);
 
     // Fill relevant waveBuf
     this->waveBuf[this->nextBuf].data_raw = this->memPool[nextBuf];
@@ -244,11 +244,11 @@ void Audio::process() {
                 std::unique_lock<std::mutex> mtx(this->mutex);
                 audrvUpdate(&this->drv);
                 audrenWaitFrame();
-                mtx.unlock();
 
                 // Check if we need to move to stopped state (no more buffers)
-                int lastBuf = ((nextBuf - 1) < 0 ? BUFFER_COUNT-1 : nextBuf - 1);
-                if (waveBuf[lastBuf].state == AudioDriverWaveBufState_Done) {
+                int lastBuf = ((this->nextBuf - 1) < 0 ? BUFFER_COUNT-1 : this->nextBuf - 1);
+                if (this->waveBuf[lastBuf].state == AudioDriverWaveBufState_Done) {
+                    mtx.unlock();
                     this->stop();
                 }
                 break;
@@ -256,8 +256,8 @@ void Audio::process() {
 
             case AudioStatus::Paused:
             case AudioStatus::Stopped:
-                // Sleep if not doing anything for 0.02 sec
-                svcSleepThread(2E+7);
+                // Sleep if not doing anything for 20 milliseconds
+                svcSleepThread(2E+6);
                 break;
         }
     }

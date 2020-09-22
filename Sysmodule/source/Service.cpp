@@ -610,11 +610,24 @@ void MainService::playbackThread() {
                     if (this->audio->bufferAvailable()) {
                         this->audio->addBuffer(buf, dec);
                         break;
+
+                    // Sleep if no buffer is available (duration depends on state)
                     } else {
-                        svcSleepThread(2E+7);
+                        if (this->audio->status() == AudioStatus::Paused) {
+                            // 20 milliseconds
+                            svcSleepThread(20E+6);
+
+                        } else {
+                            // 2 milliseconds
+                            svcSleepThread(2E+6);
+                        }
                     }
                 }
                 delete[] buf;
+
+            // Otherwise if the source is not corrupt and has finished being decoded, wait until the audio device has finished playing it's buffers
+            } else if (this->source->valid() && this->source->done() && this->audio->status() != AudioStatus::Stopped) {
+                sleep = true;
 
             // If not valid attempt to move to change song
             } else {
@@ -645,7 +658,7 @@ void MainService::playbackThread() {
 
         // Sleep if no action is required
         if (sleep) {
-            svcSleepThread(5E+7);
+            svcSleepThread(50E+6);
         }
     }
 }
