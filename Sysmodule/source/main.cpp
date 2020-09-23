@@ -52,20 +52,24 @@ void __appExit(void) {
 }
 
 // Wrappers to call methods on MainService object
-void audioThread(void * arg) {
+void * audioThread(void * arg) {
     static_cast<Audio *>(arg)->process();
+    return nullptr;
 }
 
-void serviceGpioThread(void * arg) {
+void * serviceGpioThread(void * arg) {
     static_cast<MainService *>(arg)->gpioEventThread();
+    return nullptr;
 }
 
-void servicePlaybackThread(void * arg) {
+void * servicePlaybackThread(void * arg) {
     static_cast<MainService *>(arg)->playbackThread();
+    return nullptr;
 }
 
-void servicePowerThread(void * arg) {
+void * servicePowerThread(void * arg) {
     static_cast<MainService *>(arg)->sleepEventThread();
+    return nullptr;
 }
 
 int main(int argc, char * argv[]) {

@@ -1,5 +1,6 @@
 #include <cstring>
 #include "Log.hpp"
+#include "nx/File.hpp"
 #include <mpg123.h>
 #include "sources/MP3.hpp"
 
@@ -16,7 +17,8 @@ MP3::MP3(const std::string & path) : Source() {
     }
 
     // Attempt to open file
-    int result = mpg123_open(this->mpg, path.c_str());
+    this->file = new NX::File(path);
+    int result = mpg123_open_handle(this->mpg, this->file);
     if (result != MPG123_OK) {
         MP3::logErrorMsg();
         Log::writeError("[MP3] Unable to open file");
@@ -93,6 +95,9 @@ MP3::~MP3() {
     if (this->mpg != nullptr) {
         mpg123_close(this->mpg);
     }
+
+    // Delete file handle
+    delete this->file;
 }
 
 bool MP3::initLib() {
@@ -107,6 +112,13 @@ bool MP3::initLib() {
     MP3::mpg = mpg123_new(nullptr, &result);
     if (MP3::mpg == nullptr) {
         Log::writeError("[MP3] Failed to create instance: " + std::to_string(result));
+        return false;
+    }
+
+    // Enable support for custom file object
+    result = mpg123_replace_reader_handle(MP3::mpg, NX::File::readFile, NX::File::seekFile, nullptr);
+    if (result != MPG123_OK) {
+        Log::writeError("[MP3] Unable to enable custom file object support: " + std::to_string(result));
         return false;
     }
 

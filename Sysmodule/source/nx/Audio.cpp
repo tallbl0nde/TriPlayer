@@ -250,12 +250,15 @@ void Audio::process() {
     while (!this->exit_) {
         switch (this->status_) {
             case Status::Playing: {
+                // Check if we actually need to update
                 std::unique_lock<std::mutex> mtx(this->mutex);
-                audrvUpdate(&drv);
-                audrenWaitFrame();
+                int lastBuf = ((this->nextBuf - 1) < 0 ? maxBuffers-1 : this->nextBuf - 1);
+                if (this->waveBuf[lastBuf].state != AudioDriverWaveBufState_Done) {
+                    audrvUpdate(&drv);
+                    audrenWaitFrame();
+                }
 
                 // Check if we need to move to stopped state (no more buffers)
-                int lastBuf = ((this->nextBuf - 1) < 0 ? maxBuffers-1 : this->nextBuf - 1);
                 if (this->waveBuf[lastBuf].state == AudioDriverWaveBufState_Done) {
                     mtx.unlock();
                     this->stop();
