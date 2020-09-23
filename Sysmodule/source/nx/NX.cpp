@@ -1,6 +1,9 @@
-#include "Audio.hpp"
+#include "nx/Audio.hpp"
+#include "nx/File.hpp"
 #include "Log.hpp"
+#include <mutex>
 #include <switch.h>
+#include <thread>
 #include <unordered_map>
 
 namespace NX {
@@ -38,9 +41,9 @@ namespace NX {
         rc = fsInitialize();
         if (R_SUCCEEDED(rc)) {
             fsdevMountSdmc();
-            fsInitialized = true;
-
-        } else {
+            fsInitialized = File::initializeService();
+        }
+        if (!fsInitialized) {
             return false;
         }
 
@@ -157,6 +160,7 @@ namespace NX {
 
         // FS
         if (fsInitialized) {
+            File::closeService();
             fsdevUnmountAll();
             fsExit();
             fsInitialized = false;
@@ -307,47 +311,36 @@ namespace NX {
         }
     };
 
+    // I wanted to use libnx's API for threads but apparently that causes a Data Abort when a thread's
+    // function returns (like literally after the last line)
     namespace Thread {
-        constexpr size_t threadDefaultStackSize = 0x1000;             // Size of each thread's stack (bytes)
-        static std::unordered_map<std::string, ::Thread> threads;     // Map from name/id to thread object
+        static std::unordered_map<std::string, std::thread> threads;    // Map from name/id to thread object
+        static std::mutex threadMutex;                                  // Mutex protecting map
 
         bool create(const std::string & id, void(*func)(void *), void * arg, const size_t size) {
+            std::scoped_lock<std::mutex> mtx(threadMutex);
+
             // Don't start if thread exists
             if (threads.count(id) > 0) {
                 return false;
             }
 
-            // Use default stack size if zero passed
-            size_t stackSize = (size == 0 ? threadDefaultStackSize : size);
-
-            // Create thread
-            ::Thread thread;
-            Result rc = threadCreate(&thread, func, arg, nullptr, stackSize, 0x2C, -2);
-            if (R_FAILED(rc)) {
-                logError("thread (" + id + ")", rc);
-                return false;
-            }
-
-            // Start thread execution
-            rc = threadStart(&thread);
-            if (R_FAILED(rc)) {
-                logError("thread (" + id + ")", rc);
-            }
-            threads[id] = thread;
+            // Create thread and emplace in map
+            threads.emplace(id, std::thread(func, arg));
             return true;
         }
 
         void join(const std::string & id) {
+            std::scoped_lock<std::mutex> mtx(threadMutex);
+
             // Check if thread exists
             if (threads.count(id) == 0) {
                 return;
             }
 
             // Wait for thread to finish
-            ::Thread thread = threads[id];
+            threads[id].join();
             threads.erase(id);
-            threadWaitForExit(&thread);
-            threadClose(&thread);
         }
 
         void sleepNano(const size_t ns) {

@@ -1,5 +1,5 @@
-#ifndef AUDIO_HPP
-#define AUDIO_HPP
+#ifndef NX_AUDIO_HPP
+#define NX_AUDIO_HPP
 
 #include <atomic>
 #include <cstddef>

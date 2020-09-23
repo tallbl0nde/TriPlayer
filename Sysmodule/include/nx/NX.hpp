@@ -1,5 +1,5 @@
-#ifndef NX_HPP
-#define NX_HPP
+#ifndef NX_NX_HPP
+#define NX_NX_HPP
 
 #include <string>
 

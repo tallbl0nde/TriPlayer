@@ -1,8 +1,8 @@
-#include "Audio.hpp"
 #include <cstdlib>
 #include <cstring>
 #include "Log.hpp"
-#include "NX.hpp"
+#include "nx/Audio.hpp"
+#include "nx/NX.hpp"
 #include <switch.h>
 
 constexpr size_t bufferSize = 0x3C00;       // Size of each buffer (15kB)

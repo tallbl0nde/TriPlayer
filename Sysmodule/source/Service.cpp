@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <future>
-#include "NX.hpp"
+#include "nx/NX.hpp"
 #include "Paths.hpp"
 #include "Service.hpp"
 #include "sources/MP3.hpp"

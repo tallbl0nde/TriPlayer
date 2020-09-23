@@ -1,4 +1,4 @@
-#include "NX.hpp"
+#include "nx/NX.hpp"
 #include "Service.hpp"
 #include "sources/MP3.hpp"
 #include <switch.h>
