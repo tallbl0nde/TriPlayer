@@ -60,7 +60,7 @@ namespace NX {
     }
 
     // Note: We can freely _read_ this->bufferTail in this thread (producer)
-    void * File::fillBufferThread(void * arg) {
+    void File::fillBufferThread(void * arg) {
         File * file = static_cast<File *>(arg);
 
         // Loop until we're signalled to exit
@@ -113,7 +113,6 @@ namespace NX {
             // Pause before checking again
             Thread::sleepMilli(readBufferDelay);
         }
-        return nullptr;
     }
 
     size_t File::bufferSize() {

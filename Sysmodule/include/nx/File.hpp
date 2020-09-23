@@ -28,7 +28,7 @@ namespace NX {
 
             // Read bytes into the file's buffer (below)
             // Run on a separate thread when the buffer is below a threshold
-            static void * fillBufferThread(void *);
+            static void fillBufferThread(void *);
             std::mutex bufferMutex;                 // Mutex protecting access to the buffer
             size_t id;                              // This file's thread ID
             std::atomic<bool> stopThread;           // Set true to exit the thread

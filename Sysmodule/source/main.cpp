@@ -52,24 +52,20 @@ void __appExit(void) {
 }
 
 // Wrappers to call methods on MainService object
-void * audioThread(void * arg) {
+void audioThread(void * arg) {
     static_cast<Audio *>(arg)->process();
-    return nullptr;
 }
 
-void * serviceGpioThread(void * arg) {
+void serviceGpioThread(void * arg) {
     static_cast<MainService *>(arg)->gpioEventThread();
-    return nullptr;
 }
 
-void * servicePlaybackThread(void * arg) {
-    static_cast<MainService *>(arg)->playbackThread();
-    return nullptr;
-}
-
-void * servicePowerThread(void * arg) {
+void servicePowerThread(void * arg) {
     static_cast<MainService *>(arg)->sleepEventThread();
-    return nullptr;
+}
+
+void serviceSocketThread(void * arg) {
+    static_cast<MainService *>(arg)->socketThread();
 }
 
 int main(int argc, char * argv[]) {
@@ -79,18 +75,18 @@ int main(int argc, char * argv[]) {
     // Spawn threads
     NX::Thread::create("audio", audioThread, Audio::getInstance());
     NX::Thread::create("gpio", serviceGpioThread, service);
-    NX::Thread::create("playback", servicePlaybackThread, service, 0x4000);
     // NX::Thread::create("power", servicePowerThread, service);
+    NX::Thread::create("socket", serviceSocketThread, service);
 
-    // Use this thread to handle communication
-    service->socketThread();
+    // Use this thread to handle playback (we need the higher priority!)
+    service->playbackThread();
 
     // Join threads (only executed after service has exit signal)
     Audio::getInstance()->exit();
-    NX::Thread::join("audio");
-    NX::Thread::join("gpio");
-    NX::Thread::join("playback");
+    NX::Thread::join("socket");
     // NX::Thread::join("power");
+    NX::Thread::join("gpio");
+    NX::Thread::join("audio");
 
     // Finally delete service
     delete service;
