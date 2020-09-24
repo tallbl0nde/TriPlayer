@@ -1,3 +1,4 @@
+#include "nx/Audio.hpp"
 #include "nx/NX.hpp"
 #include "Service.hpp"
 #include "sources/MP3.hpp"
@@ -5,9 +6,9 @@
 
 // Heap size:
 // DB: ~0.5MB
+// IPC: ~0.2MB
 // Queue: ~0.2MB
 // MP3: ~0.3MB
-// Sockets: ~0.5MB
 #define INNER_HEAP_SIZE (size_t)(2 * 1024 * 1024)
 
 // It hangs if I don't use C... I wish I knew why!
@@ -60,12 +61,12 @@ void serviceGpioThread(void * arg) {
     static_cast<MainService *>(arg)->gpioEventThread();
 }
 
-void servicePowerThread(void * arg) {
-    static_cast<MainService *>(arg)->sleepEventThread();
+void serviceIpcThread(void * arg) {
+    static_cast<MainService *>(arg)->ipcThread();
 }
 
-void serviceSocketThread(void * arg) {
-    static_cast<MainService *>(arg)->socketThread();
+void servicePowerThread(void * arg) {
+    static_cast<MainService *>(arg)->sleepEventThread();
 }
 
 int main(int argc, char * argv[]) {
@@ -75,16 +76,16 @@ int main(int argc, char * argv[]) {
     // Spawn threads
     NX::Thread::create("audio", audioThread, Audio::getInstance());
     NX::Thread::create("gpio", serviceGpioThread, service);
-    // NX::Thread::create("power", servicePowerThread, service);
-    NX::Thread::create("socket", serviceSocketThread, service);
+    NX::Thread::create("ipc", serviceIpcThread, service);
+    NX::Thread::create("power", servicePowerThread, service);
 
     // Use this thread to handle playback (we need the higher priority!)
     service->playbackThread();
 
     // Join threads (only executed after service has exit signal)
     Audio::getInstance()->exit();
-    NX::Thread::join("socket");
-    // NX::Thread::join("power");
+    NX::Thread::join("power");
+    NX::Thread::join("ipc");
     NX::Thread::join("gpio");
     NX::Thread::join("audio");
 

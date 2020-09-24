@@ -18,7 +18,7 @@ namespace Ipc {
     class Server {
         private:
             SmServiceName serverName;       // Name of IPC server
-            bool exit_;                     // Set true to exit process loop
+            bool error_;                    // Set true when a fatal error occurs
             Handler handler;                // Function to handle request
 
             std::vector<Handle> handles;    // Server (index 0) and client's handles
@@ -42,11 +42,9 @@ namespace Ipc {
             // Set the request handler function
             void setRequestHandler(Handler);
 
-            // Signal to stop handling requests
-            void exit();
-
             // Process any received requests (returns once exit() called)
-            void process();
+            // Returns true if successful
+            bool process();
 
             // Clean up and stop the server
             ~Server();

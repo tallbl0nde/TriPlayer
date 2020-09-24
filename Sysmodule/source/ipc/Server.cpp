@@ -12,12 +12,12 @@
 // stuff is worth it, you can buy us a beer in return.  - The sys-clk authors
 // --------------------------------------------------------------------------
 namespace Ipc {
-    constexpr size_t maxMessageBytes = (10 * 1024);     // Maximum bytes to transmit it one message
+    constexpr size_t maxMessageBytes = (100 * 1024);    // Maximum bytes to transmit it one message
     constexpr uint64_t waitTimeout = UINT64_MAX;        // Wait timeout when processing
 
     Server::Server(const std::string & name, const size_t maxClients) {
         // Set status variables
-        this->exit_ = false;
+        this->error_ = false;
         this->handler = nullptr;
         this->maxHandles = maxClients + 1;
         this->handles.reserve(this->maxHandles);
@@ -25,7 +25,7 @@ namespace Ipc {
         // Exit if invalid session count given
         if (maxClients < 1 || maxClients > MAX_WAIT_OBJECTS - 1) {
             Log::writeError("[IPC] Invalid number of sessions requested");
-            this->exit_ = true;
+            this->error_ = true;
             return;
         }
 
@@ -37,6 +37,8 @@ namespace Ipc {
             Log::writeError("[IPC] Couldn't create server: " + std::to_string(rc));
             return;
         }
+
+        Log::writeSuccess("[IPC] Server started");
         this->handles.push_back(serverHandle);
     }
 
@@ -115,6 +117,7 @@ namespace Ipc {
 
             // Otherwise prepare error response
             default:
+                Log::writeWarning("[IPC] Received unexpected CmifCommand");
                 this->prepareResponse(MAKERESULT(11, 403), data);
                 break;
         }
@@ -154,50 +157,51 @@ namespace Ipc {
     }
 
     size_t Server::maxMessageSize() {
-        return maxMessageBytes;
+        return (maxMessageBytes - 0x10 - sizeof(Header));
     }
 
     void Server::setRequestHandler(Handler f) {
         this->handler = f;
     }
 
-    void Server::exit() {
-        this->exit_ = true;
-    }
+    bool Server::process() {
+        if (this->error_) {
+            return false;
+        }
 
-    void Server::process() {
-        while (!this->exit_) {
-            // Wait for a client to send a request/message
-            int32_t handleIndex;
-            Result rc = svcWaitSynchronization(&handleIndex, &this->handles[0], this->handles.size(), waitTimeout);
-            if (R_VALUE(rc) == KERNELRESULT(TimedOut)) {
-                continue;
+        // Wait for a client to send a request/message
+        int32_t handleIndex;
+        Result rc = svcWaitSynchronization(&handleIndex, &this->handles[0], this->handles.size(), waitTimeout);
+        if (R_VALUE(rc) == KERNELRESULT(TimedOut)) {
+            return !this->error_;
+        }
+
+        if (R_SUCCEEDED(rc)) {
+            // Check we're within range
+            if (handleIndex < 0 || static_cast<uint32_t>(handleIndex) >= this->handles.size()) {
+                Log::writeError("[IPC] svcWaitSynchronization returned out of range index: " + std::to_string(handleIndex));
+                this->error_ = true;
+                return false;
             }
 
-            if (R_SUCCEEDED(rc)) {
-                // Check we're within range
-                if (handleIndex < 0 || static_cast<uint32_t>(handleIndex) >= this->handles.size()) {
-                    Log::writeError("[IPC] svcWaitSynchronization returned out of range index: " + std::to_string(handleIndex));
-                    break;
-                }
+            // If the index is not zero then we need to handle that client's request
+            bool ok = true;
+            if (handleIndex != 0) {
+                ok = this->processSession(handleIndex);
 
-                // If the index is not zero then we need to handle that client's request
-                bool ok = true;
-                if (handleIndex != 0) {
-                    ok = this->processSession(handleIndex);
+            // Otherwise prepare for a new session
+            } else {
+                ok = this->processNewSession();
+            }
 
-                // Otherwise prepare for a new session
-                } else {
-                    ok = this->processNewSession();
-                }
-
-                // Exit on an error
-                if (!ok) {
-                    Log::writeError("[IPC] Failed to handle " + std::string(handleIndex == 0 ? "server" : "client") + " request");
-                    this->exit_ = true;
-                }
+            // Exit on an error
+            if (!ok) {
+                Log::writeError("[IPC] Failed to handle " + std::string(handleIndex == 0 ? "server" : "client") + " request");
+                this->error_ = true;
             }
         }
+
+        return !this->error_;
     }
 
     Server::~Server() {

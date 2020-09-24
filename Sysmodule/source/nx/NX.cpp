@@ -18,12 +18,11 @@ namespace NX {
     static bool gpioInitialized = false;
     static bool pscmInitialized = false;
     static bool smInitialized = false;
-    static bool socketInitialized = false;
 
     // Starts all needed services
     bool startServices() {
         // Prevent starting twice
-        if (audrenInitialized || fsInitialized || gpioInitialized || pscmInitialized || smInitialized || socketInitialized) {
+        if (audrenInitialized || fsInitialized || gpioInitialized || pscmInitialized || smInitialized) {
             return true;
         }
         Result rc;
@@ -60,29 +59,6 @@ namespace NX {
 
         } else {
             logError("system version", rc);
-        }
-
-        // Sockets (uses small buffers)
-        constexpr SocketInitConfig socketCfg = {
-            .bsdsockets_version = 1,
-
-            .tcp_tx_buf_size = 0x1000,
-            .tcp_rx_buf_size = 0x1000,
-            .tcp_tx_buf_max_size = 0x3000,
-            .tcp_rx_buf_max_size = 0x3000,
-
-            .udp_tx_buf_size = 0x0,
-            .udp_rx_buf_size = 0x0,
-
-            .sb_efficiency = 1,
-        };
-        rc = socketInitialize(&socketCfg);
-        if (R_SUCCEEDED(rc)) {
-            socketInitialized = true;
-
-        } else {
-            logError("socket", rc);
-            return false;
         }
 
         // Audio
@@ -139,12 +115,6 @@ namespace NX {
         if (gpioInitialized) {
             gpioExit();
             gpioInitialized = false;
-        }
-
-        // Sockets
-        if (socketInitialized) {
-            socketExit();
-            socketInitialized = false;
         }
 
         // Audio
