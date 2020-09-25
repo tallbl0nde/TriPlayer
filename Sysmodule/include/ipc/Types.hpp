@@ -24,9 +24,15 @@ namespace Ipc {
     // IPC Request object
     struct Request {
         HipcParsedRequest hipc;             // Internal usage only!
-        Data params;                        // See Data struct
-        std::vector<uint8_t> inData;        // Input buffer
-        std::vector<uint8_t> outData;       // Output buffer
+        struct {                            // Input data
+            uint64_t cmdId;                 // Command ID
+            std::vector<uint8_t> arg;       // Argument
+            std::vector<uint8_t> data;      // Buffer of large data
+        } in;
+        struct {                            // Output data
+            std::vector<uint8_t> reply;     // 'Reply' data
+            std::vector<uint8_t> data;      // Output buffer
+        } out;
     };
 
     // Handler function structure

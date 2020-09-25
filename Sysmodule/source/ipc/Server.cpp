@@ -12,8 +12,8 @@
 // stuff is worth it, you can buy us a beer in return.  - The sys-clk authors
 // --------------------------------------------------------------------------
 namespace Ipc {
-    constexpr size_t maxMessageBytes = (100 * 1024);    // Maximum bytes to transmit it one message
-    constexpr uint64_t waitTimeout = UINT64_MAX;        // Wait timeout when processing
+    constexpr size_t maxReplyBytes = 0x90 - sizeof(Header);     // Max bytes that fit in 'header'
+    constexpr uint64_t waitTimeout = UINT64_MAX;                // Wait timeout when processing
 
     Server::Server(const std::string & name, const size_t maxClients) {
         // Set status variables
@@ -46,8 +46,8 @@ namespace Ipc {
         // Fill request with default data
         uint8_t * base = static_cast<uint8_t *>(armGetTls());
         request.hipc = hipcParseRequest(base);
-        request.params.cmdId = 0;
-        request.params.args = std::vector<uint8_t>();
+        request.in.cmdId = 0;
+        request.in.arg = std::vector<uint8_t>();
 
         // Check request type and get cmd/args
         if (request.hipc.meta.type == CmifCommandType_Request) {
@@ -60,41 +60,47 @@ namespace Ipc {
             }
 
             // Otherwise set request data
-            request.params.cmdId = header->cmdId;
+            request.in.cmdId = header->cmdId;
             if (dataSize > sizeof(Header)) {
                 uint8_t * ptr = reinterpret_cast<uint8_t *>(header) + sizeof(Header);
                 size_t size = dataSize - sizeof(Header);
-                request.params.args.assign(ptr, ptr + size);
+                request.in.arg.assign(ptr, ptr + size);
             }
         }
 
         // Create vector from send buffers
         uint8_t * ptr = static_cast<uint8_t *>(hipcGetBufferAddress(request.hipc.data.send_buffers));
         size_t size = hipcGetBufferSize(request.hipc.data.send_buffers);
-        request.inData = std::vector<uint8_t>(ptr, ptr + size);
-        request.outData = std::vector<uint8_t>();
+        request.in.data = std::vector<uint8_t>(ptr, ptr + size);
+        request.out.data = std::vector<uint8_t>();
+        request.out.reply = std::vector<uint8_t>();
     }
 
     void Server::prepareResponse(uint32_t result, Request & request) {
-        // Handle data to reply with first
-        if (!request.outData.empty()) {
+        // Handle data buffer to reply with first
+        if (!request.out.data.empty()) {
             size_t size = hipcGetBufferSize(request.hipc.data.recv_buffers);
-            if (request.outData.size() < size) {
-                size = request.outData.size();
+            if (request.out.data.size() < size) {
+                size = request.out.data.size();
             }
-            std::memcpy(hipcGetBufferAddress(request.hipc.data.recv_buffers), &request.outData[0], size);
+            std::memcpy(hipcGetBufferAddress(request.hipc.data.recv_buffers), &request.out.data[0], size);
         }
 
         // Fill request
         uint8_t * base = static_cast<uint8_t *>(armGetTls());
         HipcRequest hipc = hipcMakeRequestInline(base,
             .type = CmifCommandType_Request,
-            .num_data_words = static_cast<uint32_t>(sizeof(Header) + 0x10)/4,
+            .num_data_words = static_cast<uint32_t>(sizeof(Header) + request.out.reply.size() + 0x10)/4,
         );
 
         Header * header = static_cast<Header *>(cmifGetAlignedDataStart(hipc.data_words, base));
         header->magic = CMIF_OUT_HEADER_MAGIC;
         header->result = result;
+
+        // Finally append reply
+        if (R_SUCCEEDED(result) && !request.out.reply.empty()) {
+            std::memcpy(reinterpret_cast<uint8_t *>(header) + sizeof(Header), &request.out.reply[0], request.out.reply.size());
+        }
     }
 
     bool Server::processSession(const int32_t index) {
@@ -167,7 +173,7 @@ namespace Ipc {
     }
 
     size_t Server::maxMessageSize() {
-        return (maxMessageBytes - 0x10 - sizeof(Header));
+        return maxReplyBytes;
     }
 
     void Server::setRequestHandler(Handler f) {
