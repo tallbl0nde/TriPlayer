@@ -26,7 +26,7 @@ namespace Ipc {
 
             // Handle requests + responses
             void parseRequest(Request &);
-            void prepareResponse(uint32_t, std::vector<uint8_t> &);
+            void prepareResponse(uint32_t, Request &);
 
             // Process a session
             bool processSession(const int32_t);
@@ -42,8 +42,7 @@ namespace Ipc {
             // Set the request handler function
             void setRequestHandler(Handler);
 
-            // Process any received requests (returns once exit() called)
-            // Returns true if successful
+            // Process any received requests (returns false once a fatal error occurs)
             bool process();
 
             // Clean up and stop the server

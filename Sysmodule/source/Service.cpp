@@ -2,6 +2,8 @@
 #include <cstring>
 #include "Config.hpp"
 #include "Database.hpp"
+#include "ipc/Command.hpp"
+#include "ipc/Helpers.hpp"
 #include "nx/Audio.hpp"
 #include "nx/NX.hpp"
 #include "Paths.hpp"
@@ -36,8 +38,8 @@ MainService::MainService() {
 
     // Create ipc server
     this->ipcServer = new Ipc::Server("tri", 3);
-    this->ipcServer->setRequestHandler([this](Ipc::Request & r, std::vector<uint8_t> & d) -> uint32_t {
-        return this->commandThread(r, d);
+    this->ipcServer->setRequestHandler([this](Ipc::Request & r) -> uint32_t {
+        return static_cast<uint32_t>(this->commandThread(r));
     });
 
     // Create database
@@ -56,33 +58,25 @@ void MainService::updateConfig() {
     MP3::setEqualizer(this->cfg->MP3Equalizer());
 }
 
-uint32_t MainService::commandThread(Ipc::Request & request, std::vector<uint8_t> & repl) {
-    std::string msg = "";
-    std::string reply;
-    switch (static_cast<Protocol::Command>(request.data.cmdId)) {
-        case Protocol::Command::Version:
-            // Reply with version of protocol (sysmodule version is irrelevant)
-            reply = std::to_string(Protocol::Version);
+Ipc::Result MainService::commandThread(Ipc::Request & request) {
+    switch (static_cast<Ipc::Command>(request.params.cmdId)) {
+        case Ipc::Command::Version:
+            Ipc::Helpers::appendStringToBuffer(request.outData, std::string(VER_STRING));
             break;
 
-        case Protocol::Command::Resume: {
+        case Ipc::Command::Resume: {
             this->audio->resume();
-            std::shared_lock<std::shared_mutex> mtx(this->qMutex);
-            reply = std::to_string(this->queue->currentID());
             break;
         }
 
-        case Protocol::Command::Pause: {
+        case Ipc::Command::Pause: {
             this->audio->pause();
-            std::shared_lock<std::shared_mutex> mtx(this->qMutex);
-            reply = std::to_string(this->queue->currentID());
             break;
         }
 
-        case Protocol::Command::Previous:
-            // Simply set the 'SongAction' to Previous/Replay based on time of last press
-            // The other thread will handle changing songs
-
+        // Simply set the 'SongAction' to Previous/Replay based on time of last press
+        // The other thread will handle changing songs
+        case Ipc::Command::Previous:
             // Change song if within timeframe
             if ((std::time(nullptr) - this->pressTime) < PREV_WAIT) {
                 this->songAction = SongAction::Previous;
@@ -93,351 +87,424 @@ uint32_t MainService::commandThread(Ipc::Request & request, std::vector<uint8_t>
             }
 
             this->pressTime = std::time(nullptr);
-            reply = "0";
             break;
 
-        case Protocol::Command::Next:
-            // Simply set the 'SongAction' to Next
-            // The other thread will handle changing songs
+        // Simply set the 'SongAction' to Next
+        // The other thread will handle changing songs
+        case Ipc::Command::Next:
             this->songAction = SongAction::Next;
             this->pressTime = std::time(nullptr);
-            reply = "0";
             break;
 
-        case Protocol::Command::GetVolume:
-            // Round to three decimals
-            reply = std::to_string(this->audio->volume() + 0.005);
-            reply = reply.substr(0, reply.find(".") + 3);
+        case Ipc::Command::GetVolume:
+            Ipc::Helpers::appendValueToBuffer(request.outData, this->audio->volume());
             break;
 
-        case Protocol::Command::SetVolume: {
-            double vol = std::stod(msg);
+        case Ipc::Command::SetVolume: {
+            double vol;
+            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.params.args, vol);
+            if (rc != Ipc::Result::Ok || vol < 0.0d || vol > 100.0d) {
+                return Ipc::Result::BadInput;
+            }
             this->audio->setVolume(vol);
-            reply = std::to_string(vol);
             break;
         }
 
-        case Protocol::Command::Mute: {
+        case Ipc::Command::Mute: {
             double vol = this->audio->volume();
             if (vol > 0.0) {
                 this->muteLevel = vol;
                 this->audio->setVolume(0);
             }
-            reply = "0";
             break;
         }
 
-        case Protocol::Command::Unmute:
+        case Ipc::Command::Unmute:
             if (this->muteLevel > 0.0) {
                 this->audio->setVolume(this->muteLevel);
                 this->muteLevel = 0.0;
             }
-
-            // Round to three decimals
-            reply = std::to_string(this->audio->volume() + 0.005);
-            reply = reply.substr(0, reply.find(".") + 3);
             break;
 
-        case Protocol::Command::GetSubQueue: {
-            std::shared_lock<std::shared_mutex> mtx(this->sqMutex);
+        case Ipc::Command::GetSubQueue: {
+            // Return if empty
+            std::unique_lock<std::shared_mutex> mtx(this->sqMutex);
             if (this->subQueue.empty()) {
-                reply = std::string(1, Protocol::Delimiter);
+                break;
+            }
 
-            } else {
-                // Get start index and number to read
-                size_t next;
-                size_t s = std::stoi(msg, &next);
-                next++;
-                msg = msg.substr(next);
-                size_t n = std::stoi(msg);
+            // Read first arg (index of first song to get)
+            size_t index;
+            size_t pos = 0;
+            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.params.args, pos, index);
+            if (rc != Ipc::Result::Ok) {
+                return rc;
+            }
 
-                // Return nothing if requesting zero!
-                if (n == 0) {
-                    reply = std::string(1, Protocol::Delimiter);
-                } else {
-                    n = (n > this->subQueue.size() ? this->subQueue.size() : n);
-                    for (size_t i = s; i < n; i++) {
-                        reply += std::to_string(this->subQueue[i]);
-                        if (i < n-1) {
-                            reply += std::string(1, Protocol::Delimiter);
-                        }
-                    }
-                }
+            // Read second arg (number to get)
+            size_t count;
+            rc = Ipc::Helpers::readValueFromBuffer(request.params.args, pos, count);
+            if (rc != Ipc::Result::Ok) {
+                return rc;
+            }
+
+            // Return if requesting zero
+            if (count == 0) {
+                break;
+            }
+
+            // Iterate over sub queue and append each ID
+            size_t max = (count > this->subQueue.size()-index ? this->subQueue.size()-index : count);
+            while (index < max) {
+                Ipc::Helpers::appendValueToBuffer(request.outData, this->subQueue[index]);
+                index++;
             }
             break;
         }
 
-        case Protocol::Command::SkipSubQueueSongs: {
-            size_t j = std::stoi(msg);
-            size_t i;
+        case Ipc::Command::SkipSubQueueSongs: {
+            // Get argument (number to skip)
+            size_t count;
+            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.params.args, count);
+            if (rc != Ipc::Result::Ok) {
+                return rc;
+            }
+
+            // Pop songs from queue and skip
+            size_t skipped = 0;
             std::unique_lock<std::shared_mutex> mtx(this->sqMutex);
-            for (i = 0; i < j; i++) {
+            while (skipped < count && !this->subQueue.empty()) {
                 this->subQueue.pop_front();
+                skipped++;
             }
             this->songAction = SongAction::Next;
-            reply = std::to_string(i);
+            Ipc::Helpers::appendValueToBuffer(request.outData, skipped);
             break;
         }
 
-        case Protocol::Command::SubQueueSize: {
+        case Ipc::Command::SubQueueSize: {
             std::shared_lock<std::shared_mutex> mtx(this->sqMutex);
-            reply = std::to_string(this->subQueue.size());
+            Ipc::Helpers::appendValueToBuffer(request.outData, this->subQueue.size());
             break;
         }
 
-        case Protocol::Command::AddToSubQueue: {
-            SongID id = std::stoi(msg);
+        case Ipc::Command::AddToSubQueue: {
+            // Read song id from args
+            SongID id;
+            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.params.args, id);
+            if (rc != Ipc::Result::Ok) {
+                return rc;
+            }
+
+            // Lock and update queue
             std::unique_lock<std::shared_mutex> mtx(this->sqMutex);
             if (this->subQueue.size() < SUBQUEUE_MAX_SIZE) {
                 this->subQueue.push_back(id);
                 mtx.unlock();
-                reply = std::to_string(id);
 
                 // Start playing if there is nothing playing
                 std::shared_lock<std::shared_mutex> qMtx(this->qMutex);
                 if (this->queue->currentID() == -1) {
                     this->songAction = SongAction::Next;
                 }
+
+            // Return error code if subqueue full
             } else {
-                reply = std::to_string(-1);
+                return Ipc::Result::SubQueueFull;
             }
             break;
         }
 
-        case Protocol::Command::RemoveFromSubQueue: {
-            size_t pos = std::stoi(msg);
+        case Ipc::Command::RemoveFromSubQueue: {
+            // Read index from args
+            size_t index;
+            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.params.args, index);
+            if (rc != Ipc::Result::Ok) {
+                return rc;
+            }
+
+            // Erase element
             std::unique_lock<std::shared_mutex> mtx(this->sqMutex);
-            pos = (pos > this->subQueue.size() ? this->subQueue.size()-1 : pos);
-            this->subQueue.erase(this->subQueue.begin() + pos);
-            reply = std::to_string(pos);
+            index = (index >= this->subQueue.size() ? this->subQueue.size()-1 : index);
+            this->subQueue.erase(this->subQueue.begin() + index);
             break;
         }
 
-        case Protocol::Command::QueueIdx: {
+        case Ipc::Command::QueueIdx: {
             std::shared_lock<std::shared_mutex> mtx(this->qMutex);
-            reply = std::to_string(this->queue->currentIdx());
+            Ipc::Helpers::appendValueToBuffer(request.outData, this->queue->currentIdx());
             break;
         }
 
-        case Protocol::Command::SetQueueIdx: {
-            std::shared_lock<std::shared_mutex> mtx(this->qMutex);
-            this->queue->setIdx(std::stoi(msg));
+        case Ipc::Command::SetQueueIdx: {
+            // Get position to jump to from args
+            size_t pos;
+            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.params.args, pos);
+            if (rc != Ipc::Result::Ok) {
+                return rc;
+            }
+
+            // Jump to and return current index
+            std::unique_lock<std::shared_mutex> mtx(this->qMutex);
+            this->queue->setIdx(pos);
             this->songAction = SongAction::Replay;
-            reply = std::to_string(this->queue->currentIdx());
+            Ipc::Helpers::appendValueToBuffer(request.outData, this->queue->currentIdx());
             break;
         }
 
-        case Protocol::Command::QueueSize: {
+        case Ipc::Command::QueueSize: {
             std::shared_lock<std::shared_mutex> mtx(this->qMutex);
-            reply = std::to_string(this->queue->size());
+            Ipc::Helpers::appendValueToBuffer(request.outData, this->queue->size());
             break;
         }
 
-        case Protocol::Command::RemoveFromQueue: {
-            size_t pos = std::stoi(msg);
+        case Ipc::Command::RemoveFromQueue: {
+            // Get position to remove from args
+            size_t pos;
+            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.params.args, pos);
+            if (rc != Ipc::Result::Ok) {
+                return rc;
+            }
+
+            // Remove from queue
             std::unique_lock<std::shared_mutex> mtx(this->qMutex);
             if (!this->queue->removeID(pos)) {
-                pos = -1;    // Indicates unable to remove
+                return Ipc::Result::BadInput;
             }
-            reply = std::to_string(pos);
             break;
         }
 
-        case Protocol::Command::GetQueue: {
-            std::shared_lock<std::shared_mutex> mtx(this->qMutex);
+        case Ipc::Command::GetQueue: {
+            // Return if empty
+            std::unique_lock<std::shared_mutex> mtx(this->qMutex);
             if (this->queue->empty()) {
-                reply = std::string(1, Protocol::Delimiter);
+                break;
+            }
 
-            } else {
-                // Get start index and number to read
-                size_t next;
-                size_t s = std::stoi(msg, &next);
-                next++;
-                msg = msg.substr(next);
-                size_t n = std::stoi(msg);
+            // Read first arg (index of first song to get)
+            size_t index;
+            size_t pos = 0;
+            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.params.args, pos, index);
+            if (rc != Ipc::Result::Ok) {
+                return rc;
+            }
 
-                // Return nothing if requesting zero!
-                if (n == 0) {
-                    reply = std::string(1, Protocol::Delimiter);
-                } else {
-                    n = (n > this->queue->size() ? this->queue->size() : n);
-                    for (size_t i = s; i < n; i++) {
-                        reply += std::to_string(this->queue->IDatPosition(i));
-                        if (i < n-1) {
-                            reply += std::string(1, Protocol::Delimiter);
-                        }
-                    }
-                }
+            // Read second arg (number to get)
+            size_t count;
+            rc = Ipc::Helpers::readValueFromBuffer(request.params.args, pos, count);
+            if (rc != Ipc::Result::Ok) {
+                return rc;
+            }
+
+            // Return if requesting zero
+            if (count == 0) {
+                break;
+            }
+
+            // Iterate over queue and append each ID
+            size_t max = (count > this->queue->size()-index ? this->queue->size()-index : count);
+            while (index < max) {
+                Ipc::Helpers::appendValueToBuffer(request.outData, this->queue->IDatPosition(index));
+                index++;
             }
             break;
         }
 
-        case Protocol::Command::SetQueue: {
+        case Ipc::Command::SetQueue: {
+            // Clear sub queue
             std::unique_lock<std::shared_mutex> sqMtx(this->sqMutex);
             this->subQueue.clear();
             sqMtx.unlock();
 
+            // Clear main queue
             std::unique_lock<std::shared_mutex> mtx(this->qMutex);
             this->queue->clear();
 
-            // Add each token in string
-            char * str = strdup(msg.c_str());
-            msg = "";
-            char * tok = strtok(str, &Protocol::Delimiter);
-            while (tok != nullptr) {
-                this->queue->addID(strtol(tok, nullptr, 10), this->queue->size());
-                tok = strtok(nullptr, &Protocol::Delimiter);
+            // Add each value present in the buffer
+            size_t pos = 0;
+            while (true) {
+                SongID id;
+                Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.inData, pos, id);
+                if (rc != Ipc::Result::Ok) {
+                    break;
+                }
+                this->queue->addID(id, this->queue->size());
             }
-            free(str);
 
-            reply = std::to_string(this->queue->size());
+            // Reply with number of songs inserted
+            Ipc::Helpers::appendValueToBuffer(request.outData, this->queue->size());
             break;
         }
 
-        case Protocol::Command::GetRepeat: {
-            Protocol::Repeat rm = Protocol::Repeat::Off;
+        case Ipc::Command::GetRepeat: {
+            Ipc::Repeat rm = Ipc::Repeat::Off;
             switch (this->repeatMode) {
                 case RepeatMode::Off:
-                    rm = Protocol::Repeat::Off;
+                    rm = Ipc::Repeat::Off;
                     break;
 
                 case RepeatMode::One:
-                    rm = Protocol::Repeat::One;
+                    rm = Ipc::Repeat::One;
                     break;
 
                 case RepeatMode::All:
-                    rm = Protocol::Repeat::All;
+                    rm = Ipc::Repeat::All;
                     break;
             }
-            reply = std::to_string((int)rm);
+            Ipc::Helpers::appendValueToBuffer(request.outData, rm);
             break;
         }
 
-        case Protocol::Command::SetRepeat:
-            switch ((Protocol::Repeat)std::stoi(msg)) {
-                case Protocol::Repeat::Off:
+        case Ipc::Command::SetRepeat: {
+            // Read repeat mode from args
+            Ipc::Repeat rm;
+            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.params.args, rm);
+            if (rc != Ipc::Result::Ok) {
+                return rc;
+            }
+
+            // Set matching mode
+            switch (rm) {
+                case Ipc::Repeat::Off:
                     this->repeatMode = RepeatMode::Off;
                     break;
 
-                case Protocol::Repeat::One:
+                case Ipc::Repeat::One:
                     this->repeatMode = RepeatMode::One;
                     break;
 
-                case Protocol::Repeat::All:
+                case Ipc::Repeat::All:
                     this->repeatMode = RepeatMode::All;
                     break;
             }
-            reply = msg;
-            break;
-
-        case Protocol::Command::GetShuffle: {
-            std::shared_lock<std::shared_mutex> mtx(this->qMutex);
-            reply = std::to_string((int)(this->queue->isShuffled() ? Protocol::Shuffle::On : Protocol::Shuffle::Off));
             break;
         }
 
-        case Protocol::Command::SetShuffle: {
+        case Ipc::Command::GetShuffle: {
+            std::shared_lock<std::shared_mutex> mtx(this->qMutex);
+            Ipc::Helpers::appendValueToBuffer(request.outData, (this->queue->isShuffled() ? Ipc::Shuffle::On : Ipc::Shuffle::Off));
+            break;
+        }
+
+        case Ipc::Command::SetShuffle: {
+            // Read shuffle mode from args
+            Ipc::Shuffle sm;
+            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.params.args, sm);
+            if (rc != Ipc::Result::Ok) {
+                return rc;
+            }
+
+            // Adjust accordingly
             std::unique_lock<std::shared_mutex> mtx(this->qMutex);
-            ((Protocol::Shuffle)std::stoi(msg) == Protocol::Shuffle::Off ? this->queue->unshuffle() : this->queue->shuffle());
-            reply = std::to_string((int)(this->queue->isShuffled() ? Protocol::Shuffle::On : Protocol::Shuffle::Off));
+            if (sm == Ipc::Shuffle::Off) {
+                this->queue->unshuffle();
+            } else {
+                this->queue->shuffle();
+            }
             break;
         }
 
-        case Protocol::Command::GetSong: {
+        case Ipc::Command::GetSong: {
             std::shared_lock<std::shared_mutex> mtx(this->qMutex);
-            reply = std::to_string(this->queue->currentID());
+            Ipc::Helpers::appendValueToBuffer(request.outData, this->queue->currentID());
             break;
         }
 
-        case Protocol::Command::GetStatus: {
-            Protocol::Status s = Protocol::Status::Error;
+        case Ipc::Command::GetStatus: {
+            Ipc::Status s = Ipc::Status::Error;
 
             // Say that we're playing if the song is currently seeking
             if (this->seekTo >= 0) {
-                s = Protocol::Status::Playing;
+                s = Ipc::Status::Playing;
             } else {
                 switch (audio->status()) {
                     case Audio::Status::Playing:
-                        s = Protocol::Status::Playing;
+                        s = Ipc::Status::Playing;
                         break;
 
                     case Audio::Status::Paused:
-                        s = Protocol::Status::Paused;
+                        s = Ipc::Status::Paused;
                         break;
 
                     case Audio::Status::Stopped:
-                        s = Protocol::Status::Stopped;
+                        s = Ipc::Status::Stopped;
                         break;
                 }
             }
-            reply = std::to_string((int)s);
+            Ipc::Helpers::appendValueToBuffer(request.outData, s);
             break;
         }
 
-        case Protocol::Command::GetPosition: {
-            // Return position to 5 digits
+        case Ipc::Command::GetPosition: {
+            // Check position if not seeking
             double pos = 100.0 * this->seekTo;
             if (pos < 0) {
-                // Check position if not seeking
                 std::shared_lock<std::shared_mutex> mtx(this->sMutex);
                 if (this->source == nullptr) {
-                    reply = "0";
-                    break;
+                    pos = 0;
+                } else {
+                    pos = 100 * (this->audio->samplesPlayed()/(double)this->source->totalSamples());
                 }
-                pos = 100 * (this->audio->samplesPlayed()/(double)this->source->totalSamples());
             }
-            reply = std::to_string(pos + 0.00005);
-            reply = reply.substr(0, reply.find(".") + 5);
+            Ipc::Helpers::appendValueToBuffer(request.outData, pos);
             break;
         }
 
-        case Protocol::Command::SetPosition: {
-            // Return position to 5 digits
-            double pos = std::stod(msg);
-            this->seekTo = pos/100.0;
-            reply = std::to_string(pos + 0.00005);
-            reply = reply.substr(0, reply.find(".") + 5);
+        case Ipc::Command::SetPosition: {
+            // Read position from args
+            double pos;
+            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.params.args, pos);
+            if (rc != Ipc::Result::Ok) {
+                return rc;
+            }
+
+            // Set seek value and return it
+            pos /= 100.0;
+            this->seekTo = pos;
+            Ipc::Helpers::appendValueToBuffer(request.outData, pos);
             break;
         }
 
-        case Protocol::Command::GetPlayingFrom: {
-            // Replying with an empty string triggers an error
+        case Ipc::Command::GetPlayingFrom: {
             std::shared_lock<std::shared_mutex> mtx(this->qMutex);
-            reply = (this->playingFrom.empty() ? " " : this->playingFrom);
+            Ipc::Helpers::appendStringToBuffer(request.outData, this->playingFrom);
             break;
         }
 
-        case Protocol::Command::SetPlayingFrom: {
+        case Ipc::Command::SetPlayingFrom: {
+            // Read string from input buffer
+            std::string str;
+            Ipc::Result rc = Ipc::Helpers::readStringFromBuffer(request.inData, str);
+            if (rc != Ipc::Result::Ok) {
+                return rc;
+            }
+
+            // Lock queue to allow updating and return string
             std::unique_lock<std::shared_mutex> mtx(this->qMutex);
-            this->playingFrom = msg.substr(0, (msg.length() > 100) ? 100 : msg.length());
-            reply = (this->playingFrom.empty() ? " " : this->playingFrom);
+            this->playingFrom = str.substr(0, (str.length() > 100) ? 100 : str.length());
+            Ipc::Helpers::appendStringToBuffer(request.outData, this->playingFrom);
             break;
         }
 
-        case Protocol::Command::RequestDBLock: {
-            // Lock the mutex and mark that the database is being used for writing by the app
-            // Once we lock the mutex the decode thread is guaranteed to not be using the DB
+        // Lock the mutex and mark that the database is being used for writing by the app
+        // Once we lock the mutex the decode thread is guaranteed to not be using the DB
+        case Ipc::Command::RequestDBLock: {
             std::scoped_lock<std::mutex> mtx(this->dbMutex);
             this->db->close();
             this->dbLocked = true;
-
-            reply = std::to_string(0);
             break;
         }
 
-        case Protocol::Command::ReleaseDBLock:
-            // Mark the database as unlocked
+        // Mark the database as unlocked
+        case Ipc::Command::ReleaseDBLock:
             this->dbLocked = false;
-            reply = std::to_string(0);
             break;
 
-        case Protocol::Command::ReloadConfig:
-            // This locks relevant mutexes, etc.
+        case Ipc::Command::ReloadConfig:
             this->updateConfig();
-            reply = std::to_string(0);
             break;
 
-        case Protocol::Command::Reset: {
+        case Ipc::Command::Reset: {
             // Need to lock everything!!
             std::scoped_lock<std::shared_mutex> sMtx(this->sMutex);
             std::scoped_lock<std::shared_mutex> sqMtx(this->sqMutex);
@@ -454,12 +521,13 @@ uint32_t MainService::commandThread(Ipc::Request & request, std::vector<uint8_t>
             delete this->source;
             this->source = nullptr;
 
-            reply = std::to_string(Protocol::Version);
+            Ipc::Helpers::appendStringToBuffer(request.outData, VER_STRING);
             break;
         }
     }
 
-    return 0;
+    // If we make it this far then everything went OK
+    return Ipc::Result::Ok;
 }
 
 void MainService::exit() {

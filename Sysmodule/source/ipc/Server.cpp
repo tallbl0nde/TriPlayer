@@ -46,11 +46,10 @@ namespace Ipc {
         // Fill request with default data
         uint8_t * base = static_cast<uint8_t *>(armGetTls());
         request.hipc = hipcParseRequest(base);
-        request.data.cmdId = 0;
-        request.data.ptr = nullptr;
-        request.data.size = 0;
+        request.params.cmdId = 0;
+        request.params.args = std::vector<uint8_t>();
 
-        // Check request type
+        // Check request type and get cmd/args
         if (request.hipc.meta.type == CmifCommandType_Request) {
             Header * header = static_cast<Header *>(cmifGetAlignedDataStart(request.hipc.data.data_words, base));
             size_t dataSize = request.hipc.meta.num_data_words * 4;
@@ -61,29 +60,41 @@ namespace Ipc {
             }
 
             // Otherwise set request data
-            request.data.cmdId = header->cmdId;
+            request.params.cmdId = header->cmdId;
             if (dataSize > sizeof(Header)) {
-                request.data.ptr = reinterpret_cast<uint8_t *>(header) + sizeof(Header);
-                request.data.size = dataSize - sizeof(Header);
+                uint8_t * ptr = reinterpret_cast<uint8_t *>(header) + sizeof(Header);
+                size_t size = dataSize - sizeof(Header);
+                request.params.args.assign(ptr, ptr + size);
             }
         }
+
+        // Create vector from send buffers
+        uint8_t * ptr = static_cast<uint8_t *>(hipcGetBufferAddress(request.hipc.data.send_buffers));
+        size_t size = hipcGetBufferSize(request.hipc.data.send_buffers);
+        request.inData = std::vector<uint8_t>(ptr, ptr + size);
+        request.outData = std::vector<uint8_t>();
     }
 
-    void Server::prepareResponse(uint32_t result, std::vector<uint8_t> & data) {
+    void Server::prepareResponse(uint32_t result, Request & request) {
+        // Handle data to reply with first
+        if (!request.outData.empty()) {
+            size_t size = hipcGetBufferSize(request.hipc.data.recv_buffers);
+            if (request.outData.size() < size) {
+                size = request.outData.size();
+            }
+            std::memcpy(hipcGetBufferAddress(request.hipc.data.recv_buffers), &request.outData[0], size);
+        }
+
         // Fill request
         uint8_t * base = static_cast<uint8_t *>(armGetTls());
-        HipcRequest hipc  = hipcMakeRequestInline(base,
+        HipcRequest hipc = hipcMakeRequestInline(base,
             .type = CmifCommandType_Request,
-            .num_data_words = static_cast<uint32_t>(sizeof(Header) + data.size() + 0x10)/4,
+            .num_data_words = static_cast<uint32_t>(sizeof(Header) + 0x10)/4,
         );
 
         Header * header = static_cast<Header *>(cmifGetAlignedDataStart(hipc.data_words, base));
         header->magic = CMIF_OUT_HEADER_MAGIC;
         header->result = result;
-
-        if (R_SUCCEEDED(result)) {
-            std::memcpy(reinterpret_cast<uint8_t *>(header) + sizeof(Header), &data[0], data.size());
-        }
     }
 
     bool Server::processSession(const int32_t index) {
@@ -100,25 +111,24 @@ namespace Ipc {
 
         // Take action based on request type
         bool closeSession = false;
-        std::vector<uint8_t> data;
         switch (request.hipc.meta.type) {
             // Call handler to prepare response
             case CmifCommandType_Request: {
-                uint32_t result = this->handler(request, data);
-                this->prepareResponse(result, data);
+                uint32_t result = this->handler(request);
+                this->prepareResponse(result, request);
                 break;
             }
 
             // Prepare default response
             case CmifCommandType_Close:
-                this->prepareResponse(0, data);
+                this->prepareResponse(0, request);
                 closeSession = true;
                 break;
 
             // Otherwise prepare error response
             default:
                 Log::writeWarning("[IPC] Received unexpected CmifCommand");
-                this->prepareResponse(MAKERESULT(11, 403), data);
+                this->prepareResponse(MAKERESULT(11, 403), request);
                 break;
         }
 

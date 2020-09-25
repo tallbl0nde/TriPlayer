@@ -3,13 +3,13 @@
 
 #include <functional>
 #include <switch.h>
+#include <vector>
 
 namespace Ipc {
-    // Message data
+    // Message data (command + arguments)
     struct Data {
         uint64_t cmdId;
-        void * ptr;
-        size_t size;
+        std::vector<uint8_t> args;
     };
 
     // Message header
@@ -21,14 +21,16 @@ namespace Ipc {
         };
     };
 
-    // IPC Request
+    // IPC Request object
     struct Request {
-        HipcParsedRequest hipc;
-        Data data;
+        HipcParsedRequest hipc;             // Internal usage only!
+        Data params;                        // See Data struct
+        std::vector<uint8_t> inData;        // Input buffer
+        std::vector<uint8_t> outData;       // Output buffer
     };
 
     // Handler function structure
-    typedef std::function<uint32_t(Request &, std::vector<uint8_t> &)> Handler;
+    typedef std::function<uint32_t(Request &)> Handler;
 };
 
 #endif

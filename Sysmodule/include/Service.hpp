@@ -5,8 +5,9 @@
 #include <ctime>
 #include <deque>
 #include <shared_mutex>
+#include "ipc/Command.hpp"
+#include "ipc/Result.hpp"
 #include "ipc/Server.hpp"
-#include "Protocol.hpp"
 #include "Types.hpp"
 
 // Forward declare pointers
@@ -72,7 +73,7 @@ class MainService {
         void updateConfig();
 
         // Function run to handle an IPC Request
-        uint32_t commandThread(Ipc::Request &, std::vector<uint8_t> &);
+        Ipc::Result commandThread(Ipc::Request &);
 
     public:
         // Constructor initializes everything
