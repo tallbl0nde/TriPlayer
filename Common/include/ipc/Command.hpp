@@ -53,7 +53,8 @@ namespace Ipc {
         ReleaseDBLock,      // Releases exclusive access to DB                  // Nothing                                          // Nothing
 
         ReloadConfig,       // Get the sysmodule to update it's config          // Nothing                                          // Nothing
-        Reset               // Reinitialize sysmodule (except ipc service)      // Nothing                                          // Version of sysmodule (string)
+        Reset,              // Reinitialize sysmodule (except ipc service)      // Nothing                                          // Version of sysmodule (string)
+        Quit                // Properly terminate the sysmodule                 // Nothing                                          // Nothing
     };
 };
 

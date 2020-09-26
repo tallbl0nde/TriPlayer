@@ -91,7 +91,7 @@ void Sysmodule::reconnect() {
 }
 
 bool Sysmodule::terminate() {
-    bool ok = Utils::NX::terminateProgram(PROGRAM_ID);
+    bool ok = TriPlayer::stopSysmodule();
     if (ok) {
         this->error_ = Error::NotConnected;
     }

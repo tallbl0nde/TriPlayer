@@ -4,11 +4,13 @@
 
 namespace Utils::NX {
     void startServices() {
+        pmdmntInitialize();
         pmshellInitialize();
         romfsInit();
     }
 
     void stopServices() {
+        pmdmntExit();
         pmshellExit();
         romfsExit();
     }
@@ -122,9 +124,16 @@ namespace Utils::NX {
         location.program_id = programID;
         location.storageID = NcmStorageId_None;
 
-        // Attempt to launch
+        // Check if running
         u64 pid;
-        Result rc = pmshellLaunchProgram(PmLaunchFlag_None, &location, &pid);
+        Result rc = pmdmntGetProcessId(&pid, programID);
+        if (R_SUCCEEDED(rc)) {
+            Log::writeError("[NX] Can't launch program as it's running! Pid: " + std::to_string(pid));
+            return false;
+        }
+
+        // Attempt to launch
+        rc = pmshellLaunchProgram(PmLaunchFlag_None, &location, &pid);
         if (R_FAILED(rc)) {
             Log::writeError("[NX] Failed to launch program with ID: " + std::to_string(programID));
             return false;

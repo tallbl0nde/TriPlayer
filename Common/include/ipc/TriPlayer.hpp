@@ -120,6 +120,8 @@ namespace TriPlayer {
     bool reloadConfig();
     // Reset everything but the IPC connection
     bool reset();
+    // Safely terminate the sysmodule, freeing the IPC service
+    bool stopSysmodule();
 };
 
 #endif

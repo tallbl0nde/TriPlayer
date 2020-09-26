@@ -527,6 +527,10 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
             Ipc::Helpers::appendStringToBuffer(request.out.reply, VER_STRING);
             break;
         }
+
+        case Ipc::Command::Quit:
+            this->exit_ = true;
+            break;
     }
 
     // If we make it this far then everything went OK

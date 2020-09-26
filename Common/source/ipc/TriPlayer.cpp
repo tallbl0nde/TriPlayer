@@ -2,6 +2,7 @@
 #include "ipc/Command.hpp"
 #include "ipc/TriPlayer.hpp"
 #include <switch.h>
+#include "Log.hpp"
 
 namespace TriPlayer {
     static Service * service = nullptr;         // Service object used for communication
@@ -44,6 +45,7 @@ namespace TriPlayer {
 
         Result rc = serviceDispatchOut(service, static_cast<uint32_t>(Ipc::Command::Version), version);
         if (R_FAILED(rc)) {
+            Log::writeError("Failed; " + std::to_string(rc));
             return false;
         }
 
@@ -281,5 +283,9 @@ namespace TriPlayer {
 
     bool reset() {
         return (R_SUCCEEDED(serviceDispatch(service, static_cast<uint32_t>(Ipc::Command::Reset))));
+    }
+
+    bool stopSysmodule() {
+        return (R_SUCCEEDED(serviceDispatch(service, static_cast<uint32_t>(Ipc::Command::Quit))));
     }
 };
