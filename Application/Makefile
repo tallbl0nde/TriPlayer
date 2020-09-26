@@ -37,13 +37,6 @@ LIBS		:=  -lAether -lcurl -lminIni -lmpg123 -lnx -lSQLite `sdl2-config --libs` -
 LIBDIRS		:=	$(PORTLIBS) $(LIBNX) $(CURDIR)/libs/Aether $(CURDIR)/libs/json $(CURDIR)/../Common/libs/minIni $(CURDIR)/../Common/libs/SQLite $(CURDIR)/../Common/libs/splash
 
 #---------------------------------------------------------------------------------
-# Application version
-#---------------------------------------------------------------------------------
-VER_MAJOR	:= 1
-VER_MINOR	:= 0
-VER_MICRO	:= 0
-
-#---------------------------------------------------------------------------------
 # Options for .nacp information
 #---------------------------------------------------------------------------------
 APP_TITLE   := 	TriPlayer

@@ -146,10 +146,6 @@ namespace Main {
     void Application::run() {
         // Do main loop
         while (this->display->loop()) {
-            // Reconnect to sysmodule if we've lost connection
-            if (this->sysmodule_->error() == Sysmodule::Error::LostConnection) {
-                this->sysmodule_->reconnect();
-            }
         }
     }
 

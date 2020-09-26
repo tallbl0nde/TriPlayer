@@ -1,35 +1,30 @@
-#include <cstring>
+#include "ipc/TriPlayer.hpp"
 #include <limits>
 #include "Log.hpp"
-#include "Protocol.hpp"
 #include "Sysmodule.hpp"
 #include "utils/NX.hpp"
 
 // Program ID of sysmodule
 #define PROGRAM_ID 0x4200000000000FFF
 
-// Macro for adding delimiter
-#define DELIM std::string(1, Protocol::Delimiter)
 // Number of seconds between updating state (automatically)
 #define UPDATE_DELAY 0.1
 
-bool Sysmodule::addToWriteQueue(std::string s, std::function<void(std::string)> f) {
+bool Sysmodule::addToIpcQueue(std::function<bool()> f) {
     if (this->error_ != Error::None) {
         return false;
     }
 
-    std::scoped_lock<std::mutex> mtx(this->writeMutex);
-    this->writeQueue.push(std::pair< std::string, std::function<void(std::string)> >(s, f));
+    std::scoped_lock<std::mutex> mtx(this->ipcMutex);
+    this->ipcQueue.push(f);
     return true;
 }
 
 Sysmodule::Sysmodule() {
     // Attempt connection on creation
-    this->connector = new Socket::Connector(Protocol::Port);
-    this->connector->setTimeout(Protocol::Timeout);
+    this->connected_ = false;
     this->error_ = Error::Unknown;
     this->limit_ = -1;
-    this->socket = nullptr;
     this->reconnect();
 
     // Initialize all variables
@@ -48,8 +43,8 @@ Sysmodule::Sysmodule() {
     this->volume_ = 100.0;
 
     // Fetch queue at launch
-    this->sendGetQueue(0, 25000);
-    this->sendGetSubQueue(0, 5000);
+    this->sendGetQueue();
+    this->sendGetSubQueue();
 }
 
 Sysmodule::Error Sysmodule::error() {
@@ -61,35 +56,32 @@ bool Sysmodule::launch() {
 }
 
 void Sysmodule::reconnect() {
-    std::scoped_lock<std::mutex> mtx(this->writeMutex);
+    std::scoped_lock<std::mutex> mtx(this->ipcMutex);
 
-    // Delete old socket and get a new one
-    delete this->socket;
-    this->socket = this->connector->getTransferSocket();
+    // Clean up IPC if connected
+    if (this->connected_) {
+        Log::writeInfo("[SYSMODULE] Closing connection");
+        TriPlayer::exit();
+    }
 
-    // Check we're actually connected before proceeding
-    if (this->socket == nullptr || !this->socket->isConnected()) {
+    // Reinitialize
+    this->connected_ = TriPlayer::initialize();
+    if (!this->connected_) {
         this->error_ = Error::NotConnected;
-        Log::writeError("[SYSMODULE] Unable to connect to sysmodule");
+        Log::writeError("[SYSMODULE] Couldn't connect to sysmodule");
         return;
     }
 
-    // Check the protocol version next and make sure it matches
-    std::string message = std::to_string((int)Protocol::Command::Version);
-    this->socket->writeMessage(message);
-    std::string reply = this->socket->readMessage();
-    if (reply.length() > 0) {
-        int version = std::stoi(reply);
-        if (version != Protocol::Version) {
-            Log::writeError("[SYSMODULE] Versions do not match! Sysmodule: " + reply + ", Application: " + message);
-            this->error_ = Error::DifferentVersion;
-            return;
-        }
-
-    // If the response is empty some other unknown error occurred
-    } else {
-        Log::writeError("[SYSMODULE] Unable to get sysmodule version");
+    // Check versions match
+    std::string sysVer = "";
+    if (!TriPlayer::getVersion(sysVer)) {
         this->error_ = Error::Unknown;
+        Log::writeError("[SYSMODULE] Failed to get sysmodule version");
+        return;
+    }
+    if (sysVer != std::string(VER_STRING)) {
+        this->error_ = Error::DifferentVersion;
+        Log::writeError("[SYSMODULE] Version mismatch! App: " + std::string(VER_STRING) + ", Sys: " + sysVer);
         return;
     }
 
@@ -101,7 +93,7 @@ void Sysmodule::reconnect() {
 bool Sysmodule::terminate() {
     bool ok = Utils::NX::terminateProgram(PROGRAM_ID);
     if (ok) {
-        this->error_ = Error::LostConnection;
+        this->error_ = Error::NotConnected;
     }
     return ok;
 }
@@ -121,38 +113,22 @@ void Sysmodule::process() {
 
         // First process commands on the write queue
         std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
-        std::unique_lock<std::mutex> mtx(this->writeMutex);
-        while (!this->writeQueue.empty()) {
-            // Get the first message on the queue
-            std::string message = this->writeQueue.front().first;
-            if (!this->socket->writeMessage(message)) {
-                this->error_ = Error::LostConnection;
+        std::unique_lock<std::mutex> mtx(this->ipcMutex);
+        while (!this->ipcQueue.empty()) {
+            // Get the first command on the queue
+            std::function<bool()> func = this->ipcQueue.front();
+            this->ipcQueue.pop();
+            mtx.unlock();
 
-            // If the write succeeded wait for and read the response
-            } else {
-                std::string str = this->socket->readMessage();
-                if (str.length() == 0) {
-                    this->error_ = Error::LostConnection;
-
-                // If we successfully received a response call the associated function and pop the
-                // message from the queue
-                } else {
-                    std::function<void(std::string)> queuedFunc = this->writeQueue.front().second;
-                    mtx.unlock();
-                    queuedFunc(str);
-                    mtx.lock();
-                    this->writeQueue.pop();
-                }
-            }
-
-            // Clear queue if an error occurred
-            if (this->error_ != Error::None) {
-                Log::writeError("[SYSMODULE] Command queue cleared as an error occurred during processing");
-                this->writeQueue = std::queue< std::pair<std::string, std::function<void(std::string)> > >();
-                continue;
+            // Execute it and handle errors
+            if (!func()) {
+                this->error_ = Error::Unknown;
+                Log::writeError("[SYSMODULE] Error occurred while processing queue");
+                mtx.lock();
+                this->ipcQueue = std::queue< std::function<bool()> >();
+                mtx.unlock();
             }
         }
-        mtx.unlock();
 
         // Check if we need to log to save cycles
         if (Log::loggingLevel() == Log::Level::Info) {
@@ -253,11 +229,10 @@ double Sysmodule::volume() {
 bool Sysmodule::waitRequestDBLock() {
     std::atomic<bool> done = false;
 
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::RequestDBLock), [&done](std::string s) {
-        if (std::stoi(s) != 0) {
-            // throw error
-        }
+    this->addToIpcQueue([&done]() -> bool {
+        bool b = TriPlayer::requestDatabaseLock();
         done = true;
+        return b;
     });
 
     // Block until done
@@ -273,8 +248,10 @@ bool Sysmodule::waitRequestDBLock() {
 bool Sysmodule::waitReset() {
     std::atomic<bool> done = false;
 
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::Reset), [&done](std::string s) {
+    this->addToIpcQueue([&done]() -> bool {
+        bool b = TriPlayer::reset();
         done = true;
+        return b;
     });
 
     // Block until done
@@ -292,9 +269,12 @@ size_t Sysmodule::waitSongIdx() {
     std::atomic<bool> done = false;
 
     // Query song idx
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::QueueIdx), [this, &done](std::string s) {
-        this->songIdx_ = std::stoi(s);
+    this->addToIpcQueue([this, &done]() -> bool {
+        size_t idx;
+        bool b = TriPlayer::getQueueIdx(idx);
+        this->songIdx_ = idx;
         done = true;
+        return b;
     });
 
     // Block until done
@@ -310,327 +290,337 @@ size_t Sysmodule::waitSongIdx() {
 }
 
 void Sysmodule::sendResume() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::Resume), [this](std::string s) {
-        this->currentSong_ = std::stoi(s);
+    this->addToIpcQueue([]() -> bool {
+        return TriPlayer::resume();
     });
 }
 
 void Sysmodule::sendPause() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::Pause), [this](std::string s) {
-        this->currentSong_ = std::stoi(s);
+    this->addToIpcQueue([]() -> bool {
+        return TriPlayer::pause();
     });
 }
 
 void Sysmodule::sendPrevious() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::Previous), [this](std::string s) {
-        if (std::stoi(s) != 0) {
-            // Handle error
-        }
+    this->addToIpcQueue([]() -> bool {
+        return TriPlayer::previous();
     });
 }
 
 void Sysmodule::sendNext() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::Next), [this](std::string s) {
-        if (std::stoi(s) != 0) {
-            // Handle error
-        }
+    this->addToIpcQueue([]() -> bool {
+        return TriPlayer::next();
     });
 }
 
 void Sysmodule::sendGetVolume() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetVolume), [this](std::string s) {
-        this->volume_ = std::stod(s);
+    this->addToIpcQueue([this]() -> bool {
+        double vol;
+        bool b = TriPlayer::getVolume(vol);
+        this->volume_ = vol;
+        return b;
     });
 }
 
 void Sysmodule::sendSetVolume(const double v) {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::SetVolume) + DELIM + std::to_string(v), [this](std::string s) {
-        this->volume_ = std::stod(s);
+    this->addToIpcQueue([v]() -> bool {
+        return TriPlayer::setVolume(v);
     });
 }
 
 void Sysmodule::sendMute() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::Mute), [this](std::string s) {
-        this->volume_ = std::stod(s);
+    this->addToIpcQueue([]() -> bool {
+        return TriPlayer::mute();
     });
 }
 
 void Sysmodule::sendUnmute() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::Unmute), [this](std::string s) {
-        this->volume_ = std::stod(s);
+    this->addToIpcQueue([this]() -> bool {
+        double vol = 0;
+        bool b = TriPlayer::unmute(vol);
+        if (b) {
+            this->volume_ = vol;
+        }
+        return b;
     });
 }
 
-void Sysmodule::sendSetSongIdx(const size_t id) {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::SetQueueIdx) + DELIM + std::to_string(id), [this](std::string s) {
-        this->songIdx_ = std::stoi(s);
-    });
-}
-
-void Sysmodule::sendGetSongIdx() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::QueueIdx), [this](std::string s) {
-        size_t tmp = std::stoul(s);
-
-        // Update queues if size changes
-        if (this->songIdx_ != tmp) {
-            this->sendGetQueue(0, 25000);
-            this->sendGetSubQueue(0, 5000);
+void Sysmodule::sendGetSubQueue() {
+    this->addToIpcQueue([this]() -> bool {
+        std::vector<SongID> ids;
+        bool b = TriPlayer::getSubQueue(ids);
+        if (b) {
+            std::scoped_lock<std::mutex> mtx(this->subQueueMutex);
+            this->subQueue_ = ids;
+            this->subQueueChanged_ = true;
         }
-
-        this->songIdx_ = tmp;
-    });
-}
-
-void Sysmodule::sendGetQueueSize() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::QueueSize), [this](std::string s) {
-        size_t tmp = std::stoul(s);
-
-        // Update queue if size changes
-        if (this->queueSize_ != tmp) {
-            this->sendGetQueue(0, 25000);
-        }
-
-        this->queueSize_ = tmp;
-    });
-}
-
-void Sysmodule::sendRemoveFromQueue(const size_t pos) {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::RemoveFromQueue) + DELIM + std::to_string(pos), [this, pos](std::string s) {
-        if (std::stoul(s) != pos) {
-            // Error message here
-        }
-    });
-}
-
-void Sysmodule::sendGetQueue(const size_t s, const size_t e) {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetQueue) + DELIM + std::to_string(s) + DELIM + std::to_string(e), [this](std::string s) {
-        // Add each token in string
-        std::scoped_lock<std::mutex> mtx(this->queueMutex);
-        this->queue_.clear();
-        char * str = strdup(s.c_str());
-        char * tok = strtok(str, &Protocol::Delimiter);
-        while (tok != nullptr) {
-            this->queue_.push_back(strtol(tok, nullptr, 10));
-            tok = strtok(nullptr, &Protocol::Delimiter);
-        }
-        free(str);
-        this->queueChanged_ = true;
-    });
-}
-
-void Sysmodule::sendSetQueue(const std::vector<SongID> & q) {
-    if (q.size() == 0 || this->limit_ == 0) {
-        return;
-    }
-
-    // Construct string first
-    std::string seq;
-    size_t size = q.size();
-    bool hasLimit = (this->limit_ >= 0);
-    for (size_t i = 0; i < size; i++) {
-        // Stop if we reach the config limit
-        if (hasLimit && i >= (size_t)this->limit_) {
-            break;
-        }
-
-        seq.push_back(Protocol::Delimiter);
-        seq += std::to_string(q[i]);
-    }
-
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::SetQueue) + seq, [this, size](std::string s) {
-        if (std::stoul(s) != size) {
-            // Error message here
-        }
-    });
-}
-
-void Sysmodule::sendAddToSubQueue(const SongID id) {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::AddToSubQueue) + DELIM + std::to_string(id), [this, id](std::string s) {
-        if (std::stoi(s) != id) {
-            // Error message here
-        }
-    });
-}
-
-void Sysmodule::sendRemoveFromSubQueue(const size_t pos) {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::RemoveFromSubQueue) + DELIM + std::to_string(pos), [this, pos](std::string s) {
-        if (std::stoul(s) != pos) {
-            // Error message here
-        }
+        return b;
     });
 }
 
 void Sysmodule::sendGetSubQueueSize() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::SubQueueSize), [this](std::string s) {
-        size_t tmp = std::stoul(s);
-
-        // Update queue if size changes
-        if (this->subQueueSize_ != tmp) {
-            this->sendGetSubQueue(0, 5000);
+    this->addToIpcQueue([this]() -> bool {
+        size_t size;
+        bool b = TriPlayer::getSubQueueSize(size);
+        if (b) {
+            // Update queue if size changes
+            if (this->subQueueSize_ != size) {
+                this->sendGetSubQueue();
+            }
+            this->subQueueSize_ = size;
         }
-
-        this->subQueueSize_ = tmp;
+        return b;
     });
 }
 
-void Sysmodule::sendGetSubQueue(const size_t s, const size_t e) {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetSubQueue) + DELIM + std::to_string(s) + DELIM + std::to_string(e), [this](std::string s) {
-        // Add each token in string
-        std::scoped_lock<std::mutex> mtx(this->subQueueMutex);
-        this->subQueue_.clear();
-        char * str = strdup(s.c_str());
-        char * tok = strtok(str, &Protocol::Delimiter);
-        while (tok != nullptr) {
-            this->subQueue_.push_back(strtol(tok, nullptr, 10));
-            tok = strtok(nullptr, &Protocol::Delimiter);
-        }
-        free(str);
-        this->subQueueChanged_ = true;
+void Sysmodule::sendAddToSubQueue(const SongID id) {
+    this->addToIpcQueue([id]() -> bool {
+        return TriPlayer::addToSubQueue(id);
+    });
+}
+
+void Sysmodule::sendRemoveFromSubQueue(const size_t pos) {
+    this->addToIpcQueue([pos]() -> bool {
+        return TriPlayer::removeFromSubQueue(pos);
     });
 }
 
 void Sysmodule::sendSkipSubQueueSongs(const size_t n) {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::SkipSubQueueSongs) + DELIM + std::to_string(n), [this, n](std::string s) {
-        if (std::stoul(s) != n) {
-            // Error message here
+    this->addToIpcQueue([n]() -> bool {
+        return TriPlayer::skipSubQueueSongs(n);
+    });
+}
+
+void Sysmodule::sendGetQueue() {
+    this->addToIpcQueue([this]() -> bool {
+        std::vector<SongID> ids;
+        bool b = TriPlayer::getQueue(ids);
+        if (b) {
+            std::scoped_lock<std::mutex> mtx(this->queueMutex);
+            this->queue_ = ids;
+            this->queueChanged_ = true;
         }
+        return b;
+    });
+}
+
+void Sysmodule::sendGetQueueSize() {
+    this->addToIpcQueue([this]() -> bool {
+        size_t size;
+        bool b = TriPlayer::getQueueSize(size);
+        if (b) {
+            // Update queue if size changes
+            if (this->queueSize_ != size) {
+                this->sendGetQueue();
+            }
+            this->queueSize_ = size;
+        }
+        return b;
+    });
+}
+
+void Sysmodule::sendSetQueue(const std::vector<SongID> & q) {
+    // Don't send empty queues
+    if (q.size() == 0 || this->limit_ == 0) {
+        return;
+    }
+
+    this->addToIpcQueue([&q]() -> bool {
+        return TriPlayer::setQueue(q);
+    });
+}
+
+void Sysmodule::sendGetSongIdx() {
+    this->addToIpcQueue([this]() -> bool {
+        size_t idx;
+        bool b = TriPlayer::getQueueIdx(idx);
+        if (b) {
+            // Update queues if size changes
+            if (this->songIdx_ != idx) {
+                this->sendGetQueue();
+                this->sendGetSubQueue();
+            }
+            this->songIdx_ = idx;
+        }
+        return b;
+    });
+}
+
+void Sysmodule::sendSetSongIdx(const size_t id) {
+    this->addToIpcQueue([this, id]() -> bool {
+        bool b = TriPlayer::setQueueIdx(id);
+        if (b) {
+            this->songIdx_ = id;
+        }
+        return b;
+    });
+}
+
+void Sysmodule::sendRemoveFromQueue(const size_t pos) {
+    this->addToIpcQueue([pos]() -> bool {
+        return TriPlayer::removeFromQueue(pos);
     });
 }
 
 void Sysmodule::sendGetRepeat() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetRepeat), [this](std::string s) {
-        RepeatMode rm = RepeatMode::Off;
-        switch ((Protocol::Repeat)std::stoi(s)) {
-            case Protocol::Repeat::Off:
-                rm = RepeatMode::Off;
-                break;
+    this->addToIpcQueue([this]() -> bool {
+        TriPlayer::Repeat r;
+        bool b = TriPlayer::getRepeatMode(r);
+        if (b) {
+            switch (r) {
+                case TriPlayer::Repeat::Off:
+                    this->repeatMode_ = RepeatMode::Off;
+                    break;
 
-            case Protocol::Repeat::One:
-                rm = RepeatMode::One;
-                break;
+                case TriPlayer::Repeat::One:
+                    this->repeatMode_ = RepeatMode::One;
+                    break;
 
-            case Protocol::Repeat::All:
-                rm = RepeatMode::All;
-                break;
+                case TriPlayer::Repeat::All:
+                    this->repeatMode_ = RepeatMode::All;
+                    break;
+            }
         }
-        this->repeatMode_ = rm;
+        return b;
     });
 }
 
 void Sysmodule::sendSetRepeat(const RepeatMode m) {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::SetRepeat) + DELIM + std::to_string((int)m), [this, m](std::string s) {
-        RepeatMode rm;
-        switch ((Protocol::Repeat)std::stoi(s)) {
-            case Protocol::Repeat::Off:
-                rm = RepeatMode::Off;
+    this->addToIpcQueue([this, m]() -> bool {
+        TriPlayer::Repeat r = TriPlayer::Repeat::Off;
+        switch (m) {
+            case RepeatMode::Off:
+                r = TriPlayer::Repeat::Off;
                 break;
 
-            case Protocol::Repeat::One:
-                rm = RepeatMode::One;
+            case RepeatMode::One:
+                r = TriPlayer::Repeat::One;
                 break;
 
-            case Protocol::Repeat::All:
-                rm = RepeatMode::All;
+            case RepeatMode::All:
+                r = TriPlayer::Repeat::All;
                 break;
         }
-
-        if (rm != m) {
-            // Handle error here
-
-        } else {
-            this->repeatMode_ = rm;
+        bool b = TriPlayer::setRepeatMode(r);
+        if (b) {
+            this->repeatMode_ = m;
         }
+        return b;
     });
 }
 
 void Sysmodule::sendGetShuffle() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetShuffle), [this](std::string s) {
-        this->shuffleMode_ = ((Protocol::Shuffle)std::stoi(s) == Protocol::Shuffle::Off ? ShuffleMode::Off : ShuffleMode::On);
+    this->addToIpcQueue([this]() -> bool {
+        TriPlayer::Shuffle s;
+        bool b = TriPlayer::getShuffleMode(s);
+        if (b) {
+            this->shuffleMode_ = (s == TriPlayer::Shuffle::Off ? ShuffleMode::Off : ShuffleMode::On);
+        }
+        return b;
     });
 }
 
 void Sysmodule::sendSetShuffle(const ShuffleMode m) {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::SetShuffle) + DELIM + std::to_string((int)m), [this, m](std::string s) {
-        ShuffleMode sm = ((Protocol::Shuffle)std::stoi(s) == Protocol::Shuffle::Off ? ShuffleMode::Off : ShuffleMode::On);
-        if (sm != m) {
-            // Error message here
+    this->addToIpcQueue([this, m]() -> bool {
+        TriPlayer::Shuffle s = (m == ShuffleMode::Off ? TriPlayer::Shuffle::Off : TriPlayer::Shuffle::On);
+        bool b = TriPlayer::setShuffleMode(s);
+        if (b) {
+            // Get queue on change
+            this->sendGetQueue();
+            this->shuffleMode_ = m;
         }
-
-        this->sendGetQueue(0, 25000);
-        this->shuffleMode_ = sm;
+        return b;
     });
 }
 
 void Sysmodule::sendGetSong() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetSong), [this](std::string s) {
-        this->currentSong_ = std::stoi(s);
+    this->addToIpcQueue([this]() -> bool {
+        SongID id;
+        bool b = TriPlayer::getSongID(id);
+        if (b) {
+            this->currentSong_ = id;
+        }
+        return b;
     });
 }
 
 void Sysmodule::sendGetStatus() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetStatus), [this](std::string s) {
-        PlaybackStatus ps = PlaybackStatus::Error;
-        switch ((Protocol::Status)std::stoi(s)) {
-            case Protocol::Status::Error:
-                ps = PlaybackStatus::Error;
-                break;
+    this->addToIpcQueue([this]() -> bool {
+        TriPlayer::Status s;
+        bool b = TriPlayer::getStatus(s);
+        if (b) {
+            switch (s) {
+                case TriPlayer::Status::Error:
+                    this->status_ = PlaybackStatus::Error;
+                    break;
 
-            case Protocol::Status::Playing:
-                ps = PlaybackStatus::Playing;
-                break;
+                case TriPlayer::Status::Playing:
+                    this->status_ = PlaybackStatus::Playing;
+                    break;
 
-            case Protocol::Status::Paused:
-                ps = PlaybackStatus::Paused;
-                break;
+                case TriPlayer::Status::Paused:
+                    this->status_ = PlaybackStatus::Paused;
+                    break;
 
-            case Protocol::Status::Stopped:
-                ps = PlaybackStatus::Stopped;
-                break;
+                case TriPlayer::Status::Stopped:
+                    this->status_ = PlaybackStatus::Stopped;
+                    break;
+            }
         }
-        this->status_ = ps;
+        return b;
     });
 }
 
 void Sysmodule::sendGetPosition() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetPosition), [this](std::string s) {
-        this->position_ = std::stod(s);
+    this->addToIpcQueue([this]() -> bool {
+        double pos;
+        bool b = TriPlayer::getPosition(pos);
+        if (b) {
+            this->position_ = pos;
+        }
+        return b;
     });
 }
 
 void Sysmodule::sendSetPosition(double pos) {
     this->position_ = pos;
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::SetPosition) + DELIM + std::to_string(pos), [this](std::string s) {
-        this->position_ = std::stod(s);
+    this->addToIpcQueue([pos]() -> bool {
+        return TriPlayer::setPosition(pos);
     });
 }
 
 void Sysmodule::sendGetPlayingFrom() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::GetPlayingFrom), [this](std::string s) {
-        std::scoped_lock<std::mutex> mtx(this->playingFromMutex);
-        this->playingFrom_ = s;
+    this->addToIpcQueue([this]() -> bool {
+        std::string text;
+        bool b = TriPlayer::getPlayingFromText(text);
+        if (b) {
+            std::scoped_lock<std::mutex> mtx(this->playingFromMutex);
+            this->playingFrom_ = text;
+        }
+        return b;
     });
 }
 
 void Sysmodule::sendSetPlayingFrom(const std::string & str) {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::SetPlayingFrom) + DELIM + str, [this](std::string s) {
-        std::scoped_lock<std::mutex> mtx(this->playingFromMutex);
-        this->playingFrom_ = s;
+    this->addToIpcQueue([this, &str]() -> bool {
+        bool b = TriPlayer::setPlayingFromText(str);
+        if (b) {
+            std::scoped_lock<std::mutex> mtx(this->playingFromMutex);
+            this->playingFrom_ = str;
+        }
+        return b;
     });
 }
 
 void Sysmodule::sendReleaseDBLock() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::ReleaseDBLock), [this](std::string s) {
-        if (std::stoi(s) != 0) {
-            // throw error
-        }
+    this->addToIpcQueue([]() -> bool {
+        return TriPlayer::releaseDatabaseLock();
     });
 }
 
 void Sysmodule::sendReloadConfig() {
-    this->addToWriteQueue(std::to_string((int)Protocol::Command::ReloadConfig), [this](std::string s) {
-        if (std::stoi(s) != 0) {
-            // throw error
-        }
+    this->addToIpcQueue([]() -> bool {
+        return TriPlayer::reloadConfig();
     });
 }
 
@@ -639,6 +629,7 @@ void Sysmodule::exit() {
 }
 
 Sysmodule::~Sysmodule() {
-    delete this->connector;
-    delete this->socket;
+    if (this->connected_) {
+        TriPlayer::exit();
+    }
 }

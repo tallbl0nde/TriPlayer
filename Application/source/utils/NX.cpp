@@ -6,12 +6,10 @@ namespace Utils::NX {
     void startServices() {
         pmshellInitialize();
         romfsInit();
-        socketInitializeDefault();
     }
 
     void stopServices() {
         pmshellExit();
-        socketExit();
         romfsExit();
     }
 

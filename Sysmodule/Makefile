@@ -55,7 +55,7 @@ OUTPUT		:=	$(CURDIR)/$(TARGET)
 # Flags to pass to compiler
 #---------------------------------------------------------------------------------
 DEFINES		:=	-D__SWITCH__ -D_SYSMODULE_ -DVER_MAJOR=$(VER_MAJOR) -DVER_MINOR=$(VER_MINOR) -DVER_MICRO=$(VER_MICRO) -DVER_STRING=\"$(VER_MAJOR).$(VER_MINOR).$(VER_MICRO)\"
-CFLAGS		:=	-g -Wall -O2 -ffunction-sections $(ARCH) $(DEFINES) $(INCLUDE)
+CFLAGS		:=	-g -Wall -O0 -fno-inline -ffunction-sections $(ARCH) $(DEFINES) $(INCLUDE)
 CXXFLAGS	:=	$(CFLAGS) -fno-rtti -std=gnu++2a -fno-exceptions
 
 #----------------------------------------------------------------------------------------------------------------------
