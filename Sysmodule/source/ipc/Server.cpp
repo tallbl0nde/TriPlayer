@@ -69,16 +69,18 @@ namespace Ipc {
         }
 
         // Create vector from send buffers
-        uint8_t * ptr = static_cast<uint8_t *>(hipcGetBufferAddress(request.hipc.data.send_buffers));
-        size_t size = hipcGetBufferSize(request.hipc.data.send_buffers);
-        request.in.data = std::vector<uint8_t>(ptr, ptr + size);
+        if (request.hipc.meta.num_send_buffers > 0) {
+            uint8_t * ptr = static_cast<uint8_t *>(hipcGetBufferAddress(request.hipc.data.send_buffers));
+            size_t size = hipcGetBufferSize(request.hipc.data.send_buffers);
+            request.in.data = std::vector<uint8_t>(ptr, ptr + size);
+        }
         request.out.data = std::vector<uint8_t>();
         request.out.reply = std::vector<uint8_t>();
     }
 
     void Server::prepareResponse(uint32_t result, Request & request) {
         // Handle data buffer to reply with first
-        if (!request.out.data.empty()) {
+        if (!request.out.data.empty() && request.hipc.meta.num_recv_buffers > 0) {
             size_t size = hipcGetBufferSize(request.hipc.data.recv_buffers);
             if (request.out.data.size() < size) {
                 size = request.out.data.size();
