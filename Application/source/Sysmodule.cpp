@@ -118,17 +118,19 @@ void Sysmodule::process() {
             // Get the first command on the queue
             std::function<bool()> func = this->ipcQueue.front();
             this->ipcQueue.pop();
-            mtx.unlock();
 
             // Execute it and handle errors
-            if (!func()) {
+            mtx.unlock();
+            bool ok = func();
+            mtx.lock();
+
+            if (!ok) {
                 this->error_ = Error::Unknown;
                 Log::writeError("[SYSMODULE] Error occurred while processing queue");
-                mtx.lock();
                 this->ipcQueue = std::queue< std::function<bool()> >();
-                mtx.unlock();
             }
         }
+        mtx.unlock();
 
         // Check if we need to log to save cycles
         if (Log::loggingLevel() == Log::Level::Info) {
