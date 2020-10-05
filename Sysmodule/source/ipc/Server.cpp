@@ -56,6 +56,7 @@ namespace Ipc {
 
             // Do nothing on an error
             if (!header || dataSize < sizeof(Header) || header->magic != CMIF_IN_HEADER_MAGIC) {
+                Log::writeError("[IPC] Failed parsing request: bad header");
                 return;
             }
 
@@ -64,7 +65,7 @@ namespace Ipc {
             if (dataSize > sizeof(Header)) {
                 uint8_t * ptr = reinterpret_cast<uint8_t *>(header) + sizeof(Header);
                 size_t size = dataSize - sizeof(Header);
-                request.in.arg.assign(ptr, ptr + size);
+                request.in.arg = std::vector<uint8_t>(ptr, ptr + size);
             }
         }
 
@@ -112,8 +113,10 @@ namespace Ipc {
         // Get and parse request
         Result rc = svcReplyAndReceive(&tmp, &this->handles[index], 1, 0, UINT64_MAX);
         if (R_FAILED(rc)) {
-            Log::writeError("[IPC] Couldn't receive request: " + std::to_string(rc));
-            return false;
+            Log::writeError("[IPC] Couldn't receive request (closing handle): " + std::to_string(rc));
+            svcCloseHandle(this->handles[index]);
+            this->handles.erase(this->handles.begin() + index);
+            return true;        // Return true as closing a session is valid behaviour
         }
         this->parseRequest(request);
 
@@ -148,6 +151,7 @@ namespace Ipc {
 
         // Close session on error or close request
         if (R_FAILED(rc) || closeSession) {
+            Log::writeInfo("Closing session " + std::to_string(index) + " due to error/request");
             svcCloseHandle(this->handles[index]);
             this->handles.erase(this->handles.begin() + index);
         }
@@ -162,6 +166,7 @@ namespace Ipc {
             // Check we have room
             if (this->handles.size() >= this->maxHandles) {
                 Log::writeWarning("[IPC] Couldn't handle new session due to limit");
+                svcCloseHandle(session);
 
             // Add session to vector
             } else {
@@ -214,7 +219,7 @@ namespace Ipc {
 
             // Exit on an error
             if (!ok) {
-                Log::writeError("[IPC] Failed to handle " + std::string(handleIndex == 0 ? "server" : "client") + " request");
+                Log::writeInfo("[IPC] Failed to handle " + std::string(handleIndex == 0 ? "server" : "client " + std::to_string(handleIndex)) + " request");
                 this->error_ = true;
             }
         }

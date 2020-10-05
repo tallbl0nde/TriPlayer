@@ -120,12 +120,15 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
             break;
         }
 
-        case Ipc::Command::Unmute:
+        case Ipc::Command::Unmute: {
             if (this->muteLevel > 0.0) {
                 this->audio->setVolume(this->muteLevel);
                 this->muteLevel = 0.0;
             }
+            double vol = this->audio->volume();
+            Ipc::Helpers::appendValueToBuffer(request.out.reply, vol);
             break;
+        }
 
         case Ipc::Command::GetSubQueue: {
             // Return if empty
@@ -160,7 +163,7 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
                 Ipc::Helpers::appendValueToBuffer(request.out.data, this->subQueue[index]);
                 index++;
             }
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, max - index);
+            Ipc::Helpers::appendValueToBuffer(request.out.reply, max);
             break;
         }
 
@@ -309,7 +312,7 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
                 Ipc::Helpers::appendValueToBuffer(request.out.data, this->queue->IDatPosition(index));
                 index++;
             }
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, max - index);
+            Ipc::Helpers::appendValueToBuffer(request.out.reply, max);
             break;
         }
 
