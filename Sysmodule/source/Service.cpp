@@ -45,6 +45,7 @@ MainService::MainService() {
 
 void MainService::updateConfig() {
     Log::setLogLevel(this->cfg->logLevel());
+    this->watchGpio = this->cfg->pauseOnUnplug();
 
     std::scoped_lock<std::shared_mutex> sMtx(this->sMutex);
     MP3::setAccurateSeek(this->cfg->MP3AccurateSeek());
@@ -492,7 +493,7 @@ void MainService::gpioEventThread() {
 
     // Loop until the service has signalled to exit
     while (!this->exit_) {
-        if (NX::Gpio::headsetUnplugged()) {
+        if (NX::Gpio::headsetUnplugged() && this->watchGpio) {
             this->audio->pause();
         }
         NX::Thread::sleepMilli(POLL_INTERVAL);

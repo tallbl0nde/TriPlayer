@@ -27,6 +27,9 @@ class Config {
         // Version of config (-1 on error)
         int version();
 
+        // Pause when headset unplugged
+        bool pauseOnUnplug();
+
         // Logging level (defaults to Warning)
         Log::Level logLevel();
 

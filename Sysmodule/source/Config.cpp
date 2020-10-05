@@ -34,6 +34,10 @@ int Config::version() {
     return version;
 }
 
+bool Config::pauseOnUnplug() {
+    return this->ini->getbool("General", "pause_on_unplug", true);
+}
+
 Log::Level Config::logLevel() {
     const std::string level = this->ini->gets("General", "log_level", "");
     if (level.empty()) {
@@ -57,7 +61,7 @@ Log::Level Config::logLevel() {
 }
 
 bool Config::MP3AccurateSeek() {
-    return this->ini->getbool("MP3", "accurate_seek");
+    return this->ini->getbool("MP3", "accurate_seek", false);
 }
 
 std::array<float, 32> Config::MP3Equalizer() {

@@ -460,6 +460,28 @@ bool Config::setSearchMaxPhrases(const int i) {
     return ok;
 }
 
+bool Config::sysPauseOnUnplug() {
+    if (!this->sysIni) {
+        Log::writeError("[CONFIG] Can't access sysmodule config as object was not prepared");
+        return false;
+    }
+
+    return this->sysIni->getbool("General", "pause_on_unplug");
+}
+
+bool Config::setSysPauseOnUnplug(const bool b) {
+    if (!this->sysIni) {
+        Log::writeError("[CONFIG] Can't access sysmodule config as object was not prepared");
+        return false;
+    }
+
+    bool ok = this->sysIni->put("General", "pause_on_unplug", (b ? "Yes" : "No"));
+    if (!ok) {
+        Log::writeError("[CONFIG] Failed to set (Sysmodule) pause_on_unplug");
+    }
+    return ok;
+}
+
 Log::Level Config::sysLogLevel() {
     if (!this->sysIni) {
         Log::writeError("[CONFIG] Can't access sysmodule config as object was not prepared");

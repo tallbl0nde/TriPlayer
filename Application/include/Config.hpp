@@ -124,6 +124,10 @@ class Config {
         // === Sysmodule Config === //
         // All methods start with sys*
 
+        // Pause when headphones unplugged
+        bool sysPauseOnUnplug();
+        bool setSysPauseOnUnplug(const bool);
+
         // Sysmodule log level
         Log::Level sysLogLevel();
         bool setSysLogLevel(const Log::Level);

@@ -51,6 +51,8 @@ class MainService {
         // Status vars for comm. between threads
         std::atomic<SongAction> songAction; // (should this be a queue?)
         std::atomic<double> seekTo;
+        // Whether to listen for GPIO events
+        std::atomic<bool> watchGpio;
 
         // Mutex for accessing queue
         std::shared_mutex qMutex;

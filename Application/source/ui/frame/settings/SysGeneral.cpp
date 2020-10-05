@@ -7,6 +7,15 @@ namespace Frame::Settings {
         Config * cfg = this->app->config();
         Aether::ListOption * opt;
 
+        // General::pause_on_unplug
+        this->addToggle("Pause when Headphones are Unplugged", [cfg]() -> bool {
+            return cfg->sysPauseOnUnplug();
+        }, [this, cfg](bool b) {
+            cfg->setSysPauseOnUnplug(b);
+            this->app->sysmodule()->sendReloadConfig();
+        });
+        this->list->addElement(new Aether::ListSeparator());
+
         // General::log_level
         opt = new Aether::ListOption("Logging Level", Log::levelToString(cfg->sysLogLevel()), nullptr);
         opt->setCallback([this, opt]() {
