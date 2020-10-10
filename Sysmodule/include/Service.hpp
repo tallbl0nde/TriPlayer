@@ -63,6 +63,14 @@ class MainService {
         // Source currently playing
         Source * source;
 
+        // Mutex for access combo strings
+        std::shared_mutex cMutex;
+        // Variables for reacting to press combinations
+        std::atomic<bool> combosUpdated;
+        std::string comboNextString;
+        std::string comboPlayString;
+        std::string comboPrevString;
+
         // Variables used for 'locking' DB access
         std::mutex dbMutex;
         std::atomic<bool> dbLocked;
@@ -82,6 +90,8 @@ class MainService {
 
         // Listens for 'headphones unplugged' event and pauses playback
         void gpioEventThread();
+        // Listens for input events and executes required commands on button presses
+        void hidEventThread();
         // Handles decoding and shifting between songs due to commands
         void playbackThread();
         // Listens for 'sleep' event and pauses playback

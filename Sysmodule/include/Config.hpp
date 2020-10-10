@@ -27,11 +27,16 @@ class Config {
         // Version of config (-1 on error)
         int version();
 
-        // Pause when headset unplugged
-        bool pauseOnUnplug();
+        // Playback button combinations
+        std::string keyComboNext();
+        std::string keyComboPlay();
+        std::string keyComboPrev();
 
         // Logging level (defaults to Warning)
         Log::Level logLevel();
+
+        // Pause when headset unplugged
+        bool pauseOnUnplug();
 
         // Seek method for mpg123 (defaults to false)
         bool MP3AccurateSeek();

@@ -1,6 +1,8 @@
+#include <cstring>
+#include "Log.hpp"
 #include "nx/Audio.hpp"
 #include "nx/File.hpp"
-#include "Log.hpp"
+#include "nx/NX.hpp"
 #include <mutex>
 #include <switch.h>
 #include <thread>
@@ -15,6 +17,7 @@ namespace NX {
     // Variables indicating if each service was initialized
     static bool audrenInitialized = false;
     static bool fsInitialized = false;
+    static bool hidInitialized = false;
     static bool gpioInitialized = false;
     static bool pscmInitialized = false;
     static bool smInitialized = false;
@@ -23,7 +26,7 @@ namespace NX {
     // Starts all needed services
     bool startServices() {
         // Prevent starting twice
-        if (audrenInitialized || fsInitialized || gpioInitialized || pscmInitialized || smInitialized || socketInitialized) {
+        if (audrenInitialized || fsInitialized || gpioInitialized || hidInitialized || pscmInitialized || smInitialized || socketInitialized) {
             return true;
         }
         Result rc;
@@ -114,6 +117,15 @@ namespace NX {
             logError("gpio", rc);
         }
 
+        // HID
+        rc = hidInitialize();
+        if (R_SUCCEEDED(rc)) {
+            hidInitialized = true;
+
+        } else {
+            logError("hid", rc);
+        }
+
         // PSC
         rc = pscmInitialize();
         if (R_SUCCEEDED(rc)) {
@@ -123,7 +135,7 @@ namespace NX {
             logError("pscm", rc);
         }
 
-        // We don't care if gpio or pscm don't initialize
+        // We don't care if gpio, hid or pscm don't initialize
         return true;
     }
 
@@ -133,6 +145,11 @@ namespace NX {
         if (pscmInitialized) {
             pscmExit();
             pscmInitialized = false;
+        }
+
+        if (hidInitialized) {
+            hidExit();
+            hidInitialized = false;
         }
 
         // GPIO
@@ -232,6 +249,109 @@ namespace NX {
             }
             gpioLastValue = currentValue;
             return unplugged;
+        }
+    };
+
+    namespace Hid {
+        constexpr char delims[] = " +";     // Supported delimiters
+
+        std::vector<Button> stringToCombo(const std::string & str) {
+            // Vector to return
+            std::vector<Button> combo;
+
+            // Ensure we have a string
+            if (str.length() > 0) {
+                // Split on delimiters
+                std::vector<std::string> tokens;
+                char * copy = strdup(str.c_str());
+                char * tok = std::strtok(copy, delims);
+                while (tok != nullptr) {
+                    tokens.push_back(std::string(tok));
+                    tok = std::strtok(nullptr, delims);
+                }
+                free(copy);
+
+                // Convert each word to upper case (only handles ASCII but that's all we support)
+                for (std::string & token : tokens) {
+                    std::transform(token.begin(), token.end(), token.begin(), [](unsigned char c) {
+                        return std::toupper(c);
+                    });
+                }
+
+                // Finally compare each token to see if it matches a button
+                // Note that we return an empty vector even if only one button is wrong
+                for (std::string & token : tokens) {
+                    if (token == "A") {
+                        combo.push_back(Button::A);
+
+                    } else if (token == "B") {
+                        combo.push_back(Button::B);
+
+                    } else if (token == "X") {
+                        combo.push_back(Button::X);
+
+                    } else if (token == "Y") {
+                        combo.push_back(Button::Y);
+
+                    } else if (token == "LSTICK") {
+                        combo.push_back(Button::LSTICK);
+
+                    } else if (token == "RSTICK") {
+                        combo.push_back(Button::RSTICK);
+
+                    } else if (token == "L") {
+                        combo.push_back(Button::L);
+
+                    } else if (token == "R") {
+                        combo.push_back(Button::R);
+
+                    } else if (token == "ZL") {
+                        combo.push_back(Button::ZL);
+
+                    } else if (token == "ZR") {
+                        combo.push_back(Button::ZR);
+
+                    } else if (token == "PLUS") {
+                        combo.push_back(Button::PLUS);
+
+                    } else if (token == "MINUS") {
+                        combo.push_back(Button::MINUS);
+
+                    } else if (token == "DLEFT") {
+                        combo.push_back(Button::DLEFT);
+
+                    } else if (token == "DUP") {
+                        combo.push_back(Button::DUP);
+
+                    } else if (token == "DRIGHT") {
+                        combo.push_back(Button::DRIGHT);
+
+                    } else if (token == "DDOWN") {
+                        combo.push_back(Button::DDOWN);
+
+                    } else {
+                        combo.clear();
+                        break;
+                    }
+                }
+            }
+
+            return combo;
+        }
+
+        bool comboPressed(const std::vector<Button> & buttons) {
+            // Scan input first
+            hidScanInput();
+            uint64_t pressed = hidKeysHeld(CONTROLLER_P1_AUTO);
+
+            // Convert combo to same format
+            uint64_t combo = 0;
+            for (const Button & button : buttons) {
+                combo |= (1U << static_cast<int>(button));
+            }
+
+            // Check if bits match (indicates combo is pressed)
+            return ((pressed & combo) == combo);
         }
     };
 

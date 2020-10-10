@@ -60,6 +60,10 @@ void serviceGpioThread(void * arg) {
     static_cast<MainService *>(arg)->gpioEventThread();
 }
 
+void serviceHidThread(void * arg) {
+    static_cast<MainService *>(arg)->hidEventThread();
+}
+
 void servicePowerThread(void * arg) {
     static_cast<MainService *>(arg)->sleepEventThread();
 }
@@ -75,6 +79,7 @@ int main(int argc, char * argv[]) {
     // Spawn threads
     NX::Thread::create("audio", audioThread, Audio::getInstance());
     NX::Thread::create("gpio", serviceGpioThread, service);
+    NX::Thread::create("hid", serviceHidThread, service);
     // NX::Thread::create("power", servicePowerThread, service);
     NX::Thread::create("socket", serviceSocketThread, service);
 
@@ -85,6 +90,7 @@ int main(int argc, char * argv[]) {
     Audio::getInstance()->exit();
     NX::Thread::join("socket");
     // NX::Thread::join("power");
+    NX::Thread::join("hid");
     NX::Thread::join("gpio");
     NX::Thread::join("audio");
 

@@ -34,8 +34,31 @@ int Config::version() {
     return version;
 }
 
-bool Config::pauseOnUnplug() {
-    return this->ini->getbool("General", "pause_on_unplug", true);
+std::string Config::keyComboNext() {
+    std::string combo = this->ini->gets("General", "key_combo_next", "");
+    if (combo.empty()) {
+        Log::writeError("[CONFIG] Failed to get next combination");
+        combo = "L+DRIGHT+RSTICK";
+    }
+    return combo;
+}
+
+std::string Config::keyComboPlay() {
+    std::string combo = this->ini->gets("General", "key_combo_play", "");
+    if (combo.empty()) {
+        Log::writeError("[CONFIG] Failed to get play/pause combination");
+        combo = "L+DUP+RSTICK";
+    }
+    return combo;
+}
+
+std::string Config::keyComboPrev() {
+    std::string combo = this->ini->gets("General", "key_combo_prev", "");
+    if (combo.empty()) {
+        Log::writeError("[CONFIG] Failed to get previous combination");
+        combo = "L+DLEFT+RSTICK";
+    }
+    return combo;
 }
 
 Log::Level Config::logLevel() {
@@ -58,6 +81,10 @@ Log::Level Config::logLevel() {
     }
 
     return Log::Level::Warning;
+}
+
+bool Config::pauseOnUnplug() {
+    return this->ini->getbool("General", "pause_on_unplug", true);
 }
 
 bool Config::MP3AccurateSeek() {

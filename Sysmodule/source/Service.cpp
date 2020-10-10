@@ -18,6 +18,7 @@
 
 MainService::MainService() {
     this->audio = Audio::getInstance();
+    this->combosUpdated = false;
     this->dbLocked = false;
     this->muteLevel = 0.0;
     this->pressTime = std::time(nullptr);
@@ -46,6 +47,12 @@ MainService::MainService() {
 void MainService::updateConfig() {
     Log::setLogLevel(this->cfg->logLevel());
     this->watchGpio = this->cfg->pauseOnUnplug();
+
+    std::scoped_lock<std::shared_mutex> cMtx(this->cMutex);
+    this->comboNextString = this->cfg->keyComboNext();
+    this->comboPlayString = this->cfg->keyComboPlay();
+    this->comboPrevString = this->cfg->keyComboPrev();
+    this->combosUpdated = true;
 
     std::scoped_lock<std::shared_mutex> sMtx(this->sMutex);
     MP3::setAccurateSeek(this->cfg->MP3AccurateSeek());
@@ -501,6 +508,78 @@ void MainService::gpioEventThread() {
 
     // Cleanup
     NX::Gpio::cleanup();
+}
+
+void MainService::hidEventThread() {
+    // Vector of buttons forming a combination
+    std::vector<NX::Hid::Button> comboNext;
+    std::vector<NX::Hid::Button> comboPlay;
+    std::vector<NX::Hid::Button> comboPrev;
+
+    // Prevent repeatedly calling functions
+    bool nextPressed = false;
+    bool playPressed = false;
+    bool prevPressed = false;
+
+    // Loop until the service has signalled to exit
+    while (!this->exit_) {
+        // Re-read combos if needed
+        if (this->combosUpdated) {
+            std::scoped_lock<std::shared_mutex> mtx(this->cMutex);
+            comboNext = NX::Hid::stringToCombo(this->comboNextString);
+            if (comboNext.empty()) {
+                Log::writeWarning("[HID] Couldn't parse next combination config, skipping via button press will be unavailable");
+            }
+            comboPlay = NX::Hid::stringToCombo(this->comboPlayString);
+            if (comboPlay.empty()) {
+                Log::writeWarning("[HID] Couldn't parse play combination config, play/pause via button press will be unavailable");
+            }
+            comboPrev = NX::Hid::stringToCombo(this->comboPrevString);
+            if (comboPrev.empty()) {
+                Log::writeWarning("[HID] Couldn't parse prev combination config, previous via button press will be unavailable");
+            }
+            this->combosUpdated = false;
+        }
+
+        // Check if each combo pressed
+        if (NX::Hid::comboPressed(comboNext)) {
+            if (!nextPressed) {
+                this->songAction = SongAction::Next;
+                this->pressTime = std::time(nullptr);
+                nextPressed = true;
+            }
+
+        } else if (NX::Hid::comboPressed(comboPlay)) {
+            if (!playPressed) {
+                if (this->audio->status() == Audio::Status::Playing) {
+                    this->audio->pause();
+
+                } else if (this->audio->status() == Audio::Status::Paused) {
+                    this->audio->resume();
+                }
+                playPressed = true;
+            }
+
+        } else if (NX::Hid::comboPressed(comboPrev)) {
+            if (!prevPressed) {
+                if ((std::time(nullptr) - this->pressTime) < PREV_WAIT) {
+                    this->songAction = SongAction::Previous;
+                } else {
+                    this->songAction = SongAction::Replay;
+                }
+                this->pressTime = std::time(nullptr);
+                prevPressed = true;
+            }
+
+        } else {
+            nextPressed = false;
+            playPressed = false;
+            prevPressed = false;
+        }
+
+        // Pause briefly before checking again
+        NX::Thread::sleepMilli(10);
+    }
 }
 
 void MainService::playbackThread() {
