@@ -1,9 +1,8 @@
 #ifndef IPC_SERVER_HPP
 #define IPC_SERVER_HPP
 
-#include "ipc/Types.hpp"
-#include <string>
-#include <vector>
+#include <functional>
+#include "ipc/Request.hpp"
 
 // This was heavily inspired by sys-clk's ipc server, a big thanks to those
 // who wrote the original C version:
@@ -15,6 +14,9 @@
 // stuff is worth it, you can buy us a beer in return.  - The sys-clk authors
 // --------------------------------------------------------------------------
 namespace Ipc {
+    // Typedef this long line cause it's messy
+    typedef std::function<uint32_t(Request *)> Handler;
+
     class Server {
         private:
             SmServiceName serverName;       // Name of IPC server
@@ -24,10 +26,6 @@ namespace Ipc {
             std::vector<Handle> handles;    // Server (index 0) and client's handles
             size_t maxHandles;              // Maximum number of clients
 
-            // Handle requests + responses
-            void parseRequest(Request &);
-            void prepareResponse(uint32_t, Request &);
-
             // Process a session
             bool processSession(const int32_t);
             bool processNewSession();
@@ -35,9 +33,6 @@ namespace Ipc {
         public:
             // Constructor inits server (accepts name and max connection count)
             Server(const std::string &, const size_t);
-
-            // Return the maximum number of bytes supported in one message
-            size_t maxMessageSize();
 
             // Set the request handler function
             void setRequestHandler(Handler);
