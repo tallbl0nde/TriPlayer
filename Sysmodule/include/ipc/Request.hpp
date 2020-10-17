@@ -6,6 +6,7 @@
 #include <string>
 #include <switch.h>
 #include <vector>
+#include "utils/Buffer.hpp"
 
 // The Request class encapsulates all data/functionality related to an IPC request.
 // All data is copied from the thread-local storage which should allow other IPC calls
@@ -26,7 +27,9 @@ namespace Ipc {
             Type type_;                                 // Request type (see enum)
 
             std::vector<uint8_t> inArgs;                // Received 'arguments'
+            size_t inArgsPos;                           // Position to read from next
             std::vector<uint8_t> inData;                // Received data
+            size_t inDataPos;                           // Position to read from next
 
             std::vector<uint8_t> outArgs;               // Reply value(s)
             std::vector<uint8_t> outData;               // Reply data
@@ -58,36 +61,49 @@ namespace Ipc {
             // Return a reference to the reply data buffer (as a vector)
             const std::vector<uint8_t> & getReplyBuffer();
 
+            // Append a value to reply buffer
+            template <typename T>
+            Result appendReplyData(const T value) {
+                return (Utils::Buffer::appendValue(this->outData, value) ? Result::Ok : Result::BadInput);
+            }
+
+            // Append a string to reply buffer
+            Result appendReplyData(const std::string & str) {
+                return (Utils::Buffer::appendString(this->outData, str) ? Result::Ok : Result::BadInput);
+            }
+
             // Append value to reply 'value'
             template <typename T>
             Result appendReplyValue(const T value) {
-                const uint8_t * ptr = reinterpret_cast<const uint8_t *>(&value);
-                for (size_t i = 0; i < sizeof(value); i++) {
-                    this->outArgs.push_back(ptr[i]);
-                }
-                return Result::Ok;
+                return (Utils::Buffer::appendValue(this->outArgs, value) ? Result::Ok : Result::BadInput);
             }
 
             // Append a string to reply 'value'
-            Result appendReplyValue(const std::string &);
+            Result appendReplyValue(const std::string & str) {
+                return (Utils::Buffer::appendString(this->outArgs, str) ? Result::Ok : Result::BadInput);
+            }
+
+            // Sequentially read from received data
+            template <typename T>
+            Result readRequestData(T & out) {
+                return (Utils::Buffer::readValue(this->inData, this->inDataPos, out) ? Result::Ok : Result::BadInput);
+            }
+
+            // Sequentially read a string from received data
+            Result readRequestData(std::string & out) {
+                return (Utils::Buffer::readString(this->inData, this->inDataPos, out) ? Result::Ok : Result::BadInput);
+            }
 
             // Sequentially read from received 'arguments'
             template <typename T>
             Result readRequestValue(T & out) {
-                // Check we have enough bytes
-                size_t bytes = sizeof(out);
-                if (this->inArgs.size() < bytes) {
-                    return Result::BadInput;
-                }
-
-                // Read required number of bytes and discard
-                std::memcpy(&out, &this->inArgs[0], bytes);
-                this->inArgs.erase(this->inArgs.begin(), this->inArgs.begin() + bytes);
-                return Result::Ok;
+                return (Utils::Buffer::readValue(this->inArgs, this->inArgsPos, out) ? Result::Ok : Result::BadInput);
             }
 
             // Sequentially read a string from received 'arguments'
-            Result readRequestValue(std::string &);
+            Result readRequestValue(std::string & out) {
+                return (Utils::Buffer::readString(this->inArgs, this->inArgsPos, out) ? Result::Ok : Result::BadInput);
+            }
 
             // Destructor frees allocated memory
             ~Request();

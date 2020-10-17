@@ -1,9 +1,5 @@
-#include <cstdlib>
-#include <cstring>
 #include "Config.hpp"
 #include "Database.hpp"
-#include "ipc/Command.hpp"
-#include "ipc/Helpers.hpp"
 #include "ipc/TriPlayer.hpp"
 #include "nx/Audio.hpp"
 #include "nx/NX.hpp"
@@ -39,7 +35,7 @@ MainService::MainService() {
 
     // Create ipc server
     this->ipcServer = new Ipc::Server("tri", 3);
-    this->ipcServer->setRequestHandler([this](Ipc::Request & r) -> uint32_t {
+    this->ipcServer->setRequestHandler([this](Ipc::Request * r) -> uint32_t {
         return static_cast<uint32_t>(this->commandThread(r));
     });
 
@@ -59,10 +55,10 @@ void MainService::updateConfig() {
     MP3::setEqualizer(this->cfg->MP3Equalizer());
 }
 
-Ipc::Result MainService::commandThread(Ipc::Request & request) {
-    switch (static_cast<Ipc::Command>(request.in.cmdId)) {
+Ipc::Result MainService::commandThread(Ipc::Request * request) {
+    switch (static_cast<Ipc::Command>(request->cmd())) {
         case Ipc::Command::Version:
-            Ipc::Helpers::appendStringToBuffer(request.out.reply, std::string(VER_STRING));
+            request->appendReplyValue(std::string(VER_STRING));
             break;
 
         case Ipc::Command::Resume: {
@@ -98,12 +94,12 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
             break;
 
         case Ipc::Command::GetVolume:
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, this->audio->volume());
+            request->appendReplyValue(this->audio->volume());
             break;
 
         case Ipc::Command::SetVolume: {
             double vol;
-            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.in.arg, vol);
+            Ipc::Result rc = request->readRequestValue(vol);
             if (rc != Ipc::Result::Ok || vol < 0.0d || vol > 100.0d) {
                 return Ipc::Result::BadInput;
             }
@@ -126,7 +122,7 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
                 this->muteLevel = 0.0;
             }
             double vol = this->audio->volume();
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, vol);
+            request->appendReplyValue(vol);
             break;
         }
 
@@ -139,15 +135,14 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
 
             // Read first arg (index of first song to get)
             size_t index;
-            size_t pos = 0;
-            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.in.arg, pos, index);
+            Ipc::Result rc = request->readRequestValue(index);
             if (rc != Ipc::Result::Ok) {
                 return rc;
             }
 
             // Read second arg (number to get)
             size_t count;
-            rc = Ipc::Helpers::readValueFromBuffer(request.in.arg, pos, count);
+            rc = request->readRequestValue(count);
             if (rc != Ipc::Result::Ok) {
                 return rc;
             }
@@ -160,17 +155,17 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
             // Iterate over sub queue and append each ID
             size_t max = (count > this->subQueue.size()-index ? this->subQueue.size()-index : count);
             while (index < max) {
-                Ipc::Helpers::appendValueToBuffer(request.out.data, this->subQueue[index]);
+                request->appendReplyData(this->subQueue[index]);
                 index++;
             }
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, max);
+            request->appendReplyValue(max);
             break;
         }
 
         case Ipc::Command::SkipSubQueueSongs: {
             // Get argument (number to skip)
             size_t count;
-            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.in.arg, count);
+            Ipc::Result rc = request->readRequestValue(count);
             if (rc != Ipc::Result::Ok) {
                 return rc;
             }
@@ -183,20 +178,20 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
                 skipped++;
             }
             this->songAction = SongAction::Next;
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, skipped);
+            request->appendReplyValue(skipped);
             break;
         }
 
         case Ipc::Command::SubQueueSize: {
             std::shared_lock<std::shared_mutex> mtx(this->sqMutex);
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, this->subQueue.size());
+            request->appendReplyValue(this->subQueue.size());
             break;
         }
 
         case Ipc::Command::AddToSubQueue: {
             // Read song id from args
             SongID id;
-            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.in.arg, id);
+            Ipc::Result rc = request->readRequestValue(id);
             if (rc != Ipc::Result::Ok) {
                 return rc;
             }
@@ -223,7 +218,7 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
         case Ipc::Command::RemoveFromSubQueue: {
             // Read index from args
             size_t index;
-            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.in.arg, index);
+            Ipc::Result rc = request->readRequestValue(index);
             if (rc != Ipc::Result::Ok) {
                 return rc;
             }
@@ -237,14 +232,14 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
 
         case Ipc::Command::QueueIdx: {
             std::shared_lock<std::shared_mutex> mtx(this->qMutex);
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, this->queue->currentIdx());
+            request->appendReplyValue(this->queue->currentIdx());
             break;
         }
 
         case Ipc::Command::SetQueueIdx: {
             // Get position to jump to from args
             size_t pos;
-            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.in.arg, pos);
+            Ipc::Result rc = request->readRequestValue(pos);
             if (rc != Ipc::Result::Ok) {
                 return rc;
             }
@@ -253,20 +248,20 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
             std::unique_lock<std::shared_mutex> mtx(this->qMutex);
             this->queue->setIdx(pos);
             this->songAction = SongAction::Replay;
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, this->queue->currentIdx());
+            request->appendReplyValue(this->queue->currentIdx());
             break;
         }
 
         case Ipc::Command::QueueSize: {
             std::shared_lock<std::shared_mutex> mtx(this->qMutex);
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, this->queue->size());
+            request->appendReplyValue(this->queue->size());
             break;
         }
 
         case Ipc::Command::RemoveFromQueue: {
             // Get position to remove from args
             size_t pos;
-            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.in.arg, pos);
+            Ipc::Result rc = request->readRequestValue(pos);
             if (rc != Ipc::Result::Ok) {
                 return rc;
             }
@@ -288,15 +283,14 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
 
             // Read first arg (index of first song to get)
             size_t index;
-            size_t pos = 0;
-            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.in.arg, pos, index);
+            Ipc::Result rc = request->readRequestValue(index);
             if (rc != Ipc::Result::Ok) {
                 return rc;
             }
 
             // Read second arg (number to get)
             size_t count;
-            rc = Ipc::Helpers::readValueFromBuffer(request.in.arg, pos, count);
+            rc = request->readRequestValue(count);
             if (rc != Ipc::Result::Ok) {
                 return rc;
             }
@@ -309,10 +303,10 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
             // Iterate over queue and append each ID
             size_t max = (count > this->queue->size()-index ? this->queue->size()-index : count);
             while (index < max) {
-                Ipc::Helpers::appendValueToBuffer(request.out.data, this->queue->IDatPosition(index));
+                request->appendReplyData(this->queue->IDatPosition(index));
                 index++;
             }
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, max);
+            request->appendReplyValue(max);
             break;
         }
 
@@ -327,10 +321,9 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
             this->queue->clear();
 
             // Add each value present in the buffer
-            size_t pos = 0;
             while (true) {
                 SongID id;
-                Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.in.data, pos, id);
+                Ipc::Result rc = request->readRequestData(id);
                 if (rc != Ipc::Result::Ok) {
                     break;
                 }
@@ -338,7 +331,7 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
             }
 
             // Reply with number of songs inserted
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, this->queue->size());
+            request->appendReplyValue(this->queue->size());
             break;
         }
 
@@ -357,14 +350,14 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
                     rm = TriPlayer::Repeat::All;
                     break;
             }
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, rm);
+            request->appendReplyValue(rm);
             break;
         }
 
         case Ipc::Command::SetRepeat: {
             // Read repeat mode from args
             TriPlayer::Repeat rm;
-            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.in.arg, rm);
+            Ipc::Result rc = request->readRequestValue(rm);
             if (rc != Ipc::Result::Ok) {
                 return rc;
             }
@@ -388,14 +381,14 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
 
         case Ipc::Command::GetShuffle: {
             std::shared_lock<std::shared_mutex> mtx(this->qMutex);
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, (this->queue->isShuffled() ? TriPlayer::Shuffle::On : TriPlayer::Shuffle::Off));
+            request->appendReplyValue((this->queue->isShuffled() ? TriPlayer::Shuffle::On : TriPlayer::Shuffle::Off));
             break;
         }
 
         case Ipc::Command::SetShuffle: {
             // Read shuffle mode from args
             TriPlayer::Shuffle sm;
-            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.in.arg, sm);
+            Ipc::Result rc = request->readRequestValue(sm);
             if (rc != Ipc::Result::Ok) {
                 return rc;
             }
@@ -412,7 +405,7 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
 
         case Ipc::Command::GetSong: {
             std::shared_lock<std::shared_mutex> mtx(this->qMutex);
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, this->queue->currentID());
+            request->appendReplyValue(this->queue->currentID());
             break;
         }
 
@@ -437,7 +430,7 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
                         break;
                 }
             }
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, s);
+            request->appendReplyValue(s);
             break;
         }
 
@@ -452,14 +445,14 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
                     pos = 100 * (this->audio->samplesPlayed()/(double)this->source->totalSamples());
                 }
             }
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, pos);
+            request->appendReplyValue(pos);
             break;
         }
 
         case Ipc::Command::SetPosition: {
             // Read position from args
             double pos;
-            Ipc::Result rc = Ipc::Helpers::readValueFromBuffer(request.in.arg, pos);
+            Ipc::Result rc = request->readRequestValue(pos);
             if (rc != Ipc::Result::Ok) {
                 return rc;
             }
@@ -467,20 +460,20 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
             // Set seek value and return it
             pos /= 100.0;
             this->seekTo = pos;
-            Ipc::Helpers::appendValueToBuffer(request.out.reply, pos);
+            request->appendReplyValue(pos);
             break;
         }
 
         case Ipc::Command::GetPlayingFrom: {
             std::shared_lock<std::shared_mutex> mtx(this->qMutex);
-            Ipc::Helpers::appendStringToBuffer(request.out.data, this->playingFrom);
+            request->appendReplyData(this->playingFrom);
             break;
         }
 
         case Ipc::Command::SetPlayingFrom: {
             // Read string from input buffer
             std::string str;
-            Ipc::Result rc = Ipc::Helpers::readStringFromBuffer(request.in.data, str);
+            Ipc::Result rc = request->readRequestData(str);
             if (rc != Ipc::Result::Ok) {
                 return rc;
             }
@@ -488,7 +481,7 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
             // Lock queue to allow updating and return string
             std::unique_lock<std::shared_mutex> mtx(this->qMutex);
             this->playingFrom = str.substr(0, (str.length() > 100) ? 100 : str.length());
-            Ipc::Helpers::appendStringToBuffer(request.out.data, this->playingFrom);
+            request->appendReplyData(this->playingFrom);
             break;
         }
 
@@ -527,7 +520,7 @@ Ipc::Result MainService::commandThread(Ipc::Request & request) {
             delete this->source;
             this->source = nullptr;
 
-            Ipc::Helpers::appendStringToBuffer(request.out.reply, VER_STRING);
+            request->appendReplyValue(std::string(VER_STRING));
             break;
         }
 

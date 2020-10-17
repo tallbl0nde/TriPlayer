@@ -79,7 +79,7 @@ namespace Ipc {
 
             // Otherwise prepare error response
             default:
-                Log::writeWarning("[IPC] Received unexpected CmifCommand");
+                Log::writeInfo("[IPC] Received unexpected CmifCommand");
                 request->setResult(MAKERESULT(11, 403));
                 request->toResponseTLS();
                 break;

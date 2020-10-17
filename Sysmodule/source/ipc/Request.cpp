@@ -1,6 +1,5 @@
 #include "ipc/Request.hpp"
 
-
 // IPC request header structure
 struct Header {
     uint64_t magic;
@@ -21,6 +20,10 @@ namespace Ipc {
         this->outArgs.clear();
         this->outData.clear();
         this->outMeta.clear();
+
+        // Set start positions to beginning of vectors
+        this->inArgsPos = 0;
+        this->inDataPos = 0;
 
         // Set default attributes
         this->cmd_ = 0;
@@ -126,24 +129,7 @@ namespace Ipc {
         return this->outData;
     }
 
-    Result Request::appendReplyValue(const std::string & str) {
-        // Append each character in string and then null terminator
-        for (size_t i = 0; i < str.length(); i++) {
-            this->outArgs.push_back(str[i]);
-        }
-        this->outArgs.push_back('\0');
-        return Result::Ok;
-    }
+    Request::~Request() {
 
-    Result Request::readRequestValue(std::string & out) {
-        // Ensure we have data to convert
-        if (this->inArgs.empty()) {
-            return Result::BadInput;
-        }
-
-        // Read into string and remove from buffer
-        out = std::string(reinterpret_cast<char *>(&this->inArgs[0]));
-        this->inArgs.erase(this->inArgs.begin(), this->inArgs.begin() + out.length() + 1);
-        return Result::Ok;
     }
 };

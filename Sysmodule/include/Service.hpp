@@ -73,7 +73,7 @@ class MainService {
         void updateConfig();
 
         // Function run to handle an IPC Request
-        Ipc::Result commandThread(Ipc::Request &);
+        Ipc::Result commandThread(Ipc::Request *);
 
     public:
         // Constructor initializes everything
