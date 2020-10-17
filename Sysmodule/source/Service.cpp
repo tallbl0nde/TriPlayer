@@ -130,6 +130,8 @@ Ipc::Result MainService::commandThread(Ipc::Request * request) {
             // Return if empty
             std::unique_lock<std::shared_mutex> mtx(this->sqMutex);
             if (this->subQueue.empty()) {
+                size_t zero = 0;
+                request->appendReplyValue(zero);
                 break;
             }
 
@@ -149,6 +151,7 @@ Ipc::Result MainService::commandThread(Ipc::Request * request) {
 
             // Return if requesting zero
             if (count == 0) {
+                request->appendReplyValue(count);
                 break;
             }
 
@@ -278,6 +281,8 @@ Ipc::Result MainService::commandThread(Ipc::Request * request) {
             // Return if empty
             std::unique_lock<std::shared_mutex> mtx(this->qMutex);
             if (this->queue->empty()) {
+                size_t zero = 0;
+                request->appendReplyValue(zero);
                 break;
             }
 
@@ -297,6 +302,7 @@ Ipc::Result MainService::commandThread(Ipc::Request * request) {
 
             // Return if requesting zero
             if (count == 0) {
+                request->appendReplyValue(count);
                 break;
             }
 
