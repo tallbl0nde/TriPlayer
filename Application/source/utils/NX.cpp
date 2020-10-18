@@ -7,12 +7,14 @@ namespace Utils::NX {
         pmdmntInitialize();
         pmshellInitialize();
         romfsInit();
+        socketInitializeDefault();
     }
 
     void stopServices() {
         pmdmntExit();
         pmshellExit();
         romfsExit();
+        socketExit();
     }
 
     bool getUserInput(Keyboard & k) {

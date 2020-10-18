@@ -427,7 +427,7 @@ void Sysmodule::sendSetQueue(const std::vector<SongID> & q) {
         return;
     }
 
-    this->addToIpcQueue([&q]() -> bool {
+    this->addToIpcQueue([q]() -> bool {
         return TriPlayer::setQueue(q);
     });
 }
@@ -604,7 +604,7 @@ void Sysmodule::sendGetPlayingFrom() {
 }
 
 void Sysmodule::sendSetPlayingFrom(const std::string & str) {
-    this->addToIpcQueue([this, &str]() -> bool {
+    this->addToIpcQueue([this, str]() -> bool {
         bool b = TriPlayer::setPlayingFromText(str);
         if (b) {
             std::scoped_lock<std::mutex> mtx(this->playingFromMutex);

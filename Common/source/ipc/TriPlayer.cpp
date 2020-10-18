@@ -1,6 +1,6 @@
-#include <cstring>
 #include "ipc/Command.hpp"
 #include "ipc/TriPlayer.hpp"
+#include <string.h>
 #include <switch.h>
 
 namespace TriPlayer {
@@ -84,8 +84,8 @@ namespace TriPlayer {
     }
 
     bool getSubQueue(std::vector<int> & outIDs) {
-        // Request queue in groups of 1000
-        constexpr size_t count = 1000;
+        // Request queue in groups of 100
+        constexpr size_t count = 100;
         outIDs.clear();
 
         // Repeatedly request groups until we run out
@@ -138,8 +138,8 @@ namespace TriPlayer {
     }
 
     bool getQueue(std::vector<int> & outIDs) {
-        // Request queue in groups of 1000
-        constexpr size_t count = 1000;
+        // Request queue in groups of 100
+        constexpr size_t count = 100;
         outIDs.clear();
 
         // Repeatedly request groups until we run out
@@ -252,15 +252,17 @@ namespace TriPlayer {
     }
 
     bool setPlayingFromText(const std::string & text) {
-        char recvText[101] = {0};
-        char sendText[101] = {0};
-        std::strncpy(sendText, text.c_str(), sizeof(sendText)-1);
+        // Copy string into format suitable for transmitting
+        char * str = strndup(text.c_str(), 100);
+        size_t len = strlen(str);
 
         Result rc = serviceDispatch(service, static_cast<uint32_t>(Ipc::Command::SetPlayingFrom),
-            .buffer_attrs = {SfBufferAttr_In | SfBufferAttr_HipcMapAlias, SfBufferAttr_Out | SfBufferAttr_HipcMapAlias},
-            .buffers = {{sendText, sizeof(sendText)}, {recvText, sizeof(recvText)}},
+            .buffer_attrs = {SfBufferAttr_In | SfBufferAttr_HipcMapAlias},
+            .buffers = {{str, len + 1}},
         );
-        if (R_FAILED(rc) || std::strcmp(sendText, recvText) != 0) {
+        free(str);
+
+        if (R_FAILED(rc)) {
             return false;
         }
 

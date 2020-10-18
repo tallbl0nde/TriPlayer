@@ -47,7 +47,7 @@ namespace Ipc {
         SetPosition,        // Seeks to a spot in the song                      // Percentage to seek to [double (0.0 - 100.0)]     // Percentage seeked to [double (between 0.0 and 100.0)]
 
         GetPlayingFrom,     // Returns text saying what's in the queue          // Nothing                                          // 'Playing from' string
-        SetPlayingFrom,     // Set 'playing from' text (allows 100 chars)       // String to set                                    // Set string (maybe be substring if too long)
+        SetPlayingFrom,     // Set 'playing from' text (allows 100 chars)       // String to set                                    // Nothing
 
         RequestDBLock,      // Requests exclusive access to DB (blocks)         // Nothing                                          // Nothing
         ReleaseDBLock,      // Releases exclusive access to DB                  // Nothing                                          // Nothing

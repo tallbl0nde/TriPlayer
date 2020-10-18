@@ -157,9 +157,8 @@ Ipc::Result MainService::commandThread(Ipc::Request * request) {
 
             // Iterate over sub queue and append each ID
             size_t max = (count > this->subQueue.size()-index ? this->subQueue.size()-index : count);
-            while (index < max) {
-                request->appendReplyData(this->subQueue[index]);
-                index++;
+            for (size_t i = 0; i < max; i++) {
+                request->appendReplyData(this->subQueue[index + i]);
             }
             request->appendReplyValue(max);
             break;
@@ -308,9 +307,8 @@ Ipc::Result MainService::commandThread(Ipc::Request * request) {
 
             // Iterate over queue and append each ID
             size_t max = (count > this->queue->size()-index ? this->queue->size()-index : count);
-            while (index < max) {
-                request->appendReplyData(this->queue->IDatPosition(index));
-                index++;
+            for (size_t i = 0; i < max; i++) {
+                request->appendReplyData(this->queue->IDatPosition(index + i));
             }
             request->appendReplyValue(max);
             break;
@@ -487,7 +485,6 @@ Ipc::Result MainService::commandThread(Ipc::Request * request) {
             // Lock queue to allow updating and return string
             std::unique_lock<std::shared_mutex> mtx(this->qMutex);
             this->playingFrom = str.substr(0, (str.length() > 100) ? 100 : str.length());
-            request->appendReplyData(this->playingFrom);
             break;
         }
 
