@@ -75,7 +75,6 @@ namespace NX {
                     Result rc;
                     uint64_t actualRead = 0;
 
-
                     // If we have to wrap around then read in two goes
                     if (file->bufferTail + emptyBytes > readBufferSize) {
                         size_t firstPart = readBufferSize - file->bufferTail;
