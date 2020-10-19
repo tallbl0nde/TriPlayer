@@ -127,15 +127,14 @@ namespace Utils::NX {
         location.storageID = NcmStorageId_None;
 
         // Check if running
-        u64 pid;
-        Result rc = pmdmntGetProcessId(&pid, programID);
-        if (R_SUCCEEDED(rc)) {
-            Log::writeError("[NX] Can't launch program as it's running! Pid: " + std::to_string(pid));
+        if (runningProgram(programID)) {
+            Log::writeError("[NX] Can't launch program as it's running!");
             return false;
         }
 
         // Attempt to launch
-        rc = pmshellLaunchProgram(PmLaunchFlag_None, &location, &pid);
+        u64 pid;
+        Result rc = pmshellLaunchProgram(PmLaunchFlag_None, &location, &pid);
         if (R_FAILED(rc)) {
             Log::writeError("[NX] Failed to launch program with ID: " + std::to_string(programID));
             return false;
@@ -144,6 +143,17 @@ namespace Utils::NX {
             Log::writeInfo("[NX] Launched program with ID: " + std::to_string(programID) + ", it has pid: " + std::to_string(pid));
             return true;
         }
+    }
+
+    bool runningProgram(unsigned long long programID) {
+        u64 pid;
+        Result rc = pmdmntGetProcessId(&pid, programID);
+        if (R_SUCCEEDED(rc)) {
+            Log::writeInfo("[NX] Program with ID: " + std::to_string(programID) + " is running with pid " + std::to_string(pid));
+            return true;
+        }
+        Log::writeInfo("[NX] Program with ID: " + std::to_string(programID) + " is not running");
+        return false;
     }
 
     bool terminateProgram(unsigned long long programID) {

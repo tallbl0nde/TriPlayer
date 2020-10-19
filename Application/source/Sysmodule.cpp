@@ -30,6 +30,8 @@ Sysmodule::Sysmodule() {
     // Initialize all variables
     this->currentSong_ = -1;
     this->exit_ = false;
+    this->keepPosition = false;
+    this->keepVolume = false;
     this->lastUpdateTime = std::chrono::steady_clock::now();
     this->playingFrom_ = "";
     this->position_ = 0.0;
@@ -91,9 +93,38 @@ void Sysmodule::reconnect() {
 }
 
 bool Sysmodule::terminate() {
-    bool ok = TriPlayer::stopSysmodule();
-    if (ok) {
-        this->error_ = Error::NotConnected;
+    // Lock IPC mutex so we can clear the write queue and add stop signal
+    std::unique_lock<std::mutex> mtx(this->ipcMutex);
+    this->ipcQueue = std::queue< std::function<bool()> >();
+    this->error_ = Error::None;
+
+    // Send the stop signal, and if successful clear the queue and set error
+    // so no more commands are attempted to be sent
+    bool done = false;
+    bool ok = false;
+    this->ipcQueue.push([this, &done, &ok]() -> bool {
+        ok = TriPlayer::stopSysmodule();
+        if (ok) {
+            this->error_ = Error::NotConnected;
+            std::scoped_lock<std::mutex> mtx(this->ipcMutex);
+            this->ipcQueue = std::queue< std::function<bool()> >();
+        }
+        done = true;
+        return ok;
+    });
+
+    // Now wait for function to run and return result!
+    mtx.unlock();
+    while (!done) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        if (this->error_ != Error::None) {
+            break;
+        }
+    }
+
+    // Wait for sysmodule to stop
+    while (Utils::NX::runningProgram(PROGRAM_ID)) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
     return ok;
 }
@@ -131,11 +162,6 @@ void Sysmodule::process() {
             }
         }
         mtx.unlock();
-
-        // Check if we need to log to save cycles
-        if (Log::loggingLevel() == Log::Level::Info) {
-            Log::writeInfo("[SYSMODULE] Update took: " + std::to_string(std::chrono::duration_cast< std::chrono::duration<double> >(std::chrono::steady_clock::now() - now).count()) + " seconds");
-        }
 
         // Check if variables need to be updated
         now = std::chrono::steady_clock::now();
@@ -319,14 +345,20 @@ void Sysmodule::sendGetVolume() {
     this->addToIpcQueue([this]() -> bool {
         double vol;
         bool b = TriPlayer::getVolume(vol);
-        this->volume_ = vol;
+        if (b && !this->keepVolume) {
+            this->volume_ = vol;
+        }
         return b;
     });
 }
 
 void Sysmodule::sendSetVolume(const double v) {
-    this->addToIpcQueue([v]() -> bool {
-        return TriPlayer::setVolume(v);
+    this->keepVolume = true;
+    this->volume_ = v;
+    this->addToIpcQueue([this, v]() -> bool {
+        bool b = TriPlayer::setVolume(v);
+        this->keepVolume = false;
+        return b;
     });
 }
 
@@ -577,7 +609,7 @@ void Sysmodule::sendGetPosition() {
     this->addToIpcQueue([this]() -> bool {
         double pos;
         bool b = TriPlayer::getPosition(pos);
-        if (b) {
+        if (b && !this->keepPosition) {
             this->position_ = pos;
         }
         return b;
@@ -585,9 +617,12 @@ void Sysmodule::sendGetPosition() {
 }
 
 void Sysmodule::sendSetPosition(double pos) {
+    this->keepPosition = true;
     this->position_ = pos;
-    this->addToIpcQueue([pos]() -> bool {
-        return TriPlayer::setPosition(pos);
+    this->addToIpcQueue([this, pos]() -> bool {
+        bool b = TriPlayer::setPosition(pos);
+        this->keepPosition = false;
+        return b;
     });
 }
 

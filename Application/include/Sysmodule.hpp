@@ -30,6 +30,8 @@ class Sysmodule {
 
         // === Status vars ===
         std::atomic<SongID> currentSong_;
+        std::atomic<bool> keepPosition;
+        std::atomic<bool> keepVolume;
         std::mutex playingFromMutex;
         std::string playingFrom_;
         std::atomic<double> position_;
