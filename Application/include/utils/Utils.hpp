@@ -1,6 +1,7 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -31,6 +32,22 @@ namespace Utils {
 
     // Write to stdout if nxlink is enabled
     void writeStdout(std::string);
+
+    // Remove duplicates from a vector without sorting
+    template<typename T>
+    std::vector<T> removeDuplicates(const std::vector<T> & old) {
+        // Set to keep track of elements
+        std::set<T> set;
+
+        // Iterate and copy if not in set
+        std::vector<T> unique;
+        for (T element : old) {
+            if (set.insert(element).second) {
+                unique.push_back(element);
+            }
+        }
+        return unique;
+    }
 };
 
 #endif
