@@ -1,6 +1,7 @@
 #ifndef NX_NX_HPP
 #define NX_NX_HPP
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -56,9 +57,14 @@ namespace NX {
         // Cleanup psc after use
         void cleanup();
 
-        // Return if the console is entering sleep mode, returning false on errors
-        // Waits for the given number of milliseconds
-        bool enteringSleep(const size_t);
+        // Set callback when entering sleep
+        void setSleepFunc(const std::function<void()> &);
+        // Set callback when waking from sleep
+        void setWakeFunc(const std::function<void()> &);
+
+        // Monitor for power changes, and call set callbacks on appropriate state changes
+        // Passed number of milliseconds to wait for event before returning
+        void monitor(const size_t);
     };
 
     namespace Thread {

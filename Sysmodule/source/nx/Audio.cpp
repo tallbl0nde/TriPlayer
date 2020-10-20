@@ -18,6 +18,7 @@ constexpr size_t realSize = ((bufferSize + (AUDREN_MEMPOOL_ALIGNMENT - 1)) &~ (A
 Audio::Audio() {
     this->nextBuf = 0;
     this->waveBuf = nullptr;
+    this->action = Status::Stopped;
     this->exit_ = true;
     this->memPool = nullptr;
     this->sampleOffset = 0;
@@ -179,21 +180,11 @@ size_t Audio::bufferSize() {
 }
 
 void Audio::resume() {
-    if (this->status_ == Status::Paused) {
-        std::scoped_lock<std::mutex> mtx(this->mutex);
-        audrvVoiceSetPaused(&drv, this->voice, false);
-        audrvUpdate(&drv);
-        this->status_ = Status::Playing;
-    }
+    this->action = Status::Playing;
 }
 
 void Audio::pause() {
-    if (this->status_ == Status::Playing) {
-        std::scoped_lock<std::mutex> mtx(this->mutex);
-        audrvVoiceSetPaused(&drv, this->voice, true);
-        audrvUpdate(&drv);
-        this->status_ = Status::Paused;
-    }
+    this->action = Status::Paused;
 }
 
 void Audio::stop() {
@@ -263,10 +254,28 @@ void Audio::process() {
                     mtx.unlock();
                     this->stop();
                 }
+
+                // Check if we need to pause
+                if (this->action == Status::Paused) {
+                    audrvVoiceSetPaused(&drv, this->voice, true);
+                    audrvUpdate(&drv);
+                    this->status_ = Status::Paused;
+                    this->action = Status::Stopped;
+                }
                 break;
             }
 
             case Status::Paused:
+                // Check if we need to resume
+                if (this->action == Status::Playing) {
+                    std::unique_lock<std::mutex> mtx(this->mutex);
+                    audrvVoiceSetPaused(&drv, this->voice, false);
+                    audrvUpdate(&drv);
+                    this->status_ = Status::Playing;
+                    this->action = Status::Stopped;
+                    break;
+                }
+
             case Status::Stopped:
                 // Sleep if not doing anything
                 NX::Thread::sleepMilli(5);

@@ -29,6 +29,7 @@ class Audio {
         // Constructor initializes audio output
         Audio();
 
+        std::atomic<Status> action;     // Action to take on next loop iteration
         std::atomic<bool> exit_;        // Set true to stop looping
         static Audio * instance;        // Single instance of class
         std::mutex mutex;               // Mutex protecting all public methods

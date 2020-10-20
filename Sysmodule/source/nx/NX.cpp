@@ -330,6 +330,8 @@ namespace NX {
         constexpr PscPmModuleId pscModuleId = (PscPmModuleId)690;   // Our ID
         static PscPmModule pscModule;                               // Module to listen for events with
         static bool pscPrepared = false;                            // Set true if ready to handle event
+        static std::function<void()> pscSleepFunc = nullptr;        // Callback when entering sleep
+        static std::function<void()> pscWakeFunc = nullptr;         // Callback when waking up
 
         // Create module to listen with
         bool prepare() {
@@ -364,23 +366,23 @@ namespace NX {
             }
         }
 
-        bool enteringSleep(const size_t ms) {
+        void monitor(const size_t ms) {
             size_t ns = 1000000 * ms;
 
             // Don't wait for event if not prepared
             if (!pscPrepared) {
                 svcSleepThread(ns);
-                return false;
+                return;
             }
 
             // Wait for an event
             Result rc = eventWait(&pscModule.event, ns);
             if (R_VALUE(rc) == KERNELRESULT(TimedOut)) {
-                return false;
+                return;
 
             } else if (R_VALUE(rc) == KERNELRESULT(Cancelled)) {
                 svcSleepThread(ns);
-                return false;
+                return;
             }
 
             // If there's an event, fetch the state
@@ -388,16 +390,38 @@ namespace NX {
             u32 flags;
             rc = pscPmModuleGetRequest(&pscModule, &eventState, &flags);
             if (R_FAILED(rc)) {
-                return false;
+                return;
             }
 
-            // Check if we're entering sleep
-            bool enteringSleep = false;
-            if (eventState == PscPmState_ReadySleep) {
-                enteringSleep = true;
+            // Call any related callbacks
+            switch (eventState) {
+                case PscPmState_ReadySleep:
+                    if (pscSleepFunc != nullptr) {
+                        pscSleepFunc();
+                    }
+                    break;
+
+                case PscPmState_ReadyAwaken:
+                    if (pscWakeFunc != nullptr) {
+                        pscWakeFunc();
+                    }
+                    break;
+
+                // Do nothing for other types
+                default:
+                    break;
             }
+
+            // Acknowledge that we've handled the event
             pscPmModuleAcknowledge(&pscModule, eventState);
-            return enteringSleep;
+        }
+
+        void setSleepFunc(const std::function<void()> & f) {
+            pscSleepFunc = f;
+        }
+
+        void setWakeFunc(const std::function<void()> & f) {
+            pscWakeFunc = f;
         }
     };
 

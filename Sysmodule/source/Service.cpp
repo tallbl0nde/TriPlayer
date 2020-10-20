@@ -805,15 +805,18 @@ void MainService::playbackThread() {
 void MainService::sleepEventThread() {
     // Prepare psc
     if (!NX::Psc::prepare()) {
-        Log::writeWarning("[PSC] Couldn't prepare session, unable to pause when entering sleep!");
+        Log::writeWarning("[PSC] Couldn't initialize, unable to pause when entering sleep!");
         return;
     }
 
+    // Set callback
+    NX::Psc::setSleepFunc([this]() {
+        this->audio->pause();
+    });
+
     // Loop until the service has signalled to exit
     while (!this->exit_) {
-        if (NX::Psc::enteringSleep(POLL_INTERVAL)) {
-            this->audio->pause();
-        }
+        NX::Psc::monitor(POLL_INTERVAL);
     }
 
     // Cleanup

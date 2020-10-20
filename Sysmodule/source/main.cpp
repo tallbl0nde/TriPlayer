@@ -82,14 +82,14 @@ int main(int argc, char * argv[]) {
     NX::Thread::create("gpio", serviceGpioThread, service);
     NX::Thread::create("hid", serviceHidThread, service);
     NX::Thread::create("ipc", serviceIpcThread, service);
-    // NX::Thread::create("power", servicePowerThread, service);
+    NX::Thread::create("power", servicePowerThread, service);
 
     // Use this thread to handle playback (we need the higher priority!)
     service->playbackThread();
 
     // Join threads (only executed after service has exit signal)
     Audio::getInstance()->exit();
-    // NX::Thread::join("power");
+    NX::Thread::join("power");
     NX::Thread::join("ipc");
     NX::Thread::join("hid");
     NX::Thread::join("gpio");
