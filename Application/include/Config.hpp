@@ -123,6 +123,8 @@ class Config {
 
         // === Sysmodule Config === //
         // All methods start with sys*
+        bool sysPauseOnSleep();
+        bool setSysPauseOnSleep(const bool);
 
         // Pause when headphones unplugged
         bool sysPauseOnUnplug();

@@ -51,6 +51,7 @@ MainService::MainService() {
 void MainService::updateConfig() {
     Log::setLogLevel(this->cfg->logLevel());
     this->watchGpio = this->cfg->pauseOnUnplug();
+    this->watchSleep = this->cfg->pauseOnSleep();
 
     std::scoped_lock<std::shared_mutex> cMtx(this->cMutex);
     this->comboNextString = this->cfg->keyComboNext();
@@ -811,7 +812,9 @@ void MainService::sleepEventThread() {
 
     // Set callback
     NX::Psc::setSleepFunc([this]() {
-        this->audio->pause();
+        if (this->watchSleep) {
+            this->audio->pause();
+        }
     });
 
     // Loop until the service has signalled to exit

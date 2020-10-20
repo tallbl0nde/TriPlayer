@@ -83,6 +83,10 @@ Log::Level Config::logLevel() {
     return Log::Level::Warning;
 }
 
+bool Config::pauseOnSleep() {
+    return this->ini->getbool("General", "pause_on_sleep", true);
+}
+
 bool Config::pauseOnUnplug() {
     return this->ini->getbool("General", "pause_on_unplug", true);
 }

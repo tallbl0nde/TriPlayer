@@ -7,6 +7,14 @@ namespace Frame::Settings {
         Config * cfg = this->app->config();
         Aether::ListOption * opt;
 
+        // General::pause_on_sleep
+        this->addToggle("Pause when Entering Sleep", [cfg]() -> bool {
+            return cfg->sysPauseOnSleep();
+        }, [this, cfg](bool b) {
+            cfg->setSysPauseOnSleep(b);
+            this->app->sysmodule()->sendReloadConfig();
+        });
+
         // General::pause_on_unplug
         this->addToggle("Pause when Headphones are Unplugged", [cfg]() -> bool {
             return cfg->sysPauseOnUnplug();

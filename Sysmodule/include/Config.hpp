@@ -35,6 +35,9 @@ class Config {
         // Logging level (defaults to Warning)
         Log::Level logLevel();
 
+        // Pause when going to sleep
+        bool pauseOnSleep();
+
         // Pause when headset unplugged
         bool pauseOnUnplug();
 
