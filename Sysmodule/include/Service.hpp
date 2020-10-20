@@ -57,6 +57,7 @@ class MainService {
         std::atomic<double> seekTo;
         // Whether to listen for events
         std::atomic<bool> watchGpio;
+        std::atomic<bool> watchHid;
         std::atomic<bool> watchSleep;
 
         // Mutex for accessing queue

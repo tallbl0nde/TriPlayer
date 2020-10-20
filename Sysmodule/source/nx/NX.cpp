@@ -1,4 +1,3 @@
-#include <cstring>
 #include "Log.hpp"
 #include "nx/Audio.hpp"
 #include "nx/File.hpp"
@@ -223,92 +222,6 @@ namespace NX {
     };
 
     namespace Hid {
-        constexpr char delims[] = " +";     // Supported delimiters
-
-        std::vector<Button> stringToCombo(const std::string & str) {
-            // Vector to return
-            std::vector<Button> combo;
-
-            // Ensure we have a string
-            if (str.length() > 0) {
-                // Split on delimiters
-                std::vector<std::string> tokens;
-                char * copy = strdup(str.c_str());
-                char * tok = std::strtok(copy, delims);
-                while (tok != nullptr) {
-                    tokens.push_back(std::string(tok));
-                    tok = std::strtok(nullptr, delims);
-                }
-                free(copy);
-
-                // Convert each word to upper case (only handles ASCII but that's all we support)
-                for (std::string & token : tokens) {
-                    std::transform(token.begin(), token.end(), token.begin(), [](unsigned char c) {
-                        return std::toupper(c);
-                    });
-                }
-
-                // Finally compare each token to see if it matches a button
-                // Note that we return an empty vector even if only one button is wrong
-                for (std::string & token : tokens) {
-                    if (token == "A") {
-                        combo.push_back(Button::A);
-
-                    } else if (token == "B") {
-                        combo.push_back(Button::B);
-
-                    } else if (token == "X") {
-                        combo.push_back(Button::X);
-
-                    } else if (token == "Y") {
-                        combo.push_back(Button::Y);
-
-                    } else if (token == "LSTICK") {
-                        combo.push_back(Button::LSTICK);
-
-                    } else if (token == "RSTICK") {
-                        combo.push_back(Button::RSTICK);
-
-                    } else if (token == "L") {
-                        combo.push_back(Button::L);
-
-                    } else if (token == "R") {
-                        combo.push_back(Button::R);
-
-                    } else if (token == "ZL") {
-                        combo.push_back(Button::ZL);
-
-                    } else if (token == "ZR") {
-                        combo.push_back(Button::ZR);
-
-                    } else if (token == "PLUS") {
-                        combo.push_back(Button::PLUS);
-
-                    } else if (token == "MINUS") {
-                        combo.push_back(Button::MINUS);
-
-                    } else if (token == "DLEFT") {
-                        combo.push_back(Button::DLEFT);
-
-                    } else if (token == "DUP") {
-                        combo.push_back(Button::DUP);
-
-                    } else if (token == "DRIGHT") {
-                        combo.push_back(Button::DRIGHT);
-
-                    } else if (token == "DDOWN") {
-                        combo.push_back(Button::DDOWN);
-
-                    } else {
-                        combo.clear();
-                        break;
-                    }
-                }
-            }
-
-            return combo;
-        }
-
         bool comboPressed(const std::vector<Button> & buttons) {
             // Scan input first
             hidScanInput();

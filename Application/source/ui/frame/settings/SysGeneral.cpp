@@ -22,7 +22,16 @@ namespace Frame::Settings {
             cfg->setSysPauseOnUnplug(b);
             this->app->sysmodule()->sendReloadConfig();
         });
+        this->addComment("Pause playback when certain system events are received.");
         this->list->addElement(new Aether::ListSeparator());
+
+        // General::key_combo_enabled
+        this->addToggle("Adjust Playback with Button Combinations", [cfg]() -> bool {
+            return cfg->sysKeyComboEnabled();
+        }, [this, cfg](bool b) {
+            cfg->setSysKeyComboEnabled(b);
+            this->app->sysmodule()->sendReloadConfig();
+        });
 
         // General::log_level
         opt = new Aether::ListOption("Logging Level", Log::levelToString(cfg->sysLogLevel()), nullptr);
@@ -87,6 +96,7 @@ namespace Frame::Settings {
     }
 
     SysGeneral::~SysGeneral() {
+        delete this->ovlCombo;
         delete this->ovlList;
     }
 };

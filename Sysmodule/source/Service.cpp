@@ -51,6 +51,7 @@ MainService::MainService() {
 void MainService::updateConfig() {
     Log::setLogLevel(this->cfg->logLevel());
     this->watchGpio = this->cfg->pauseOnUnplug();
+    this->watchHid = this->cfg->keyComboEnabled();
     this->watchSleep = this->cfg->pauseOnSleep();
 
     std::scoped_lock<std::shared_mutex> cMtx(this->cMutex);
@@ -570,9 +571,9 @@ void MainService::gpioEventThread() {
 
 void MainService::hidEventThread() {
     // Vector of buttons forming a combination
-    std::vector<NX::Hid::Button> comboNext;
-    std::vector<NX::Hid::Button> comboPlay;
-    std::vector<NX::Hid::Button> comboPrev;
+    std::vector<NX::Button> comboNext;
+    std::vector<NX::Button> comboPlay;
+    std::vector<NX::Button> comboPrev;
 
     // Prevent repeatedly calling functions
     bool nextPressed = false;
@@ -581,18 +582,24 @@ void MainService::hidEventThread() {
 
     // Loop until the service has signalled to exit
     while (!this->exit_) {
+        // Don't bother checking if we're told not to
+        if (!this->watchHid) {
+            NX::Thread::sleepMilli(10);
+            continue;
+        }
+
         // Re-read combos if needed
         if (this->combosUpdated) {
             std::scoped_lock<std::shared_mutex> mtx(this->cMutex);
-            comboNext = NX::Hid::stringToCombo(this->comboNextString);
+            comboNext = NX::stringToCombo(this->comboNextString);
             if (comboNext.empty()) {
                 Log::writeWarning("[HID] Couldn't parse next combination config, skipping via button press will be unavailable");
             }
-            comboPlay = NX::Hid::stringToCombo(this->comboPlayString);
+            comboPlay = NX::stringToCombo(this->comboPlayString);
             if (comboPlay.empty()) {
                 Log::writeWarning("[HID] Couldn't parse play combination config, play/pause via button press will be unavailable");
             }
-            comboPrev = NX::Hid::stringToCombo(this->comboPrevString);
+            comboPrev = NX::stringToCombo(this->comboPrevString);
             if (comboPrev.empty()) {
                 Log::writeWarning("[HID] Couldn't parse prev combination config, previous via button press will be unavailable");
             }

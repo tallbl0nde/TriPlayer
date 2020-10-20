@@ -4,6 +4,7 @@
 #include "Log.hpp"
 #include "ui/frame/Frame.hpp"
 #include "ui/Theme.hpp"
+#include "utils/nx/Button.hpp"
 
 // Forward declarations as we only need the types here
 class minIni;
@@ -123,6 +124,20 @@ class Config {
 
         // === Sysmodule Config === //
         // All methods start with sys*
+
+        // Use key press combinations to adjust playback
+        bool sysKeyComboEnabled();
+        bool setSysKeyComboEnabled(const bool);
+
+        // Key combinations
+        std::vector<NX::Button> sysKeyComboNext();
+        bool setSysKeyComboNext(const std::vector<NX::Button> &);
+        std::vector<NX::Button> sysKeyComboPlay();
+        bool setSysKeyComboPlay(const std::vector<NX::Button> &);
+        std::vector<NX::Button> sysKeyComboPrev();
+        bool setSysKeyComboPrev(const std::vector<NX::Button> &);
+
+        // Pause when entering sleep
         bool sysPauseOnSleep();
         bool setSysPauseOnSleep(const bool);
 

@@ -28,6 +28,7 @@ class Config {
         int version();
 
         // Playback button combinations
+        bool keyComboEnabled();
         std::string keyComboNext();
         std::string keyComboPlay();
         std::string keyComboPrev();

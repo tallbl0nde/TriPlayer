@@ -2,8 +2,7 @@
 #define NX_NX_HPP
 
 #include <functional>
-#include <string>
-#include <vector>
+#include "utils/nx/Button.hpp"
 
 // Switch specific functions
 namespace NX {
@@ -23,30 +22,6 @@ namespace NX {
     };
 
     namespace Hid {
-        // Valid buttons which can form a key combination
-        enum class Button {
-            A = 0,
-            B = 1,
-            X = 2,
-            Y = 3,
-            LSTICK = 4,
-            RSTICK = 5,
-            L = 6,
-            R = 7,
-            ZL = 8,
-            ZR = 9,
-            PLUS = 10,
-            MINUS = 11,
-            DLEFT = 12,
-            DUP = 13,
-            DRIGHT = 14,
-            DDOWN = 15
-        };
-
-        // Convert a string to a key combination (empty if any key is invalid)
-        // Valid delimiters are ' ' and '+' and is not case sensitive
-        std::vector<Button> stringToCombo(const std::string &);
-
         // Check if the provided combo is currently pressed (order irrelevant)
         bool comboPressed(const std::vector<Button> &);
     };

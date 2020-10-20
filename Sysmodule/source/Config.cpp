@@ -34,6 +34,10 @@ int Config::version() {
     return version;
 }
 
+bool Config::keyComboEnabled() {
+    return this->ini->getbool("General", "key_combo_enabled", true);
+}
+
 std::string Config::keyComboNext() {
     std::string combo = this->ini->gets("General", "key_combo_next", "");
     if (combo.empty()) {
