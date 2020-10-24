@@ -124,6 +124,11 @@ namespace NX {
     }
 
     size_t File::copyToBuffer(void * outBuffer, const size_t count) {
+        // Edge case
+        if (count == 0) {
+            return 0;
+        }
+
         // If we have to wrap around then read in two goes
         if (this->bufferHead + count > readBufferSize) {
             size_t firstPart = readBufferSize - this->bufferHead;
@@ -172,7 +177,7 @@ namespace NX {
             // Return remaining bytes if EOF
             std::unique_lock<std::mutex> mtx(this->fileMutex);
             if (this->fileOffset >= this->size) {
-                return this->copyToBuffer(outBuffer, this->bufferSize());
+                return this->copyToBuffer(outBuffer, size);
             }
             mtx.unlock();
 
