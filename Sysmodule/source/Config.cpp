@@ -34,6 +34,37 @@ int Config::version() {
     return version;
 }
 
+bool Config::keyComboEnabled() {
+    return this->ini->getbool("General", "key_combo_enabled", true);
+}
+
+std::string Config::keyComboNext() {
+    std::string combo = this->ini->gets("General", "key_combo_next", "");
+    if (combo.empty()) {
+        Log::writeError("[CONFIG] Failed to get next combination");
+        combo = "L+DRIGHT+RSTICK";
+    }
+    return combo;
+}
+
+std::string Config::keyComboPlay() {
+    std::string combo = this->ini->gets("General", "key_combo_play", "");
+    if (combo.empty()) {
+        Log::writeError("[CONFIG] Failed to get play/pause combination");
+        combo = "L+DUP+RSTICK";
+    }
+    return combo;
+}
+
+std::string Config::keyComboPrev() {
+    std::string combo = this->ini->gets("General", "key_combo_prev", "");
+    if (combo.empty()) {
+        Log::writeError("[CONFIG] Failed to get previous combination");
+        combo = "L+DLEFT+RSTICK";
+    }
+    return combo;
+}
+
 Log::Level Config::logLevel() {
     const std::string level = this->ini->gets("General", "log_level", "");
     if (level.empty()) {
@@ -56,8 +87,16 @@ Log::Level Config::logLevel() {
     return Log::Level::Warning;
 }
 
+bool Config::pauseOnSleep() {
+    return this->ini->getbool("General", "pause_on_sleep", true);
+}
+
+bool Config::pauseOnUnplug() {
+    return this->ini->getbool("General", "pause_on_unplug", true);
+}
+
 bool Config::MP3AccurateSeek() {
-    return this->ini->getbool("MP3", "accurate_seek");
+    return this->ini->getbool("MP3", "accurate_seek", false);
 }
 
 std::array<float, 32> Config::MP3Equalizer() {

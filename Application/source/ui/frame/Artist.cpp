@@ -56,7 +56,7 @@ namespace Frame {
             for (size_t i = 0; i < v.size(); i++) {
                 ids.push_back(v[i].ID);
             }
-            this->playNewQueue(m.name, ids, 0);
+            this->playNewQueue(m.name, ids, 0, true);
         });
         this->playButton->setFillColour(this->app->theme()->accent());
         this->playButton->setTextColour(Aether::Colour{0, 0, 0, 255});
@@ -211,7 +211,7 @@ namespace Frame {
             for (size_t i = 0; i < v.size(); i++) {
                 ids.push_back(v[i].ID);
             }
-            this->playNewQueue(m.name, ids, 0);
+            this->playNewQueue(m.name, ids, 0, true);
             this->albumMenu->close();
         });
         this->albumMenu->addButton(b);

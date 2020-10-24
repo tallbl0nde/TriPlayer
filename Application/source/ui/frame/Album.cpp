@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include <limits>
 #include "Paths.hpp"
 #include "ui/element/listitem/AlbumSong.hpp"
 #include "ui/frame/Album.hpp"
@@ -59,7 +60,7 @@ namespace Frame {
 
         // Play and 'more' buttons
         this->playButton = new Aether::FilledButton(this->subTotal->x(), this->subTotal->y() + this->subTotal->h() + 20, BUTTON_W, BUTTON_H, "Play", BUTTON_F, [this]() {
-            this->playAlbum(0);
+            this->playAlbum(std::numeric_limits<size_t>::max());
         });
         this->playButton->setFillColour(this->app->theme()->accent());
         this->playButton->setTextColour(Aether::Colour{0, 0, 0, 255});
@@ -144,7 +145,7 @@ namespace Frame {
         for (size_t i = 0; i < this->songs.size(); i++) {
             ids.push_back(this->songs[i].ID);
         }
-        this->playNewQueue(this->metadata.name, ids, pos);
+        this->playNewQueue(this->metadata.name, ids, (pos == std::numeric_limits<size_t>::max() ? 0 : pos), (pos == std::numeric_limits<size_t>::max()));
     }
 
     void Album::createArtistsList() {

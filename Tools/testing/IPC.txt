@@ -1,0 +1,291 @@
+Dodgy code I wrote to test IPC related functionality. Left here should I need
+it again at some point in the future.
+
+>>> App
+
+#include <functional>
+#include <iostream>
+#include "ipc/TriPlayer.hpp"
+#include <switch.h>
+
+void runTest(std::function<Result()> func, std::string text) {
+    std::cout << text;
+    Result rc = func();
+    if (R_FAILED(rc)) {
+        std::cout << "FAILED " << std::to_string(rc);
+    } else {
+        std::cout << "SUCCESS";
+    }
+    std::cout << std::endl;
+}
+
+int main(void) {
+    consoleInit(nullptr);
+    if (!TriPlayer::initialize()) {
+        std::cout << "Failed to init IPC" << std::endl;
+    }
+
+    std::cout << "Press - to stop sysmodule" << std::endl;
+    std::cout << "Press + to quit" << std::endl;
+    std::cout << "Press A to test no in/out msg" << std::endl;
+    std::cout << "Press B to test in msg" << std::endl;
+    std::cout << "Press Y to test out msg" << std::endl;
+    std::cout << "Press X to test in/out msg" << std::endl;
+    std::cout << "Press RIGHT to test out buffer" << std::endl;
+    std::cout << "Press DOWN to test in buffer" << std::endl;
+    std::cout << "Press LEFT to test out msg, in buffer" << std::endl;
+    std::cout << "Press UP to test in msg, out buffer" << std::endl;
+    consoleUpdate(nullptr);
+
+    while (appletMainLoop()) {
+        hidScanInput();
+        u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
+        if (kDown & KEY_MINUS) {
+            TriPlayer::stopSysmodule();
+            break;
+        }
+
+        if (kDown & KEY_PLUS) {
+            break;
+        }
+
+        if (kDown & KEY_A) {
+            runTest(TriPlayer::noInOutMsg, "No in/out msg: ");
+        }
+
+        if (kDown & KEY_B) {
+            runTest(TriPlayer::inMsg, "In msg: ");
+        }
+
+        if (kDown & KEY_X) {
+            runTest(TriPlayer::outMsg, "Out msg: ");
+        }
+
+        if (kDown & KEY_Y) {
+            runTest(TriPlayer::inOutMsg, "In/out msg: ");
+        }
+
+        if (kDown & KEY_DRIGHT) {
+            runTest(TriPlayer::outBuf, "Out buffer: ");
+        }
+
+        if (kDown & KEY_DDOWN) {
+            runTest(TriPlayer::inBuf, "In buffer: ");
+        }
+
+        if (kDown & KEY_DLEFT) {
+            runTest(TriPlayer::outMsgInBuf, "Out msg, in buffer: ");
+        }
+
+        if (kDown & KEY_DUP) {
+            runTest(TriPlayer::inMsgOutBuf, "In msg, out buffer: ");
+        }
+
+        consoleUpdate(nullptr);
+    }
+
+    TriPlayer::exit();
+    consoleExit(nullptr);
+    return 0;
+}
+
+>>> Interface:
+
+uint32_t noInOutMsg();
+uint32_t inMsg();
+uint32_t outMsg();
+uint32_t inOutMsg();
+uint32_t outBuf();
+uint32_t inBuf();
+uint32_t outMsgInBuf();
+uint32_t inMsgOutBuf();
+
+uint32_t noInOutMsg() {
+    return serviceDispatch(service, 0);
+}
+
+uint32_t inMsg() {
+    int num = 0x11;
+    return serviceDispatchIn(service, 1, num);
+}
+
+uint32_t outMsg() {
+    int num;
+    Result rc = serviceDispatchOut(service, 2, num);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    if (num != 0x22) {
+        return -1;
+    }
+    return 0;
+}
+
+uint32_t inOutMsg() {
+    int num2 = 0x33;
+    int num;
+    Result rc = serviceDispatchInOut(service, 3, num2, num);
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    if (num != 0x333) {
+        return -1;
+    }
+    return 0;
+}
+
+uint32_t outBuf() {
+    unsigned char buf[6] = {0};
+    Result rc = serviceDispatch(service, 4,
+        .buffer_attrs = {SfBufferAttr_Out | SfBufferAttr_HipcMapAlias},
+        .buffers = {{buf, sizeof(buf)}},
+    );
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    if (!(buf[0] == 1 && buf[1] == 2 && buf[2] == 3 && buf[3] == 4 && buf[4] == 5 && buf[5] == 6)) {
+        return -1;
+    }
+    return 0;
+}
+
+uint32_t inBuf() {
+    unsigned char buf[6] = {1, 2, 3, 4, 5, 6};
+    return serviceDispatch(service, 5,
+        .buffer_attrs = {SfBufferAttr_In | SfBufferAttr_HipcMapAlias},
+        .buffers = {{buf, sizeof(buf)}},
+    );
+}
+
+uint32_t outMsgInBuf() {
+    unsigned char buf[6] = {1, 2, 3, 4, 5, 6};
+    int num;
+    Result rc = serviceDispatchOut(service, 6, num,
+        .buffer_attrs = {SfBufferAttr_In | SfBufferAttr_HipcMapAlias},
+        .buffers = {{buf, sizeof(buf)}},
+    );
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    if (num != 0x66) {
+        return -1;
+    }
+    return 0;
+}
+
+uint32_t inMsgOutBuf() {
+    unsigned char buf[6] = {0};
+    int num = 0x77;
+    Result rc = serviceDispatchIn(service, 7, num,
+        .buffer_attrs = {SfBufferAttr_Out | SfBufferAttr_HipcMapAlias},
+        .buffers = {{buf, sizeof(buf)}},
+    );
+    if (R_FAILED(rc)) {
+        return rc;
+    }
+    if (!(buf[0] == 1 && buf[1] == 2 && buf[2] == 3 && buf[3] == 4 && buf[4] == 5 && buf[5] == 6)) {
+        return -1;
+    }
+    return 0;
+}
+
+>>> Sys:
+
+switch (request->cmd()) {
+    case 0:
+        // Do nothing
+        break;
+
+    case 1: {
+        int num = 0;
+        request->readRequestValue(num);
+        if (num != 0x11) {
+            Log::writeError("not 0x11: " + std::to_string(num));
+        }
+        break;
+    }
+
+    case 2: {
+        int num = 0x22;
+        request->appendReplyValue(num);
+        break;
+    }
+
+    case 3: {
+        int in = 0;
+        int out = 0x333;
+        request->readRequestValue(in);
+        if (in != 0x33) {
+            Log::writeError("not 0x33: " + std::to_string(in));
+        }
+        request->appendReplyValue(out);
+        break;
+    }
+
+    case 4: {
+        unsigned char buf[6] = {1, 2, 3, 4, 5, 6};
+        request->appendReplyData(buf[0]);
+        request->appendReplyData(buf[1]);
+        request->appendReplyData(buf[2]);
+        request->appendReplyData(buf[3]);
+        request->appendReplyData(buf[4]);
+        request->appendReplyData(buf[5]);
+        break;
+    }
+
+    case 5: {
+        unsigned char buf[6] = {0};
+        request->readRequestData(buf[0]);
+        request->readRequestData(buf[1]);
+        request->readRequestData(buf[2]);
+        request->readRequestData(buf[3]);
+        request->readRequestData(buf[4]);
+        request->readRequestData(buf[5]);
+        if (!(buf[0] == 1 && buf[1] == 2 && buf[2] == 3 && buf[3] == 4 && buf[4] == 5 && buf[5] == 6)) {
+            Log::writeError("in buf not correct (just buf)");
+        }
+        break;
+    }
+
+    case 6: {
+        int num = 0x66;
+        unsigned char buf[6] = {0};
+        request->readRequestData(buf[0]);
+        request->readRequestData(buf[1]);
+        request->readRequestData(buf[2]);
+        request->readRequestData(buf[3]);
+        request->readRequestData(buf[4]);
+        request->readRequestData(buf[5]);
+        if (!(buf[0] == 1 && buf[1] == 2 && buf[2] == 3 && buf[3] == 4 && buf[4] == 5 && buf[5] == 6)) {
+            Log::writeError("in buf not correct (with val)");
+        }
+        request->appendReplyValue(num);
+        break;
+    }
+
+    case 7: {
+        int num = 0;
+        unsigned char buf[6] = {1, 2, 3, 4, 5, 6};
+        request->appendReplyData(buf[0]);
+        request->appendReplyData(buf[1]);
+        request->appendReplyData(buf[2]);
+        request->appendReplyData(buf[3]);
+        request->appendReplyData(buf[4]);
+        request->appendReplyData(buf[5]);
+        request->readRequestValue(num);
+        if (num != 0x77) {
+            Log::writeError("not 0x77: " + std::to_string(num));
+        }
+        break;
+    }
+
+    case static_cast<uint32_t>(Ipc::Command::Quit):
+        this->exit_ = true;
+        break;
+
+    default:
+        Log::writeError("what");
+        break;
+}
+
+return Ipc::Result::Ok;

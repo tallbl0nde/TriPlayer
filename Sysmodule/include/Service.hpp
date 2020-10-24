@@ -5,13 +5,17 @@
 #include <ctime>
 #include <deque>
 #include <shared_mutex>
-#include "Audio.hpp"
-#include "Config.hpp"
-#include "Database.hpp"
-#include "PlayQueue.hpp"
-#include "Protocol.hpp"
-#include "socket/Listener.hpp"
-#include "sources/Source.hpp"
+#include "ipc/Command.hpp"
+#include "ipc/Result.hpp"
+#include "ipc/Server.hpp"
+#include "Types.hpp"
+
+// Forward declare pointers
+class Audio;
+class Config;
+class Database;
+class PlayQueue;
+class Source;
 
 // Class which manages all actions taken when receiving a command
 // Essentially encapsulates everything
@@ -31,12 +35,12 @@ class MainService {
         Config * cfg;
         // Database object
         Database * db;
+        // IPC Server which clients interact with
+        Ipc::Server * ipcServer;
         // Main queue of songs
         PlayQueue * queue;
         // Queue of 'queued' songs
         std::deque<SongID> subQueue;
-        // Listening socket to listen and accept new connections
-        Socket::Listener * listener;
 
         // Whether to stop loop and exit
         std::atomic<bool> exit_;
@@ -51,6 +55,10 @@ class MainService {
         // Status vars for comm. between threads
         std::atomic<SongAction> songAction; // (should this be a queue?)
         std::atomic<double> seekTo;
+        // Whether to listen for events
+        std::atomic<bool> watchGpio;
+        std::atomic<bool> watchHid;
+        std::atomic<bool> watchSleep;
 
         // Mutex for accessing queue
         std::shared_mutex qMutex;
@@ -61,6 +69,14 @@ class MainService {
         // Source currently playing
         Source * source;
 
+        // Mutex for access combo strings
+        std::shared_mutex cMutex;
+        // Variables for reacting to press combinations
+        std::atomic<bool> combosUpdated;
+        std::string comboNextString;
+        std::string comboPlayString;
+        std::string comboPrevString;
+
         // Variables used for 'locking' DB access
         std::mutex dbMutex;
         std::atomic<bool> dbLocked;
@@ -68,20 +84,26 @@ class MainService {
         // Reads config from disk and sets up relevant objects
         void updateConfig();
 
-        // Function run by transfer sockets
-        void commandThread(Socket::Transfer *);
+        // Function run to handle an IPC Request
+        Ipc::Result commandThread(Ipc::Request *);
 
     public:
-        // Constructor initializes socket related things
+        // Constructor initializes everything
         MainService();
 
         // Call to exit and prepare for deletion (will stop loop)
         void exit();
 
+        // Listens for 'headphones unplugged' event and pauses playback
+        void gpioEventThread();
+        // Listens for input events and executes required commands on button presses
+        void hidEventThread();
+        // Handles interactions from client(s)
+        void ipcThread();
         // Handles decoding and shifting between songs due to commands
         void playbackThread();
-        // Listens for connections and spawns new threads for each connection
-        void socketThread();
+        // Listens for 'sleep' event and pauses playback
+        void sleepEventThread();
 
         ~MainService();
 };

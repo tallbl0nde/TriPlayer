@@ -460,6 +460,156 @@ bool Config::setSearchMaxPhrases(const int i) {
     return ok;
 }
 
+bool Config::sysKeyComboEnabled() {
+    if (!this->sysIni) {
+        Log::writeError("[CONFIG] Can't access sysmodule config as object was not prepared");
+        return false;
+    }
+
+    return this->sysIni->getbool("General", "key_combo_enabled");
+}
+
+bool Config::setSysKeyComboEnabled(const bool b) {
+    if (!this->sysIni) {
+        Log::writeError("[CONFIG] Can't access sysmodule config as object was not prepared");
+        return false;
+    }
+
+    bool ok = this->sysIni->put("General", "key_combo_enabled", (b ? "Yes" : "No"));
+    if (!ok) {
+        Log::writeError("[CONFIG] Failed to set (Sysmodule) key_combo_enabled");
+    }
+    return ok;
+}
+
+std::vector<NX::Button> Config::sysKeyComboNext() {
+    if (!this->sysIni) {
+        Log::writeError("[CONFIG] Can't access sysmodule config as object was not prepared");
+        return NX::stringToCombo("L+DRIGHT+RSTICK");
+    }
+
+    std::string str = this->sysIni->gets("General", "key_combo_next");
+    if (str.empty()) {
+        Log::writeError("[CONFIG] Failed to get (Sysmodule) key_combo_next");
+    }
+
+    return NX::stringToCombo(str.empty() ? "L+DRIGHT+RSTICK" : str);
+}
+
+bool Config::setSysKeyComboNext(const std::vector<NX::Button> & combo) {
+    if (!this->sysIni) {
+        Log::writeError("[CONFIG] Can't access sysmodule config as object was not prepared");
+        return false;
+    }
+
+    std::string str = NX::comboToString(combo);
+    bool ok = this->sysIni->put("General", "key_combo_next", str);
+    if (!ok) {
+        Log::writeError("[CONFIG] Failed to set (Sysmodule) key_combo_next");
+    }
+    return ok;
+}
+
+std::vector<NX::Button> Config::sysKeyComboPlay() {
+    if (!this->sysIni) {
+        Log::writeError("[CONFIG] Can't access sysmodule config as object was not prepared");
+        return NX::stringToCombo("L+DUP+RSTICK");
+    }
+
+    std::string str = this->sysIni->gets("General", "key_combo_play");
+    if (str.empty()) {
+        Log::writeError("[CONFIG] Failed to get (Sysmodule) key_combo_play");
+    }
+
+    return NX::stringToCombo(str.empty() ? "L+DUP+RSTICK" : str);
+}
+
+bool Config::setSysKeyComboPlay(const std::vector<NX::Button> & combo) {
+    if (!this->sysIni) {
+        Log::writeError("[CONFIG] Can't access sysmodule config as object was not prepared");
+        return false;
+    }
+
+    std::string str = NX::comboToString(combo);
+    bool ok = this->sysIni->put("General", "key_combo_play", str);
+    if (!ok) {
+        Log::writeError("[CONFIG] Failed to set (Sysmodule) key_combo_play");
+    }
+    return ok;
+}
+
+std::vector<NX::Button> Config::sysKeyComboPrev() {
+    if (!this->sysIni) {
+        Log::writeError("[CONFIG] Can't access sysmodule config as object was not prepared");
+        return NX::stringToCombo("L+DLEFT+RSTICK");
+    }
+
+    std::string str = this->sysIni->gets("General", "key_combo_prev");
+    if (str.empty()) {
+        Log::writeError("[CONFIG] Failed to get (Sysmodule) key_combo_prev");
+    }
+
+    return NX::stringToCombo(str.empty() ? "L+DLEFT+RSTICK" : str);
+}
+
+bool Config::setSysKeyComboPrev(const std::vector<NX::Button> & combo) {
+    if (!this->sysIni) {
+        Log::writeError("[CONFIG] Can't access sysmodule config as object was not prepared");
+        return false;
+    }
+
+    std::string str = NX::comboToString(combo);
+    bool ok = this->sysIni->put("General", "key_combo_prev", str);
+    if (!ok) {
+        Log::writeError("[CONFIG] Failed to set (Sysmodule) key_combo_prev");
+    }
+    return ok;
+}
+
+bool Config::sysPauseOnSleep() {
+    if (!this->sysIni) {
+        Log::writeError("[CONFIG] Can't access sysmodule config as object was not prepared");
+        return false;
+    }
+
+    return this->sysIni->getbool("General", "pause_on_sleep");
+}
+
+bool Config::setSysPauseOnSleep(const bool b) {
+    if (!this->sysIni) {
+        Log::writeError("[CONFIG] Can't access sysmodule config as object was not prepared");
+        return false;
+    }
+
+    bool ok = this->sysIni->put("General", "pause_on_sleep", (b ? "Yes" : "No"));
+    if (!ok) {
+        Log::writeError("[CONFIG] Failed to set (Sysmodule) pause_on_sleep");
+    }
+    return ok;
+}
+
+bool Config::sysPauseOnUnplug() {
+    if (!this->sysIni) {
+        Log::writeError("[CONFIG] Can't access sysmodule config as object was not prepared");
+        return false;
+    }
+
+    return this->sysIni->getbool("General", "pause_on_unplug");
+}
+
+bool Config::setSysPauseOnUnplug(const bool b) {
+    if (!this->sysIni) {
+        Log::writeError("[CONFIG] Can't access sysmodule config as object was not prepared");
+        return false;
+    }
+
+    bool ok = this->sysIni->put("General", "pause_on_unplug", (b ? "Yes" : "No"));
+    if (!ok) {
+        Log::writeError("[CONFIG] Failed to set (Sysmodule) pause_on_unplug");
+    }
+    return ok;
+}
+
 Log::Level Config::sysLogLevel() {
     if (!this->sysIni) {
         Log::writeError("[CONFIG] Can't access sysmodule config as object was not prepared");

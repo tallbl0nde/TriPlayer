@@ -55,6 +55,10 @@ namespace Utils::NX {
     // Returns true on success, false otherwise
     bool launchProgram(unsigned long long);
 
+    // Check if the specified program is running
+    // Returns true if so, false if not
+    bool runningProgram(unsigned long long);
+
     // Terminate the program with the given program id
     // Returns true on success, false otherwise
     bool terminateProgram(unsigned long long);

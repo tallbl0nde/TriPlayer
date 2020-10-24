@@ -25,7 +25,7 @@ namespace Frame {
                 l->setMoreColour(this->app->theme()->muted());
                 l->setTextColour(this->app->theme()->FG());
                 l->setCallback([this, i](){
-                    this->playNewQueue("Your Songs", this->songIDs, i);
+                    this->playNewQueue("Your Songs", this->songIDs, i, false);
                 });
                 SongID id = m[i].ID;
                 l->setMoreCallback([this, id]() {

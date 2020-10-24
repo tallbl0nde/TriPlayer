@@ -1,13 +1,14 @@
-#include <future>
-#include "Log.hpp"
+#include "nx/Audio.hpp"
+#include "nx/NX.hpp"
 #include "Service.hpp"
 #include "sources/MP3.hpp"
+#include <switch.h>
 
 // Heap size:
 // DB: ~0.5MB
+// IPC: ~0.2MB
 // Queue: ~0.2MB
-// MP3: ~0.5MB
-// Sockets: ~0.5MB
+// MP3: ~0.3MB
 #define INNER_HEAP_SIZE (size_t)(2 * 1024 * 1024)
 
 // It hangs if I don't use C... I wish I knew why!
@@ -35,87 +36,66 @@ void __libnx_initheap(void) {
     fake_heap_end   = (char*)addr + size;
 }
 
-// Init services on start
 void __appInit(void) {
-    if (R_FAILED(smInitialize())) {
-        fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
-    }
+    // Initialize required services
+    NX::startServices();
 
-    // FS + Log
-    if (R_FAILED(fsInitialize())) {
-        fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
-    }
-    fsdevMountSdmc();
-
-    // Open the log file, defaulting to Warning level
-    Log::openFile("/switch/TriPlayer/sysmodule.log", Log::Level::Warning);
-
-    // Sockets use small buffers
-    constexpr SocketInitConfig sockCfg = {
-        .bsdsockets_version = 1,
-
-        .tcp_tx_buf_size = 0x1000,
-        .tcp_rx_buf_size = 0x1000,
-        .tcp_tx_buf_max_size = 0x3000,
-        .tcp_rx_buf_max_size = 0x3000,
-
-        .udp_tx_buf_size = 0x0,
-        .udp_rx_buf_size = 0x0,
-
-        .sb_efficiency = 1,
-    };
-    if (R_FAILED(socketInitialize(&sockCfg))) {
-        Log::writeError("[SOCKET] Failed to initialize sockets!");
-    }
-
-    // Audio
-    audrenInitialize(&audrenCfg);
-    Audio::getInstance();
-    audrenStartAudioRenderer();
+    // Prepare audio libraries
     MP3::initLib();
 }
 
-// Close services on quit
 void __appExit(void) {
-    // In reverse order
-
-    // Audio
+    // Clean up audio libraries first
     MP3::freeLib();
-    audrenStopAudioRenderer();
-    delete Audio::getInstance();
-    audrenExit();
 
-    // Socket
-    socketExit();
+    // Finally stop services
+    NX::stopServices();
+}
 
-    // Close log
-    Log::closeFile();
+// Wrappers to call methods on MainService object
+void audioThread(void * arg) {
+    static_cast<Audio *>(arg)->process();
+}
 
-    // FS
-    fsdevUnmountAll();
-    fsExit();
-    smExit();
+void serviceGpioThread(void * arg) {
+    static_cast<MainService *>(arg)->gpioEventThread();
+}
+
+void serviceHidThread(void * arg) {
+    static_cast<MainService *>(arg)->hidEventThread();
+}
+
+void serviceIpcThread(void * arg) {
+    static_cast<MainService *>(arg)->ipcThread();
+}
+
+void servicePowerThread(void * arg) {
+    static_cast<MainService *>(arg)->sleepEventThread();
 }
 
 int main(int argc, char * argv[]) {
     // Create Service
-    MainService * s = new MainService();
+    MainService * service = new MainService();
 
-    // Start audio thread
-    std::future<void> audioThread = std::async(std::launch::async, &Audio::process, Audio::getInstance());
-    // Start decoding thread
-    std::future<void> playbackThread = std::async(std::launch::async, &MainService::playbackThread, s);
+    // Spawn threads
+    NX::Thread::create("audio", audioThread, Audio::getInstance());
+    NX::Thread::create("gpio", serviceGpioThread, service);
+    NX::Thread::create("hid", serviceHidThread, service);
+    NX::Thread::create("ipc", serviceIpcThread, service);
+    NX::Thread::create("power", servicePowerThread, service);
 
-    // This thread is responsible for handling communication
-    s->socketThread();
+    // Use this thread to handle playback (we need the higher priority!)
+    service->playbackThread();
 
-    // Join threads (only run after service has exit signal)
+    // Join threads (only executed after service has exit signal)
     Audio::getInstance()->exit();
-    audioThread.get();
-    playbackThread.get();
+    NX::Thread::join("power");
+    NX::Thread::join("ipc");
+    NX::Thread::join("hid");
+    NX::Thread::join("gpio");
+    NX::Thread::join("audio");
 
-    // Now that it's done we can delete!
-    delete s;
-
+    // Finally delete service
+    delete service;
     return 0;
 }

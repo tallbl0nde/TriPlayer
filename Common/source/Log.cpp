@@ -4,7 +4,7 @@
 #include <mutex>
 
 // Log file pointer
-static FILE * file = nullptr;
+static std::atomic<FILE *> file = nullptr;
 // Log level
 static std::atomic<Log::Level> level = Log::Level::None;
 // Mutex to handle actually writing to file
@@ -16,13 +16,13 @@ static void writeString(std::string msg) {
     }
 
     // Get timestamp
+    std::scoped_lock<std::mutex> mtx(mutex);
     std::time_t time = std::time(nullptr);
     struct tm * t = std::localtime(&time);
     char buf[12];
     std::strftime(buf, sizeof(buf), "[%T] ", t);
 
     // Lock stream and write!
-    std::lock_guard<std::mutex> mtx(mutex);
     fprintf(file, "%s%s\n", buf, msg.c_str());
     fflush(file);
 }

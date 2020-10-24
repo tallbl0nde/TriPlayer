@@ -1,7 +1,6 @@
 #include <algorithm>
-#include <ctime>
-#include <random>
 #include "PlayQueue.hpp"
+#include "utils/Random.hpp"
 
 // Maximum number of IDs (reserved at creation)
 #define MAX_SIZE 25000  // Requires 150kB (100kB for IDs, 50kB for position)
@@ -74,6 +73,8 @@ void PlayQueue::moveIDDown(unsigned short pos, unsigned short amt) {
             PlayQueuePair tmp = this->queue[i-1];
             this->queue[i-1] = this->queue[i];
             this->queue[i] = tmp;
+            this->queue[i-1].pos--;
+            this->queue[i].pos++;
         }
 
     } else {
@@ -81,8 +82,6 @@ void PlayQueue::moveIDDown(unsigned short pos, unsigned short amt) {
             PlayQueuePair tmp = this->queue[i-1];
             this->queue[i-1] = this->queue[i];
             this->queue[i] = tmp;
-            this->queue[i-1].pos--;
-            this->queue[i].pos++;
         }
     }
 }
@@ -101,19 +100,19 @@ void PlayQueue::moveIDUp(unsigned short pos, unsigned short amt) {
     // Move (need to update positions if not shuffled)
     unsigned short mv = pos - amt;
     if (!this->shuffled) {
-        for (size_t i = pos - 1; i >= mv; i--) {
-            PlayQueuePair tmp = this->queue[i+1];
-            this->queue[i+1] = this->queue[i];
-            this->queue[i] = tmp;
-        }
-
-    } else {
-        for (size_t i = pos - 1; i >= mv; i--) {
+        for (size_t i = pos - 1; i >= mv && i <= MAX_SIZE; i--) {
             PlayQueuePair tmp = this->queue[i+1];
             this->queue[i+1] = this->queue[i];
             this->queue[i] = tmp;
             this->queue[i+1].pos++;
             this->queue[i].pos--;
+        }
+
+    } else {
+        for (size_t i = pos - 1; i >= mv && i <= MAX_SIZE; i--) {
+            PlayQueuePair tmp = this->queue[i+1];
+            this->queue[i+1] = this->queue[i];
+            this->queue[i] = tmp;
         }
     }
 }
@@ -181,13 +180,11 @@ bool PlayQueue::isShuffled() {
 }
 
 void PlayQueue::shuffle() {
+    this->shuffled = true;
+
     if (this->queue.size() == 0) {
         return;
     }
-
-    // RNG
-    std::default_random_engine gen;
-    gen.seed(std::time(nullptr));
 
     // Set current song as first
     PlayQueuePair tmp = this->queue[this->idx];
@@ -197,14 +194,11 @@ void PlayQueue::shuffle() {
 
     // Uses the Yates-Fisher algorithm
     for (size_t i = this->queue.size() - 1; i > 1; i--) {
-        std::uniform_int_distribution<int> dist(1, i);
-        int r = dist(gen);
+        size_t r = Utils::Random::getSizeT(1, i);
         tmp = this->queue[i];
         this->queue[i] = this->queue[r];
         this->queue[r] = tmp;
     }
-
-    this->shuffled = true;
 }
 
 void PlayQueue::unshuffle() {

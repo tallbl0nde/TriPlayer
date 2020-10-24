@@ -235,7 +235,7 @@ namespace Frame {
             l->setTextColour(this->app->theme()->FG());
             std::string phrase = keyboard.buffer;
             l->setCallback([this, phrase, i](){
-                this->playNewQueue("'" + phrase + "'", this->songIDs, i);
+                this->playNewQueue("'" + phrase + "'", this->songIDs, i, false);
             });
             SongID id = this->songs[i].ID;
             l->setMoreCallback([this, id]() {
@@ -340,7 +340,7 @@ namespace Frame {
                 for (size_t i = 0; i < v.size(); i++) {
                     ids.push_back(v[i].song.ID);
                 }
-                this->playNewQueue(m.name, ids, 0);
+                this->playNewQueue(m.name, ids, 0, true);
             }
             this->menu->close();
         });
@@ -422,7 +422,7 @@ namespace Frame {
             for (size_t i = 0; i < v.size(); i++) {
                 ids.push_back(v[i].ID);
             }
-            this->playNewQueue(m.name, ids, 0);
+            this->playNewQueue(m.name, ids, 0, true);
             this->menu->close();
         });
         this->menu->addButton(b);
@@ -500,7 +500,7 @@ namespace Frame {
             for (size_t i = 0; i < v.size(); i++) {
                 ids.push_back(v[i].ID);
             }
-            this->playNewQueue(m.name, ids, 0);
+            this->playNewQueue(m.name, ids, 0, true);
             this->menu->close();
         });
         this->menu->addButton(b);

@@ -5,8 +5,11 @@
 #include <string>
 #include "sources/Source.hpp"
 
-// Forward declaration as we only need the pointer here
+// Forward declaration as we only need the pointers here
 typedef struct mpg123_handle_struct mpg123_handle;
+namespace NX {
+    class File;
+};
 
 // Extends Source to support MP3 files
 // This class is not thread-safe!
@@ -14,6 +17,9 @@ class MP3 : public Source {
     private:
         // mpg123 instance
         static mpg123_handle * mpg;
+
+        // Object associated with file
+        NX::File * file;
 
         // Logs most recent error
         static void logErrorMsg();

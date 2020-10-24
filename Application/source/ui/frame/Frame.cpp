@@ -57,7 +57,7 @@ namespace Frame {
         this->changeFrame = f;
     }
 
-    void Frame::setPlayNewQueueFunc(std::function<void(const std::string &, const std::vector<SongID> &, const size_t)> f) {
+    void Frame::setPlayNewQueueFunc(std::function<void(const std::string &, const std::vector<SongID> &, const size_t, const bool)> f) {
         this->playNewQueue = f;
     }
 

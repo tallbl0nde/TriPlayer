@@ -213,7 +213,7 @@ namespace Frame {
                 for (size_t i = 0; i < v.size(); i++) {
                     ids.push_back(v[i].song.ID);
                 }
-                this->playNewQueue(this->items[pos].meta.name, ids, 0);
+                this->playNewQueue(this->items[pos].meta.name, ids, 0, true);
             }
             this->menu->close();
         });
