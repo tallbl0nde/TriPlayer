@@ -82,7 +82,7 @@ namespace Screen {
             void showAddToPlaylist(std::function<void(PlaylistID)>);
 
             // Shows 'Confirm queue' overlay and adds to queue
-            void showConfirmQueue(const std::string &, const std::vector<SongID> &, const size_t);
+            void showConfirmQueue(const std::string &, const std::vector<SongID> &, const size_t, const bool);
 
         public:
             Home(Main::Application *);

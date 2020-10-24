@@ -13,6 +13,7 @@
 #include "ui/frame/Search.hpp"
 #include "ui/frame/Songs.hpp"
 #include "ui/screen/Home.hpp"
+#include "utils/Random.hpp"
 
 namespace Screen {
     Home::Home(Main::Application * a) : Screen(a) {
@@ -94,7 +95,7 @@ namespace Screen {
         this->app->addOverlay(this->addToPlMenu);
     }
 
-    void Home::showConfirmQueue(const std::string & str, const std::vector<SongID> & ids, const size_t pos) {
+    void Home::showConfirmQueue(const std::string & str, const std::vector<SongID> & ids, const size_t pos, const bool rand) {
         // Always recreate prompt
         delete this->confirmQueue;
         this->confirmQueue = new Aether::MessageBox();
@@ -103,10 +104,22 @@ namespace Screen {
         this->confirmQueue->addLeftButton("Cancel", [this]() {
             this->confirmQueue->close();
         });
-        this->confirmQueue->addRightButton("OK", [this, str, ids, pos]() {
+        this->confirmQueue->addRightButton("OK", [this, str, ids, pos, rand]() {
             this->confirmQueue->close();
+
+            // "Shuffle" locally first if requested
+            std::vector<SongID> vec;
+            if (rand && this->app->sysmodule()->shuffleMode() == ShuffleMode::On) {
+                vec = ids;
+                size_t pos = Utils::Random::getSizeT(0, ids.size()-1);
+                SongID tmp = vec[0];
+                vec[0] = vec[pos];
+                vec[pos] = tmp;
+            }
+
+            // Send queue
             this->app->sysmodule()->sendSetPlayingFrom(str);
-            this->app->sysmodule()->sendSetQueue(ids);
+            this->app->sysmodule()->sendSetQueue((vec.empty() ? ids : vec));
             this->app->sysmodule()->sendSetSongIdx(pos);
             this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
         });
@@ -316,12 +329,23 @@ namespace Screen {
         this->frame->setChangeFrameFunc([this](Frame::Type t, Frame::Action a, int id) {
             this->changeFrame(t, a, id);
         });
-        this->frame->setPlayNewQueueFunc([this](const std::string & str, const std::vector<SongID> & ids, const size_t pos) {
+        this->frame->setPlayNewQueueFunc([this](const std::string & str, const std::vector<SongID> & ids, const size_t pos, const bool rand) {
             if (this->app->config()->confirmClearQueue() && !this->app->sysmodule()->queue().empty()) {
-                this->showConfirmQueue(str, ids, pos);
+                this->showConfirmQueue(str, ids, pos, rand);
             } else {
+                // "Shuffle" locally first if requested
+                std::vector<SongID> vec;
+                if (rand && this->app->sysmodule()->shuffleMode() == ShuffleMode::On) {
+                    vec = ids;
+                    size_t pos = Utils::Random::getSizeT(0, ids.size()-1);
+                    SongID tmp = vec[0];
+                    vec[0] = vec[pos];
+                    vec[pos] = tmp;
+                }
+
+                // Send queue
                 this->app->sysmodule()->sendSetPlayingFrom(str);
-                this->app->sysmodule()->sendSetQueue(ids);
+                this->app->sysmodule()->sendSetQueue((vec.empty() ? ids : vec));
                 this->app->sysmodule()->sendSetSongIdx(pos);
                 this->app->sysmodule()->sendSetShuffle(this->app->sysmodule()->shuffleMode());
             }
