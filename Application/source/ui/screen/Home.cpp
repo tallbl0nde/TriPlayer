@@ -12,6 +12,7 @@
 #include "ui/frame/Queue.hpp"
 #include "ui/frame/Search.hpp"
 #include "ui/frame/Songs.hpp"
+#include "ui/frame/SongInfo.hpp"
 #include "ui/screen/Home.hpp"
 #include "utils/Random.hpp"
 
@@ -210,7 +211,7 @@ namespace Screen {
                 break;
 
             case Frame::Type::SongInfo:
-                // this->frame = new Frame::SongInfo(this->app, id);
+                this->frame = new Frame::SongInfo(this->app, id);
                 break;
 
             case Frame::Type::Queue:
