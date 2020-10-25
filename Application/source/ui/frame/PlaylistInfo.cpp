@@ -4,6 +4,7 @@
 #include "ui/frame/PlaylistInfo.hpp"
 #include "ui/overlay/FileBrowser.hpp"
 #include "utils/FS.hpp"
+#include "utils/Image.hpp"
 #include "utils/MP3.hpp"
 #include "utils/Utils.hpp"
 
@@ -198,6 +199,7 @@ namespace Frame {
         }
 
         // Set image path if needed
+        std::string oldPath = this->metadata.imagePath;
         if (this->updateImage) {
             if (!this->metadata.imagePath.empty()) {
                 this->metadata.imagePath = "";
@@ -207,23 +209,33 @@ namespace Frame {
             }
         }
 
+        // Copy new image to disk
+        if (this->updateImage && !this->metadata.imagePath.empty()) {
+            // Extract image (if needed) and resize
+            if (!this->newImagePath.empty()) {
+                Utils::Fs::readFile(this->newImagePath, this->dlBuffer);
+            }
+            bool resized = Utils::Image::resize(this->dlBuffer, 400, 400);
+            if (!resized) {
+                Log::writeWarning("[META] Couldn't resize playlist image, saving with original dimensions");
+            }
+
+            // Write (hopefully resized) to file
+            Utils::Fs::writeFile(this->metadata.imagePath, this->dlBuffer);
+        }
+
         // Commit changes to db (acquires lock and then writes)
         this->app->lockDatabase();
         bool ok = this->app->database()->updatePlaylist(this->metadata);
         this->app->unlockDatabase();
 
-        // If updated ok actually manipulate image file(s)
-        if (ok && this->updateImage) {
-            // First delete old image if needed
-            if (!this->metadata.imagePath.empty()) {
-                Utils::Fs::deleteFile(this->metadata.imagePath);
-            }
+        // Delete image if everything succeeded, revert copied image on an error
+        if (this->updateImage) {
+            if (ok && !oldPath.empty()) {
+                Utils::Fs::deleteFile(oldPath);
 
-            // Save new image if there is one
-            if (!this->newImagePath.empty()) {
-                Utils::Fs::copyFile(this->newImagePath, this->imagePath->string());
-            } else if (!this->dlBuffer.empty()) {
-                Utils::Fs::writeFile(this->imagePath->string(), this->dlBuffer);
+            } else if (!ok && !this->metadata.imagePath.empty()) {
+                Utils::Fs::deleteFile(this->metadata.imagePath);
             }
         }
 

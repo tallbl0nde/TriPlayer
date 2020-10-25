@@ -3,6 +3,7 @@
 #include "ui/frame/settings/AppMetadata.hpp"
 #include "ui/overlay/ProgressBox.hpp"
 #include "utils/FS.hpp"
+#include "utils/Image.hpp"
 #include "utils/metadata/Metadata.hpp"
 
 namespace Frame::Settings {
@@ -109,7 +110,12 @@ namespace Frame::Settings {
             // Search for and download image using album name (skips over any errors)
             buffer.clear();
             if (Metadata::downloadAlbumImage(albums[i].name, buffer, id) == Metadata::DownloadResult::Success) {
-                // If successful, write to file
+                // If successful, resize and write to file
+                bool resized = Utils::Image::resize(buffer, 400, 400);
+                if (!resized) {
+                    Log::writeWarning("[META] Couldn't resize album image, saving with original dimensions");
+                }
+
                 std::string filename = Path::App::AlbumImageFolder + std::to_string(id) + ".png";
                 if (!Utils::Fs::writeFile(filename, buffer)) {
                     continue;
@@ -152,7 +158,12 @@ namespace Frame::Settings {
             // Search for and download image using artist name (skips over any errors)
             buffer.clear();
             if (Metadata::downloadArtistImage(artists[i].name, buffer, id) == Metadata::DownloadResult::Success) {
-                // If successful, write to file
+                // If successful, resize and write to file
+                bool resized = Utils::Image::resize(buffer, 400, 400);
+                if (!resized) {
+                    Log::writeWarning("[META] Couldn't resize artist image, saving with original dimensions");
+                }
+
                 std::string filename = Path::App::ArtistImageFolder + std::to_string(id) + ".png";
                 if (!Utils::Fs::writeFile(filename, buffer)) {
                     continue;

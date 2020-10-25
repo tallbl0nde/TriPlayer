@@ -28,6 +28,8 @@ namespace Utils::Fs {
 
     // Delete a file
     void deleteFile(const std::string &);
+    // Read an entire file into the buffer
+    bool readFile(const std::string &, std::vector<unsigned char> &);
     // Write entire contents of buffer to file
     bool writeFile(const std::string &, const std::vector<unsigned char> &);
 };

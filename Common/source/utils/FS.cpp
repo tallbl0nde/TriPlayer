@@ -43,9 +43,32 @@ namespace Utils::Fs {
         return std::filesystem::path(path).parent_path();
     }
 
-
     void deleteFile(const std::string & path) {
         std::filesystem::remove(path);
+    }
+
+    bool readFile(const std::string & path, std::vector<unsigned char> & buffer) {
+        // Open file
+        std::FILE * fp = std::fopen(path.c_str(), "rb");
+        if (fp == nullptr) {
+            return false;
+        }
+
+        // Get file size
+        std::fseek(fp, 0, SEEK_END);
+        size_t bytes = std::ftell(fp);
+        std::fseek(fp, 0, SEEK_SET);
+
+        // Don't read files larger than 50MB
+        if (bytes > 50 * 1024 * 1024) {
+            return false;
+        }
+
+        // Increase buffer size and copy
+        buffer.resize(bytes);
+        std::fread(&buffer[0], sizeof(unsigned char), bytes, fp);
+        std::fclose(fp);
+        return true;
     }
 
     bool writeFile(const std::string & path, const std::vector<unsigned char> & data) {

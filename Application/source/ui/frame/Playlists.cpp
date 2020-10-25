@@ -6,6 +6,7 @@
 #include "ui/overlay/ItemMenu.hpp"
 #include "ui/overlay/NewPlaylist.hpp"
 #include "utils/FS.hpp"
+#include "utils/Image.hpp"
 #include "utils/Utils.hpp"
 
 // New Playlist button dimensions
@@ -379,7 +380,10 @@ namespace Frame {
         // If added ok actually manipulate image file(s)
         if (ok) {
             if (!src.empty()) {
-                Utils::Fs::copyFile(src, this->newData.imagePath);
+                std::vector<unsigned char> buffer;
+                Utils::Fs::readFile(src, buffer);
+                Utils::Image::resize(buffer, 400, 400);
+                Utils::Fs::writeFile(this->newData.imagePath, buffer);
             }
             // Completely recreate list
             this->refreshList();

@@ -263,12 +263,14 @@ namespace Utils::Image {
                 break;
 
             default:
+                Log::writeError("[IMAGE] Couldn't determine image format");
                 return false;
                 break;
         }
 
         // Stop if we have no pixels
         if (image.pixels.empty()) {
+            Log::writeInfo("[IMAGE] Extracted zero pixels from image; can't resize");
             return false;
         }
 
