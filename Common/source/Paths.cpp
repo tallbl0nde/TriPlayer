@@ -16,6 +16,9 @@ namespace Path {
         const std::string ConfigFile = Common::ConfigFolder + "app_config.ini";
         const std::string LogFile = Common::SwitchFolder + "application.log";
 
+        const std::string UpdateFolder = Common::SwitchFolder + "update/";
+        const std::string UpdateInfo = UpdateFolder + "meta.json";
+
         const std::string DefaultArtFile = "romfs:/misc/noalbum.png";
         const std::string DefaultArtistFile = "romfs:/misc/noartist.png";
 

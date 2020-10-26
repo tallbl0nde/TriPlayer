@@ -7,6 +7,7 @@ int main(void) {
     // Ensure directories exist
     Utils::Fs::createPath(Path::Common::ConfigFolder);
     Utils::Fs::createPath(Path::Common::SwitchFolder);
+    Utils::Fs::createPath(Path::App::UpdateFolder);
     Utils::Fs::createPath(Path::App::AlbumImageFolder);
     Utils::Fs::createPath(Path::App::ArtistImageFolder);
     Utils::Fs::createPath(Path::App::PlaylistImageFolder);

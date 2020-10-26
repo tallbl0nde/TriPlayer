@@ -4,9 +4,13 @@
 #include "ui/screen/Home.hpp"
 #include "ui/screen/Settings.hpp"
 #include "ui/screen/Splash.hpp"
+#include "Updater.hpp"
 #include "utils/Curl.hpp"
 #include "utils/MP3.hpp"
 #include "utils/NX.hpp"
+
+// Time in seconds to wait before checking for an update automatically
+constexpr size_t updateInterval = 21600;        // 6 hours
 
 namespace Main {
     Application::Application() : database_(SyncDatabase(new Database())) {
@@ -55,6 +59,17 @@ namespace Main {
 
         // Mark that we're playing media
         Utils::NX::setPlayingMedia(true);
+
+        // Start checking for an update
+        this->hasUpdate_ = false;
+        this->updateThread = std::async(std::launch::async, [this]() {
+            Updater updater = Updater();
+            if (updater.needsCheck(updateInterval)) {
+                this->hasUpdate_ = updater.checkForUpdate();
+            } else {
+                this->hasUpdate_ = updater.availableUpdate();
+            }
+        });
     }
 
     void Application::createExitPrompt() {
@@ -127,6 +142,10 @@ namespace Main {
         this->database_->openReadOnly();
     }
 
+    bool Application::hasUpdate() {
+        return this->hasUpdate_;
+    }
+
     Config * Application::config() {
         return this->config_;
     }
@@ -163,6 +182,9 @@ namespace Main {
     }
 
     Application::~Application() {
+        // Wait for update thread to terminate
+        this->updateThread.get();
+
         // Mark that we're no longer playing media
         Utils::NX::setPlayingMedia(false);
 

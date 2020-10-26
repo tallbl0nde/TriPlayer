@@ -55,6 +55,12 @@ namespace Utils::Curl {
         return c;
     }
 
+    static int progressHandler(void * f, curl_off_t dltotal, curl_off_t dlnow, curl_off_t uptotal, curl_off_t upnow) {
+        std::function<void(long long int, long long int)> * func = reinterpret_cast< std::function<void(long long, long long)> *>(f);
+        (*func)(dlnow, dltotal);
+        return 0;
+    }
+
     static void setErrorMsg(const std::string & msg) {
         Log::writeError("[CURL] " + msg);
         error_ = msg;
@@ -116,11 +122,11 @@ namespace Utils::Curl {
         CURL * c = initCurlHandle(url);
         CURLcode rc = curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, writeDataBuffer);
         if (rc != CURLE_OK) {
-            Log::writeWarning("[downloadToBuffer] Failed to setopt CURLOPT_WRITEFUNCTION: " + std::to_string(rc));
+            Log::writeWarning("[CURL] [downloadToBuffer] Failed to setopt CURLOPT_WRITEFUNCTION: " + std::to_string(rc));
         }
         rc = curl_easy_setopt(c, CURLOPT_WRITEDATA, &buf);
         if (rc != CURLE_OK) {
-            Log::writeWarning("[downloadToBuffer] Failed to setopt CURLOPT_WRITEDATA: " + std::to_string(rc));
+            Log::writeWarning("[CURL] [downloadToBuffer] Failed to setopt CURLOPT_WRITEDATA: " + std::to_string(rc));
         }
 
         // Perform request
@@ -142,7 +148,7 @@ namespace Utils::Curl {
         return (rc == CURLE_OK && code == 200);
     }
 
-    bool downloadToFile(const std::string & url, const std::string & path) {
+    bool downloadToFile(const std::string & url, const std::string & path, std::function<void(long long int, long long int)> progress) {
         if (!ready) {
             setErrorMsg("[downloadToFile] curl has not been initialized!");
             return false;
@@ -159,11 +165,25 @@ namespace Utils::Curl {
         CURL * c = initCurlHandle(url);
         CURLcode rc = curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, writeFile);
         if (rc != CURLE_OK) {
-            Log::writeWarning("[downloadToFile] Failed to setopt CURLOPT_WRITEFUNCTION: " + std::to_string(rc));
+            Log::writeWarning("[CURL] [downloadToFile] Failed to setopt CURLOPT_WRITEFUNCTION: " + std::to_string(rc));
         }
         rc = curl_easy_setopt(c, CURLOPT_WRITEDATA, &file);
         if (rc != CURLE_OK) {
-            Log::writeWarning("[downloadToFile] Failed to setopt CURLOPT_WRITEDATA: " + std::to_string(rc));
+            Log::writeWarning("[CURL] [downloadToFile] Failed to setopt CURLOPT_WRITEDATA: " + std::to_string(rc));
+        }
+        if (progress != nullptr) {
+            rc = curl_easy_setopt(c, CURLOPT_NOPROGRESS, 0L);
+            if (rc != CURLE_OK) {
+                Log::writeWarning("[CURL] [downloadToFile] Failed to setopt CURLOPT_NOPROGRESS: " + std::to_string(rc));
+            }
+            rc = curl_easy_setopt(c, CURLOPT_XFERINFODATA, reinterpret_cast<void *>(&progress));
+            if (rc != CURLE_OK) {
+                Log::writeWarning("[CURL] [downloadToFile] Failed to setopt CURLOPT_XFERINFODATA: " + std::to_string(rc));
+            }
+            rc = curl_easy_setopt(c, CURLOPT_XFERINFOFUNCTION, progressHandler);
+            if (rc != CURLE_OK) {
+                Log::writeWarning("[CURL] [downloadToFile] Failed to setopt CURLOPT_XFERINFOFUNCTION: " + std::to_string(rc));
+            }
         }
 
         // Perform request

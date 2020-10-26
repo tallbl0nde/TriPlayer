@@ -48,6 +48,10 @@ namespace Main {
             // Theme object
             Theme * theme_;
 
+            // Thread which checks for an update
+            std::atomic<bool> hasUpdate_;
+            std::future<void> updateThread;
+
             // Thread which handles sysmodule communication
             std::future<void> sysThread;
 
@@ -73,6 +77,9 @@ namespace Main {
             // Helper functions for database
             void lockDatabase();
             void unlockDatabase();
+
+            // Returns whether an update is available
+            bool hasUpdate();
 
             // Returns config pointer
             Config * config();

@@ -1,6 +1,7 @@
 #ifndef UTILS_CURL_HPP
 #define UTILS_CURL_HPP
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -17,7 +18,7 @@ namespace Utils::Curl {
     // Download a file into the provided buffer
     bool downloadToBuffer(const std::string &, std::vector<unsigned char> &);
     // Download a file from the provided URL to the given destination
-    bool downloadToFile(const std::string &, const std::string &);
+    bool downloadToFile(const std::string &, const std::string &, std::function<void(long long, long long)>);
     // Return the response in the provided string
     bool downloadToString(const std::string &, std::string &);
 

@@ -21,6 +21,9 @@ namespace Path {
         extern const std::string ConfigFile;
         extern const std::string LogFile;
 
+        extern const std::string UpdateFolder;
+        extern const std::string UpdateInfo;
+
         extern const std::string DefaultArtFile;
         extern const std::string DefaultArtistFile;
 
