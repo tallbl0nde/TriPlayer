@@ -22,7 +22,7 @@ namespace Frame {
         grid->setScrollBarColour(this->app->theme()->muted2());
 
         // Create items for artists
-        std::vector<Metadata::Artist> m = this->app->database()->getAllArtistMetadata();
+        std::vector<Metadata::Artist> m = this->app->database()->getAllArtistMetadata(Database::SortBy::ArtistAsc);
         if (m.size() > 0) {
             for (size_t i = 0; i < m.size(); i++) {
                 std::string img = (m[i].imagePath.empty() ? "romfs:/misc/noartist.png" : m[i].imagePath);

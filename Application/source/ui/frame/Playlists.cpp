@@ -94,7 +94,7 @@ namespace Frame {
         this->emptyMsg = nullptr;
         this->list->removeAllElements();
         this->items.clear();
-        std::vector<Metadata::Playlist> m = this->app->database()->getAllPlaylistMetadata();
+        std::vector<Metadata::Playlist> m = this->app->database()->getAllPlaylistMetadata(Database::SortBy::TitleAsc);
 
         // Show list if there are playlists
         if (m.size() > 0) {
@@ -208,7 +208,7 @@ namespace Frame {
         b->setText("Play");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
-            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID);
+            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID, Database::SortBy::TitleAsc);
             if (v.size() > 0) {
                 std::vector<SongID> ids;
                 for (size_t i = 0; i < v.size(); i++) {
@@ -228,7 +228,7 @@ namespace Frame {
         b->setText("Add to Queue");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
-            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID);
+            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID, Database::SortBy::TitleAsc);
             for (size_t i = 0; i < v.size(); i++) {
                 this->app->sysmodule()->sendAddToSubQueue(v[i].song.ID);
             }
@@ -246,7 +246,7 @@ namespace Frame {
             this->showAddToPlaylist([this, pos](PlaylistID i) {
                 if (i >= 0) {
                     // Get list of songs and add one-by-one to other playlist
-                    std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID);
+                    std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID, Database::SortBy::TitleAsc);
                     for (size_t j = 0; j < v.size(); j++) {
                         this->app->database()->addSongToPlaylist(i, v[j].song.ID);
                     }
@@ -422,7 +422,7 @@ namespace Frame {
 
     void Playlists::onPop(Type t) {
         // Get new metadata (if last playlist was deleted we can simply refresh the list)
-        std::vector<Metadata::Playlist> m = this->app->database()->getAllPlaylistMetadata();
+        std::vector<Metadata::Playlist> m = this->app->database()->getAllPlaylistMetadata(Database::SortBy::TitleAsc);
         if (!this->items.empty() && m.empty()) {
             this->refreshList();
             return;

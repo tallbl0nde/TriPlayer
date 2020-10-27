@@ -31,7 +31,7 @@ unsigned int durationOfQueue(std::vector<SongID> & queue, std::vector<Metadata::
 namespace Frame {
     Queue::Queue(Main::Application * a) : Frame(a) {
         // Get sorted list of metadata (faster than iterating per song)
-        this->songMeta = this->app->database()->getAllSongMetadata();
+        this->songMeta = this->app->database()->getAllSongMetadata(Database::SortBy::TitleAsc);
         std::sort(this->songMeta.begin(), this->songMeta.end(), [](const Metadata::Song lhs, const Metadata::Song rhs) {
             return lhs.ID < rhs.ID;
         });

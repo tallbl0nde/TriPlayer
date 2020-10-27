@@ -77,7 +77,7 @@ namespace Frame {
         this->addElement(c);
 
         // Get a list of the artist's albums
-        std::vector<Metadata::Album> md = this->app->database()->getAlbumMetadataForArtist(m.ID);
+        std::vector<Metadata::Album> md = this->app->database()->getAlbumMetadataForArtist(m.ID, Database::SortBy::AlbumAsc);
 
         // Create grid if there are albums
         if (md.size() > 0) {

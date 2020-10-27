@@ -24,7 +24,7 @@ namespace Frame {
         grid->setScrollBarColour(this->app->theme()->muted2());
 
         // Create items for albums
-        std::vector<Metadata::Album> m = this->app->database()->getAllAlbumMetadata();
+        std::vector<Metadata::Album> m = this->app->database()->getAllAlbumMetadata(Database::SortBy::AlbumAsc);
         if (m.size() > 0) {
             for (size_t i = 0; i < m.size(); i++) {
                 std::string img = (m[i].imagePath.empty() ? Path::App::DefaultArtFile : m[i].imagePath);

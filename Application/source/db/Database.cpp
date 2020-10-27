@@ -381,7 +381,7 @@ bool Database::updateAlbum(Metadata::Album m) {
     return ok;
 }
 
-std::vector<Metadata::Album> Database::getAllAlbumMetadata() {
+std::vector<Metadata::Album> Database::getAllAlbumMetadata(Database::SortBy sort) {
     std::vector<Metadata::Album> v;
     // Check we can read
     if (this->db->connectionType() == SQLite::Connection::None) {
@@ -389,13 +389,42 @@ std::vector<Metadata::Album> Database::getAllAlbumMetadata() {
         return v;
     }
 
+    // Determine how we're sorting the results
+    std::string orderBy = "";
+    switch (sort) {
+        case Database::SortBy::AlbumAsc:
+        default:
+            orderBy = "Albums.name ASC";
+            break;
+
+        case Database::SortBy::AlbumDsc:
+            orderBy = "Albums.name DESC";
+            break;
+
+        case Database::SortBy::ArtistAsc:
+            orderBy = "artist_name ASC, Albums.name ASC";
+            break;
+
+        case Database::SortBy::ArtistDsc:
+            orderBy = "artist_name DESC, Albums.name ASC";
+            break;
+
+        case Database::SortBy::SongsAsc:
+            orderBy = "song_count ASC, Albums.name ASC";
+            break;
+
+        case Database::SortBy::SongsDsc:
+            orderBy = "song_count DESC, Albums.name ASC";
+            break;
+    }
+
     // Create a Metadata::Album for each entry
-    bool ok = this->db->prepareAndExecuteQuery("SELECT album_id, Albums.name, CASE WHEN COUNT(DISTINCT artist_id) > 1 THEN 'Various Artists' ELSE Artists.name END, Albums.tadb_id, Albums.image_path, COUNT(*) FROM Songs JOIN Albums ON Songs.album_id = Albums.id JOIN Artists ON Songs.artist_id = Artists.id GROUP BY album_id ORDER BY Albums.name;");
+    bool ok = this->db->prepareAndExecuteQuery("SELECT album_id, Albums.name, CASE WHEN COUNT(DISTINCT artist_id) > 1 THEN 'Various Artists' ELSE Artists.name END AS artist_name, Albums.tadb_id, Albums.image_path, COUNT(*) AS song_count FROM Songs JOIN Albums ON Songs.album_id = Albums.id JOIN Artists ON Songs.artist_id = Artists.id GROUP BY album_id ORDER BY " + orderBy + ";");
     if (!ok) {
         this->setErrorMsg("[getAllAlbumMetadata] Unable to query for all albums");
         return v;
     }
-    while (ok  && this->db->hasRow()) {
+    while (ok && this->db->hasRow()) {
         Metadata::Album m;
         ok = this->db->getInt(0, m.ID);
         ok = keepFalse(ok, this->db->getString(1, m.name));
@@ -450,7 +479,7 @@ Metadata::Album Database::getAlbumMetadataForID(AlbumID id) {
     return m;
 }
 
-std::vector<Metadata::Album> Database::getAlbumMetadataForArtist(ArtistID id) {
+std::vector<Metadata::Album> Database::getAlbumMetadataForArtist(ArtistID id, Database::SortBy sort) {
     std::vector<Metadata::Album> v;
 
     // Check we can read
@@ -459,8 +488,29 @@ std::vector<Metadata::Album> Database::getAlbumMetadataForArtist(ArtistID id) {
         return v;
     }
 
+    // Determine how to sort the results
+    std::string orderBy = "";
+    switch (sort) {
+        case Database::SortBy::AlbumAsc:
+        default:
+            orderBy = "Albums.name ASC";
+            break;
+
+        case Database::SortBy::AlbumDsc:
+            orderBy = "Albums.name DESC";
+            break;
+
+        case Database::SortBy::SongsAsc:
+            orderBy = "song_count ASC, Albums.name ASC";
+            break;
+
+        case Database::SortBy::SongsDsc:
+            orderBy = "song_count DESC, Albums.name ASC";
+            break;
+    }
+
     // Create a Metadata::Album (note this query won't ever return 'Various Artists' as the artist but that's alright seeing how we're querying for an artist)
-    bool ok = this->db->prepareQuery("SELECT album_id, Albums.name, Artists.name, Albums.tadb_id, Albums.image_path, COUNT(*) FROM Songs JOIN Albums ON Songs.album_id = Albums.id JOIN Artists ON Songs.artist_id = Artists.id WHERE Songs.artist_id = ? GROUP BY Songs.album_id ORDER BY Albums.name;");
+    bool ok = this->db->prepareQuery("SELECT album_id, Albums.name, Artists.name, Albums.tadb_id, Albums.image_path, COUNT(*) AS song_count FROM Songs JOIN Albums ON Songs.album_id = Albums.id JOIN Artists ON Songs.artist_id = Artists.id WHERE Songs.artist_id = ? GROUP BY Songs.album_id ORDER BY " + orderBy + ";");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
@@ -526,7 +576,7 @@ bool Database::updateArtist(Metadata::Artist m) {
     return ok;
 }
 
-std::vector<Metadata::Artist> Database::getAllArtistMetadata() {
+std::vector<Metadata::Artist> Database::getAllArtistMetadata(Database::SortBy sort) {
     std::vector<Metadata::Artist> v;
     // Check we can read
     if (this->db->connectionType() == SQLite::Connection::None) {
@@ -534,8 +584,37 @@ std::vector<Metadata::Artist> Database::getAllArtistMetadata() {
         return v;
     }
 
+    // Determine how to sort results
+    std::string orderBy = "";
+    switch (sort) {
+        case Database::SortBy::ArtistAsc:
+        default:
+            orderBy = "Artists.name ASC";
+            break;
+
+        case Database::SortBy::ArtistDsc:
+            orderBy = "Artists.name DESC";
+            break;
+
+        case Database::SortBy::AlbumsAsc:
+            orderBy = "album_count ASC, Artists.name ASC";
+            break;
+
+        case Database::SortBy::AlbumsDsc:
+            orderBy = "album_count DESC, Artists.name ASC";
+            break;
+
+        case Database::SortBy::SongsAsc:
+            orderBy = "song_count ASC, Artists.name ASC";
+            break;
+
+        case Database::SortBy::SongsDsc:
+            orderBy = "song_count DESC, Artists.name ASC";
+            break;
+    }
+
     // Create a Metadata::Artist for each entry
-    bool ok = this->db->prepareAndExecuteQuery("SELECT artist_id, Artists.name, Artists.tadb_id, Artists.image_path, COUNT(DISTINCT album_id), COUNT(*) FROM Songs JOIN Artists ON Songs.artist_id = Artists.id GROUP BY artist_id ORDER BY Artists.name;");
+    bool ok = this->db->prepareAndExecuteQuery("SELECT artist_id, Artists.name, Artists.tadb_id, Artists.image_path, COUNT(DISTINCT album_id) AS album_count, COUNT(*) AS song_count FROM Songs JOIN Artists ON Songs.artist_id = Artists.id GROUP BY artist_id ORDER BY " + orderBy + ";");
     if (!ok) {
         this->setErrorMsg("[getAllArtists] Unable to query for all artists");
         return v;
@@ -731,7 +810,7 @@ bool Database::removePlaylist(PlaylistID id) {
     return ok;
 }
 
-std::vector<Metadata::Playlist> Database::getAllPlaylistMetadata() {
+std::vector<Metadata::Playlist> Database::getAllPlaylistMetadata(Database::SortBy sort) {
     std::vector<Metadata::Playlist> v;
     // Check we can read
     if (this->db->connectionType() == SQLite::Connection::None) {
@@ -739,8 +818,29 @@ std::vector<Metadata::Playlist> Database::getAllPlaylistMetadata() {
         return v;
     }
 
+    // Determine how to sort results
+    std::string orderBy = "";
+    switch (sort) {
+        case Database::SortBy::TitleAsc:
+        default:
+            orderBy = "name ASC, song_count ASC";
+            break;
+
+        case Database::SortBy::TitleDsc:
+            orderBy = "name DESC, song_count ASC";
+            break;
+
+        case Database::SortBy::SongsAsc:
+            orderBy = "song_count ASC, name ASC";
+            break;
+
+        case Database::SortBy::SongsDsc:
+            orderBy = "song_count DESC, name ASC";
+            break;
+    }
+
     // Create a Metadata::Playlist for each entry
-    bool ok = this->db->prepareAndExecuteQuery("SELECT id, name, description, image_path, COUNT(PlaylistSongs.song_id) FROM Playlists LEFT JOIN PlaylistSongs ON playlist_id = Playlists.id GROUP BY Playlists.id ORDER BY name;");
+    bool ok = this->db->prepareAndExecuteQuery("SELECT id, name, description, image_path, COUNT(PlaylistSongs.song_id) AS song_count FROM Playlists LEFT JOIN PlaylistSongs ON playlist_id = Playlists.id GROUP BY Playlists.id ORDER BY " + orderBy + ";");
     if (!ok) {
         this->setErrorMsg("[getAllPlaylistMetadata] Unable to query for all playlists");
         return v;
@@ -799,7 +899,7 @@ Metadata::Playlist Database::getPlaylistMetadataForID(PlaylistID id) {
 }
 
 
-std::vector<Metadata::PlaylistSong> Database::getSongMetadataForPlaylist(PlaylistID id) {
+std::vector<Metadata::PlaylistSong> Database::getSongMetadataForPlaylist(PlaylistID id, Database::SortBy sort) {
     std::vector<Metadata::PlaylistSong> v;
     // Check we can read
     if (this->db->connectionType() == SQLite::Connection::None) {
@@ -807,8 +907,45 @@ std::vector<Metadata::PlaylistSong> Database::getSongMetadataForPlaylist(Playlis
         return v;
     }
 
+    // Determine how to sort results
+    std::string orderBy = "";
+    switch (sort) {
+        case Database::SortBy::TitleAsc:
+        default:
+            orderBy = "Songs.title ASC, Artists.name ASC, Albums.name ASC";
+            break;
+
+        case Database::SortBy::TitleDsc:
+            orderBy = "Songs.title DESC, Artists.name ASC, Albums.name ASC";
+            break;
+
+        case Database::SortBy::ArtistAsc:
+            orderBy = "Artists.name ASC, Songs.title ASC";
+            break;
+
+        case Database::SortBy::ArtistDsc:
+            orderBy = "Artists.name DESC, Songs.title ASC";
+            break;
+
+        case Database::SortBy::AlbumAsc:
+            orderBy = "Albums.name ASC, Songs.title ASC";
+            break;
+
+        case Database::SortBy::AlbumDsc:
+            orderBy = "Albums.name DESC, Songs.title ASC";
+            break;
+
+        case Database::SortBy::LengthAsc:
+            orderBy = "Songs.duration ASC, Songs.title ASC, Artists.name ASC, Albums.name ASC";
+            break;
+
+        case Database::SortBy::LengthDsc:
+            orderBy = "Songs.duration DESC, Songs.title ASC, Artists.name ASC, Albums.name ASC";
+            break;
+    }
+
     // Create a Metadata::Song for each entry given the playlist
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified, PlaylistSongs.rowid FROM PlaylistSongs JOIN Songs ON Songs.id = PlaylistSongs.song_id JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE PlaylistSongs.playlist_id = ?;");
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified, PlaylistSongs.rowid FROM PlaylistSongs JOIN Songs ON Songs.id = PlaylistSongs.song_id JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE PlaylistSongs.playlist_id = ? ORDER BY " + orderBy + ";");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
@@ -1023,7 +1160,7 @@ bool Database::removeSong(SongID id) {
     return ok;
 }
 
-std::vector<Metadata::Song> Database::getAllSongMetadata() {
+std::vector<Metadata::Song> Database::getAllSongMetadata(Database::SortBy sort) {
     std::vector<Metadata::Song> v;
     // Check we can read
     if (this->db->connectionType() == SQLite::Connection::None) {
@@ -1031,8 +1168,45 @@ std::vector<Metadata::Song> Database::getAllSongMetadata() {
         return v;
     }
 
+    // Determine how to sort results
+    std::string orderBy = "";
+    switch (sort) {
+        case Database::SortBy::TitleAsc:
+        default:
+            orderBy = "Songs.title ASC, Artists.name ASC, Albums.name ASC";
+            break;
+
+        case Database::SortBy::TitleDsc:
+            orderBy = "Songs.title DESC, Artists.name ASC, Albums.name ASC";
+            break;
+
+        case Database::SortBy::ArtistAsc:
+            orderBy = "Artists.name ASC, Songs.title ASC";
+            break;
+
+        case Database::SortBy::ArtistDsc:
+            orderBy = "Artists.name DESC, Songs.title ASC";
+            break;
+
+        case Database::SortBy::AlbumAsc:
+            orderBy = "Albums.name ASC, Songs.title ASC";
+            break;
+
+        case Database::SortBy::AlbumDsc:
+            orderBy = "Albums.name DESC, Songs.title ASC";
+            break;
+
+        case Database::SortBy::LengthAsc:
+            orderBy = "duration ASC, Songs.title ASC, Artists.name ASC, Albums.name ASC";
+            break;
+
+        case Database::SortBy::LengthDsc:
+            orderBy = "duration DESC, Songs.title ASC, Artists.name ASC, Albums.name ASC";
+            break;
+    }
+
     // Create a Metadata::Song for each entry
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id;");
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id ORDER BY " + orderBy + ";");
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
         this->setErrorMsg("[getAllSongInfo] Unable to query for all songs");
@@ -1124,7 +1298,7 @@ std::vector<Metadata::Song> Database::getSongMetadataForArtist(ArtistID id) {
     }
 
     // Create a Metadata::Song for each entry given the artist
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.artist_id = ?;");
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.artist_id = ? ORDER BY Songs.title;");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {

@@ -121,7 +121,7 @@ namespace Frame {
         this->elms.clear();
         this->list->removeAllElements();
         this->metadata = this->app->database()->getPlaylistMetadataForID(this->metadata.ID);
-        this->songs = this->app->database()->getSongMetadataForPlaylist(this->metadata.ID);
+        this->songs = this->app->database()->getSongMetadataForPlaylist(this->metadata.ID, Database::SortBy::TitleAsc);
         if (this->songs.size() > 0) {
             for (size_t i = 0; i < this->songs.size(); i++) {
                 CustomElm::ListItem::Song * l = new CustomElm::ListItem::Song();

@@ -11,7 +11,7 @@ namespace Frame {
 
         // Create items for songs
         unsigned int totalSecs = 0;
-        std::vector<Metadata::Song> m = this->app->database()->getAllSongMetadata();
+        std::vector<Metadata::Song> m = this->app->database()->getAllSongMetadata(Database::SortBy::TitleAsc);
         if (m.size() > 0) {
             for (size_t i = 0; i < m.size(); i++) {
                 this->songIDs.push_back(m[i].ID);

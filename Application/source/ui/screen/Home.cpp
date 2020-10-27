@@ -93,7 +93,7 @@ namespace Screen {
         });
 
         // Insert items for playlists
-        std::vector<Metadata::Playlist> pls = this->app->database()->getAllPlaylistMetadata();
+        std::vector<Metadata::Playlist> pls = this->app->database()->getAllPlaylistMetadata(Database::SortBy::TitleAsc);
         for (size_t i = 0; i < pls.size(); i++) {
             CustomElm::ListItem::Playlist * l = new CustomElm::ListItem::Playlist(pls[i].imagePath.empty() ? "romfs:/misc/noplaylist.png" : pls[i].imagePath);
             l->setNameString(pls[i].name);

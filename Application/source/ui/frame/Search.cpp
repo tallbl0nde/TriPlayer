@@ -334,7 +334,7 @@ namespace Frame {
         b->setText("Play");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, m]() {
-            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(m.ID);
+            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(m.ID, Database::SortBy::TitleAsc);
             if (v.size() > 0) {
                 std::vector<SongID> ids;
                 for (size_t i = 0; i < v.size(); i++) {
@@ -354,7 +354,7 @@ namespace Frame {
         b->setText("Add to Queue");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, m]() {
-            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(m.ID);
+            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(m.ID, Database::SortBy::TitleAsc);
             for (size_t i = 0; i < v.size(); i++) {
                 this->app->sysmodule()->sendAddToSubQueue(v[i].song.ID);
             }
@@ -372,7 +372,7 @@ namespace Frame {
             this->showAddToPlaylist([this, m](PlaylistID i) {
                 if (i >= 0) {
                     // Get list of songs and add one-by-one to other playlist
-                    std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(m.ID);
+                    std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(m.ID, Database::SortBy::TitleAsc);
                     for (size_t j = 0; j < v.size(); j++) {
                         this->app->database()->addSongToPlaylist(i, v[j].song.ID);
                     }
