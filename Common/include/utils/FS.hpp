@@ -26,6 +26,8 @@ namespace Utils::Fs {
     // Returns parent directory
     std::string getParentDirectory(const std::string &);
 
+    // Append data to a file
+    bool appendFile(const std::string &, const std::vector<unsigned char> &);
     // Delete a file
     void deleteFile(const std::string &);
     // Read an entire file into the buffer

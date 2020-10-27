@@ -6,6 +6,10 @@
 
 namespace Utils::Fs {
     bool createPath(const std::string & path) {
+        if (fileExists(path)) {
+            return true;
+        }
+
         return std::filesystem::create_directories(path);
     }
 
@@ -41,6 +45,23 @@ namespace Utils::Fs {
 
     std::string getParentDirectory(const std::string & path) {
         return std::filesystem::path(path).parent_path();
+    }
+
+    bool appendFile(const std::string & path, const std::vector<unsigned char> & data) {
+        if (data.size() == 0) {
+            return true;
+        }
+
+        // Open file
+        std::FILE * fp = std::fopen(path.c_str(), "ab");
+        if (fp == nullptr) {
+            return false;
+        }
+
+        // Append data to file
+        bool b = (std::fwrite(&data[0], sizeof(unsigned char), data.size(), fp) == (data.size() * sizeof(unsigned char)));
+        std::fclose(fp);
+        return b;
     }
 
     void deleteFile(const std::string & path) {
