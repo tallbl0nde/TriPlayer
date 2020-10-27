@@ -65,7 +65,9 @@ namespace Main {
         this->updateThread = std::async(std::launch::async, [this]() {
             Updater updater = Updater();
             if (updater.needsCheck(updateInterval)) {
-                this->hasUpdate_ = updater.checkForUpdate();
+                if (updater.checkForUpdate()) {
+                    this->hasUpdate_ = updater.availableUpdate();
+                }
             } else {
                 this->hasUpdate_ = updater.availableUpdate();
             }
@@ -144,6 +146,10 @@ namespace Main {
 
     bool Application::hasUpdate() {
         return this->hasUpdate_;
+    }
+
+    void Application::setHasUpdate(const bool b) {
+        this->hasUpdate_ = b;
     }
 
     Config * Application::config() {

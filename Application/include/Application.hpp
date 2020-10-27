@@ -80,6 +80,8 @@ namespace Main {
 
             // Returns whether an update is available
             bool hasUpdate();
+            // Set whether the application has an update
+            void setHasUpdate(const bool);
 
             // Returns config pointer
             Config * config();

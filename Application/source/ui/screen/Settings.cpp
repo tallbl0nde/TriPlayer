@@ -98,7 +98,13 @@ namespace Screen {
             this->buttonSysGeneral->setActiveColour(this->app->theme()->accent());
             this->buttonSysMP3->setActiveColour(this->app->theme()->accent());
             this->buttonAbout->setActiveColour(this->app->theme()->accent());
+            this->updateDot->setColour(this->app->theme()->accent());
         }
+    }
+
+    void Settings::update(uint32_t dt) {
+        Screen::update(dt);
+        this->updateDot->setHidden(!this->app->hasUpdate());
     }
 
     void Settings::addHeading(const std::string & str) {
@@ -244,6 +250,9 @@ namespace Screen {
         this->buttonAbout->setActiveColour(this->app->theme()->accent());
         this->buttonAbout->setInactiveColour(this->app->theme()->FG());
         this->sidebarList->addElement(this->buttonAbout);
+        this->updateDot = new Aether::Ellipse(this->buttonAbout->x() + this->buttonAbout->w() - this->buttonAbout->h()/2 - 8, this->buttonAbout->y() + this->buttonAbout->h()/2 - 8, 16);
+        this->updateDot->setColour(this->app->theme()->accent());
+        this->buttonAbout->addElement(this->updateDot);
 
         this->addElement(this->sidebarList);
 

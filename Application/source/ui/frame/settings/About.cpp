@@ -27,9 +27,9 @@ namespace Frame::Settings {
         this->addButton("Check for Updates", [this]() {
             // Perform some wizardry here
         });
-        // if (updateAvailable) {
-        //     this->addComment("An update is available!");
-        // }
+        if (this->app->hasUpdate()) {
+            this->addComment("An update is available!");
+        }
         this->list->addElement(new Aether::ListSeparator());
 
         // Support heading
@@ -61,5 +61,6 @@ namespace Frame::Settings {
         this->addComment("Splash\nCopyright © 2020 Google\nApache 2 License\nhttps://github.com/tallbl0nde/Splash");
         this->addComment("SQLite\nPublic Domain\nhttps://www.sqlite.org");
         this->addComment("SQLite-okapi-bm25\nCopyright © 2014 Radford Smith\nMIT License\nhttps://github.com/rads/sqlite-okapi-bm25");
+        this->addComment("zziplib\nCopyright © 2000-2020 Guido Draheim\nGPL 2 License\nhttps://github.com/gdraheim/zziplib");
     }
 }

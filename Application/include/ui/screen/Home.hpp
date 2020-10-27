@@ -50,6 +50,7 @@ namespace Screen {
             CustomElm::SideButton * sideQueue;
             Aether::Rectangle * sideSeparator3;
             CustomElm::SideButton * sideSettings;
+            Aether::Ellipse * updateDot;
 
             // Player
             CustomElm::Player * player;

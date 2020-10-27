@@ -36,6 +36,7 @@ namespace Screen {
             CustomElm::SideButton * buttonSysGeneral;
             CustomElm::SideButton * buttonSysMP3;
             CustomElm::SideButton * buttonAbout;
+            Aether::Ellipse * updateDot;
 
             // Functions to set up each section
             void setupNew();
@@ -63,6 +64,9 @@ namespace Screen {
 
             // Update colours
             void updateColours();
+
+            // Constantly checks if update is available
+            void update(uint32_t);
 
             // onLoad creates all shared elements
             void onLoad();

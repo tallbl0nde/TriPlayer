@@ -290,6 +290,7 @@ namespace Screen {
         // Show/hide touch section based on config value
         this->touchContainer->setHidden(!this->app->config()->showTouchControls());
         this->sideContainer->setY(this->app->config()->showTouchControls() ? 0 : -65);
+        this->updateDot->setHidden(!this->app->hasUpdate());
 
         // Now update elements
         Screen::update(dt);
@@ -308,6 +309,7 @@ namespace Screen {
         this->sideAlbums->setActiveColour(this->app->theme()->accent());
         this->sideQueue->setActiveColour(this->app->theme()->accent());
         this->sideSettings->setActiveColour(this->app->theme()->accent());
+        this->updateDot->setColour(this->app->theme()->accent());
         this->player->setAccentColour(this->app->theme()->accent());
 
         // Now also update current frame and all on stack
@@ -570,9 +572,35 @@ namespace Screen {
             this->app->setScreen(Main::ScreenID::Settings);
         });
         this->sideContainer->addElement(this->sideSettings);
-        this->sideContainer->setFocussed(this->sideSongs);
+
+        this->updateDot = new Aether::Ellipse(this->sideSettings->x() + this->sideSettings->w() - this->sideSettings->h()/2 - 8, this->sideSettings->y() + this->sideSettings->h()/2 - 8, 16);
+        this->updateDot->setColour(this->app->theme()->accent());
+        this->sideContainer->addElement(this->updateDot);
+
+        // Set appropriate button active
+        switch (this->app->config()->initialFrame()) {
+            case Frame::Type::Playlists:
+                this->sideContainer->setFocussed(this->sidePlaylists);
+                break;
+
+            case Frame::Type::Songs:
+                this->sideContainer->setFocussed(this->sideSongs);
+                break;
+
+            case Frame::Type::Artists:
+                this->sideContainer->setFocussed(this->sideArtists);
+                break;
+
+            case Frame::Type::Albums:
+                this->sideContainer->setFocussed(this->sideAlbums);
+                break;
+
+            default:
+                break;
+        }
         this->container->addElement(this->sideContainer);
         this->addElement(this->container);
+
 
         // === PLAYER ===
         this->player = new CustomElm::Player();
