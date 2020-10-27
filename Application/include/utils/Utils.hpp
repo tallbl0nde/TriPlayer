@@ -7,6 +7,10 @@
 
 // General helper functions
 namespace Utils {
+    // Return the given number as a formatted byte string
+    // eg. 2 KB or 102.3 MB
+    std::string formatBytes(long long);
+
     // Returns the current time as a string
     // Pass true to get in 24-hour format
     std::string getClockString(bool = false);

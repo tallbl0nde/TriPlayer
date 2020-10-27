@@ -16,6 +16,7 @@ namespace Path {
         const std::string ConfigFile = Common::ConfigFolder + "app_config.ini";
         const std::string LogFile = Common::SwitchFolder + "application.log";
 
+        const std::string UpdateFile = UpdateFolder + "update.zip";
         const std::string UpdateFolder = Common::SwitchFolder + "update/";
         const std::string UpdateInfo = UpdateFolder + "meta.json";
 

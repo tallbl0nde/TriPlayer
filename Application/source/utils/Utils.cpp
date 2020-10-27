@@ -4,6 +4,45 @@
 #include "utils/Utils.hpp"
 
 namespace Utils {
+    std::string formatBytes(long long bytes) {
+        // Divide until smaller than 1024
+        double val = bytes;
+        int divs = 0;
+        while (val > 1023) {
+            val /= 1024;
+            divs++;
+        }
+
+        // Convert to string and append units
+        std::string str = truncateToDecimalPlace(std::to_string(roundToDecimalPlace(val, 1)), 1);
+        switch (divs) {
+            case 0:
+                str += " bytes";
+                break;
+
+            case 1:
+                str += " KB";
+                break;
+
+            case 2:
+                str += " MB";
+                break;
+
+            case 3:
+                str += " GB";
+                break;
+
+            case 4:
+                str += " TB";
+                break;
+
+            default:
+                str += " ??";
+                break;
+        }
+        return str;
+    }
+
     std::string getClockString(bool in24) {
         // Get time
         std::time_t ts = std::time(nullptr);

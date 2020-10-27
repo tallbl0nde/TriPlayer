@@ -43,7 +43,7 @@ Theme::Theme() {
     this->muted_ = Aether::Colour{120, 120, 120, 255};
     this->muted2_ = Aether::Colour{54, 54, 54, 255};
     this->FG_ = Aether::Colour{255, 255, 255, 255};
-    this->selected_ = Aether::Colour{100, 150, 255, 55};
+    this->selected_ = Aether::Colour{255, 255, 255, 35};
 }
 
 void Theme::setAccent(Colour c) {

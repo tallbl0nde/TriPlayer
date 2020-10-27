@@ -19,7 +19,8 @@ namespace Main {
         Fullscreen = 0,
         Home = 1,
         Settings = 2,
-        Splash = 3
+        Splash = 3,
+        Update = 4
     };
 
     // The Application class represents the "root" object of the app. It stores/handles all states
@@ -30,7 +31,7 @@ namespace Main {
             Aether::Display * display;
 
             // Screens of the app
-            std::array<Screen::Screen *, 4> screens;
+            std::array<Screen::Screen *, 5> screens;
 
             // Overlay to show when prompting to exit
             Aether::MessageBox * exitPrompt;

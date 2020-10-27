@@ -4,6 +4,7 @@
 #include "ui/screen/Home.hpp"
 #include "ui/screen/Settings.hpp"
 #include "ui/screen/Splash.hpp"
+#include "ui/screen/Update.hpp"
 #include "Updater.hpp"
 #include "utils/Curl.hpp"
 #include "utils/MP3.hpp"
@@ -55,6 +56,7 @@ namespace Main {
         this->screens[static_cast<int>(ScreenID::Home)] = new Screen::Home(this);
         this->screens[static_cast<int>(ScreenID::Settings)] = new Screen::Settings(this);
         this->screens[static_cast<int>(ScreenID::Splash)] = new Screen::Splash(this);
+        this->screens[static_cast<int>(ScreenID::Update)] = new Screen::Update(this);
         this->setScreen(ScreenID::Splash);
 
         // Mark that we're playing media
@@ -63,14 +65,14 @@ namespace Main {
         // Start checking for an update
         this->hasUpdate_ = false;
         this->updateThread = std::async(std::launch::async, [this]() {
-            Updater updater = Updater();
-            if (updater.needsCheck(updateInterval)) {
-                if (updater.checkForUpdate()) {
-                    this->hasUpdate_ = updater.availableUpdate();
-                }
-            } else {
-                this->hasUpdate_ = updater.availableUpdate();
-            }
+            // Updater updater = Updater();
+            // if (updater.needsCheck(updateInterval)) {
+                // if (updater.checkForUpdate()) {
+                    // this->hasUpdate_ = updater.availableUpdate();
+                // }
+            // } else {
+                // this->hasUpdate_ = updater.availableUpdate();
+            // }
         });
     }
 

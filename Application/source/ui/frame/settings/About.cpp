@@ -25,7 +25,8 @@ namespace Frame::Settings {
 
         // Check for Updates button
         this->addButton("Check for Updates", [this]() {
-            // Perform some wizardry here
+            this->app->pushScreen();
+            this->app->setScreen(Main::ScreenID::Update);
         });
         if (this->app->hasUpdate()) {
             this->addComment("An update is available!");

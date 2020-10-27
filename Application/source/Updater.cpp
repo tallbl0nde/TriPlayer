@@ -9,7 +9,7 @@
 #include "utils/FS.hpp"
 
 // URL used to retrieve update data
-#define GITHUB_API_URL "https://api.github.com/repos/tallbl0nde/NX-Activity-Log/releases/latest"
+#define GITHUB_API_URL "https://api.github.com/repos/tallbl0nde/TriPlayer/releases/latest"
 
 Updater::Updater() {
     this->downloadUrl = "";
@@ -131,5 +131,5 @@ bool Updater::downloadUpdate(std::function<void(long long, long long)> callback)
         return false;
     }
 
-    return Utils::Curl::downloadToFile(this->downloadUrl, Path::App::UpdateFolder + "update.zip", callback);
+    return Utils::Curl::downloadToFile(this->downloadUrl, Path::App::UpdateFile, callback);
 }
