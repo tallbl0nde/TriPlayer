@@ -43,6 +43,20 @@ namespace Screen {
                 this->setFocussed(this->container);
             }
         });
+
+        // Use ZL/ZR to scroll through lists faster
+        this->onButtonPress(Aether::Button::ZL, [this](){
+            this->app->setHoldDelay(20);
+        });
+        this->onButtonRelease(Aether::Button::ZL, [this](){
+            this->app->setHoldDelay(100);
+        });
+        this->onButtonPress(Aether::Button::ZR, [this](){
+            this->app->setHoldDelay(20);
+        });
+        this->onButtonRelease(Aether::Button::ZR, [this](){
+            this->app->setHoldDelay(100);
+        });
     }
 
     void Home::backCallback() {
