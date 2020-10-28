@@ -22,10 +22,10 @@ static const std::vector<std::string> FILE_EXTENSIONS = {".jpg", ".jpeg", ".jfif
 namespace Frame {
     Playlists::Playlists(Main::Application * a) : Frame(a) {
         // Remove headings (I should redo Frame to avoid this)
-        this->removeElement(this->titleH);
-        this->removeElement(this->artistH);
-        this->removeElement(this->albumH);
-        this->removeElement(this->lengthH);
+        this->topContainer->removeElement(this->titleH);
+        this->topContainer->removeElement(this->artistH);
+        this->topContainer->removeElement(this->albumH);
+        this->topContainer->removeElement(this->lengthH);
 
         // Make the list larger as there's no heading
         this->list->setY(this->list->y() - 20);
@@ -33,16 +33,18 @@ namespace Frame {
 
         // Now prepare this frame
         this->heading->setString("Playlists");
-        this->subLength->setHidden(true);
-        this->subTotal->setHidden(true);
         this->emptyMsg = nullptr;
-        this->newButton = new Aether::FilledButton(this->x() + this->w() - 320, this->heading->y() + (this->heading->h() - BUTTON_H)/2 + 5, BUTTON_W, BUTTON_H, "New Playlist", BUTTON_F, [this]() {
+        this->newButton = new Aether::FilledButton(this->x() + this->w() - 320, this->sort->y(), BUTTON_W, BUTTON_H, "New Playlist", BUTTON_F, [this]() {
             this->createNewPlaylistMenu();
         });
         this->newButton->setFillColour(this->app->theme()->accent());
         this->newButton->setTextColour(Aether::Colour{0, 0, 0, 255});
-        this->addElement(this->newButton);
+        this->topContainer->addElement(this->newButton);
+        this->setHasSelectable(true);
         this->refreshList();
+
+        // Move sort button
+        this->sort->setX(this->newButton->x() - 20 - this->sort->w());
 
         this->checkFB = false;
         this->browser = nullptr;
@@ -99,6 +101,7 @@ namespace Frame {
         // Show list if there are playlists
         if (m.size() > 0) {
             this->list->setHidden(false);
+            this->subHeading->setString(std::to_string(m.size()) + (m.size() == 1 ? " playlist" : " playlists"));
 
             // Create list items for each playlist
             for (size_t i = 0; i < m.size(); i++) {
@@ -112,16 +115,15 @@ namespace Frame {
                     l->setY(this->list->y() + 10);
                 }
             }
-            this->setFocussed(this->list);
 
         // Show message if no playlists
         } else {
-            this->list->setHidden(true);
+            this->subHeading->setHidden(true);
+            this->setFocussed(this->topContainer);
             this->emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "No playlists found, use the button above to create one!", 24);
             this->emptyMsg->setColour(this->app->theme()->FG());
             this->emptyMsg->setX(this->x() + (this->w() - this->emptyMsg->w())/2);
             this->addElement(this->emptyMsg);
-            this->setFocussed(this->newButton);
         }
     }
 
@@ -145,6 +147,8 @@ namespace Frame {
                 this->items.erase(this->items.begin() + pos);
                 if (this->items.empty()) {
                     this->refreshList();
+                } else {
+                    this->subHeading->setString(std::to_string(this->items.size()) + (this->items.size() == 1 ? " playlist" : " playlists"));
                 }
             }
 
@@ -430,6 +434,7 @@ namespace Frame {
 
         // If there's a count difference then we need to remove the pushed playlist (as it was deleted)
         if (m.size() != this->items.size()) {
+            this->subHeading->setString(std::to_string(m.size()) + (m.size() == 1 ? " playlist" : " playlists"));
             this->list->removeElement(this->items[this->pushedIdx].elm);
             this->items.erase(this->items.begin() + this->pushedIdx);
             return;

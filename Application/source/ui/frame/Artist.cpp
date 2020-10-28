@@ -15,11 +15,11 @@
 namespace Frame {
     Artist::Artist(Main::Application * app, ArtistID id) : Frame(app) {
         // Remove list + headings (I should redo Frame to avoid this)
-        this->removeElement(this->list);
-        this->removeElement(this->titleH);
-        this->removeElement(this->artistH);
-        this->removeElement(this->albumH);
-        this->removeElement(this->lengthH);
+        this->bottomContainer->removeElement(this->list);
+        this->topContainer->removeElement(this->titleH);
+        this->topContainer->removeElement(this->artistH);
+        this->topContainer->removeElement(this->albumH);
+        this->topContainer->removeElement(this->lengthH);
 
         // First get metadata for the provided artist
         Metadata::Artist m = this->app->database()->getArtistMetadataForID(id);
@@ -46,11 +46,11 @@ namespace Frame {
 
         std::string str = std::to_string(m.albumCount) + (m.albumCount == 1 ? " album" : " albums");
         str += " | " + std::to_string(m.songCount) + (m.songCount == 1 ? " song" : " songs");
-        this->subTotal->setString(str);
-        this->subTotal->setXY(this->heading->x() + 2, this->heading->y() + this->heading->h());
+        this->subHeading->setString(str);
+        this->subHeading->setXY(this->heading->x() + 2, this->heading->y() + this->heading->h());
 
         // Play and 'more' buttons
-        this->playButton = new Aether::FilledButton(this->subTotal->x(), this->subTotal->y() + this->subTotal->h() + 20, BUTTON_W, BUTTON_H, "Play", BUTTON_F, [this, m]() {
+        this->playButton = new Aether::FilledButton(this->subHeading->x(), this->subHeading->y() + this->subHeading->h() + 20, BUTTON_W, BUTTON_H, "Play", BUTTON_F, [this, m]() {
             std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForArtist(m.ID);
             std::vector<SongID> ids;
             for (size_t i = 0; i < v.size(); i++) {
@@ -60,6 +60,7 @@ namespace Frame {
         });
         this->playButton->setFillColour(this->app->theme()->accent());
         this->playButton->setTextColour(Aether::Colour{0, 0, 0, 255});
+        this->sort->setY(this->playButton->y());
 
         Aether::BorderButton * moreButton = new Aether::BorderButton(this->playButton->x() + this->playButton->w() + 20, this->playButton->y(), BUTTON_H, BUTTON_H, 2, "", BUTTON_F, [this, id]() {
             this->createArtistMenu(id);
@@ -71,10 +72,8 @@ namespace Frame {
         dots->setColour(this->app->theme()->FG());
         moreButton->addElement(dots);
 
-        Aether::Container * c = new Aether::Container(this->playButton->x(), this->playButton->y(), moreButton->x() + moreButton->w() - this->playButton->x(), this->playButton->h());
-        c->addElement(this->playButton);
-        c->addElement(moreButton);
-        this->addElement(c);
+        this->topContainer->addElement(this->playButton);
+        this->topContainer->addElement(moreButton);
 
         // Get a list of the artist's albums
         std::vector<Metadata::Album> md = this->app->database()->getAlbumMetadataForArtist(m.ID, Database::SortBy::AlbumAsc);
@@ -105,8 +104,11 @@ namespace Frame {
                 grid->addElement(l);
             }
 
-            this->addElement(grid);
+            this->bottomContainer->addElement(grid);
         }
+
+        this->setFocused(this->topContainer);
+        this->topContainer->setFocused(this->playButton);
 
         this->albumMenu = nullptr;
         this->artistMenu = nullptr;

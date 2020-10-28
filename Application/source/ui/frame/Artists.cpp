@@ -9,15 +9,15 @@
 namespace Frame {
     Artists::Artists(Main::Application * a) : Frame(a) {
         // Remove list + headings (I should redo Frame to avoid this)
-        this->removeElement(this->list);
-        this->removeElement(this->titleH);
-        this->removeElement(this->artistH);
-        this->removeElement(this->albumH);
-        this->removeElement(this->lengthH);
+        this->bottomContainer->removeElement(this->list);
+        this->topContainer->removeElement(this->titleH);
+        this->topContainer->removeElement(this->artistH);
+        this->topContainer->removeElement(this->albumH);
+        this->topContainer->removeElement(this->lengthH);
 
         // Now prepare this frame
         this->heading->setString("Artists");
-        CustomElm::ScrollableGrid * grid = new CustomElm::ScrollableGrid(this->x(), this->y() + 150, this->w() - 10, this->h() - 150, 250, 3);
+        CustomElm::ScrollableGrid * grid = new CustomElm::ScrollableGrid(this->x(), this->y() + 170, this->w() - 10, this->h() - 170, 250, 3);
         grid->setShowScrollBar(true);
         grid->setScrollBarColour(this->app->theme()->muted2());
 
@@ -44,18 +44,15 @@ namespace Frame {
                 grid->addElement(l);
             }
 
-            this->subLength->setHidden(true);
-            this->subTotal->setString(std::to_string(m.size()) + (m.size() == 1 ? " artist" : " artists" ));
-            this->subTotal->setX(this->x() + 885 - this->subTotal->w());
+            this->subHeading->setString(std::to_string(m.size()) + (m.size() == 1 ? " artist" : " artists" ));
 
-            this->addElement(grid);
-            this->setFocussed(grid);
+            this->bottomContainer->addElement(grid);
+            this->bottomContainer->setFocussed(grid);
 
         // Show message if no artists
         } else {
             grid->setHidden(true);
-            this->subLength->setHidden(true);
-            this->subTotal->setHidden(true);
+            this->subHeading->setHidden(true);
             Aether::Text * emptyMsg = new Aether::Text(0, grid->y() + grid->h()*0.4, "No artists found!", 24);
             emptyMsg->setColour(this->app->theme()->FG());
             emptyMsg->setX(this->x() + (this->w() - emptyMsg->w())/2);

@@ -38,18 +38,15 @@ namespace Frame {
                 }
             }
 
-            this->subLength->setString(Utils::secondsToHoursMins(totalSecs));
-            this->subLength->setX(this->x() + 885 - this->subLength->w());
-            this->subTotal->setString(std::to_string(m.size()) + (m.size() == 1 ? " track" : " tracks" ));
-            this->subTotal->setX(this->x() + 885 - this->subTotal->w());
-
-            this->setFocussed(this->list);
+            // Set subheading
+            std::string str = std::to_string(m.size()) + (m.size() == 1 ? " track" : " tracks");
+            str += " | " + Utils::secondsToHoursMins(totalSecs);
+            this->subHeading->setString(str);
 
         // Show message if no songs
         } else {
             this->list->setHidden(true);
-            this->subLength->setHidden(true);
-            this->subTotal->setHidden(true);
+            this->subHeading->setHidden(true);
             Aether::Text * emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "No songs found in /music!", 24);
             emptyMsg->setColour(this->app->theme()->FG());
             emptyMsg->setX(this->x() + (this->w() - emptyMsg->w())/2);

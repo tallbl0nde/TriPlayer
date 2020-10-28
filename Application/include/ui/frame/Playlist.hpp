@@ -27,7 +27,6 @@ namespace Frame {
 
             // UI elements
             Aether::FilledButton * playButton;
-            Aether::Container * btns;
             Aether::Text * emptyMsg;
             Aether::Image * image;
 

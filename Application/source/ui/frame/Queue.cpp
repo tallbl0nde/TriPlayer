@@ -30,6 +30,10 @@ unsigned int durationOfQueue(std::vector<SongID> & queue, std::vector<Metadata::
 
 namespace Frame {
     Queue::Queue(Main::Application * a) : Frame(a) {
+        // Hide sort button
+        this->sort->setHidden(true);
+        this->topContainer->setHasSelectable(false);
+
         // Get sorted list of metadata (faster than iterating per song)
         this->songMeta = this->app->database()->getAllSongMetadata(Database::SortBy::TitleAsc);
         std::sort(this->songMeta.begin(), this->songMeta.end(), [](const Metadata::Song lhs, const Metadata::Song rhs) {
@@ -43,15 +47,13 @@ namespace Frame {
         this->queue = nullptr;
         this->createList();
         this->updateList();
-        this->setFocussed(this->list);
         this->songPressed = false;
         this->menu = nullptr;
     }
 
     void Queue::initEmpty() {
         this->list->setHidden(true);
-        this->subLength->setHidden(true);
-        this->subTotal->setHidden(true);
+        this->subHeading->setHidden(true);
         this->removeElement(this->emptyMsg);
         this->emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "Your Play Queue is empty!", 24);
         this->emptyMsg->setColour(this->app->theme()->FG());
@@ -61,8 +63,7 @@ namespace Frame {
 
     void Queue::createList() {
         this->list->setHidden(false);
-        this->subLength->setHidden(false);
-        this->subTotal->setHidden(false);
+        this->subHeading->setHidden(false);
 
         // Now Playing
         this->playing = new Aether::Element(0, 0, 100, 45);
@@ -240,11 +241,8 @@ namespace Frame {
         // Update length + track strings
         std::vector<SongID> tmp = {this->cachedSongID};
         unsigned int totalSecs = durationOfQueue(this->cachedQueue, this->songMeta) + durationOfQueue(this->cachedSubQueue, this->songMeta) + durationOfQueue(tmp, this->songMeta);
-        this->subLength->setString(Utils::secondsToHoursMins(totalSecs));
-        this->subLength->setX(this->x() + 885 - this->subLength->w());
         unsigned int totalTracks = this->cachedQueue.size() + this->cachedSubQueue.size() + 1;  // Plus 1 for playing song
-        this->subTotal->setString(std::to_string(totalTracks) + (totalTracks == 1 ? " track" : " tracks" ) + " remaining");
-        this->subTotal->setX(this->x() + 885 - this->subTotal->w());
+        this->subHeading->setString(std::to_string(totalTracks) + (totalTracks == 1 ? " track" : " tracks") + " remaining" + " | " + Utils::secondsToHoursMins(totalSecs));
     }
 
     CustomElm::ListItem::Song * Queue::getListSong(size_t id, Section sec) {

@@ -16,11 +16,13 @@ static const std::vector<std::string> FILE_EXTENSIONS_IMG = {".jpg", ".jpeg", ".
 namespace Frame {
     AlbumInfo::AlbumInfo(Main::Application * a, AlbumID id) : Frame(a) {
         // Remove list + headings (I should redo Frame to avoid this)
-        this->removeElement(this->list);
-        this->removeElement(this->titleH);
-        this->removeElement(this->artistH);
-        this->removeElement(this->albumH);
-        this->removeElement(this->lengthH);
+        this->bottomContainer->removeElement(this->list);
+        this->topContainer->removeElement(this->titleH);
+        this->topContainer->removeElement(this->artistH);
+        this->topContainer->removeElement(this->albumH);
+        this->topContainer->removeElement(this->lengthH);
+        this->sort->setHidden(true);
+        this->topContainer->setHasSelectable(false);
 
         // Get album metadata from ID
         this->metadata = this->app->database()->getAlbumMetadataForID(id);
@@ -30,7 +32,7 @@ namespace Frame {
             t->setX(t->x() - t->w()/2);
             t->setY(t->y() - t->h()/2);
             t->setColour(this->app->theme()->FG());
-            this->addElement(t);
+            this->bottomContainer->addElement(t);
             return;
         }
 
@@ -40,7 +42,7 @@ namespace Frame {
         // Name
         Aether::Text * txt = new Aether::Text(this->heading->x(), this->heading->y() + this->heading->h() + 20, "Name", 30);
         txt->setColour(this->app->theme()->FG());
-        this->addElement(txt);
+        this->bottomContainer->addElement(txt);
         this->name = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.62, 50);
         this->name->setBoxColour(this->app->theme()->muted2());
         this->name->setTextColour(this->app->theme()->FG());
@@ -58,24 +60,24 @@ namespace Frame {
             this->metadata.name = str;
             this->name->setString(str);
         });
-        this->addElement(this->name);
+        this->bottomContainer->addElement(this->name);
 
         // Database ID
         txt = new Aether::Text(this->name->x() + this->name->w() + 50, txt->y(), "Database ID", 30);
         txt->setColour(this->app->theme()->FG());
-        this->addElement(txt);
+        this->bottomContainer->addElement(txt);
         CustomElm::TextBox * box = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.18, 50);
         box->setBoxColour(this->app->theme()->muted2());
         box->setTextColour(this->app->theme()->muted());
         box->setString(std::to_string(this->metadata.ID));
         box->setSelectable(false);
         box->setTouchable(false);
-        this->addElement(box);
+        this->bottomContainer->addElement(box);
 
         // Image heading
         txt = new Aether::Text(this->heading->x(), box->y() + box->h() + 20, "Image", 30);
         txt->setColour(this->app->theme()->FG());
-        this->addElement(txt);
+        this->bottomContainer->addElement(txt);
 
         // Image path
         this->imagePath = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.62, 50);
@@ -84,12 +86,12 @@ namespace Frame {
         this->imagePath->setString(this->metadata.imagePath.empty() ? Path::App::DefaultArtFile : this->metadata.imagePath);
         this->imagePath->setSelectable(false);
         this->imagePath->setTouchable(false);
-        this->addElement(this->imagePath);
+        this->bottomContainer->addElement(this->imagePath);
 
         // Image
         this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), (this->metadata.imagePath.empty() ? Path::App::DefaultArtFile : this->metadata.imagePath));
         this->image->setWH(this->w()*0.18, this->w()*0.18);
-        this->addElement(this->image);
+        this->bottomContainer->addElement(this->image);
 
         // Fetch image (id3 tags)
         Aether::BorderButton * button = new Aether::BorderButton(txt->x(), this->imagePath->y() + this->imagePath->h() + 20, this->w() * 0.3, 50, 2, "", 20, [this]() {
@@ -98,7 +100,7 @@ namespace Frame {
         button->setString("Replace from Audio File");
         button->setBorderColour(this->app->theme()->FG());
         button->setTextColour(this->app->theme()->FG());
-        this->addElement(button);
+        this->bottomContainer->addElement(button);
 
         // Fetch image (local image)
         button = new Aether::BorderButton(button->x() + button->w() + this->w()*0.02, button->y(), this->w() * 0.3, 50, 2, "", 20, [this]() {
@@ -107,7 +109,7 @@ namespace Frame {
         button->setString("Replace from SD Card");
         button->setBorderColour(this->app->theme()->FG());
         button->setTextColour(this->app->theme()->FG());
-        this->addElement(button);
+        this->bottomContainer->addElement(button);
 
         // Fetch image (TheAudioDB)
         button = new Aether::BorderButton(txt->x(), button->y() + button->h() + 20, this->w() * 0.3, 50, 2, "", 20, [this]() {
@@ -116,7 +118,7 @@ namespace Frame {
         button->setString("Replace from TheAudioDB");
         button->setBorderColour(this->app->theme()->FG());
         button->setTextColour(this->app->theme()->FG());
-        this->addElement(button);
+        this->bottomContainer->addElement(button);
 
         // Remove image
         button = new Aether::BorderButton(button->x() + button->w() + this->w()*0.02, button->y(), this->w() * 0.3, 50, 2, "", 20, [this]() {
@@ -125,7 +127,7 @@ namespace Frame {
         button->setString("Remove Image");
         button->setBorderColour(this->app->theme()->FG());
         button->setTextColour(this->app->theme()->FG());
-        this->addElement(button);
+        this->bottomContainer->addElement(button);
 
         // Save button
         this->saveButton = new Aether::FilledButton(button->x() - this->w()*0.01 - 75, button->y() + button->h() + 25, 150, 50, "Save", 26, [this]() {
@@ -133,7 +135,7 @@ namespace Frame {
         });
         this->saveButton->setFillColour(this->app->theme()->accent());
         this->saveButton->setTextColour(Aether::Colour{0, 0, 0, 255});
-        this->addElement(this->saveButton);
+        this->bottomContainer->addElement(this->saveButton);
 
         this->checkFB = false;
         this->browser = nullptr;
@@ -364,19 +366,19 @@ namespace Frame {
         this->updateImage = true;
         this->dlBuffer.clear();
         this->newImagePath.clear();
-        this->removeElement(this->image);
+        this->bottomContainer->removeElement(this->image);
         this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), Path::App::DefaultArtFile);
         this->image->setWH(this->w()*0.18, this->w()*0.18);
-        this->addElement(this->image);
+        this->bottomContainer->addElement(this->image);
         this->imagePath->setString(Path::App::DefaultArtFile);
     }
 
     void AlbumInfo::updateImageFromDL() {
         // Remove old image and replace with new one
-        this->removeElement(this->image);
+        this->bottomContainer->removeElement(this->image);
         this->image = new Aether::Image(this->imagePath->x() + this->imagePath->w() + 50, this->imagePath->y(), &this->dlBuffer[0], this->dlBuffer.size());
         this->image->setWH(this->w()*0.18, this->w()*0.18);
-        this->addElement(this->image);
+        this->bottomContainer->addElement(this->image);
 
         // Update new image path (everything just has extension .png)
         this->updateImage = true;
@@ -403,9 +405,9 @@ namespace Frame {
 
         // Otherwise replace image
         } else {
-            this->removeElement(this->image);
+            this->bottomContainer->removeElement(this->image);
             this->image = tmpImage;
-            this->addElement(this->image);
+            this->bottomContainer->addElement(this->image);
             this->updateImage = true;
 
             // Generate unique path (if you're really unlucky this could run indefinitely - but with 62^10 combinations we should be right :P)
@@ -430,9 +432,9 @@ namespace Frame {
 
         // Otherwise replace image
         } else {
-            this->removeElement(this->image);
+            this->bottomContainer->removeElement(this->image);
             this->image = tmpImage;
-            this->addElement(this->image);
+            this->bottomContainer->addElement(this->image);
             this->updateImage = true;
 
             // Generate unique path (if you're really unlucky this could run indefinitely - but with 62^10 combinations we should be right :P)

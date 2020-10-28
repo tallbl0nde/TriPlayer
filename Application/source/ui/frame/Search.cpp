@@ -21,15 +21,17 @@ static struct Utils::NX::Keyboard keyboard = {
 namespace Frame {
     Search::Search(Main::Application * a) : Frame(a) {
         // Hide everything
-        this->subLength->setHidden(true);
-        this->subTotal->setHidden(true);
+        this->subHeading->setHidden(true);
         this->titleH->setHidden(true);
         this->artistH->setHidden(true);
         this->albumH->setHidden(true);
         this->lengthH->setHidden(true);
+        this->sort->setHidden(true);
+        this->topContainer->setHasSelectable(false);
         this->artistsList = nullptr;
         this->menu = nullptr;
         this->searchContainer = nullptr;
+        this->heading->setString("Results for:");
 
         // Get input first
         bool haveInput = Utils::NX::getUserInput(keyboard);
@@ -54,7 +56,6 @@ namespace Frame {
 
     void Search::addEntries() {
         // Set heading and position
-        this->heading->setFontSize(46);
         this->heading->setString("Results for: " + keyboard.buffer);
         int maxW = (this->w() - (this->heading->x() - this->x())*2);
         if (this->heading->w() > maxW) {
@@ -83,7 +84,6 @@ namespace Frame {
         this->addArtists();
         this->addAlbums();
         this->addSongs();
-        this->setFocussed(this->list);
     }
 
     void Search::addPlaylists() {
