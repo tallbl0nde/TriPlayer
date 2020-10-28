@@ -3,15 +3,44 @@
 #include "ui/element/listitem/Song.hpp"
 #include "ui/frame/Songs.hpp"
 #include "ui/overlay/ItemMenu.hpp"
+#include "ui/overlay/SortBy.hpp"
 #include "utils/Utils.hpp"
 
 namespace Frame {
     Songs::Songs(Main::Application * a) : Frame(a) {
         this->heading->setString("Songs");
+        this->createList(Database::SortBy::TitleAsc);
+
+        // Set up sort overlay
+        std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::TitleAsc, "Title (ascending)"},
+                                                      {Database::SortBy::TitleDsc, "Title (descending)"},
+                                                      {Database::SortBy::ArtistAsc, "Artist (ascending)"},
+                                                      {Database::SortBy::ArtistDsc, "Artist (descending)"},
+                                                      {Database::SortBy::AlbumAsc, "Album (ascending)"},
+                                                      {Database::SortBy::AlbumDsc, "Album (descending)"},
+                                                      {Database::SortBy::LengthAsc, "Length (ascending)"},
+                                                      {Database::SortBy::LengthDsc, "Length (descending)"}};
+        this->sortMenu = new CustomOvl::SortBy("Sort Songs by", sort, [this](Database::SortBy s) {
+            this->createList(s);
+        });
+        this->sortMenu->setBackgroundColour(this->app->theme()->popupBG());
+        this->sortMenu->setIconColour(this->app->theme()->muted());
+        this->sortMenu->setTextColour(this->app->theme()->FG());
+        this->sort->setCallback([this]() {
+            this->app->addOverlay(this->sortMenu);
+        });
+
+        this->menu = nullptr;
+    }
+
+    void Songs::createList(Database::SortBy sort) {
+        // Remove old items
+        this->list->removeAllElements();
+        this->songIDs.clear();
 
         // Create items for songs
         unsigned int totalSecs = 0;
-        std::vector<Metadata::Song> m = this->app->database()->getAllSongMetadata(Database::SortBy::TitleAsc);
+        std::vector<Metadata::Song> m = this->app->database()->getAllSongMetadata(sort);
         if (m.size() > 0) {
             for (size_t i = 0; i < m.size(); i++) {
                 this->songIDs.push_back(m[i].ID);
@@ -52,8 +81,6 @@ namespace Frame {
             emptyMsg->setX(this->x() + (this->w() - emptyMsg->w())/2);
             this->addElement(emptyMsg);
         }
-
-        this->menu = nullptr;
     }
 
     void Songs::createMenu(SongID id) {
@@ -152,5 +179,6 @@ namespace Frame {
 
     Songs::~Songs() {
         delete this->menu;
+        delete this->sortMenu;
     }
 };

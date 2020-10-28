@@ -117,7 +117,6 @@ namespace CustomElm {
     }
 
     void ScrollableGrid::removeAllElements() {
-        this->cols = 0;
         this->stopScrolling();
         Container::removeAllElements();
         this->setScrollPos(0);

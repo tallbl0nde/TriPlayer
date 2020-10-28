@@ -5,6 +5,7 @@
 #include "ui/overlay/FileBrowser.hpp"
 #include "ui/overlay/ItemMenu.hpp"
 #include "ui/overlay/NewPlaylist.hpp"
+#include "ui/overlay/SortBy.hpp"
 #include "utils/FS.hpp"
 #include "utils/Image.hpp"
 #include "utils/Utils.hpp"
@@ -41,10 +42,23 @@ namespace Frame {
         this->newButton->setTextColour(Aether::Colour{0, 0, 0, 255});
         this->topContainer->addElement(this->newButton);
         this->setHasSelectable(true);
-        this->refreshList();
+        this->refreshList(Database::SortBy::TitleAsc);
 
-        // Move sort button
+        // Move sort button and prepare menu
         this->sort->setX(this->newButton->x() - 20 - this->sort->w());
+        this->sort->setCallback([this]() {
+            this->app->addOverlay(this->sortMenu);
+        });
+        std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::TitleAsc, "Name (ascending)"},
+                                                      {Database::SortBy::TitleDsc, "Name (descending)"},
+                                                      {Database::SortBy::SongsAsc, "Songs (ascending)"},
+                                                      {Database::SortBy::SongsDsc, "Songs (descending)"}};
+        this->sortMenu = new CustomOvl::SortBy("Sort Playlists by", sort, [this](Database::SortBy s) {
+            this->refreshList(s);
+        });
+        this->sortMenu->setBackgroundColour(this->app->theme()->popupBG());
+        this->sortMenu->setIconColour(this->app->theme()->muted());
+        this->sortMenu->setTextColour(this->app->theme()->FG());
 
         this->checkFB = false;
         this->browser = nullptr;
@@ -90,13 +104,14 @@ namespace Frame {
         return l;
     }
 
-    void Playlists::refreshList() {
+    void Playlists::refreshList(Database::SortBy sort) {
         // Delete old data and fetch/create new items
         this->removeElement(this->emptyMsg);
         this->emptyMsg = nullptr;
         this->list->removeAllElements();
         this->items.clear();
-        std::vector<Metadata::Playlist> m = this->app->database()->getAllPlaylistMetadata(Database::SortBy::TitleAsc);
+        std::vector<Metadata::Playlist> m = this->app->database()->getAllPlaylistMetadata(sort);
+        this->sortType = sort;
 
         // Show list if there are playlists
         if (m.size() > 0) {
@@ -146,7 +161,7 @@ namespace Frame {
                 this->list->removeElement(this->items[pos].elm);
                 this->items.erase(this->items.begin() + pos);
                 if (this->items.empty()) {
-                    this->refreshList();
+                    this->refreshList(this->sortType);
                 } else {
                     this->subHeading->setString(std::to_string(this->items.size()) + (this->items.size() == 1 ? " playlist" : " playlists"));
                 }
@@ -268,7 +283,7 @@ namespace Frame {
 
                     // Otherwise recreate list
                     } else {
-                        this->refreshList();
+                        this->refreshList(this->sortType);
                     }
 
                     this->menu->close();
@@ -390,7 +405,7 @@ namespace Frame {
                 Utils::Fs::writeFile(this->newData.imagePath, buffer);
             }
             // Completely recreate list
-            this->refreshList();
+            this->refreshList(this->sortType);
 
         // Otherwise show a message
         } else {
@@ -426,9 +441,9 @@ namespace Frame {
 
     void Playlists::onPop(Type t) {
         // Get new metadata (if last playlist was deleted we can simply refresh the list)
-        std::vector<Metadata::Playlist> m = this->app->database()->getAllPlaylistMetadata(Database::SortBy::TitleAsc);
+        std::vector<Metadata::Playlist> m = this->app->database()->getAllPlaylistMetadata(this->sortType);
         if (!this->items.empty() && m.empty()) {
-            this->refreshList();
+            this->refreshList(this->sortType);
             return;
         }
 
@@ -496,5 +511,6 @@ namespace Frame {
         delete this->menu;
         delete this->msgbox;
         delete this->newMenu;
+        delete this->sortMenu;
     }
 };

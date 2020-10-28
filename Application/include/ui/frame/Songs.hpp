@@ -1,11 +1,13 @@
 #ifndef FRAME_SONGS_HPP
 #define FRAME_SONGS_HPP
 
+#include "db/Database.hpp"
 #include "ui/frame/Frame.hpp"
 
 // Forward declaration as the class is used within the frame
 namespace CustomOvl {
     class ItemMenu;
+    class SortBy;
 }
 
 namespace Frame {
@@ -14,8 +16,14 @@ namespace Frame {
             // Cached songIDs (used to set play queue)
             std::vector<SongID> songIDs;
 
+            // Sort by menu
+            CustomOvl::SortBy * sortMenu;
+
             // Menu displayed when a song's "dots" are pressed
             CustomOvl::ItemMenu * menu;
+
+            // (Re)create list with given sorting order
+            void createList(Database::SortBy);
 
             // Create the above menu
             void createMenu(SongID);

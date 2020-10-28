@@ -4,6 +4,7 @@
 #include "ui/element/listitem/Song.hpp"
 #include "ui/frame/Playlist.hpp"
 #include "ui/overlay/ItemMenu.hpp"
+#include "ui/overlay/SortBy.hpp"
 #include "utils/FS.hpp"
 #include "utils/Utils.hpp"
 
@@ -30,6 +31,10 @@ namespace Frame {
         if (this->metadata.ID < 0) {
             // Helps show there was an error (should never appear)
             this->heading->setString("Playlist");
+            this->msgbox = nullptr;
+            this->playlistMenu = nullptr;
+            this->songMenu = nullptr;
+            this->sortMenu = nullptr;
             return;
         }
 
@@ -75,8 +80,27 @@ namespace Frame {
         this->playlistMenu = nullptr;
         this->songMenu = nullptr;
 
+        // Create sort menu
+        this->sort->setCallback([this]() {
+            this->app->addOverlay(this->sortMenu);
+        });
+        std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::TitleAsc, "Title (ascending)"},
+                                                      {Database::SortBy::TitleDsc, "Title (descending)"},
+                                                      {Database::SortBy::ArtistAsc, "Artist (ascending)"},
+                                                      {Database::SortBy::ArtistDsc, "Artist (descending)"},
+                                                      {Database::SortBy::AlbumAsc, "Album (ascending)"},
+                                                      {Database::SortBy::AlbumDsc, "Album (descending)"},
+                                                      {Database::SortBy::LengthAsc, "Length (ascending)"},
+                                                      {Database::SortBy::LengthDsc, "Length (descending)"}};
+        this->sortMenu = new CustomOvl::SortBy("Sort Songs by", sort, [this](Database::SortBy s) {
+            this->refreshList(s);
+        });
+        this->sortMenu->setBackgroundColour(this->app->theme()->popupBG());
+        this->sortMenu->setIconColour(this->app->theme()->muted());
+        this->sortMenu->setTextColour(this->app->theme()->FG());
+
         // Populate list
-        this->refreshList();
+        this->refreshList(Database::SortBy::TitleAsc);
         this->setFocused(this->topContainer);
         this->topContainer->setFocused(this->playButton);
     }
@@ -114,12 +138,14 @@ namespace Frame {
         }
     }
 
-    void Playlist::refreshList() {
+    void Playlist::refreshList(Database::SortBy sort) {
+        this->sortType = sort;
+
         // Create list elements for each song
         this->elms.clear();
         this->list->removeAllElements();
         this->metadata = this->app->database()->getPlaylistMetadataForID(this->metadata.ID);
-        this->songs = this->app->database()->getSongMetadataForPlaylist(this->metadata.ID, Database::SortBy::TitleAsc);
+        this->songs = this->app->database()->getSongMetadataForPlaylist(this->metadata.ID, sort);
         if (this->songs.size() > 0) {
             for (size_t i = 0; i < this->songs.size(); i++) {
                 CustomElm::ListItem::Song * l = new CustomElm::ListItem::Song();
@@ -223,7 +249,7 @@ namespace Frame {
 
                         // Refresh the list if it's this playlist
                         if (i == this->metadata.ID) {
-                            this->refreshList();
+                            this->refreshList(this->sortType);
                         }
                     }
                 });
@@ -305,7 +331,7 @@ namespace Frame {
 
                     // Refresh the list if it's this playlist
                     if (i == this->metadata.ID) {
-                        this->refreshList();
+                        this->refreshList(this->sortType);
                     }
                 }
             });
@@ -405,5 +431,6 @@ namespace Frame {
         delete this->msgbox;
         delete this->playlistMenu;
         delete this->songMenu;
+        delete this->sortMenu;
     }
 };

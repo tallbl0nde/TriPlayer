@@ -3,6 +3,7 @@
 #include "ui/element/GridItem.hpp"
 #include "ui/element/ScrollableGrid.hpp"
 #include "ui/frame/Artist.hpp"
+#include "ui/overlay/SortBy.hpp"
 
 // Play button dimensions
 #define BUTTON_F 26
@@ -22,18 +23,21 @@ namespace Frame {
         this->topContainer->removeElement(this->lengthH);
 
         // First get metadata for the provided artist
-        Metadata::Artist m = this->app->database()->getArtistMetadataForID(id);
-        if (m.ID < 0) {
+        this->meta = this->app->database()->getArtistMetadataForID(id);
+        if (this->meta.ID < 0) {
             // Helps show there was an error (should never appear)
             this->heading->setString("Artist");
+            this->albumMenu = nullptr;
+            this->artistMenu = nullptr;
+            this->sortMenu = nullptr;
             return;
         }
 
         // Populate with Artist's data
-        Aether::Image * image = new Aether::Image(this->x() + 50, this->y() + 50, m.imagePath.empty() ? "romfs:/misc/noartist.png" : m.imagePath);
+        Aether::Image * image = new Aether::Image(this->x() + 50, this->y() + 50, this->meta.imagePath.empty() ? "romfs:/misc/noartist.png" : this->meta.imagePath);
         image->setWH(IMAGE_SIZE, IMAGE_SIZE);
         this->addElement(image);
-        this->heading->setString(m.name);
+        this->heading->setString(this->meta.name);
         this->heading->setX(image->x() + image->w() + 28);
         this->heading->setY(image->y() - 10);
         int maxW = (1280 - this->heading->x() - 30);
@@ -44,19 +48,19 @@ namespace Frame {
             this->heading->setW(maxW - tmp->w());
         }
 
-        std::string str = std::to_string(m.albumCount) + (m.albumCount == 1 ? " album" : " albums");
-        str += " | " + std::to_string(m.songCount) + (m.songCount == 1 ? " song" : " songs");
+        std::string str = std::to_string(this->meta.albumCount) + (this->meta.albumCount == 1 ? " album" : " albums");
+        str += " | " + std::to_string(this->meta.songCount) + (this->meta.songCount == 1 ? " song" : " songs");
         this->subHeading->setString(str);
         this->subHeading->setXY(this->heading->x() + 2, this->heading->y() + this->heading->h());
 
         // Play and 'more' buttons
-        this->playButton = new Aether::FilledButton(this->subHeading->x(), this->subHeading->y() + this->subHeading->h() + 20, BUTTON_W, BUTTON_H, "Play", BUTTON_F, [this, m]() {
-            std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForArtist(m.ID);
+        this->playButton = new Aether::FilledButton(this->subHeading->x(), this->subHeading->y() + this->subHeading->h() + 20, BUTTON_W, BUTTON_H, "Play", BUTTON_F, [this]() {
+            std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForArtist(this->meta.ID);
             std::vector<SongID> ids;
             for (size_t i = 0; i < v.size(); i++) {
                 ids.push_back(v[i].ID);
             }
-            this->playNewQueue(m.name, ids, 0, true);
+            this->playNewQueue(this->meta.name, ids, 0, true);
         });
         this->playButton->setFillColour(this->app->theme()->accent());
         this->playButton->setTextColour(Aether::Colour{0, 0, 0, 255});
@@ -75,37 +79,29 @@ namespace Frame {
         this->topContainer->addElement(this->playButton);
         this->topContainer->addElement(moreButton);
 
-        // Get a list of the artist's albums
-        std::vector<Metadata::Album> md = this->app->database()->getAlbumMetadataForArtist(m.ID, Database::SortBy::AlbumAsc);
+        // Create grid
+        int gridY = image->y() + image->h() + 20;
+        this->grid = new CustomElm::ScrollableGrid(this->x(), gridY, this->w() - 10, this->h() - gridY, 250, 3);
+        this->grid->setShowScrollBar(true);
+        this->grid->setScrollBarColour(this->app->theme()->muted2());
+        this->bottomContainer->addElement(this->grid);
+        this->bottomContainer->setFocussed(this->grid);
+        this->createList(Database::SortBy::AlbumAsc);
 
-        // Create grid if there are albums
-        if (md.size() > 0) {
-            int gridY = image->y() + image->h() + 20;
-            CustomElm::ScrollableGrid * grid = new CustomElm::ScrollableGrid(this->x(), gridY, this->w() - 10, this->h() - gridY, 250, 3);
-            grid->setShowScrollBar(true);
-            grid->setScrollBarColour(this->app->theme()->muted2());
-
-            // Populate grid with albums
-            for (size_t i = 0; i < md.size(); i++) {
-                CustomElm::GridItem * l = new CustomElm::GridItem(md[i].imagePath.empty() ? Path::App::DefaultArtFile : md[i].imagePath);
-                l->setMainString(md[i].name);
-                std::string str = std::to_string(md[i].songCount) + (md[i].songCount == 1 ? " song" : " songs");
-                l->setSubString(str);
-                l->setDotsColour(this->app->theme()->muted());
-                l->setTextColour(this->app->theme()->FG());
-                l->setMutedTextColour(this->app->theme()->muted());
-                AlbumID id = md[i].ID;
-                l->setCallback([this, id](){
-                    this->changeFrame(Type::Album, Action::Push, id);
-                });
-                l->setMoreCallback([this, id]() {
-                    this->createAlbumMenu(id);
-                });
-                grid->addElement(l);
-            }
-
-            this->bottomContainer->addElement(grid);
-        }
+        // Create sort menu
+        this->sort->setCallback([this]() {
+            this->app->addOverlay(this->sortMenu);
+        });
+        std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::AlbumAsc, "Album (ascending)"},
+                                                      {Database::SortBy::AlbumDsc, "Album (descending)"},
+                                                      {Database::SortBy::SongsAsc, "Song Count (increasing)"},
+                                                      {Database::SortBy::SongsDsc, "Song Count (decreasing)"}};
+        this->sortMenu = new CustomOvl::SortBy("Sort Albums by", sort, [this](Database::SortBy s) {
+            this->createList(s);
+        });
+        this->sortMenu->setBackgroundColour(this->app->theme()->popupBG());
+        this->sortMenu->setIconColour(this->app->theme()->muted());
+        this->sortMenu->setTextColour(this->app->theme()->FG());
 
         this->setFocused(this->topContainer);
         this->topContainer->setFocused(this->playButton);
@@ -271,6 +267,34 @@ namespace Frame {
         this->app->addOverlay(this->albumMenu);
     }
 
+    void Artist::createList(Database::SortBy sort) {
+        // Remove previous items
+        this->grid->removeAllElements();
+
+        // Create grid if there are albums
+        std::vector<Metadata::Album> md = this->app->database()->getAlbumMetadataForArtist(this->meta.ID, sort);
+        if (md.size() > 0) {
+            // Populate grid with albums
+            for (size_t i = 0; i < md.size(); i++) {
+                CustomElm::GridItem * l = new CustomElm::GridItem(md[i].imagePath.empty() ? Path::App::DefaultArtFile : md[i].imagePath);
+                l->setMainString(md[i].name);
+                std::string str = std::to_string(md[i].songCount) + (md[i].songCount == 1 ? " song" : " songs");
+                l->setSubString(str);
+                l->setDotsColour(this->app->theme()->muted());
+                l->setTextColour(this->app->theme()->FG());
+                l->setMutedTextColour(this->app->theme()->muted());
+                AlbumID id = md[i].ID;
+                l->setCallback([this, id](){
+                    this->changeFrame(Type::Album, Action::Push, id);
+                });
+                l->setMoreCallback([this, id]() {
+                    this->createAlbumMenu(id);
+                });
+                this->grid->addElement(l);
+            }
+        }
+    }
+
     void Artist::updateColours() {
         this->playButton->setFillColour(this->app->theme()->accent());
     }
@@ -278,5 +302,6 @@ namespace Frame {
     Artist::~Artist() {
         delete this->albumMenu;
         delete this->artistMenu;
+        delete this->sortMenu;
     }
 };
