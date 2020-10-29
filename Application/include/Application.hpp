@@ -31,6 +31,7 @@ namespace Main {
             Aether::Display * display;
 
             // Screens of the app
+            ScreenID screenID;
             std::array<Screen::Screen *, 5> screens;
 
             // Overlay to show when prompting to exit

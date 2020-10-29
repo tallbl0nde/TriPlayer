@@ -226,5 +226,6 @@ namespace Frame {
     Albums::~Albums() {
         delete this->artistsList;
         delete this->albumMenu;
+        delete this->sortMenu;
     }
 };
