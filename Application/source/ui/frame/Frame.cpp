@@ -29,12 +29,20 @@ namespace Frame {
         this->subHeading = new Aether::Text(this->heading->x() + 2, this->heading->y() + this->heading->h() + 5, "", 20);
         this->subHeading->setColour(this->app->theme()->muted());
         this->topContainer->addElement(this->subHeading);
-        this->sort = new Aether::BorderButton(this->x() + 755, this->heading->y() + (this->heading->h() - 56)/2 + 5, 130, 50, 2, "Sort", 26, [this]() {
-            // yes we can
+
+        // Sort button
+        this->sort = new Aether::BorderButton(this->x() + 835, this->heading->y() + (this->heading->h() - 56)/2 + 5, 50, 50, 2, "", 10, [this]() {
+            // Let child frames define behaviour
         });
         this->sort->setBorderColour(this->app->theme()->FG());
         this->sort->setTextColour(this->app->theme()->FG());
         this->topContainer->addElement(this->sort);
+        Aether::Image * arrows = new Aether::Image(this->sort->x() + this->sort->w()/2, this->sort->y() + this->sort->h()/2, "romfs:/icons/sort.png");
+        arrows->setXY(arrows->x() - arrows->w()/2, arrows->y() - arrows->h()/2);
+        arrows->setColour(this->app->theme()->FG());
+        this->sort->addElement(arrows);
+
+        // List headings
         this->titleH = new Aether::Text(this->x() + 65, this->y() + 170, "Title", 20);
         this->titleH->setColour(this->app->theme()->muted());
         this->topContainer->addElement(this->titleH);

@@ -38,6 +38,7 @@ namespace Frame {
         });
         this->sortMenu->setBackgroundColour(this->app->theme()->popupBG());
         this->sortMenu->setIconColour(this->app->theme()->muted());
+        this->sortMenu->setLineColour(this->app->theme()->muted2());
         this->sortMenu->setTextColour(this->app->theme()->FG());
 
         this->createList(Database::SortBy::ArtistAsc);

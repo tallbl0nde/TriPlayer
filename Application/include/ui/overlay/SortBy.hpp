@@ -22,6 +22,7 @@ namespace CustomOvl {
         private:
             Aether::Rectangle * bg;                     // Background rectangle
             Aether::Text * heading;                     // Heading
+            Aether::Rectangle * line;                   // Separator line
             Aether::List * list;                        // List of buttons
             std::vector<CustomElm::MenuButton *> btns;  // Actual button elements used to change colour
 
@@ -35,6 +36,7 @@ namespace CustomOvl {
             // Set element colours
             void setBackgroundColour(const Aether::Colour &);
             void setIconColour(const Aether::Colour &);
+            void setLineColour(const Aether::Colour &);
             void setTextColour(const Aether::Colour &);
     };
 };
