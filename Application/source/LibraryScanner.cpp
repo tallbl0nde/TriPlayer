@@ -312,7 +312,7 @@ LibraryScanner::Status LibraryScanner::processArt(std::atomic<size_t> & currentF
     std::unordered_map<std::string, bool> hasImage;
 
     // First get all the albums in the database and mark
-    std::vector<Metadata::Album> albums = this->database->getAllAlbumMetadata();
+    std::vector<Metadata::Album> albums = this->database->getAllAlbumMetadata(Database::SortBy::AlbumAsc);
     for (size_t i = 0; i < albums.size(); i++) {
         hasImage[albums[i].name] = (!albums[i].imagePath.empty());
     }

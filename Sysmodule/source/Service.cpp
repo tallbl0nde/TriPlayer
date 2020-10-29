@@ -819,7 +819,7 @@ void MainService::sleepEventThread() {
 
     // Set callback
     NX::Psc::setSleepFunc([this]() {
-        if (this->watchSleep) {
+        if (this->watchSleep && this->audio->status() == Audio::Status::Playing) {
             this->audio->pause();
         }
     });

@@ -3,15 +3,45 @@
 #include "ui/element/listitem/Song.hpp"
 #include "ui/frame/Songs.hpp"
 #include "ui/overlay/ItemMenu.hpp"
+#include "ui/overlay/SortBy.hpp"
 #include "utils/Utils.hpp"
 
 namespace Frame {
     Songs::Songs(Main::Application * a) : Frame(a) {
         this->heading->setString("Songs");
+        this->createList(Database::SortBy::TitleAsc);
+
+        // Set up sort overlay
+        std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::TitleAsc, "Title (ascending)"},
+                                                      {Database::SortBy::TitleDsc, "Title (descending)"},
+                                                      {Database::SortBy::ArtistAsc, "Artist (ascending)"},
+                                                      {Database::SortBy::ArtistDsc, "Artist (descending)"},
+                                                      {Database::SortBy::AlbumAsc, "Album (ascending)"},
+                                                      {Database::SortBy::AlbumDsc, "Album (descending)"},
+                                                      {Database::SortBy::LengthAsc, "Length (ascending)"},
+                                                      {Database::SortBy::LengthDsc, "Length (descending)"}};
+        this->sortMenu = new CustomOvl::SortBy("Sort Songs by", sort, [this](Database::SortBy s) {
+            this->createList(s);
+        });
+        this->sortMenu->setBackgroundColour(this->app->theme()->popupBG());
+        this->sortMenu->setIconColour(this->app->theme()->muted());
+        this->sortMenu->setLineColour(this->app->theme()->muted2());
+        this->sortMenu->setTextColour(this->app->theme()->FG());
+        this->sort->setCallback([this]() {
+            this->app->addOverlay(this->sortMenu);
+        });
+
+        this->menu = nullptr;
+    }
+
+    void Songs::createList(Database::SortBy sort) {
+        // Remove old items
+        this->list->removeAllElements();
+        this->songIDs.clear();
 
         // Create items for songs
         unsigned int totalSecs = 0;
-        std::vector<Metadata::Song> m = this->app->database()->getAllSongMetadata();
+        std::vector<Metadata::Song> m = this->app->database()->getAllSongMetadata(sort);
         if (m.size() > 0) {
             for (size_t i = 0; i < m.size(); i++) {
                 this->songIDs.push_back(m[i].ID);
@@ -38,25 +68,20 @@ namespace Frame {
                 }
             }
 
-            this->subLength->setString(Utils::secondsToHoursMins(totalSecs));
-            this->subLength->setX(this->x() + 885 - this->subLength->w());
-            this->subTotal->setString(std::to_string(m.size()) + (m.size() == 1 ? " track" : " tracks" ));
-            this->subTotal->setX(this->x() + 885 - this->subTotal->w());
-
-            this->setFocussed(this->list);
+            // Set subheading
+            std::string str = std::to_string(m.size()) + (m.size() == 1 ? " track" : " tracks");
+            str += " | " + Utils::secondsToHoursMins(totalSecs);
+            this->subHeading->setString(str);
 
         // Show message if no songs
         } else {
             this->list->setHidden(true);
-            this->subLength->setHidden(true);
-            this->subTotal->setHidden(true);
+            this->subHeading->setHidden(true);
             Aether::Text * emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "No songs found in /music!", 24);
             emptyMsg->setColour(this->app->theme()->FG());
             emptyMsg->setX(this->x() + (this->w() - emptyMsg->w())/2);
             this->addElement(emptyMsg);
         }
-
-        this->menu = nullptr;
     }
 
     void Songs::createMenu(SongID id) {
@@ -155,5 +180,6 @@ namespace Frame {
 
     Songs::~Songs() {
         delete this->menu;
+        delete this->sortMenu;
     }
 };

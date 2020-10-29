@@ -5,6 +5,7 @@
 #include "ui/overlay/FileBrowser.hpp"
 #include "ui/overlay/ItemMenu.hpp"
 #include "ui/overlay/NewPlaylist.hpp"
+#include "ui/overlay/SortBy.hpp"
 #include "utils/FS.hpp"
 #include "utils/Image.hpp"
 #include "utils/Utils.hpp"
@@ -22,10 +23,10 @@ static const std::vector<std::string> FILE_EXTENSIONS = {".jpg", ".jpeg", ".jfif
 namespace Frame {
     Playlists::Playlists(Main::Application * a) : Frame(a) {
         // Remove headings (I should redo Frame to avoid this)
-        this->removeElement(this->titleH);
-        this->removeElement(this->artistH);
-        this->removeElement(this->albumH);
-        this->removeElement(this->lengthH);
+        this->topContainer->removeElement(this->titleH);
+        this->topContainer->removeElement(this->artistH);
+        this->topContainer->removeElement(this->albumH);
+        this->topContainer->removeElement(this->lengthH);
 
         // Make the list larger as there's no heading
         this->list->setY(this->list->y() - 20);
@@ -33,16 +34,32 @@ namespace Frame {
 
         // Now prepare this frame
         this->heading->setString("Playlists");
-        this->subLength->setHidden(true);
-        this->subTotal->setHidden(true);
         this->emptyMsg = nullptr;
-        this->newButton = new Aether::FilledButton(this->x() + this->w() - 320, this->heading->y() + (this->heading->h() - BUTTON_H)/2 + 5, BUTTON_W, BUTTON_H, "New Playlist", BUTTON_F, [this]() {
+        this->newButton = new Aether::FilledButton(this->x() + this->w() - 320, this->sort->y(), BUTTON_W, BUTTON_H, "New Playlist", BUTTON_F, [this]() {
             this->createNewPlaylistMenu();
         });
         this->newButton->setFillColour(this->app->theme()->accent());
         this->newButton->setTextColour(Aether::Colour{0, 0, 0, 255});
-        this->addElement(this->newButton);
-        this->refreshList();
+        this->topContainer->addElement(this->newButton);
+        this->setHasSelectable(true);
+        this->refreshList(Database::SortBy::TitleAsc);
+
+        // Move sort button and prepare menu
+        this->sort->setX(this->newButton->x() - 20 - this->sort->w());
+        this->sort->setCallback([this]() {
+            this->app->addOverlay(this->sortMenu);
+        });
+        std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::TitleAsc, "Name (ascending)"},
+                                                      {Database::SortBy::TitleDsc, "Name (descending)"},
+                                                      {Database::SortBy::SongsAsc, "Songs (ascending)"},
+                                                      {Database::SortBy::SongsDsc, "Songs (descending)"}};
+        this->sortMenu = new CustomOvl::SortBy("Sort Playlists by", sort, [this](Database::SortBy s) {
+            this->refreshList(s);
+        });
+        this->sortMenu->setBackgroundColour(this->app->theme()->popupBG());
+        this->sortMenu->setIconColour(this->app->theme()->muted());
+        this->sortMenu->setLineColour(this->app->theme()->muted2());
+        this->sortMenu->setTextColour(this->app->theme()->FG());
 
         this->checkFB = false;
         this->browser = nullptr;
@@ -88,17 +105,19 @@ namespace Frame {
         return l;
     }
 
-    void Playlists::refreshList() {
+    void Playlists::refreshList(Database::SortBy sort) {
         // Delete old data and fetch/create new items
         this->removeElement(this->emptyMsg);
         this->emptyMsg = nullptr;
         this->list->removeAllElements();
         this->items.clear();
-        std::vector<Metadata::Playlist> m = this->app->database()->getAllPlaylistMetadata();
+        std::vector<Metadata::Playlist> m = this->app->database()->getAllPlaylistMetadata(sort);
+        this->sortType = sort;
 
         // Show list if there are playlists
         if (m.size() > 0) {
             this->list->setHidden(false);
+            this->subHeading->setString(std::to_string(m.size()) + (m.size() == 1 ? " playlist" : " playlists"));
 
             // Create list items for each playlist
             for (size_t i = 0; i < m.size(); i++) {
@@ -112,16 +131,15 @@ namespace Frame {
                     l->setY(this->list->y() + 10);
                 }
             }
-            this->setFocussed(this->list);
 
         // Show message if no playlists
         } else {
-            this->list->setHidden(true);
+            this->subHeading->setHidden(true);
+            this->setFocussed(this->topContainer);
             this->emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "No playlists found, use the button above to create one!", 24);
             this->emptyMsg->setColour(this->app->theme()->FG());
             this->emptyMsg->setX(this->x() + (this->w() - this->emptyMsg->w())/2);
             this->addElement(this->emptyMsg);
-            this->setFocussed(this->newButton);
         }
     }
 
@@ -144,7 +162,9 @@ namespace Frame {
                 this->list->removeElement(this->items[pos].elm);
                 this->items.erase(this->items.begin() + pos);
                 if (this->items.empty()) {
-                    this->refreshList();
+                    this->refreshList(this->sortType);
+                } else {
+                    this->subHeading->setString(std::to_string(this->items.size()) + (this->items.size() == 1 ? " playlist" : " playlists"));
                 }
             }
 
@@ -208,7 +228,7 @@ namespace Frame {
         b->setText("Play");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
-            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID);
+            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID, Database::SortBy::TitleAsc);
             if (v.size() > 0) {
                 std::vector<SongID> ids;
                 for (size_t i = 0; i < v.size(); i++) {
@@ -228,7 +248,7 @@ namespace Frame {
         b->setText("Add to Queue");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
-            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID);
+            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID, Database::SortBy::TitleAsc);
             for (size_t i = 0; i < v.size(); i++) {
                 this->app->sysmodule()->sendAddToSubQueue(v[i].song.ID);
             }
@@ -246,7 +266,7 @@ namespace Frame {
             this->showAddToPlaylist([this, pos](PlaylistID i) {
                 if (i >= 0) {
                     // Get list of songs and add one-by-one to other playlist
-                    std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID);
+                    std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID, Database::SortBy::TitleAsc);
                     for (size_t j = 0; j < v.size(); j++) {
                         this->app->database()->addSongToPlaylist(i, v[j].song.ID);
                     }
@@ -264,7 +284,7 @@ namespace Frame {
 
                     // Otherwise recreate list
                     } else {
-                        this->refreshList();
+                        this->refreshList(this->sortType);
                     }
 
                     this->menu->close();
@@ -386,7 +406,7 @@ namespace Frame {
                 Utils::Fs::writeFile(this->newData.imagePath, buffer);
             }
             // Completely recreate list
-            this->refreshList();
+            this->refreshList(this->sortType);
 
         // Otherwise show a message
         } else {
@@ -422,14 +442,15 @@ namespace Frame {
 
     void Playlists::onPop(Type t) {
         // Get new metadata (if last playlist was deleted we can simply refresh the list)
-        std::vector<Metadata::Playlist> m = this->app->database()->getAllPlaylistMetadata();
+        std::vector<Metadata::Playlist> m = this->app->database()->getAllPlaylistMetadata(this->sortType);
         if (!this->items.empty() && m.empty()) {
-            this->refreshList();
+            this->refreshList(this->sortType);
             return;
         }
 
         // If there's a count difference then we need to remove the pushed playlist (as it was deleted)
         if (m.size() != this->items.size()) {
+            this->subHeading->setString(std::to_string(m.size()) + (m.size() == 1 ? " playlist" : " playlists"));
             this->list->removeElement(this->items[this->pushedIdx].elm);
             this->items.erase(this->items.begin() + this->pushedIdx);
             return;
@@ -491,5 +512,6 @@ namespace Frame {
         delete this->menu;
         delete this->msgbox;
         delete this->newMenu;
+        delete this->sortMenu;
     }
 };

@@ -4,6 +4,7 @@
 #include "ui/element/listitem/Song.hpp"
 #include "ui/frame/Playlist.hpp"
 #include "ui/overlay/ItemMenu.hpp"
+#include "ui/overlay/SortBy.hpp"
 #include "utils/FS.hpp"
 #include "utils/Utils.hpp"
 
@@ -24,13 +25,16 @@ namespace Frame {
         this->lengthH->setY(this->albumH->y());
         this->list->setY(this->list->y() + 80);
         this->list->setH(this->list->h() - 80);
-        this->subLength->setHidden(true);
 
         // First get metadata for the provided playlist
         this->metadata = this->app->database()->getPlaylistMetadataForID(id);
         if (this->metadata.ID < 0) {
             // Helps show there was an error (should never appear)
             this->heading->setString("Playlist");
+            this->msgbox = nullptr;
+            this->playlistMenu = nullptr;
+            this->songMenu = nullptr;
+            this->sortMenu = nullptr;
             return;
         }
 
@@ -48,7 +52,6 @@ namespace Frame {
             this->addElement(tmp);
             this->heading->setW(maxW - tmp->w());
         }
-        this->subTotal->setXY(this->heading->x() + 2, this->heading->y() + this->heading->h());
 
         // Play and 'more' buttons
         this->playButton = new Aether::FilledButton(this->heading->x(), this->heading->y() + this->heading->h() + 45, BUTTON_W, BUTTON_H, "Play", BUTTON_F, [this]() {
@@ -56,6 +59,7 @@ namespace Frame {
         });
         this->playButton->setFillColour(this->app->theme()->accent());
         this->playButton->setTextColour(Aether::Colour{0, 0, 0, 255});
+        this->sort->setY(this->playButton->y());
 
         Aether::BorderButton * moreButton = new Aether::BorderButton(this->playButton->x() + this->playButton->w() + 20, this->playButton->y(), BUTTON_H, BUTTON_H, 2, "", BUTTON_F, [this]() {
             this->createPlaylistMenu();
@@ -67,10 +71,8 @@ namespace Frame {
         dots->setColour(this->app->theme()->FG());
         moreButton->addElement(dots);
 
-        this->btns = new Aether::Container(this->playButton->x(), this->playButton->y(), moreButton->x() + moreButton->w() - this->playButton->x(), this->playButton->h());
-        this->btns->addElement(this->playButton);
-        this->btns->addElement(moreButton);
-        this->addElement(this->btns);
+        this->topContainer->addElement(this->playButton);
+        this->topContainer->addElement(moreButton);
 
         this->emptyMsg = nullptr;
         this->goBack = false;
@@ -78,10 +80,30 @@ namespace Frame {
         this->playlistMenu = nullptr;
         this->songMenu = nullptr;
 
+        // Create sort menu
+        this->sort->setCallback([this]() {
+            this->app->addOverlay(this->sortMenu);
+        });
+        std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::TitleAsc, "Title (ascending)"},
+                                                      {Database::SortBy::TitleDsc, "Title (descending)"},
+                                                      {Database::SortBy::ArtistAsc, "Artist (ascending)"},
+                                                      {Database::SortBy::ArtistDsc, "Artist (descending)"},
+                                                      {Database::SortBy::AlbumAsc, "Album (ascending)"},
+                                                      {Database::SortBy::AlbumDsc, "Album (descending)"},
+                                                      {Database::SortBy::LengthAsc, "Length (ascending)"},
+                                                      {Database::SortBy::LengthDsc, "Length (descending)"}};
+        this->sortMenu = new CustomOvl::SortBy("Sort Songs by", sort, [this](Database::SortBy s) {
+            this->refreshList(s);
+        });
+        this->sortMenu->setBackgroundColour(this->app->theme()->popupBG());
+        this->sortMenu->setIconColour(this->app->theme()->muted());
+        this->sortMenu->setLineColour(this->app->theme()->muted2());
+        this->sortMenu->setTextColour(this->app->theme()->FG());
+
         // Populate list
-        this->refreshList();
-        this->setFocused(this->btns);
-        this->btns->setFocused(this->playButton);
+        this->refreshList(Database::SortBy::TitleAsc);
+        this->setFocused(this->topContainer);
+        this->topContainer->setFocused(this->playButton);
     }
 
     void Playlist::playPlaylist(size_t pos) {
@@ -102,7 +124,8 @@ namespace Frame {
         }
         std::string str = std::to_string(this->songs.size()) + (this->songs.size() == 1 ? " song" : " songs");
         str += " | " + Utils::secondsToHoursMins(total);
-        this->subTotal->setString(str);
+        this->subHeading->setString(str);
+        this->subHeading->setXY(this->heading->x() + 2, this->heading->y() + this->heading->h());
 
         this->removeElement(this->emptyMsg);
         this->emptyMsg = nullptr;
@@ -112,16 +135,18 @@ namespace Frame {
             this->emptyMsg->setX(this->x() + (this->w() - emptyMsg->w())/2);
             this->addElement(this->emptyMsg);
             this->list->setHidden(true);
-            this->setFocused(this->btns);
+            this->setFocused(this->topContainer);
         }
     }
 
-    void Playlist::refreshList() {
+    void Playlist::refreshList(Database::SortBy sort) {
+        this->sortType = sort;
+
         // Create list elements for each song
         this->elms.clear();
         this->list->removeAllElements();
         this->metadata = this->app->database()->getPlaylistMetadataForID(this->metadata.ID);
-        this->songs = this->app->database()->getSongMetadataForPlaylist(this->metadata.ID);
+        this->songs = this->app->database()->getSongMetadataForPlaylist(this->metadata.ID, sort);
         if (this->songs.size() > 0) {
             for (size_t i = 0; i < this->songs.size(); i++) {
                 CustomElm::ListItem::Song * l = new CustomElm::ListItem::Song();
@@ -152,8 +177,6 @@ namespace Frame {
                     l->setY(this->list->y() + 10);
                 }
             }
-
-            this->setFocussed(this->list);
         }
 
         this->calculateStats();
@@ -227,7 +250,7 @@ namespace Frame {
 
                         // Refresh the list if it's this playlist
                         if (i == this->metadata.ID) {
-                            this->refreshList();
+                            this->refreshList(this->sortType);
                         }
                     }
                 });
@@ -309,7 +332,7 @@ namespace Frame {
 
                     // Refresh the list if it's this playlist
                     if (i == this->metadata.ID) {
-                        this->refreshList();
+                        this->refreshList(this->sortType);
                     }
                 }
             });
@@ -409,5 +432,6 @@ namespace Frame {
         delete this->msgbox;
         delete this->playlistMenu;
         delete this->songMenu;
+        delete this->sortMenu;
     }
 };

@@ -88,7 +88,7 @@ namespace Frame::Settings {
 
     void AppMetadata::searchAlbumsThread() {
         // Get list of albums to search for
-        std::vector<Metadata::Album> albums = this->app->database()->getAllAlbumMetadata();
+        std::vector<Metadata::Album> albums = this->app->database()->getAllAlbumMetadata(Database::SortBy::AlbumAsc);
         albums.erase(std::remove_if(albums.begin(), albums.end(), [](const Metadata::Album m) {
             return !m.imagePath.empty();
         }), albums.end());
@@ -136,7 +136,7 @@ namespace Frame::Settings {
 
     void AppMetadata::searchArtistsThread() {
         // Get list of artists to search for
-        std::vector<Metadata::Artist> artists = this->app->database()->getAllArtistMetadata();
+        std::vector<Metadata::Artist> artists = this->app->database()->getAllArtistMetadata(Database::SortBy::ArtistAsc);
         artists.erase(std::remove_if(artists.begin(), artists.end(), [](const Metadata::Artist m) {
             return !m.imagePath.empty();
         }), artists.end());

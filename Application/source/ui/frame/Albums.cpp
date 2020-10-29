@@ -4,6 +4,7 @@
 #include "ui/element/listitem/Artist.hpp"
 #include "ui/element/ScrollableGrid.hpp"
 #include "ui/frame/Albums.hpp"
+#include "ui/overlay/SortBy.hpp"
 
 // Number of GridItems per row
 #define COLUMNS 3
@@ -11,57 +12,37 @@
 namespace Frame {
     Albums::Albums(Main::Application * a) : Frame(a) {
         // Remove list + headings (I should redo Frame to avoid this)
-        this->removeElement(this->list);
-        this->removeElement(this->titleH);
-        this->removeElement(this->artistH);
-        this->removeElement(this->albumH);
-        this->removeElement(this->lengthH);
+        this->bottomContainer->removeElement(this->list);
+        this->topContainer->removeElement(this->titleH);
+        this->topContainer->removeElement(this->artistH);
+        this->topContainer->removeElement(this->albumH);
+        this->topContainer->removeElement(this->lengthH);
 
         // Now prepare this frame
         this->heading->setString("Albums");
-        CustomElm::ScrollableGrid * grid = new CustomElm::ScrollableGrid(this->x(), this->y() + 150, this->w() - 10, this->h() - 150, 250, 3);
-        grid->setShowScrollBar(true);
-        grid->setScrollBarColour(this->app->theme()->muted2());
+        this->grid = new CustomElm::ScrollableGrid(this->x(), this->y() + 170, this->w() - 10, this->h() - 170, 250, 3);
+        this->grid->setShowScrollBar(true);
+        this->grid->setScrollBarColour(this->app->theme()->muted2());
+        this->bottomContainer->addElement(this->grid);
 
-        // Create items for albums
-        std::vector<Metadata::Album> m = this->app->database()->getAllAlbumMetadata();
-        if (m.size() > 0) {
-            for (size_t i = 0; i < m.size(); i++) {
-                std::string img = (m[i].imagePath.empty() ? Path::App::DefaultArtFile : m[i].imagePath);
-                CustomElm::GridItem * l = new CustomElm::GridItem(img);
-                l->setMainString(m[i].name);
-                l->setSubString(m[i].artist);
-                l->setDotsColour(this->app->theme()->muted());
-                l->setTextColour(this->app->theme()->FG());
-                l->setMutedTextColour(this->app->theme()->muted());
-                AlbumID id = m[i].ID;
-                l->setCallback([this, id](){
-                    this->changeFrame(Type::Album, Action::Push, id);
-                });
-                l->setMoreCallback([this, id]() {
-                    this->createMenu(id);
-                });
-                grid->addElement(l);
-            }
+        // Create sort menu
+        this->sort->setCallback([this]() {
+            this->app->addOverlay(this->sortMenu);
+        });
+        std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::AlbumAsc, "Name (ascending)"},
+                                                      {Database::SortBy::AlbumDsc, "Name (descending)"},
+                                                      {Database::SortBy::ArtistAsc, "Artist (increasing)"},
+                                                      {Database::SortBy::ArtistDsc, "Artist (decreasing)"}};
+        this->sortMenu = new CustomOvl::SortBy("Sort Albums by", sort, [this](Database::SortBy s) {
+            this->createList(s);
+        });
+        this->sortMenu->setBackgroundColour(this->app->theme()->popupBG());
+        this->sortMenu->setIconColour(this->app->theme()->muted());
+        this->sortMenu->setLineColour(this->app->theme()->muted2());
+        this->sortMenu->setTextColour(this->app->theme()->FG());
 
-            this->subLength->setHidden(true);
-            this->subTotal->setString(std::to_string(m.size()) + (m.size() == 1 ? " album" : " albums" ));
-            this->subTotal->setX(this->x() + 885 - this->subTotal->w());
-
-            this->addElement(grid);
-            this->setFocussed(grid);
-
-        // Show message if no albums
-        } else {
-            grid->setHidden(true);
-            this->subLength->setHidden(true);
-            this->subTotal->setHidden(true);
-            Aether::Text * emptyMsg = new Aether::Text(0, grid->y() + grid->h()*0.4, "No albums found!", 24);
-            emptyMsg->setColour(this->app->theme()->FG());
-            emptyMsg->setX(this->x() + (this->w() - emptyMsg->w())/2);
-            this->addElement(emptyMsg);
-        }
-
+        this->createList(Database::SortBy::AlbumAsc);
+        this->bottomContainer->setFocussed(this->grid);
         this->artistsList = nullptr;
         this->albumMenu = nullptr;
     }
@@ -90,6 +71,44 @@ namespace Frame {
         }
 
         this->app->addOverlay(this->artistsList);
+    }
+
+    void Albums::createList(Database::SortBy sort) {
+        // Remove previous items
+        this->grid->removeAllElements();
+
+        // Create items for albums
+        std::vector<Metadata::Album> m = this->app->database()->getAllAlbumMetadata(sort);
+        if (m.size() > 0) {
+            for (size_t i = 0; i < m.size(); i++) {
+                std::string img = (m[i].imagePath.empty() ? Path::App::DefaultArtFile : m[i].imagePath);
+                CustomElm::GridItem * l = new CustomElm::GridItem(img);
+                l->setMainString(m[i].name);
+                l->setSubString(m[i].artist);
+                l->setDotsColour(this->app->theme()->muted());
+                l->setTextColour(this->app->theme()->FG());
+                l->setMutedTextColour(this->app->theme()->muted());
+                AlbumID id = m[i].ID;
+                l->setCallback([this, id](){
+                    this->changeFrame(Type::Album, Action::Push, id);
+                });
+                l->setMoreCallback([this, id]() {
+                    this->createMenu(id);
+                });
+                this->grid->addElement(l);
+            }
+            this->subHeading->setString(std::to_string(m.size()) + (m.size() == 1 ? " album" : " albums" ));
+
+        // Show message if no albums
+        } else {
+            this->grid->setHidden(true);
+            this->subHeading->setHidden(true);
+            Aether::Text * emptyMsg = new Aether::Text(0, grid->y() + grid->h()*0.4, "No albums found!", 24);
+            emptyMsg->setColour(this->app->theme()->FG());
+            emptyMsg->setX(this->x() + (this->w() - emptyMsg->w())/2);
+            this->addElement(emptyMsg);
+        }
+
     }
 
     void Albums::createMenu(AlbumID id) {
@@ -208,5 +227,6 @@ namespace Frame {
     Albums::~Albums() {
         delete this->artistsList;
         delete this->albumMenu;
+        delete this->sortMenu;
     }
 };

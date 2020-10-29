@@ -113,6 +113,7 @@ namespace Main {
     }
 
     void Application::setScreen(ScreenID s) {
+        this->screenID = s;
         this->display->setScreen(this->screens[static_cast<int>(s)]);
     }
 
@@ -197,6 +198,7 @@ namespace Main {
         Utils::NX::setPlayingMedia(false);
 
         // Delete screens
+        this->screens[static_cast<int>(this->screenID)]->onUnload();
         for (Screen::Screen * s : this->screens) {
             delete s;
         }

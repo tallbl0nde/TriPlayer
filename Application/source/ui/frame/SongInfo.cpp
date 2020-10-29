@@ -9,11 +9,13 @@
 namespace Frame {
     SongInfo::SongInfo(Main::Application * a, SongID id) : Frame(a) {
         // Remove list + headings (I should redo Frame to avoid this)
-        this->removeElement(this->list);
-        this->removeElement(this->titleH);
-        this->removeElement(this->artistH);
-        this->removeElement(this->albumH);
-        this->removeElement(this->lengthH);
+        this->bottomContainer->removeElement(this->list);
+        this->topContainer->removeElement(this->titleH);
+        this->topContainer->removeElement(this->artistH);
+        this->topContainer->removeElement(this->albumH);
+        this->topContainer->removeElement(this->lengthH);
+        this->sort->setHidden(true);
+        this->topContainer->setHasSelectable(false);
 
         // Get artist metadata from ID
         this->metadata = this->app->database()->getSongMetadataForID(id);
@@ -23,7 +25,7 @@ namespace Frame {
             t->setX(t->x() - t->w()/2);
             t->setY(t->y() - t->h()/2);
             t->setColour(this->app->theme()->FG());
-            this->addElement(t);
+            this->bottomContainer->addElement(t);
             return;
         }
 
@@ -33,7 +35,7 @@ namespace Frame {
         // Title
         Aether::Text * txt = new Aether::Text(this->heading->x(), this->heading->y() + this->heading->h() + 20, "Title", 30);
         txt->setColour(this->app->theme()->FG());
-        this->addElement(txt);
+        this->bottomContainer->addElement(txt);
         this->title = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.62, 50);
         this->title->setBoxColour(this->app->theme()->muted2());
         this->title->setTextColour(this->app->theme()->FG());
@@ -51,24 +53,24 @@ namespace Frame {
             this->metadata.title = str;
             this->title->setString(str);
         });
-        this->addElement(this->title);
+        this->bottomContainer->addElement(this->title);
 
         // Database ID
         txt = new Aether::Text(this->title->x() + this->title->w() + 50, txt->y(), "Database ID", 30);
         txt->setColour(this->app->theme()->FG());
-        this->addElement(txt);
+        this->bottomContainer->addElement(txt);
         CustomElm::TextBox * box = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.18, 50);
         box->setBoxColour(this->app->theme()->muted2());
         box->setTextColour(this->app->theme()->muted());
         box->setString(std::to_string(this->metadata.ID));
         box->setSelectable(false);
         box->setTouchable(false);
-        this->addElement(box);
+        this->bottomContainer->addElement(box);
 
         // Artist
         txt = new Aether::Text(this->heading->x(), box->y() + box->h() + 15, "Artist", 30);
         txt->setColour(this->app->theme()->FG());
-        this->addElement(txt);
+        this->bottomContainer->addElement(txt);
         this->artist = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.62, 50);
         this->artist->setBoxColour(this->app->theme()->muted2());
         this->artist->setTextColour(this->app->theme()->FG());
@@ -86,12 +88,12 @@ namespace Frame {
             this->metadata.artist = str;
             this->artist->setString(str);
         });
-        this->addElement(this->artist);
+        this->bottomContainer->addElement(this->artist);
 
         // Track Number
         txt = new Aether::Text(this->artist->x() + this->artist->w() + 50, txt->y(), "Track #", 30);
         txt->setColour(this->app->theme()->FG());
-        this->addElement(txt);
+        this->bottomContainer->addElement(txt);
         this->trackNumber = new CustomElm::NumberBox(box->x(), this->artist->y(), box->w(), this->artist->h());
         this->trackNumber->setBoxColour(this->app->theme()->muted2());
         this->trackNumber->setTextColour(this->app->theme()->FG());
@@ -103,12 +105,12 @@ namespace Frame {
         this->trackNumber->setNumpadCallback([this]() {
             this->metadata.trackNumber = this->trackNumber->value();
         });
-        this->addElement(this->trackNumber);
+        this->bottomContainer->addElement(this->trackNumber);
 
         // Album
         txt = new Aether::Text(this->heading->x(), this->artist->y() + this->artist->h() + 15, "Album", 30);
         txt->setColour(this->app->theme()->FG());
-        this->addElement(txt);
+        this->bottomContainer->addElement(txt);
         this->album = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.62, 50);
         this->album->setBoxColour(this->app->theme()->muted2());
         this->album->setTextColour(this->app->theme()->FG());
@@ -126,12 +128,12 @@ namespace Frame {
             this->metadata.album = str;
             this->album->setString(str);
         });
-        this->addElement(this->album);
+        this->bottomContainer->addElement(this->album);
 
         // Disc Number
         txt = new Aether::Text(this->album->x() + this->album->w() + 50, txt->y(), "Disc #", 30);
         txt->setColour(this->app->theme()->FG());
-        this->addElement(txt);
+        this->bottomContainer->addElement(txt);
         this->discNumber = new CustomElm::NumberBox(this->trackNumber->x(), this->album->y(), this->trackNumber->w(), this->album->h());
         this->discNumber->setBoxColour(this->app->theme()->muted2());
         this->discNumber->setTextColour(this->app->theme()->FG());
@@ -143,19 +145,19 @@ namespace Frame {
         this->discNumber->setNumpadCallback([this]() {
             this->metadata.discNumber = this->discNumber->value();
         });
-        this->addElement(this->discNumber);
+        this->bottomContainer->addElement(this->discNumber);
 
         // File path
         txt = new Aether::Text(this->heading->x(), this->album->y() + this->album->h() + 15, "File Location", 30);
         txt->setColour(this->app->theme()->FG());
-        this->addElement(txt);
+        this->bottomContainer->addElement(txt);
         this->filePath = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.62, 50);
         this->filePath->setBoxColour(this->app->theme()->muted2());
         this->filePath->setTextColour(this->app->theme()->muted());
         this->filePath->setString(this->metadata.path);
         this->filePath->setSelectable(false);
         this->filePath->setTouchable(false);
-        this->addElement(this->filePath);
+        this->bottomContainer->addElement(this->filePath);
 
         // Save button
         this->saveButton = new Aether::FilledButton(this->discNumber->x(), this->filePath->y(), this->discNumber->w(), 50, "Save", 26, [this]() {
@@ -163,7 +165,7 @@ namespace Frame {
         });
         this->saveButton->setFillColour(this->app->theme()->accent());
         this->saveButton->setTextColour(Aether::Colour{0, 0, 0, 255});
-        this->addElement(this->saveButton);
+        this->bottomContainer->addElement(this->saveButton);
 
         this->msgbox = nullptr;
     }

@@ -9,6 +9,25 @@
 // to read/write data. All queries have a way of detecting if they failed.
 // If so, error() will return a non-empty string describing the error.
 class Database {
+    public:
+        // Column and method to sort results by
+        // Note that a default order will be used if the requested data
+        // does not support the requested sort type
+        enum class SortBy {
+            TitleAsc,       // Title/name (A-Z)
+            TitleDsc,       // Title/name (Z-A)
+            ArtistAsc,      // Artist name (A-Z)
+            ArtistDsc,      // Artist name (Z-A)
+            AlbumAsc,       // Album name (A-Z)
+            AlbumDsc,       // Album name (Z-A)
+            AlbumsAsc,      // Album count (least first)
+            AlbumsDsc,      // Album count (most first)
+            LengthAsc,      // Length (shortest first)
+            LengthDsc,      // Length (longest first)
+            SongsAsc,       // Song count (least first)
+            SongsDsc        // Song count (most first)
+        };
+
     private:
         // Interface to database
         SQLite * db;
@@ -59,20 +78,20 @@ class Database {
         bool updateAlbum(Metadata::Album);
         // Returns metadata for all stored albums
         // Empty if no albums or an error occurred
-        std::vector<Metadata::Album> getAllAlbumMetadata();
+        std::vector<Metadata::Album> getAllAlbumMetadata(SortBy);
         // Return metadata for the given AlbumID
         // ID will be negative if not found
         Metadata::Album getAlbumMetadataForID(AlbumID);
         // Return metadata for all albums an artist is a part of
         // Empty if none found or an error occurred
-        std::vector<Metadata::Album> getAlbumMetadataForArtist(ArtistID);
+        std::vector<Metadata::Album> getAlbumMetadataForArtist(ArtistID, SortBy);
 
         // ===== Artist Metadata ===== //
         // Update an artist's metadata (grabs ID from struct)
         bool updateArtist(Metadata::Artist);
         // Returns metadata for all stored artists
         // Empty if no artists or an error occurred
-        std::vector<Metadata::Artist> getAllArtistMetadata();
+        std::vector<Metadata::Artist> getAllArtistMetadata(SortBy);
         // Returns a list of artists for a given AlbumID
         // Empty if no artists or an error occurred
         std::vector<Metadata::Artist> getArtistMetadataForAlbum(AlbumID);
@@ -92,12 +111,12 @@ class Database {
         bool removePlaylist(PlaylistID);
         // Returns metadata for all stored playlists
         // Empty if no playlists or an error occurred
-        std::vector<Metadata::Playlist> getAllPlaylistMetadata();
+        std::vector<Metadata::Playlist> getAllPlaylistMetadata(SortBy);
         // Returns metadata for given ID (id will be -1 if not found!)
         Metadata::Playlist getPlaylistMetadataForID(PlaylistID);
         // Returns a playlist's songs
         // Empty if there are none or an error occurred
-        std::vector<Metadata::PlaylistSong> getSongMetadataForPlaylist(PlaylistID);
+        std::vector<Metadata::PlaylistSong> getSongMetadataForPlaylist(PlaylistID, SortBy);
         // Add a song to a playlist
         // Return true if successful, false otherwise
         bool addSongToPlaylist(PlaylistID, SongID);
@@ -117,7 +136,7 @@ class Database {
         bool removeSong(SongID);
         // Returns metadata for all stored songs
         // Empty if no songs or an error occurred
-        std::vector<Metadata::Song> getAllSongMetadata();
+        std::vector<Metadata::Song> getAllSongMetadata(SortBy);
         // Returns an album's songs
         // Empty if there are none or an error occurred
         std::vector<Metadata::Song> getSongMetadataForAlbum(AlbumID);

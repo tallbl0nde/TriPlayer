@@ -17,6 +17,10 @@
 
 namespace Frame {
     Album::Album(Main::Application * app, AlbumID id) : Frame(app) {
+        // Hide sort button
+        this->sort->setHidden(true);
+        this->topContainer->setHasSelectable(false);
+
         // Reposition elements
         this->albumH->setString("#");
         this->albumH->setXY(this->titleH->x(), this->albumH->y() + 80);
@@ -55,15 +59,16 @@ namespace Frame {
 
         std::string str = this->metadata.artist;
         str += " | " + std::to_string(this->metadata.songCount) + (this->metadata.songCount == 1 ? " song" : " songs");
-        this->subTotal->setString(str);
-        this->subTotal->setXY(this->heading->x() + 2, this->heading->y() + this->heading->h());
+        this->subHeading->setString(str);
+        this->subHeading->setXY(this->heading->x() + 2, this->heading->y() + this->heading->h());
 
         // Play and 'more' buttons
-        this->playButton = new Aether::FilledButton(this->subTotal->x(), this->subTotal->y() + this->subTotal->h() + 20, BUTTON_W, BUTTON_H, "Play", BUTTON_F, [this]() {
+        this->playButton = new Aether::FilledButton(this->subHeading->x(), this->subHeading->y() + this->subHeading->h() + 20, BUTTON_W, BUTTON_H, "Play", BUTTON_F, [this]() {
             this->playAlbum(std::numeric_limits<size_t>::max());
         });
         this->playButton->setFillColour(this->app->theme()->accent());
         this->playButton->setTextColour(Aether::Colour{0, 0, 0, 255});
+        this->sort->setY(this->playButton->y());
 
         Aether::BorderButton * moreButton = new Aether::BorderButton(this->playButton->x() + this->playButton->w() + 20, this->playButton->y(), BUTTON_H, BUTTON_H, 2, "", BUTTON_F, [this]() {
             this->createAlbumMenu();
@@ -75,10 +80,8 @@ namespace Frame {
         dots->setColour(this->app->theme()->FG());
         moreButton->addElement(dots);
 
-        Aether::Container * c = new Aether::Container(this->playButton->x(), this->playButton->y(), moreButton->x() + moreButton->w() - this->playButton->x(), this->playButton->h());
-        c->addElement(this->playButton);
-        c->addElement(moreButton);
-        this->addElement(c);
+        this->topContainer->addElement(this->playButton);
+        this->topContainer->addElement(moreButton);
 
         // Get all the songs in the album (ordered by disc, track number and finally alphabetically)
         this->songs = this->app->database()->getSongMetadataForAlbum(this->metadata.ID);
@@ -134,6 +137,9 @@ namespace Frame {
                 }
             }
         }
+
+        this->setFocused(this->topContainer);
+        this->topContainer->setFocused(this->playButton);
 
         this->artistsList = nullptr;
         this->albumMenu = nullptr;

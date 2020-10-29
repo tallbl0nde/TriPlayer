@@ -21,15 +21,17 @@ static struct Utils::NX::Keyboard keyboard = {
 namespace Frame {
     Search::Search(Main::Application * a) : Frame(a) {
         // Hide everything
-        this->subLength->setHidden(true);
-        this->subTotal->setHidden(true);
+        this->subHeading->setHidden(true);
         this->titleH->setHidden(true);
         this->artistH->setHidden(true);
         this->albumH->setHidden(true);
         this->lengthH->setHidden(true);
+        this->sort->setHidden(true);
+        this->topContainer->setHasSelectable(false);
         this->artistsList = nullptr;
         this->menu = nullptr;
         this->searchContainer = nullptr;
+        this->heading->setString("Results for:");
 
         // Get input first
         bool haveInput = Utils::NX::getUserInput(keyboard);
@@ -54,7 +56,6 @@ namespace Frame {
 
     void Search::addEntries() {
         // Set heading and position
-        this->heading->setFontSize(46);
         this->heading->setString("Results for: " + keyboard.buffer);
         int maxW = (this->w() - (this->heading->x() - this->x())*2);
         if (this->heading->w() > maxW) {
@@ -83,7 +84,6 @@ namespace Frame {
         this->addArtists();
         this->addAlbums();
         this->addSongs();
-        this->setFocussed(this->list);
     }
 
     void Search::addPlaylists() {
@@ -334,7 +334,7 @@ namespace Frame {
         b->setText("Play");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, m]() {
-            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(m.ID);
+            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(m.ID, Database::SortBy::TitleAsc);
             if (v.size() > 0) {
                 std::vector<SongID> ids;
                 for (size_t i = 0; i < v.size(); i++) {
@@ -354,7 +354,7 @@ namespace Frame {
         b->setText("Add to Queue");
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, m]() {
-            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(m.ID);
+            std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(m.ID, Database::SortBy::TitleAsc);
             for (size_t i = 0; i < v.size(); i++) {
                 this->app->sysmodule()->sendAddToSubQueue(v[i].song.ID);
             }
@@ -372,7 +372,7 @@ namespace Frame {
             this->showAddToPlaylist([this, m](PlaylistID i) {
                 if (i >= 0) {
                     // Get list of songs and add one-by-one to other playlist
-                    std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(m.ID);
+                    std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(m.ID, Database::SortBy::TitleAsc);
                     for (size_t j = 0; j < v.size(); j++) {
                         this->app->database()->addSongToPlaylist(i, v[j].song.ID);
                     }

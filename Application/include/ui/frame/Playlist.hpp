@@ -1,6 +1,7 @@
 #ifndef FRAME_PLAYLIST_HPP
 #define FRAME_PLAYLIST_HPP
 
+#include "db/Database.hpp"
 #include "Types.hpp"
 #include "ui/frame/Frame.hpp"
 
@@ -12,6 +13,7 @@ namespace CustomElm::ListItem {
 namespace CustomOvl {
     class ItemMenu;
     class Menu;
+    class SortBy;
 };
 
 namespace Frame {
@@ -22,12 +24,15 @@ namespace Frame {
             CustomOvl::Menu * playlistMenu;
             CustomOvl::ItemMenu * songMenu;
 
+            // Sorting stuff
+            CustomOvl::SortBy * sortMenu;
+            Database::SortBy sortType;
+
             // Indicates frame should delete itself
             bool goBack;
 
             // UI elements
             Aether::FilledButton * playButton;
-            Aether::Container * btns;
             Aether::Text * emptyMsg;
             Aether::Image * image;
 
@@ -46,7 +51,7 @@ namespace Frame {
 
             // Repopulates list
             void calculateStats();
-            void refreshList();
+            void refreshList(Database::SortBy);
 
         public:
             // The constructor takes the ID of the playlist to show

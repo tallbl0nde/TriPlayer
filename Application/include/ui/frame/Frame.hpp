@@ -39,13 +39,15 @@ namespace Frame {
     class Frame : public Aether::Container {
         protected:
             // Common elements
+            Aether::Container * topContainer;
             Aether::Text * heading;
-            Aether::Text * subLength;
-            Aether::Text * subTotal;
+            Aether::Text * subHeading;
+            Aether::BorderButton * sort;
             Aether::Text * titleH;
             Aether::Text * artistH;
             Aether::Text * albumH;
             Aether::Text * lengthH;
+            Aether::Container * bottomContainer;
             Aether::List * list;
 
             // Pointer to app to access shared objects
@@ -58,6 +60,9 @@ namespace Frame {
         public:
             // Passed app pointer for sysmodule + theme
             Frame(Main::Application *);
+
+            // Listens for specific button presses
+            bool handleEvent(Aether::InputEvent *);
 
             // Call to update colours
             virtual void updateColours();

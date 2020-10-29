@@ -1,6 +1,7 @@
 #ifndef FRAME_PLAYLISTS_HPP
 #define FRAME_PLAYLISTS_HPP
 
+#include "db/Database.hpp"
 #include "ui/frame/Frame.hpp"
 
 // Forward declarations as only pointers are used in this header
@@ -12,6 +13,7 @@ namespace CustomOvl {
     class FileBrowser;
     class ItemMenu;
     class NewPlaylist;
+    class SortBy;
 };
 
 namespace Frame {
@@ -41,6 +43,10 @@ namespace Frame {
             // Metadata of playlist to create
             Metadata::Playlist newData;
 
+            // Sort menu and last type
+            CustomOvl::SortBy * sortMenu;
+            Database::SortBy sortType;
+
             // Helper function to prepare menus
             void createDeletePlaylistMenu(const size_t);
             void createFileBrowser();
@@ -52,7 +58,7 @@ namespace Frame {
             CustomElm::ListItem::Playlist * getListItem(const Metadata::Playlist &);
 
             // Reconstructs the entire list from scratch
-            void refreshList();
+            void refreshList(Database::SortBy);
 
             // Save new playlist to DB
             void savePlaylist();
