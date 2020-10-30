@@ -18,7 +18,7 @@ all:
 	@echo -e '\033[1m>> Application\033[0m'
 	@$(MAKE) -s -C Application/
 	@echo -e '\033[1m>> Overlay\033[0m'
-	# @$(MAKE) -C Overlay/
+	@$(MAKE) -s -C Overlay/
 	@echo -e '\033[1m>> Sysmodule\033[0m'
 	@$(MAKE) -s -C Sysmodule/
 	@echo -e '\033[1m>> SD Card\033[0m'
@@ -27,8 +27,8 @@ all:
 	@mkdir -p sdcard/switch/TriPlayer
 	@cp Application/TriPlayer.nro sdcard/switch/TriPlayer
 
-	# @mkdir -p sdcard/switch/.overlays
-	# @cp Overlay/ovl-triplayer.ovl sdcard/switch/.overlays
+	@mkdir -p sdcard/switch/.overlays
+	@cp Overlay/ovl-TriPlayer.ovl sdcard/switch/.overlays
 
 	@mkdir -p sdcard/atmosphere/contents/4200000000000FFF/flags
 	@touch sdcard/atmosphere/contents/4200000000000FFF/flags/boot2.flag
@@ -46,7 +46,7 @@ clean:
 	@echo -e '\033[1m>> Application\033[0m'
 	@$(MAKE) -s -C Application/ clean-all
 	@echo -e '\033[1m>> Overlay\033[0m'
-	# @$(MAKE) -C Overlay/ clean
+	@$(MAKE) -C Overlay/ clean
 	@echo -e '\033[1m>> Sysmodule\033[0m'
 	@$(MAKE) -s -C Sysmodule/ clean
 	@echo -e '\033[1m>> SD Card\033[0m'
