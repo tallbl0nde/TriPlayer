@@ -64,8 +64,8 @@ namespace Utils {
         }
         switch (colourType) {
             case PNG_COLOR_TYPE_RGB:
-                bitmap.channels = 3;
-                break;
+                png_set_filler(png, 0xFF, PNG_FILLER_AFTER);
+                png_read_update_info(png, info);
 
             case PNG_COLOR_TYPE_RGB_ALPHA:
                 bitmap.channels = 4;
@@ -144,5 +144,31 @@ namespace Utils {
         bitmap.width = newWidth;
         bitmap.height = newHeight;
         return true;
+    }
+
+    std::string secondsToHMS(unsigned int sec) {
+        std::string str = "";
+        // Hours
+        int h = sec/3600;
+        if (h > 0) {
+            str += std::to_string(h) + ":";
+        }
+
+        // Minutes
+        int m = ((sec/60)%60);
+        if (str.length() > 0 && m < 10) {
+            str += "0";
+        }
+        str += std::to_string(m);
+
+        // Seconds
+        str += ":";
+        int s = sec%60;
+        if (s < 10) {
+            str += "0";
+        }
+        str += std::to_string(s);
+
+        return str;
     }
 };

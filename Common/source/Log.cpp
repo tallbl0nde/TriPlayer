@@ -3,6 +3,49 @@
 #include "Log.hpp"
 #include <mutex>
 
+// Use blank functions if overlay
+#ifdef _OVERLAY_
+
+namespace Log {
+    Level loggingLevel() {
+        return Log::Level::None;
+    }
+
+    void setLogLevel(Level l) {
+
+    }
+
+    std::string levelToString(const Level l) {
+        return "";
+    }
+
+    bool openFile(std::string f, Level l) {
+        return false;
+    }
+
+    void closeFile() {
+
+    }
+
+    void writeError(std::string msg) {
+
+    }
+
+    void writeInfo(std::string msg) {
+
+    }
+
+    void writeSuccess(std::string msg) {
+
+    }
+
+    void writeWarning(std::string msg) {
+
+    }
+};
+
+#else
+
 // Log file pointer
 static std::atomic<FILE *> file = nullptr;
 // Log level
@@ -105,3 +148,5 @@ namespace Log {
         }
     }
 }
+
+#endif

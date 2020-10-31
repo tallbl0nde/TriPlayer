@@ -3,10 +3,15 @@
 
 #include "tesla.hpp"
 
+// Forward declare database object
+class Database;
+
 // The main overlay class. Contains code to start/stop services and load the initial
 // GUI frame. The frame loaded depends on whether the services started successfully.
 class TriOverlay : public tsl::Overlay {
     private:
+        Database * database;        // Database object passed to gui
+        bool dbInitialized;         // Indicates whether database opened successfully
         bool triInitialized;        // Indicates whether TriPlayer initialized
 
     public:

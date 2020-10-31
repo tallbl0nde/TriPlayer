@@ -33,7 +33,7 @@ BUILD		:=	build
 INCLUDES	:=	include build/hdrs ../Common/include libs/libTesla/include
 SOURCES		:=	source ../Common/source
 DATA		:=	data
-LIBS		:=  -lnx -lpng -lz
+LIBS		:=  -lnx -lpng -lSQLite -lz
 LIBDIRS		:=	$(PORTLIBS) $(LIBNX) $(CURDIR)/../Common/libs/SQLite
 
 #---------------------------------------------------------------------------------
@@ -62,7 +62,7 @@ OUTPUT		:=	$(CURDIR)/$(TARGET)
 # Flags to pass to compiler
 #---------------------------------------------------------------------------------
 DEFINES		:=	-D__SWITCH__ -D_OVERLAY_ -DVER_MAJOR=$(VER_MAJOR) -DVER_MINOR=$(VER_MINOR) -DVER_MICRO=$(VER_MICRO) -DVER_STRING=\"$(VER_MAJOR).$(VER_MINOR).$(VER_MICRO)\"
-CFLAGS		:=	-g -Wall -Os -ffunction-sections $(ARCH) $(DEFINES) $(INCLUDE)
+CFLAGS		:=	-g -Wall -Os -fdata-sections -ffunction-sections $(ARCH) $(DEFINES) $(INCLUDE)
 CXXFLAGS	:=	$(CFLAGS) -fno-exceptions -std=gnu++2a
 
 #----------------------------------------------------------------------------------------------------------------------

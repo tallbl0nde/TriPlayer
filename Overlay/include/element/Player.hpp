@@ -18,8 +18,33 @@ namespace Element {
             Button * next;
             Button * repeat;
 
+            // Song metadata
+            bool defaultArt;
+            std::string title;
+            std::string artist;
+            std::string position;
+            std::string duration;
+
+            unsigned int durationSecs;
+            unsigned int positionSecs;
+
+            bool playing;
+            bool repeatOn;
+            bool repeatOne;
+            bool shuffled;
+
         public:
             Player();
+
+            // Functions passed values to set the state of the player + controls
+            void setTitle(const std::string &);
+            void setArtist(const std::string &);
+            void setPosition(const double);
+            void setDuration(const unsigned int);
+            void setPlaying(const bool);
+            void setRepeat(const bool, const bool);
+            void setShuffle(const bool);
+            void setAlbumArt(std::vector<uint8_t> &);
 
             tsl::elm::Element * requestFocus(tsl::elm::Element *, tsl::FocusDirection);
 

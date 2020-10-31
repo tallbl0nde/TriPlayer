@@ -21,6 +21,9 @@ namespace Utils {
     // Resizes a bitmap in place using bilinear interpolation
     // Returns whether successful or not
     bool resizeBitmap(Bitmap &, const size_t, const size_t);
+
+    // Format seconds in HH:MM:SS
+    std::string secondsToHMS(unsigned int);
 };
 
 #endif

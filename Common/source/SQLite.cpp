@@ -1,6 +1,5 @@
 #include "Log.hpp"
 #include "SQLite.hpp"
-#include <thread>
 #include "utils/FS.hpp"
 
 SQLite::SQLite(const std::string & pth) {
@@ -51,7 +50,7 @@ bool SQLite::prepare() {
     // Return detailed error codes
     sqlite3_extended_result_codes(this->db, 1);
 
-    // Ensure journal is in memory (DOUBLE CHECK **)
+    // Ensure journal is in memory
     ok = this->prepareQuery("PRAGMA journal_mode=MEMORY;");
     if (ok) {
         ok = this->executeQuery();

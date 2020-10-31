@@ -25,9 +25,11 @@ INCLUDES	:=	include
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIC -ftls-model=local-exec
 
-CFLAGS	:=	-g -w -Os -D__SWITCH__ -ffunction-sections -fdata-sections $(ARCH) \
+CFLAGS	:=	-w -Os -D__SWITCH__ -ffunction-sections -fdata-sections $(ARCH) \
 			-DSQLITE_OMIT_WAL -DSQLITE_CORE -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_FTS4 \
-			-DSQLITE_THREADSAFE=0
+			-DSQLITE_THREADSAFE=0 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED \
+			-DSQLITE_OMIT_SHARED_CACHE
+
 			# devkitPro doesn't support dynamic libraries :/
 			# so they are disabled so it will compile :)
 
@@ -35,8 +37,8 @@ CFLAGS	+=	$(INCLUDE)
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 
-ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=${DEVKITPRO}/libnx/switch.specs -g $(ARCH) -Wl,-r,-Map,$(notdir $*.map)
+ASFLAGS	:=	$(ARCH)
+LDFLAGS	=	-specs=${DEVKITPRO}/libnx/switch.specs $(ARCH) -Wl,--gc-sections -Wl,-r,-Map,$(notdir $*.map)
 
 LIBS	:=  -lnx
 
