@@ -24,15 +24,17 @@ include $(DEVKITPRO)/libnx/switch_rules
 # BUILD: Directory where object files & intermediate files will be placed
 # INCLUDES: List of directories containing header files
 # SOURCES: List of directories containing source code
+# DATA: Directory containing binary data
 # LIBS: Libraries to link against
 # LIBDIRS: Directories of libraries
 #---------------------------------------------------------------------------------
 TARGET		:=	ovl-TriPlayer
 BUILD		:=	build
-INCLUDES	:=	include ../Common/include libs/libTesla/include
+INCLUDES	:=	include build/hdrs ../Common/include libs/libTesla/include
 SOURCES		:=	source ../Common/source
-LIBS		:=  -lnx
-LIBDIRS		:=	$(LIBNX) $(CURDIR)/../Common/libs/SQLite
+DATA		:=	data
+LIBS		:=  -lnx -lpng -lz
+LIBDIRS		:=	$(PORTLIBS) $(LIBNX) $(CURDIR)/../Common/libs/SQLite
 
 #---------------------------------------------------------------------------------
 # Options for .nacp information
@@ -44,6 +46,7 @@ APP_VERSION	:=	$(VER_MAJOR).$(VER_MINOR).$(VER_MICRO)
 #---------------------------------------------------------------------------------
 # Options for code generation
 #---------------------------------------------------------------------------------
+HEADDIR		:=  $(BUILD)/hdrs
 OBJDIR		:=	$(BUILD)/objs
 DEPDIR		:=	$(BUILD)/deps
 ARCH		:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
@@ -65,6 +68,9 @@ CXXFLAGS	:=	$(CFLAGS) -fno-exceptions -std=gnu++2a
 #----------------------------------------------------------------------------------------------------------------------
 # Definition of variables which store file locations
 #----------------------------------------------------------------------------------------------------------------------
+BINFILES	:= $(shell find $(DATA)/ -type f)
+OFILES_BIN	:= $(addsuffix .o,$(BINFILES:$(DATA)/%=$(OBJDIR)/%))
+HFILES_BIN	:= $(addsuffix .h,$(subst .,_,$(BINFILES:$(DATA)/%=$(HEADDIR)/%)))
 CFILES		:= $(foreach dir,$(SOURCES),$(shell find $(dir)/ -name "*.c"))
 CPPFILES	:= $(foreach dir,$(SOURCES),$(shell find $(dir)/ -name "*.cpp"))
 OFILES		:= $(filter %.o, $(foreach dir,$(SOURCES),$(CPPFILES:$(dir)/%.cpp=$(OBJDIR)/%.o)))
@@ -84,7 +90,7 @@ endif
 #----------------------------------------------------------------------------------------------------------------------
 # Define few virtual make targets
 #----------------------------------------------------------------------------------------------------------------------
-.PHONY: all clean
+.PHONY: all clean $(HEADDIR)
 #----------------------------------------------------------------------------------------------------------------------
 all: $(OUTPUT).ovl
 $(OUTPUT).ovl:	$(OUTPUT).elf $(OUTPUT).nacp
@@ -92,7 +98,11 @@ $(OUTPUT).ovl:	$(OUTPUT).elf $(OUTPUT).nacp
 	@echo "Built: $(notdir $(OUTPUT).ovl)"
 $(OUTPUT).elf:	$(OFILES)
 	@echo Linking $(TARGET).elf
-	@$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
+	@$(LD) $(LDFLAGS) $(OFILES) $(OFILES_BIN) $(LIBPATHS) $(LIBS) -o $@
+
+$(OFILES): | $(OFILES_BIN)
+$(OFILES_BIN): $(HFILES_BIN)
+$(HFILES_BIN): | $(HEADDIR)
 
 .SECONDEXPANSION:
 define crule
@@ -122,3 +132,17 @@ clean:
 $(TREE): %:
 	@mkdir -p $@
 	@mkdir -p $(@:$(OBJDIR)%=$(DEPDIR)%)
+$(HEADDIR):
+	@mkdir -p $@
+
+#----------------------------------------------------------------------------------------------------------------------
+# Rules to convert .png in /data to .o
+#----------------------------------------------------------------------------------------------------------------------
+$(HEADDIR)/%_png.h:	$(DATA)/%.png
+	@echo "#include <cstddef>\nextern const uint8_t" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' -e 's/[^A-Za-z0-9_]/_/g')`"_end[];" > $@
+	@echo "extern const uint8_t" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' -e 's/[^A-Za-z0-9_]/_/g')`"[];" >> $@
+	@echo "extern const uint32_t" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' -e 's/[^A-Za-z0-9_]/_/g')`_size";" >> $@
+
+$(OBJDIR)/%.png.o:	$(DATA)/%.png
+	@echo "Converting $<..."
+	@bin2s $< | $(AS) -o $(@)

@@ -8,6 +8,9 @@ TriOverlay::TriOverlay() : tsl::Overlay() {
 }
 
 void TriOverlay::initServices() {
+    // Mount sd card
+    fsdevMountSdmc();
+
     // Attempt to connect to TriPlayer
     this->triInitialized = TriPlayer::initialize();
 }
@@ -17,6 +20,8 @@ void TriOverlay::exitServices() {
         TriPlayer::exit();
         this->triInitialized = false;
     }
+
+    fsdevUnmountDevice("sdmc");
 }
 
 std::unique_ptr<tsl::Gui> TriOverlay::loadInitialGui() {

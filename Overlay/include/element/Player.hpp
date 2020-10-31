@@ -2,10 +2,19 @@
 #define ELEMENT_PLAYER_HPP
 
 #include "tesla.hpp"
+#include "Utils.hpp"
 
 namespace Element {
     class Player : public tsl::elm::Element {
         private:
+            Bitmap albumArt;
+            Bitmap shuffleIcon;
+            Bitmap previousIcon;
+            Bitmap playIcon;
+            Bitmap pauseIcon;
+            Bitmap nextIcon;
+            Bitmap repeatIcon;
+            Bitmap repeatOneIcon;
 
         public:
             Player();
