@@ -5,16 +5,18 @@
 #include "Utils.hpp"
 
 namespace Element {
+    // Forward declaration
+    class Button;
+
+    // The Player element...
     class Player : public tsl::elm::Element {
         private:
             Bitmap albumArt;
-            Bitmap shuffleIcon;
-            Bitmap previousIcon;
-            Bitmap playIcon;
-            Bitmap pauseIcon;
-            Bitmap nextIcon;
-            Bitmap repeatIcon;
-            Bitmap repeatOneIcon;
+            Button * shuffle;
+            Button * previous;
+            Button * play;
+            Button * next;
+            Button * repeat;
 
         public:
             Player();

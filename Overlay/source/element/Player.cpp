@@ -1,4 +1,5 @@
 #include <cstring>
+#include "element/Button.hpp"
 #include "element/Player.hpp"
 
 // Image files
@@ -10,6 +11,10 @@
 #include "repeat_one_png.h"
 #include "repeat_png.h"
 #include "shuffle_png.h"
+
+// Button padding
+#define BUTTON_PADDING_X 8
+#define BUTTON_PADDING_Y 8
 
 // Text colours
 #define ARTIST_FONT_COLOUR 0xbbbb
@@ -34,41 +39,95 @@ namespace Element {
         // Shuffle icon
         buffer.resize(shuffle_png_size);
         std::memcpy(&buffer[0], shuffle_png, shuffle_png_size);
-        this->shuffleIcon = Utils::convertPNGToBitmap(buffer);
+        this->shuffle = new Button(BUTTON_PADDING_X, BUTTON_PADDING_Y, buffer);
+        this->shuffle->setParent(this);
 
         // Previous icon
         buffer.resize(previous_png_size);
         std::memcpy(&buffer[0], previous_png, previous_png_size);
-        this->previousIcon = Utils::convertPNGToBitmap(buffer);
+        this->previous = new Button(BUTTON_PADDING_X, BUTTON_PADDING_Y, buffer);
+        this->previous->setParent(this);
 
-        // Play icon
+        // Play/pause icon
         buffer.resize(play_png_size);
         std::memcpy(&buffer[0], play_png, play_png_size);
-        this->playIcon = Utils::convertPNGToBitmap(buffer);
-
-        // Pause icon
+        this->play = new Button(BUTTON_PADDING_X, BUTTON_PADDING_Y, buffer);
+        this->play->setParent(this);
         buffer.resize(pause_png_size);
         std::memcpy(&buffer[0], pause_png, pause_png_size);
-        this->pauseIcon = Utils::convertPNGToBitmap(buffer);
+        this->play->addAltImage(buffer);
 
         // Next icon
         buffer.resize(next_png_size);
         std::memcpy(&buffer[0], next_png, next_png_size);
-        this->nextIcon = Utils::convertPNGToBitmap(buffer);
+        this->next = new Button(BUTTON_PADDING_X, BUTTON_PADDING_Y, buffer);
+        this->next->setParent(this);
 
         // Repeat icon
         buffer.resize(repeat_png_size);
         std::memcpy(&buffer[0], repeat_png, repeat_png_size);
-        this->repeatIcon = Utils::convertPNGToBitmap(buffer);
-
-        // Repeat one icon
+        this->repeat = new Button(BUTTON_PADDING_X, BUTTON_PADDING_Y, buffer);
+        this->repeat->setParent(this);
         buffer.resize(repeat_one_png_size);
         std::memcpy(&buffer[0], repeat_one_png, repeat_one_png_size);
-        this->repeatOneIcon = Utils::convertPNGToBitmap(buffer);
+        this->repeat->addAltImage(buffer);
     }
 
-    tsl::elm::Element * Player::requestFocus(tsl::elm::Element * old, tsl::FocusDirection direction) {
-        return nullptr;
+    tsl::elm::Element * Player::requestFocus(tsl::elm::Element * old, tsl::FocusDirection dir) {
+        // If "None" direction, highlight the play/pause button
+        switch (dir) {
+            case tsl::FocusDirection::None:
+                return this->play->requestFocus(old, dir);
+
+            // Otherwise if right/left attempt to move
+            case tsl::FocusDirection::Left:
+                if (old == this->repeat) {
+                    return this->next->requestFocus(old, dir);
+
+                } else if (old == this->next) {
+                    return this->play->requestFocus(old, dir);
+
+                } else if (old == this->play) {
+                    return this->previous->requestFocus(old, dir);
+
+                } else if (old == this->previous) {
+                    return this->shuffle->requestFocus(old, dir);
+                }
+                break;
+
+            // Otherwise if right/left attempt to move
+            case tsl::FocusDirection::Right:
+                if (old == this->next) {
+                    return this->repeat->requestFocus(old, dir);
+
+                } else if (old == this->play) {
+                    return this->next->requestFocus(old, dir);
+
+                } else if (old == this->previous) {
+                    return this->play->requestFocus(old, dir);
+
+                } else if (old == this->shuffle) {
+                    return this->previous->requestFocus(old, dir);
+                }
+                break;
+
+            // Move off stop button if highlighted
+            case tsl::FocusDirection::Up:
+                // if (old == stopButton) {
+                    // return this->play->requestFocus(old, dir);
+                // }
+                break;
+
+            // Move to stop button if not highlighted
+            case tsl::FocusDirection::Down:
+                // if (old != stopButton) {
+                    // return this->stopButton->requestFocus(old, dir);
+                // }
+                break;
+        }
+
+        // If not handled return the currently focussed element
+        return old->requestFocus(old, dir);
     }
 
     void Player::draw(tsl::gfx::Renderer * renderer) {
@@ -101,37 +160,14 @@ namespace Element {
 
         // Scroll bar
         renderer->drawRect(this->getX() + this->getWidth() * 0.2, nextY - 2, this->getWidth() * 0.6, 4, 0xffff);
-        nextY += 40;
+        nextY += 125;
 
-        // Play/pause
-        if (!this->playIcon.pixels.empty()) {
-            renderer->drawBitmap(this->getX() + this->getWidth() * 0.5 - this->playIcon.width/2, nextY, this->playIcon.width, this->playIcon.height, &this->playIcon.pixels[0]);
-        }
-        nextY += 17;
-
-        // Previous
-        if (!this->previousIcon.pixels.empty()) {
-            renderer->drawBitmap(this->getX() + this->getWidth() * 0.3 - 24, nextY, this->previousIcon.width, this->previousIcon.height, &this->previousIcon.pixels[0]);
-        }
-
-        // Next
-        if (!this->nextIcon.pixels.empty()) {
-            renderer->drawBitmap(this->getX() + this->getWidth() * 0.7, nextY, this->nextIcon.width, this->nextIcon.height, &this->nextIcon.pixels[0]);
-        }
-        nextY += 2;
-
-        // Shuffle
-        if (!this->shuffleIcon.pixels.empty()) {
-            renderer->drawBitmap(this->getX() + 5, nextY, this->shuffleIcon.width, this->shuffleIcon.height, &this->shuffleIcon.pixels[0]);
-        }
-
-        // Repeat
-        if (!this->repeatIcon.pixels.empty()) {
-            renderer->drawBitmap(this->getX() + this->getWidth() - this->repeatIcon.width - 10, nextY, this->repeatIcon.width, this->repeatIcon.height, &this->repeatIcon.pixels[0]);
-        }
-        nextY += 70;
-
-        // Repeat one
+        // Draw buttons
+        this->shuffle->frame(renderer);
+        this->previous->frame(renderer);
+        this->play->frame(renderer);
+        this->next->frame(renderer);
+        this->repeat->frame(renderer);
 
         // Stop button
         renderer->drawRect(this->getX() + this->getWidth() * 0.5 - 75, nextY, 150, 40, 0xeeee);
@@ -141,6 +177,18 @@ namespace Element {
         // Be sneaky and force ourself up a few pixels
         this->setBoundaries(parentX + 35, parentY + 80, parentW - 85, parentH - 73 - 80);
 
+        // Position buttons
+        int nextY = this->getY() + this->getHeight() - 160;
+        this->play->setBoundaries(this->getX() + (this->getWidth() - this->play->getWidth())/2, nextY, this->play->getWidth(), this->play->getHeight());
+
+        nextY += 17;
+        this->previous->setBoundaries(this->getX() + this->getWidth() * 0.22, nextY, this->previous->getWidth(), this->previous->getHeight());
+        this->next->setBoundaries(this->getX() + this->getWidth() * 0.78 - this->next->getWidth(), nextY, this->next->getWidth(), this->next->getHeight());
+
+        nextY += 2;
+        this->shuffle->setBoundaries(this->getX() + 5, nextY, this->shuffle->getWidth(), this->shuffle->getHeight());
+        this->repeat->setBoundaries(this->getX() + this->getWidth() - 10 - this->repeat->getWidth(), nextY, this->repeat->getWidth(), this->repeat->getHeight());
+
         // Resize the album art (does nothing if already the same size)
         if (!Utils::resizeBitmap(this->albumArt, this->getWidth() * 0.75, this->getWidth() * 0.75)) {
             this->albumArt.pixels.clear();
@@ -148,6 +196,10 @@ namespace Element {
     }
 
     Player::~Player() {
-
+        delete this->shuffle;
+        delete this->previous;
+        delete this->play;
+        delete this->next;
+        delete this->repeat;
     }
 };

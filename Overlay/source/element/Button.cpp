@@ -1,15 +1,60 @@
 #include "element/Button.hpp"
+#include "Utils.hpp"
 
 namespace Element {
-    Button::Button(u16 x, u16 y, u16 w, u16 h) : tsl::elm::Element() {
-        this->setBoundaries(x, y, w, h);
+    Button::Button(int w, int h, const std::vector<uint8_t> & buf) : tsl::elm::Element(), colour(255, 255, 255, 255) {
+        // Render image from buffer
+        this->image = Utils::convertPNGToBitmap(buf);
+        this->showAlt = false;
+
+        // Set boundaries
+        this->setBoundaries(this->getX(), this->getY(), this->image.width + w*2, this->image.height + h*2);
+    }
+
+    void Button::addAltImage(const std::vector<uint8_t> & buf) {
+        this->altImage = Utils::convertPNGToBitmap(buf);
+    }
+
+    void Button::showAltImage(const bool b) {
+        if (!this->altImage.pixels.empty()) {
+            this->showAlt = b;
+        }
+    }
+
+    tsl::elm::Element * Button::requestFocus(tsl::elm::Element * old, tsl::FocusDirection dir) {
+        return this;
+    }
+
+    void Button::setColour(tsl::Color col) {
+        this->colour = col;
     }
 
     void Button::draw(tsl::gfx::Renderer * renderer) {
-        renderer->drawRect(ELEMENT_BOUNDS(this), 0xffff);
+        // Set reference to determine what to draw
+        Bitmap & img = this->image;
+        if (this->showAlt) {
+            img = this->altImage;
+        }
+
+        // Render if no error occurred
+        if (!img.pixels.empty()) {
+            int xOffset = this->getX() + (this->getWidth() - img.width)/2;
+            int yOffset = this->getY() + (this->getHeight() - img.height)/2;
+
+            // // Manually render so we can set the colour
+            size_t idx = 0;
+            for (size_t y = 0; y < img.height; y++) {
+                for (size_t x = 0; x < img.width; x++) {
+                    tsl::Color tmp = this->colour;
+                    tmp.a = static_cast<u16>(img.pixels[idx + img.channels - 1] >> 4);
+                    renderer->setPixelBlendSrc(xOffset + x, yOffset + y, renderer->a(tmp));
+                    idx += img.channels;
+                }
+            }
+        }
     }
 
     void Button::layout(u16 parentX, u16 parentY, u16 parentW, u16 parentH) {
-        // Do nothing yet?
+        // Do nothing
     }
 };
