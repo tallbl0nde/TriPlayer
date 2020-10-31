@@ -27,6 +27,8 @@ namespace Element {
             // Set colour to render image with
             void setColour(tsl::Color);
 
+            // Call assigned callback
+            void runCallback();
             // Set function to execute when tapped/pressed
             void setCallback(std::function<void()>);
 

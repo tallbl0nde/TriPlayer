@@ -27,6 +27,12 @@ namespace Element {
         this->colour = col;
     }
 
+    void Button::runCallback() {
+        if (this->callback != nullptr) {
+            this->callback();
+        }
+    }
+
     void Button::setCallback(std::function<void()> func) {
         this->callback = func;
     }
@@ -66,9 +72,7 @@ namespace Element {
 
     bool Button::onClick(u64 keys) {
         if (keys & KEY_A) {
-            if (this->callback != nullptr) {
-                this->callback();
-            }
+            this->runCallback();
             return true;
         }
         return false;

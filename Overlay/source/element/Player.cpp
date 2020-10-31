@@ -17,11 +17,6 @@
 #define BUTTON_PADDING_X 8
 #define BUTTON_PADDING_Y 8
 
-// Text colours
-#define ARTIST_FONT_COLOUR 0xbbbb
-#define TIME_FONT_COLOUR 0xffff
-#define TITLE_FONT_COLOUR 0xffff
-
 // Font sizes for text
 #define ARTIST_FONT_SIZE 20
 #define TIME_FONT_SIZE 20
@@ -109,8 +104,8 @@ namespace Element {
     }
 
     void Player::setTitle(const std::string & str) {
-        this->title = str.substr(0, 25);
-        if (this->title.length() == 25) {
+        this->title = str.substr(0, 20);
+        if (this->title.length() == 20) {
             this->title += "...";
         }
         this->title += "\n";
@@ -238,25 +233,25 @@ namespace Element {
 
         // Song title (centered)
         dimensions = renderer->drawString(this->title.c_str(), false, 0, 0, TITLE_FONT_SIZE, 0x0);
-        renderer->drawString(this->title.c_str(), false, this->getX() + (this->getWidth() - dimensions.first)/2, nextY, TITLE_FONT_SIZE, TITLE_FONT_COLOUR);
+        renderer->drawString(this->title.c_str(), false, this->getX() + (this->getWidth() - dimensions.first)/2, nextY, TITLE_FONT_SIZE, tsl::style::color::ColorText);
         nextY += dimensions.second * 1.3;
 
         // Song artist(s) (centered)
         dimensions = renderer->drawString(this->artist.c_str(), false, 0, 0, ARTIST_FONT_SIZE, 0x0);
-        renderer->drawString(this->artist.c_str(), false, this->getX() + (this->getWidth() - dimensions.first)/2, nextY, ARTIST_FONT_SIZE, ARTIST_FONT_COLOUR);
+        renderer->drawString(this->artist.c_str(), false, this->getX() + (this->getWidth() - dimensions.first)/2, nextY, ARTIST_FONT_SIZE, tsl::style::color::ColorDescription);
         nextY += dimensions.second * 2;
 
         // Position (get width to right align)
         dimensions = renderer->drawString(this->position.c_str(), false, 0, 0, TIME_FONT_SIZE, 0x0);
-        renderer->drawString(this->position.c_str(), false, this->getX() + this->getWidth() * 0.15 - dimensions.first, nextY, TIME_FONT_SIZE, TIME_FONT_COLOUR);
+        renderer->drawString(this->position.c_str(), false, this->getX() + this->getWidth() * 0.15 - dimensions.first, nextY, TIME_FONT_SIZE, tsl::style::color::ColorText);
 
         // Duration
-        renderer->drawString(this->duration.c_str(), false, this->getX() + this->getWidth() * 0.85, nextY, TIME_FONT_SIZE, TIME_FONT_COLOUR);
+        renderer->drawString(this->duration.c_str(), false, this->getX() + this->getWidth() * 0.85, nextY, TIME_FONT_SIZE, tsl::style::color::ColorText);
         nextY -= 6;
 
         // Scroll bar
-        renderer->drawRect(this->getX() + this->getWidth() * 0.2, nextY - 2, this->getWidth() * 0.6, 4, 0xffff);
-        renderer->drawRect(this->getX() + this->getWidth() * 0.2, nextY - 2, this->getWidth() * 0.6 * (this->positionSecs/static_cast<double>(this->durationSecs)), 4, 0x00ff);
+        renderer->drawRect(this->getX() + this->getWidth() * 0.2, nextY - 2, this->getWidth() * 0.6, 4, tsl::style::color::ColorHandle);
+        renderer->drawRect(this->getX() + this->getWidth() * 0.2, nextY - 2, (this->getWidth() * 0.6) * (this->positionSecs/static_cast<double>(this->durationSecs)), 4, tsl::style::color::ColorHighlight);
         nextY += 125;
 
         // Show play/pause button based on state
@@ -264,12 +259,12 @@ namespace Element {
         this->play->frame(renderer);
 
         // Show repeat icon and colour based on state
-        this->repeat->setColour(this->repeatOn ? 0x00ff : 0xdddd);
+        this->repeat->setColour(this->repeatOn ? tsl::style::color::ColorHighlight : tsl::style::color::ColorHandle);
         this->repeat->showAltImage(this->repeatOne);
         this->repeat->frame(renderer);
 
         // Set shuffle colour based on if it's on or not
-        this->shuffle->setColour(this->shuffled ? 0x00ff : 0xdddd);
+        this->shuffle->setColour(this->shuffled ? tsl::style::color::ColorHighlight : tsl::style::color::ColorHandle);
         this->shuffle->frame(renderer);
 
         // Simply draw other buttons
@@ -295,6 +290,36 @@ namespace Element {
         nextY += 2;
         this->shuffle->setBoundaries(this->getX() + 5, nextY, this->shuffle->getWidth(), this->shuffle->getHeight());
         this->repeat->setBoundaries(this->getX() + this->getWidth() - 10 - this->repeat->getWidth(), nextY, this->repeat->getWidth(), this->repeat->getHeight());
+    }
+
+    bool Player::onTouch(tsl::elm::TouchEvent event, s32 currX, s32 currY, s32 prevX, s32 prevY, s32 initX, s32 initY) {
+        if (event != tsl::elm::TouchEvent::Release) {
+            return false;
+        }
+
+        // Check which element is touched and activate callback
+        if (currX > this->shuffle->getX() && currX < this->shuffle->getX() + this->shuffle->getWidth() && currY > this->shuffle->getY() && currY < this->shuffle->getY() + this->shuffle->getHeight()) {
+            this->shuffle->runCallback();
+            return true;
+
+        } else if (currX > this->previous->getX() && currX < this->previous->getX() + this->previous->getWidth() && currY > this->previous->getY() && currY < this->previous->getY() + this->previous->getHeight()) {
+            this->previous->runCallback();
+            return true;
+
+        } else if (currX > this->play->getX() && currX < this->play->getX() + this->play->getWidth() && currY > this->play->getY() && currY < this->play->getY() + this->play->getHeight()) {
+            this->play->runCallback();
+            return true;
+
+        } else if (currX > this->next->getX() && currX < this->next->getX() + this->next->getWidth() && currY > this->next->getY() && currY < this->next->getY() + this->next->getHeight()) {
+            this->next->runCallback();
+            return true;
+
+        } else if (currX > this->repeat->getX() && currX < this->repeat->getX() + this->repeat->getWidth() && currY > this->repeat->getY() && currY < this->repeat->getY() + this->repeat->getHeight()) {
+            this->repeat->runCallback();
+            return true;
+        }
+
+        return false;
     }
 
     Player::~Player() {
