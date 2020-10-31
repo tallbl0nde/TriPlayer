@@ -15,12 +15,9 @@ struct Bitmap {
 
 namespace Utils {
     // Read a PNG from the specified buffer and convert to bitmap
+    // Passed required size and performs scaling as it's extracted
     // Returns a Bitmap with no pixels on an error
-    Bitmap convertPNGToBitmap(const std::vector<uint8_t> &);
-
-    // Resizes a bitmap in place using bilinear interpolation
-    // Returns whether successful or not
-    bool resizeBitmap(Bitmap &, const size_t, const size_t);
+    Bitmap convertPNGToBitmap(const std::vector<uint8_t> &, const size_t, const size_t);
 
     // Format seconds in HH:MM:SS
     std::string secondsToHMS(unsigned int);

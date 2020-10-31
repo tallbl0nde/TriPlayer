@@ -3,6 +3,11 @@
 #include "utils/FS.hpp"
 
 SQLite::SQLite(const std::string & pth) {
+    // Limit overlay and sysmodule memory usage (200KB)
+    #if defined(_SYSMODULE_) || defined(_OVERLAY_)
+        sqlite3_soft_heap_limit64(204800);
+    #endif
+
     this->path = pth;
     this->path.shrink_to_fit();
 

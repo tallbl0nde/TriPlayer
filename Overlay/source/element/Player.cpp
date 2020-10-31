@@ -34,7 +34,7 @@ namespace Element {
 
         // Default album art
         buffer.clear();
-        this->setAlbumArt(buffer);
+        this->defaultArt = false;
 
         // Shuffle icon
         buffer.resize(shuffle_png_size);
@@ -166,7 +166,7 @@ namespace Element {
         }
 
         // Otherwise extract as usual
-        this->albumArt = Utils::convertPNGToBitmap(buf);
+        this->albumArt = Utils::convertPNGToBitmap(buf, this->getWidth() * 0.75, this->getWidth() * 0.75);
     }
 
     tsl::elm::Element * Player::requestFocus(tsl::elm::Element * old, tsl::FocusDirection dir) {
@@ -229,11 +229,6 @@ namespace Element {
     void Player::draw(tsl::gfx::Renderer * renderer) {
         std::pair<u32, u32> dimensions;
         u16 nextY = this->getY();
-
-        // Resize the album art if required (does nothing if already the same size)
-        if (!Utils::resizeBitmap(this->albumArt, this->getWidth() * 0.75, this->getWidth() * 0.75)) {
-            this->albumArt.pixels.clear();
-        }
 
         // Now render album art
         if (!this->albumArt.pixels.empty()) {

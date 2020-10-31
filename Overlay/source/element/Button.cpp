@@ -6,7 +6,7 @@ namespace Element {
         this->callback = nullptr;
 
         // Render image from buffer
-        this->image = Utils::convertPNGToBitmap(buf);
+        this->image = Utils::convertPNGToBitmap(buf, 0, 0);
         this->showAlt = false;
 
         // Set boundaries
@@ -14,7 +14,7 @@ namespace Element {
     }
 
     void Button::addAltImage(const std::vector<uint8_t> & buf) {
-        this->altImage = Utils::convertPNGToBitmap(buf);
+        this->altImage = Utils::convertPNGToBitmap(buf, 0, 0);
     }
 
     void Button::showAltImage(const bool b) {
