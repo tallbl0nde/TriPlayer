@@ -1,62 +1,48 @@
 # TriPlayer
 
-TriPlayer is a 'system-wide' MP3 player for the Nintendo Switch. It requires a console capable of running Atmosphere. The name comes from it being consisted of **three** separate 'modules', and its ability to play MP**3** files.
+TriPlayer is a feature-rich audio player for the Nintendo Switch. It is able to play music in the background, including when playing games or on the HOME menu. TriPlayer requires a console capable of running Atmosphere. It gained it's name as it consists of **three** separate components, and its ability to play MP3 files.
 
 [Download](https://github.com/tallbl0nde/TriPlayer/releases)
 
-Curious about what's next? See my to-do list on [Trello](https://trello.com/b/teZpHfo1/triplayer)
-
-## Contents
-
-1. [Installation](#installation)
-2. [Features](#features)
-3. [Screenshots](#screenshots)
-4. [How It Works](#how-it-works)
-5. [Requirements](#requirements)
-6. [Known Issues](#known-issues)
-7. [Credits](#credits)
-8. [Support](#support-3)
-
-## Installation
-
-To be determined...
+Please see the [wiki](https://github.com/tallbl0nde/TriPlayer/wiki) for a plethora of information regarding installation, compilation, reporting bugs and more!
 
 ## Features
 
-To be determined...
+* Audio playback while in-game
+* No impact on game performance (runs on separate CPU core)
+* Automatically organized library based on ID3 metadata
+* Album/artist image scraping via TheAudioDB
+* Custom playlists
+* Fast library search
+* Ability to add and remove songs to play queue
+* Beautiful and easy to navigate interface
+* Highly customizable with many settings that can be changed
+* Basic 32-band equalizer
+* Update in-app
+
+And many more, download it to see for yourself! :)
+
+* Supported audio formats:
+  * MP3
+
+Curious about what's next? See my to-do list on [Trello](https://trello.com/b/teZpHfo1/triplayer)
 
 ## Screenshots
 
-To be determined...
-
-## How It Works
-
-TriPlayer consists of three 'modules'/components. These are:
-
-1. **sys-triplayer (Sysmodule)** [required]
-    * This is the sysmodule which is run at boot and stays in the background. It listens for commands from the application/overlay in order to play/skip/etc. It handles all MP3 decoding/playing and so on. Thus it is required for TriPlayer to work whatsoever.
-2. **Homebrew Application** [required]
-    * This is the application launched via hbmenu in order to play/queue songs. It communicates with sys-triplayer in order to do so. This is also required in order to actually play any tracks.
-3. **ovl-triplayer (Tesla Overlay)** [optional]
-    * The overlay provides a quick and easy way to adjust playback. It is completely optional, however without it any playback adjustments will need to be made by suspending the current game and navigating to hbmenu.
+![Screenshots](Images/screenshots.png)
 
 ## Requirements
 
-* At the time of writing, you will require a Switch running Atmosphere 0.10.0+ as it has a lot more memory available to sysmodules compared to other CFW's (TriPlayer requires a lot).
-
-## Known Issues
-
-* Switch freezes on boot after installing TriPlayer
-  * This occurs when there is not enough memory available. Please disable/delete other sysmodules that you have running.
-  * Note that there is no way around this memory constraint.
+* A Nintendo Switch running Atmosphere 0.10.0+
+   * 0.10.0+ has more memory available to sysmodules, so older versions aren't supported
+* A relatively up-to-date firmware
+   * Some components require functionality that was added to later firmwares, so 10.0.0+ is currently supported
+* Music!
+   * Only audio files in mp3 format are supported at this time
 
 ## Credits
 
-I'd like to thank:
-
-* Exelix11 for [SysDVR](https://github.com/exelix11/SysDVR)
-  * Used as a reference for implementing sockets/communication between app/overlay and sysmodule!
-* Anyone else involved with the development of homebrew tools and reverse engineering of the Switch!
+For a complete list of credits and open source libraries used, please see the About tab in the application's settings!
 
 ## Support <3
 
