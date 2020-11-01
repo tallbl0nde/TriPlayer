@@ -19,6 +19,7 @@
 
 // Font sizes for text
 #define ARTIST_FONT_SIZE 20
+#define STOP_FONT_SIZE 18
 #define TIME_FONT_SIZE 20
 #define TITLE_FONT_SIZE 24
 
@@ -28,7 +29,6 @@ namespace Element {
         std::vector<uint8_t> buffer;
 
         // Default album art
-        buffer.clear();
         this->defaultArt = false;
 
         // Shuffle icon
@@ -90,6 +90,15 @@ namespace Element {
             }
         });
 
+        // Stop button
+        this->stop = new Button(BUTTON_PADDING_X * 1.5, BUTTON_PADDING_Y * 1.5, "Stop Sysmodule\n", STOP_FONT_SIZE);
+        this->stop->setParent(this);
+        this->stop->setCallback([]() {
+            if (TriPlayer::stopSysmodule()) {
+                tsl::goBack();
+            }
+        });
+
         // Initialize empty variables
         this->title = "Nothing playing!\n";
         this->artist = "Play a song\n";
@@ -109,6 +118,7 @@ namespace Element {
             this->title += "...";
         }
         this->title += "\n";
+        this->title.shrink_to_fit();
     }
 
     void Player::setArtist(const std::string & str) {
@@ -117,6 +127,7 @@ namespace Element {
             this->artist += "...";
         }
         this->artist += "\n";
+        this->artist.shrink_to_fit();
     }
 
     void Player::setPosition(const double pos) {
@@ -204,16 +215,16 @@ namespace Element {
 
             // Move off stop button if highlighted
             case tsl::FocusDirection::Up:
-                // if (old == stopButton) {
-                    // return this->play->requestFocus(old, dir);
-                // }
+                if (old == this->stop) {
+                    return this->play->requestFocus(old, dir);
+                }
                 break;
 
             // Move to stop button if not highlighted
             case tsl::FocusDirection::Down:
-                // if (old != stopButton) {
-                    // return this->stopButton->requestFocus(old, dir);
-                // }
+                if (old != this->stop) {
+                    return this->stop->requestFocus(old, dir);
+                }
                 break;
         }
 
@@ -252,7 +263,6 @@ namespace Element {
         // Scroll bar
         renderer->drawRect(this->getX() + this->getWidth() * 0.2, nextY - 2, this->getWidth() * 0.6, 4, tsl::style::color::ColorHandle);
         renderer->drawRect(this->getX() + this->getWidth() * 0.2, nextY - 2, (this->getWidth() * 0.6) * (this->positionSecs/static_cast<double>(this->durationSecs)), 4, tsl::style::color::ColorHighlight);
-        nextY += 125;
 
         // Show play/pause button based on state
         this->play->showAltImage(this->playing);
@@ -270,9 +280,7 @@ namespace Element {
         // Simply draw other buttons
         this->previous->frame(renderer);
         this->next->frame(renderer);
-
-        // Stop button
-        renderer->drawRect(this->getX() + this->getWidth() * 0.5 - 75, nextY, 150, 40, 0xeeee);
+        this->stop->frame(renderer);
     }
 
     void Player::layout(u16 parentX, u16 parentY, u16 parentW, u16 parentH) {
@@ -290,6 +298,9 @@ namespace Element {
         nextY += 2;
         this->shuffle->setBoundaries(this->getX() + 5, nextY, this->shuffle->getWidth(), this->shuffle->getHeight());
         this->repeat->setBoundaries(this->getX() + this->getWidth() - 10 - this->repeat->getWidth(), nextY, this->repeat->getWidth(), this->repeat->getHeight());
+
+        nextY += 75;
+        this->stop->setBoundaries(this->getX() + (this->getWidth() - 162)/2, nextY, this->stop->getWidth(), this->stop->getHeight());
     }
 
     bool Player::onTouch(tsl::elm::TouchEvent event, s32 currX, s32 currY, s32 prevX, s32 prevY, s32 initX, s32 initY) {
@@ -317,6 +328,10 @@ namespace Element {
         } else if (currX > this->repeat->getX() && currX < this->repeat->getX() + this->repeat->getWidth() && currY > this->repeat->getY() && currY < this->repeat->getY() + this->repeat->getHeight()) {
             this->repeat->runCallback();
             return true;
+
+        } else if (currX > this->stop->getX() && currX < this->stop->getX() + this->stop->getWidth() && currY > this->stop->getY() && currY < this->stop->getY() + this->stop->getHeight()) {
+            this->stop->runCallback();
+            return true;
         }
 
         return false;
@@ -328,5 +343,6 @@ namespace Element {
         delete this->play;
         delete this->next;
         delete this->repeat;
+        delete this->stop;
     }
 };

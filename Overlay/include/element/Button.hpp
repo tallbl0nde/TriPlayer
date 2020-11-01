@@ -14,11 +14,17 @@ namespace Element {
             bool showAlt;                       // Whether to show alternate image
             tsl::Color colour;                  // Colour to draw image in
 
+            unsigned short fontSize;            // Font size for text
+            std::string text;                   // Text to draw
+            bool set;                           // Whether dimensions have been set yet
+
             std::function<void()> callback;     // Function to call when pressed
 
         public:
             // Constructor accepts image buffer (as PNG) and padding
-            Button(int, int, const std::vector<uint8_t> &);
+            Button(short, short, const std::vector<uint8_t> &);
+            // Alternative constructor accepts padding, string + font size
+            Button(short, short, const std::string &, unsigned int);
 
             // Add an optional second image to show
             void addAltImage(const std::vector<uint8_t> &);

@@ -19,6 +19,7 @@ namespace Element {
             Button * play;          // Play/pause button
             Button * next;          // Next button
             Button * repeat;        // Repeat button
+            Button * stop;          // Stop sysmodule button
 
             // Song metadata
             bool defaultArt;        // albumArt contains default image
