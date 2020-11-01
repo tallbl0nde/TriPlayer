@@ -4,9 +4,10 @@
 #include "LibraryScanner.hpp"
 #include "Log.hpp"
 #include "Paths.hpp"
-#include "utils/Fs.hpp"
+#include "utils/FS.hpp"
 #include "utils/Image.hpp"
 #include "utils/MP3.hpp"
+#include "utils/NX.hpp"
 #include "utils/Timer.hpp"
 #include "utils/Utils.hpp"
 
@@ -101,15 +102,19 @@ LibraryScanner::Status LibraryScanner::parseFileUpdate(const FilePair & file) {
 
 LibraryScanner::Status LibraryScanner::processFiles() {
     // First get all paths within folder along with modified timestamp
+    Utils::NX::setLowFsPriority(true);
     std::vector<FilePair> files;
-    for (auto & entry: std::filesystem::recursive_directory_iterator(this->searchPath)) {
-        if (entry.path().extension() == ".mp3") {
-            // Why is this conversion so hard?
-            auto time = entry.last_write_time();
-            auto clock = std::chrono::file_clock::to_sys(time);
-            unsigned int timestamp = (unsigned int)std::chrono::system_clock::to_time_t(clock);
 
-            files.push_back(FilePair{entry.path().string(), timestamp});
+    if (Utils::Fs::fileExists(this->searchPath)) {
+        for (auto & entry: std::filesystem::recursive_directory_iterator(this->searchPath)) {
+            if (entry.path().extension() == ".mp3") {
+                // Why is this conversion so hard?
+                auto time = entry.last_write_time();
+                auto clock = std::chrono::file_clock::to_sys(time);
+                unsigned int timestamp = (unsigned int)std::chrono::system_clock::to_time_t(clock);
+
+                files.push_back(FilePair{entry.path().string(), timestamp});
+            }
         }
     }
     Log::writeInfo("[SCAN] Found " + std::to_string(files.size()) + " files");
@@ -124,6 +129,7 @@ LibraryScanner::Status LibraryScanner::processFiles() {
     std::vector< std::pair<std::string, unsigned int> > tmp = this->database->getAllSongFileInfo(dbOK);
     if (!dbOK) {
         Log::writeError("[SCAN] Couldn't read filesystem info from database");
+        Utils::NX::setLowFsPriority(false);
         return Status::ErrDatabase;
     }
     for (size_t i = 0; i < tmp.size(); i++) {
@@ -167,6 +173,7 @@ LibraryScanner::Status LibraryScanner::processFiles() {
     // Wait for threads to finish
     addThread.get();
     updateThread.get();
+    Utils::NX::setLowFsPriority(false);
 
     // Log status
     Log::writeInfo("[SCAN] Adding " + std::to_string(this->addFiles.size()) + " files");

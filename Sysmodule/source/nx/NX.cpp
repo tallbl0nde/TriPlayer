@@ -159,6 +159,12 @@ namespace NX {
         }
     }
 
+    namespace Fs {
+        void setHighPriority(const bool b) {
+            fsSetPriority(b ? FsPriority_Realtime : FsPriority_Normal);
+        }
+    };
+
     namespace Gpio {
         static bool gpioPrepared = false;       // Set true if ready to poll pad
         static GpioPadSession gpioSession;      // Current session used to read pad

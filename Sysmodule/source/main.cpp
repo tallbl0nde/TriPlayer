@@ -8,7 +8,7 @@
 // DB: ~0.5MB
 // IPC: ~0.2MB
 // Queue: ~0.2MB
-// MP3: ~0.3MB
+// MP3: ~0.5MB
 #define INNER_HEAP_SIZE (size_t)(2 * 1024 * 1024)
 
 // It hangs if I don't use C... I wish I knew why!

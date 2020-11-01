@@ -47,6 +47,9 @@ namespace Utils::NX {
     // Does nothing if state matches
     void setCPUBoost(bool);
 
+    // Enable/disable low fs priority
+    void setLowFsPriority(bool);
+
     // Enable/disable 'media playing' flag
     // Does nothing if state matches
     void setPlayingMedia(bool);

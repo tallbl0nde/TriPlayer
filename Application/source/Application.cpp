@@ -48,7 +48,7 @@ namespace Main {
         this->setHighlightAnimation(nullptr);
         this->display->setFadeIn();
         this->display->setFadeOut();
-        this->display->setShowFPS(true);
+        // this->display->setShowFPS(true);
         this->exitPrompt = nullptr;
 
         // Setup screens
@@ -65,14 +65,14 @@ namespace Main {
         // Start checking for an update
         this->hasUpdate_ = false;
         this->updateThread = std::async(std::launch::async, [this]() {
-            // Updater updater = Updater();
-            // if (updater.needsCheck(updateInterval)) {
-                // if (updater.checkForUpdate()) {
-                    // this->hasUpdate_ = updater.availableUpdate();
-                // }
-            // } else {
-                // this->hasUpdate_ = updater.availableUpdate();
-            // }
+            Updater updater = Updater();
+            if (updater.needsCheck(updateInterval)) {
+                if (updater.checkForUpdate()) {
+                    this->hasUpdate_ = updater.availableUpdate();
+                }
+            } else {
+                this->hasUpdate_ = updater.availableUpdate();
+            }
         });
     }
 

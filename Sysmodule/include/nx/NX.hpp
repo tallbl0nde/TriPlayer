@@ -11,6 +11,11 @@ namespace NX {
     // Close any started services
     void stopServices();
 
+    namespace Fs {
+        // Set whether or not to use a higher priority for fs operations
+        void setHighPriority(const bool);
+    };
+
     namespace Gpio {
         // Prepare gpio for use
         bool prepare();

@@ -57,6 +57,7 @@ namespace Frame::Settings {
         this->addComment("JSON for Modern C++\nCopyright © 2013-2020 Niels Lohmann\nMIT License\nhttps://github.com/nlohmann/json");
         this->addComment("libcURL\nCopyright © 1996-2020 Daniel Stenberg\nMIT/X Derivate License\nhttps://curl.haxx.se");
         this->addComment("libmpg123\nLGPL 2.1 License\nhttps://www.mpg123.de");
+        this->addComment("libnx\nCopyright © 2017-2020 libnx Authors\nISC License\nhttps://github.com/switchbrew/libnx");
         this->addComment("minIni\nCopyright © compuphase\nApache 2 License\nhttps://github.com/compuphase/minIni");
         this->addComment("SDL2_gfx Extensions\nCopyright © 2018 Richard T. Russell\nzlib License\nhttps://github.com/rtrussell/BBCSDL");
         this->addComment("Splash\nCopyright © 2020 Google\nApache 2 License\nhttps://github.com/tallbl0nde/Splash");

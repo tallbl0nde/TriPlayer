@@ -5,8 +5,8 @@
 #include "nx/NX.hpp"
 #include <switch.h>
 
-constexpr size_t bufferSize = 0x3C00;       // Size of each buffer (15kB)
-constexpr size_t maxBuffers = 4;            // Maximum number of buffer slots
+constexpr size_t bufferSize = 0xC800;       // Size of each buffer (50kB)
+constexpr size_t maxBuffers = 6;            // Maximum number of buffer slots (50KB * 6 = 300KB)
 constexpr size_t outputChannels = 2;        // Number of channels to output (should always be 2)
 
 Audio * Audio::instance = nullptr;          // Our singleton instance

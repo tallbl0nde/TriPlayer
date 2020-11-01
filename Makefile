@@ -46,7 +46,7 @@ clean:
 	@echo -e '\033[1m>> Application\033[0m'
 	@$(MAKE) -s -C Application/ clean-all
 	@echo -e '\033[1m>> Overlay\033[0m'
-	@$(MAKE) -C Overlay/ clean
+	@$(MAKE) -s -C Overlay/ clean
 	@echo -e '\033[1m>> Sysmodule\033[0m'
 	@$(MAKE) -s -C Sysmodule/ clean
 	@echo -e '\033[1m>> SD Card\033[0m'

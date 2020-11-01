@@ -109,6 +109,10 @@ namespace Utils::NX {
         boost = enable;
     }
 
+    void setLowFsPriority(bool low) {
+        fsSetPriority(low ? FsPriority_Background : FsPriority_Normal);
+    }
+
     static bool media = false;
     void setPlayingMedia(bool enable) {
         // Only set if different state

@@ -300,7 +300,7 @@ namespace Screen {
                 } else {
                     this->presentInfo("Update installed!", "Both the sysmodule and this application will terminate.", [this]() {
                         this->msgbox->close();
-                        // terminate services
+                        this->app->sysmodule()->terminate();
                         this->app->exit(true);
                     });
                 }
@@ -347,6 +347,7 @@ namespace Screen {
     }
 
     void Update::onUnload() {
+        this->thread.get();
         this->removeElement(this->bg);
         this->removeElement(this->icon);
         this->removeElement(this->container);

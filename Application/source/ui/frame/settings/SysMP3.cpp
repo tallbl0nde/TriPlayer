@@ -19,6 +19,7 @@ namespace Frame::Settings {
         this->addButton("Equalizer", [this]() {
             this->showEqualizer();
         });
+        this->addComment("Note: There may be a slight delay before any changes take effect.");
 
         // Setup overlay
         this->ovlEQ = new CustomOvl::Equalizer("Equalizer");

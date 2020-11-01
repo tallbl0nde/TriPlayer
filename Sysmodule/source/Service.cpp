@@ -657,6 +657,9 @@ void MainService::ipcThread() {
 }
 
 void MainService::playbackThread() {
+    // Request a higher priority for FS access
+    NX::Fs::setHighPriority(true);
+
     while (!this->exit_) {
         std::unique_lock<std::shared_mutex> sMtx(this->sMutex);
         std::unique_lock<std::shared_mutex> sqMtx(this->sqMutex);
