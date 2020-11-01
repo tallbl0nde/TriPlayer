@@ -1,8 +1,11 @@
 #include <cstring>
 #include "Log.hpp"
-#include "nx/File.hpp"
 #include <mpg123.h>
 #include "sources/MP3.hpp"
+
+#ifdef USE_FILE_BUFFER
+#include "nx/File.hpp"
+#endif
 
 mpg123_handle * MP3::mpg = nullptr;
 
@@ -17,8 +20,14 @@ MP3::MP3(const std::string & path) : Source() {
     }
 
     // Attempt to open file
+#ifdef USE_FILE_BUFFER
     this->file = new NX::File(path);
     int result = mpg123_open_handle(this->mpg, this->file);
+#else
+    this->file = nullptr;
+    int result = mpg123_open(this->mpg, path.c_str());
+#endif
+
     if (result != MPG123_OK) {
         MP3::logErrorMsg();
         Log::writeError("[MP3] Unable to open file");
@@ -97,7 +106,9 @@ MP3::~MP3() {
     }
 
     // Delete file handle
+#ifdef USE_FILE_BUFFER
     delete this->file;
+#endif
 }
 
 bool MP3::initLib() {
@@ -116,11 +127,13 @@ bool MP3::initLib() {
     }
 
     // Enable support for custom file object
+#ifdef USE_FILE_BUFFER
     result = mpg123_replace_reader_handle(MP3::mpg, NX::File::readFile, NX::File::seekFile, nullptr);
     if (result != MPG123_OK) {
         Log::writeError("[MP3] Unable to enable custom file object support: " + std::to_string(result));
         return false;
     }
+#endif
 
     // Enable gapless decoding
     result = mpg123_param(MP3::mpg, MPG123_FLAGS, MPG123_QUIET | MPG123_GAPLESS, 0.0f);
