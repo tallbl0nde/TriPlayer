@@ -134,7 +134,7 @@ namespace Utils {
                 // Discard any rows that are no longer needed
                 for (size_t r = 0; r < y; r++) {
                     if (!rows[r].empty()) {
-                        rows[r].clear();
+                        std::vector<uint8_t>().swap(rows[r]);
                     }
                 }
             }

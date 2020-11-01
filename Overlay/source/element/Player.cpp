@@ -157,7 +157,7 @@ namespace Element {
         // Load default image if empty
         if (buf.empty()) {
             if (!this->defaultArt) {
-                this->albumArt.pixels.clear();
+                std::vector<uint8_t>().swap(this->albumArt.pixels);
                 buf.resize(no_album_png_size);
                 std::memcpy(&buf[0], no_album_png, no_album_png_size);
                 this->defaultArt = true;
@@ -167,7 +167,7 @@ namespace Element {
             }
 
         } else {
-            this->albumArt.pixels.clear();
+            std::vector<uint8_t>().swap(this->albumArt.pixels);
             this->defaultArt = false;
         }
 

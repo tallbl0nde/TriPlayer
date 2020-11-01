@@ -72,14 +72,15 @@ Metadata Database::getMetadataForID(SongID id) {
     bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Songs.duration, Albums.image_path FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.ID = ?;");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
-    ok = keepFalse(ok, this->db->getInt(0, meta.id));
-    ok = keepFalse(ok, this->db->getString(1, meta.title));
-    ok = keepFalse(ok, this->db->getString(2, meta.artist));
-    int tmp;
-    ok = keepFalse(ok, this->db->getInt(3, tmp));
-    meta.duration = tmp;
-    ok = keepFalse(ok, this->db->getString(4, meta.imagePath));
-    if (!ok) {
+    if (ok) {
+        ok = keepFalse(ok, this->db->getInt(0, meta.id));
+        ok = keepFalse(ok, this->db->getString(1, meta.title));
+        ok = keepFalse(ok, this->db->getString(2, meta.artist));
+        int tmp;
+        ok = keepFalse(ok, this->db->getInt(3, tmp));
+        meta.duration = tmp;
+        ok = keepFalse(ok, this->db->getString(4, meta.imagePath));
+    } else {
         meta.id = -2;
     }
 

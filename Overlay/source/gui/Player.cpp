@@ -8,7 +8,7 @@ namespace Gui {
     Player::Player(Database * db) {
         this->database = db;
         this->player = nullptr;
-        this->currentSongID = -1;
+        this->currentSongID = -100;
         this->ticks = 0;
     }
 
@@ -42,19 +42,24 @@ namespace Gui {
         }
         if (songID != this->currentSongID) {
             // Get metadata from database
-            Metadata meta = this->database->getMetadataForID(songID);
-            this->currentSongID = songID;
-            if (meta.id < 0) {
-                this->player->setTitle("Nothing playing!");
-                this->player->setArtist("Play a song");
-                this->player->setDuration(0);
-                return;
+            Metadata meta;
+            meta.id = -3;
+            if (songID >= 0) {
+                meta = this->database->getMetadataForID(songID);
             }
+            this->currentSongID = songID;
 
-            // Set strings in element
-            this->player->setTitle(meta.title);
-            this->player->setArtist(meta.artist);
-            this->player->setDuration(meta.duration);
+            // Update values
+            if (meta.id < 0) {
+                this->player->setTitle((meta.id == -2 ? "An error occurred" : "Nothing playing!"));
+                this->player->setArtist((meta.id == -2 ? "Please restart the overlay" : "Play a song"));
+                this->player->setDuration(0);
+
+            } else {
+                this->player->setTitle(meta.title);
+                this->player->setArtist(meta.artist);
+                this->player->setDuration(meta.duration);
+            }
 
             // Set new album art (an empty vector will cause default art to be shown)
             std::vector<uint8_t> buffer;

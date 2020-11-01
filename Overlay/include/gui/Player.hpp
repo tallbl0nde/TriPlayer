@@ -17,7 +17,7 @@ namespace Gui {
         private:
             Database * database;        // Database used to read metadata from
             Element::Player * player;   // Main element
-            unsigned int ticks;         // Number of ticks in update() since last check
+            unsigned char ticks;        // Number of ticks in update() since last check
 
             int currentSongID;          // ID of song matching stored metadata
 
