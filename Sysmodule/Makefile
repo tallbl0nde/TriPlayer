@@ -33,7 +33,7 @@ BUILD		:=	build
 INCLUDES	:=	include build/hdrs ../Common/include ../Common/libs/minIni/minIni/dev
 SOURCES		:=	source 	../Common/source
 DATA		:=	data
-LIBS		:=	-lnx -lSQLite -lm -lFLAC++ -lmpg123 -lminIni `freetype-config --libs`
+LIBS		:=	-lnx -lSQLite -lm -lFLAC++ -lFLAC -logg -lvorbis -lmpg123 -lminIni `freetype-config --libs`
 LIBDIRS		:=	$(PORTLIBS) $(LIBNX) $(CURDIR)/../Common/libs/SQLite $(CURDIR)/../Common/libs/minIni
 
 #---------------------------------------------------------------------------------

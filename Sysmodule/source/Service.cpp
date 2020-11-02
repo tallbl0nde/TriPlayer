@@ -6,6 +6,7 @@
 #include "Paths.hpp"
 #include "PlayQueue.hpp"
 #include "Service.hpp"
+#include "sources/SourceFactory.hpp"
 #include "sources/MP3.hpp"
 #include "utils/FS.hpp"
 
@@ -734,7 +735,7 @@ void MainService::playbackThread() {
 
                 // Delete old source and prepare a new one
                 delete this->source;
-                this->source = new MP3(path);
+                this->source = SourceFactory::make_source(path);
                 this->audio->newSong(this->source->sampleRate(), this->source->channels());
             }
             this->songAction = SongAction::Nothing;
