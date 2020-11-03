@@ -3,13 +3,14 @@
 #include "ui/frame/AlbumInfo.hpp"
 #include "utils/FS.hpp"
 #include "utils/Image.hpp"
-#include "utils/MP3.hpp"
 #include "utils/Utils.hpp"
+#include "utils/FileMeta.hpp"
 
 // Default path for file browser
 #define FILE_BROWSER_ROOT "/"
 // Accepted image extensions
-static const std::vector<std::string> FILE_EXTENSIONS_AUD = {".mp3", ".MP3"};
+static const std::vector<std::string> FILE_EXTENSIONS_AUD = {".mp3", ".MP3",
+															 ".flac"};
 static const std::vector<std::string> FILE_EXTENSIONS_IMG = {".jpg", ".jpeg", ".jfif", ".png", ".JPG", ".JPEG", ".JFIF", ".PNG"};
 
 // This whole file/frame is a mess behind the scenes :P
@@ -388,7 +389,7 @@ namespace Frame {
 
     void AlbumInfo::updateImageFromID3(const std::string & path) {
         // Extract image
-        this->dlBuffer = Utils::MP3::getArtFromID3(path);
+        this->dlBuffer = Utils::FileMeta::getArt(path);
         if (this->dlBuffer.empty()) {
             this->createInfoOverlay("No album art was found in the selected file.");
             return;
