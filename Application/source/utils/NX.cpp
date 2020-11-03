@@ -25,7 +25,7 @@ namespace Utils::NX {
         // Create initial object
         if (R_SUCCEEDED(swkbdCreate(&kb, 0))) {
             swkbdConfigMakePresetDefault(&kb);
-            swkbdConfigSetType(&kb, SwkbdType_Normal);
+            swkbdConfigSetType(&kb, SwkbdType_All);
             swkbdConfigSetDicFlag(&kb, 1);
             swkbdConfigSetInitialText(&kb, k.buffer.c_str());
             swkbdConfigSetOkButtonText(&kb, k.ok.c_str());
