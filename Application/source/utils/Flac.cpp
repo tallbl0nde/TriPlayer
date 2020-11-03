@@ -36,7 +36,7 @@ namespace Utils
 	}
 
 	std::vector<unsigned char> Flac::getArt() {
-		return std::vector<unsigned char>();
+		return this->decoder->getAlbumart();
 	}
 
 	Metadata::Song Flac::getInfo() {
@@ -79,7 +79,6 @@ namespace Utils
 		}
 		if (metadata->type == FLAC__METADATA_TYPE_VORBIS_COMMENT)
 		{
-			Log::writeInfo("");
 			this->metaPtr->ID = -1;
 			auto *tag = (FLAC__StreamMetadata_VorbisComment *) &metadata->data;
 			for (unsigned int i = 0; i < tag->num_comments; i++)
@@ -90,5 +89,26 @@ namespace Utils
 				this->addMeta(key, value);
 			}
 		}
+		if (metadata->type == FLAC__METADATA_TYPE_PICTURE)
+		{
+			auto *tag = (FLAC__StreamMetadata_Picture *) &metadata->data;
+			if (tag->type == FLAC__STREAM_METADATA_PICTURE_TYPE_FRONT_COVER)
+			{
+				std::string mimeType(tag->mime_type);
+				if (mimeType == "image/jpg" ||
+					mimeType == "image/jpeg" ||
+					mimeType == "image/png")
+				{
+					for (size_t i = 0; i < tag->data_length; i++)
+						this->albumart.push_back(*(tag->data + 1));
+				}
+				else
+					Log::writeInfo("[FLAC] Embedded image unsupported");
+			}
+		}
+	}
+
+	std::vector<unsigned char> FlacDecoder::getAlbumart() {
+		return this->albumart;
 	}
 }

@@ -22,5 +22,10 @@ std::vector<unsigned char> Utils::FileMeta::getArt(const std::string &path) {
 	auto ext = std::filesystem::path(path).extension();
 	if (ext == ".mp3")
 		return MP3::getArtFromID3(path);
+	if (ext == ".flac")
+	{
+		Flac flac(path);
+		return flac.getArt();
+	}
 	return std::vector<unsigned char>();
 }

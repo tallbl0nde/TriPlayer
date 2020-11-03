@@ -12,6 +12,7 @@ namespace Utils
 	class FlacDecoder : public FLAC::Decoder::File
 	{
 		Metadata::Song *metaPtr;
+		std::vector<unsigned char> albumart;
 		void addMeta(const std::string &key, const std::string &value);
 	protected:
 		FLAC__StreamDecoderWriteStatus
@@ -22,6 +23,7 @@ namespace Utils
 
 	public:
 		FlacDecoder(Metadata::Song *dst);
+		std::vector<unsigned char> getAlbumart();
 	};
 	class Flac
 	{
