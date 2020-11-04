@@ -29,11 +29,11 @@ Flac::~Flac()
 }
 
 size_t Flac::decode(unsigned char *buf, size_t buf_size) {
-	auto blockSize = this->decoder->get_blocksize();
 	this->decoder->set_decode_buffer(buf);
 	size_t i = 0;
 	while (i < buf_size)
 	{
+		auto blockSize = this->decoder->get_blocksize();
 		if (!i + blockSize > buf_size) {
 			this->decoder->process_single();
 			if (this->decoder->get_state() == FLAC__STREAM_DECODER_END_OF_STREAM) {
