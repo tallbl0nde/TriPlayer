@@ -1,3 +1,4 @@
+#include <filesystem>
 #include "sources/MP3.hpp"
 #include "sources/Flac.hpp"
 #include "sources/SourceFactory.hpp"
@@ -8,9 +9,10 @@
  */
 
 Source *SourceFactory::make_source(const std::string &path) {
-	if (path.ends_with(".mp3"))
+	auto extension = std::filesystem::path(path).extension();
+	if (extension == ".mp3")
 		return new MP3(path);
-	if (path.ends_with(".flac"))
+	if (extension == ".flac")
 		return new Flac(path);
 	return nullptr;
 }
