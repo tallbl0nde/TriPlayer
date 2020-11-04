@@ -19,12 +19,12 @@ namespace Utils::MP3 {
             // Read the ID3v2 tag
             // NOTE: ID3v1 does not support album art
             if (audioFile.hasID3v2Tag()) {
-                TagLib::ID3v2::Tag* tag = audioFile.ID3v2Tag();
+                TagLib::ID3v2::Tag * tag = audioFile.ID3v2Tag();
                 if (tag) {
                     // Extract the cover art tag frame
                     TagLib::ID3v2::FrameList coverFrameList = tag->frameListMap()["APIC"];
                     if (!coverFrameList.isEmpty()) {
-                        TagLib::ID3v2::AttachedPictureFrame* coverFrame = (TagLib::ID3v2::AttachedPictureFrame*)coverFrameList.front();
+                        TagLib::ID3v2::AttachedPictureFrame * coverFrame = (TagLib::ID3v2::AttachedPictureFrame *)coverFrameList.front();
                         if (coverFrame) {
                             // Check the image format and extract it if supported
                             TagLib::String mType = coverFrame->mimeType();
@@ -69,7 +69,7 @@ namespace Utils::MP3 {
         TagLib::MPEG::File audioFile(path.c_str(), true, TagLib::AudioProperties::Average);
         if (audioFile.isValid()) {
             // Read the audio properties to get the duration
-            TagLib::MPEG::Properties* audioProperties = audioFile.audioProperties();
+            TagLib::MPEG::Properties * audioProperties = audioFile.audioProperties();
             if (audioProperties) {
                 m.duration = (unsigned int)audioProperties->lengthInSeconds();
             } else {
@@ -78,7 +78,7 @@ namespace Utils::MP3 {
 
             // Confirm the tags exist and read them
             if (audioFile.hasID3v2Tag()) {
-                TagLib::ID3v2::Tag* tag = audioFile.ID3v2Tag();
+                TagLib::ID3v2::Tag * tag = audioFile.ID3v2Tag();
                 if (tag) {
                     m.ID = -1;
                     TagLib::String title = tag->title();
@@ -104,8 +104,9 @@ namespace Utils::MP3 {
                 }
             } else if (audioFile.hasID3v1Tag()) {
                 // NOTE: ID3v1 does not have a disc number tag
-                TagLib::ID3v1::Tag* tag = audioFile.ID3v1Tag();
+                TagLib::ID3v1::Tag * tag = audioFile.ID3v1Tag();
                 if (tag) {
+                    m.ID = -1;
                     TagLib::String title = tag->title();
                     if (!title.isEmpty()) m.title = title.to8Bit(true);
                     TagLib::String artist = tag->artist();
