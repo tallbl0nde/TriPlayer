@@ -26,7 +26,6 @@ namespace Main {
 
         // Start services
         Utils::Curl::init();
-        Utils::MP3::init();
 
         // Prepare theme
         this->theme_ = new Theme();
@@ -218,7 +217,6 @@ namespace Main {
         delete this->config_;
 
         // Stop services
-        Utils::MP3::exit();
         Utils::Curl::exit();
 
         // The database will be closed here as the wrapper goes out of scope

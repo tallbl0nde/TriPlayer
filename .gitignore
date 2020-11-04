@@ -12,3 +12,6 @@
 *.nso
 *.npdm
 *.ovl
+.DS_Store
+._*
+
