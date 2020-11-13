@@ -13,7 +13,7 @@
 
 Updater::Updater() {
     this->downloadUrl = "";
-    this->meta.changelog = "No changelog found.";
+    this->meta.changelog = "Update.EmptyChangelog"_lang;
     this->meta.size = 0;
     this->meta.version = VER_STRING;
 

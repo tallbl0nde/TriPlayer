@@ -43,16 +43,16 @@ namespace Frame {
         this->sort->addElement(arrows);
 
         // List headings
-        this->titleH = new Aether::Text(this->x() + 65, this->y() + 170, "Title", 20);
+        this->titleH = new Aether::Text(this->x() + 65, this->y() + 170, "Common.Title"_lang, 20);
         this->titleH->setColour(this->app->theme()->muted());
         this->topContainer->addElement(this->titleH);
-        this->artistH = new Aether::Text(this->x() + 425, this->titleH->y(), "Artist", 20);
+        this->artistH = new Aether::Text(this->x() + 425, this->titleH->y(), "Artist.Artist"_lang, 20);
         this->artistH->setColour(this->app->theme()->muted());
         this->topContainer->addElement(this->artistH);
-        this->albumH = new Aether::Text(this->x() + 620, this->titleH->y(), "Album", 20);
+        this->albumH = new Aether::Text(this->x() + 620, this->titleH->y(), "Album.Album"_lang, 20);
         this->albumH->setColour(this->app->theme()->muted());
         this->topContainer->addElement(this->albumH);
-        this->lengthH = new Aether::Text(this->x() + 850, this->titleH->y(), "Length", 20);
+        this->lengthH = new Aether::Text(this->x() + 850, this->titleH->y(), "Common.Length"_lang, 20);
         this->lengthH->setX(this->lengthH->x() - this->lengthH->w());
         this->lengthH->setColour(this->app->theme()->muted());
         this->topContainer->addElement(this->lengthH);

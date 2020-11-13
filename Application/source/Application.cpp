@@ -80,15 +80,15 @@ namespace Main {
         this->exitPrompt = new Aether::MessageBox();
         this->exitPrompt->setLineColour(this->theme_->muted2());
         this->exitPrompt->setRectangleColour(this->theme_->popupBG());
-        this->exitPrompt->addLeftButton("Cancel", [this]() {
+        this->exitPrompt->addLeftButton("Common.Cancel"_lang, [this]() {
             this->exitPrompt->close();
         });
-        this->exitPrompt->addRightButton("Exit", [this]() {
+        this->exitPrompt->addRightButton("Common.Exit"_lang, [this]() {
             this->display->exit();
         });
         this->exitPrompt->setTextColour(this->theme_->accent());
         Aether::Element * body = new Aether::Element(0, 0, 700);
-        Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "Are you sure you want to exit?", 24, 620);
+        Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "Common.ExitPrompt"_lang, 24, 620);
         tips->setColour(this->theme_->FG());
         body->addElement(tips);
         body->setH(tips->h() + 80);

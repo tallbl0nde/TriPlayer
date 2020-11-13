@@ -3,11 +3,11 @@
 *build/
 *exefs/
 *lib/
+/psd
 /sdcard
 *.elf
 *.nro
 *.nacp
-*.psd
 *.nsp
 *.nso
 *.npdm

@@ -1,0 +1,108 @@
+{
+    "Artist": {
+        "AddAlbumToPlaylist": "Add Album to Playlist",
+        "AddAlbumToQueue": "Add Album to Queue",
+        "Artist": "Artist",
+        "Artists": "Artists",
+        "CountOne": "1 artist",
+        "CountMany": "$[1] artists",
+        "DetailsOneOne": "1 album | 1 song",
+        "DetailsOneMany": "1 album | $[1] songs",
+        "DetailsManyOne": "$[1] albums | 1 song",
+        "DetailsManyMany": "$[1] albums | $[2] songs",
+        "Information": {
+            "DownloadMessage": "An artist image will be searched for and downloaded using TheAudioDB.\n\nFor best results:\n- Ensure the album's name is correct\n- Make sure you have a stable internet connection\n\nYou will be unable to control playback while the image is downloading.",
+            "DownloadNotFound": "An artist could not be found with the name '$[1]'. Please check your spelling or set an image manually.",
+            "DownloadNoImage": "'$[1]' was found on TheAudioDB but has no image associated with it.",
+            "Heading": "Artist Information",
+            "Image": "Image",
+            "Name": "Name"
+        },
+        "NotFound": "No artists found!",
+        "PlayAlbum": "Play Album",
+        "PlayAll": "Play All",
+        "Sort": {
+            "Heading": "Sort Artists by",
+            "AlbumAsc": "Album (ascending)",
+            "AlbumDsc": "Album (descending)",
+            "AlbumsAsc": "Album Count (increasing)",
+            "AlbumsDsc": "Album Count (decreasing)",
+            "ArtistAsc": "Name (ascending)",
+            "ArtistDsc": "Name (descending)",
+            "SongsAsc": "Song Count (increasing)",
+            "SongsDsc": "Song Count (decreasing)"
+        }
+    },
+    "Album": {
+        "Album": "Album",
+        "Albums": "Albums",
+        "CountOne": "1 album",
+        "CountMany": "$[1] albums",
+        "DetailsOne": "$[1] | 1 song",
+        "DetailsMany": "$[1] | $[2] songs",
+        "Disc": "Disc $[1]",
+        "Information": {
+            "DownloadMessage": "An album image will be searched for and downloaded using TheAudioDB.\n\nFor best results:\n- Ensure the album's name is correct\n- Make sure you have a stable internet connection\n\nYou will be unable to control playback while the image is downloading.",
+            "DownloadNotFound": "An album could not be found with the name '$[1]'. Please check your spelling or set an image manually.",
+            "DownloadNoImage": "'$[1]' was found on TheAudioDB but has no image associated with it.",
+            "Heading": "Album Information",
+            "Image": "Image",
+            "Name": "Album Name",
+            "Searching": "Searching for '$[1]' on TheAudioDB.com..."
+        },
+        "NotFound": "No albums found!",
+        "Sort": {
+            "Heading": "Sort Albums by",
+            "NameAsc": "Name (ascending)",
+            "NameDsc": "Name (descending)",
+            "ArtistAsc": "Artist (increasing)",
+            "ArtistDsc": "Artist (decreasing)"
+        }
+    },
+    "Common": {
+        "AddToPlaylist": "Add to Playlist",
+        "AddToQueue": "Add to Queue",
+        "Cancel": "Cancel",
+        "ChangesSaved": "Your changes have been saved. You may need to restart the application for any changes to take complete effect.",
+        "DatabaseID": "Database ID",
+        "Error": {
+            "AudioDB": "An unknown error occurred during downloading. This could be due to:\n- A poor internet connection\n- The server is overloaded\n- An issue with this application\n\nPlease try again later.",
+            "BlankName": "You can't set a blank name. Nice try ;)",
+            "CorruptArt": "An error occurred processing the file. This may mean the file is corrupt or the stored album art is not supported.",
+            "Database": "An error occurred fetching the data. Please restart the app and try again.",
+            "DatabaseLocked": "Unable to update the database, see the logs for more information!",
+            "NoArt": "No album art was found in the selected file.",
+            "ReadImage": "An error occurred reading the selected image. This may be due to a corrupted image or incorrect file extension."
+        },
+        "Exit": "Exit",
+        "ExitPrompt": "Are you sure you want to exit?",
+        "GoToArtist": "Go to Artist",
+        "Length": "Length",
+        "OK": "OK",
+        "Play": "Play",
+        "RemoveImage": "Remove Image",
+        "ReplaceAudioDB": "Replace from TheAudioDB",
+        "ReplaceFile": "Replace from Audio File",
+        "ReplaceSD": "Replace from SD Card",
+        "Save": "Save",
+        "SelectAudio": "Select an Audio File",
+        "SelectImage": "Select an Image",
+        "Song": "1 song",
+        "Songs": "$[1] songs",
+        "Title": "Title",
+        "ViewArtists": "View Artists",
+        "ViewInformation": "View Information"
+    },
+    "Theme": {
+        "Blue": "Blue",
+        "Green": "Green",
+        "Orange": "Orange",
+        "Pink": "Pink",
+        "Purple": "Purple",
+        "Red": "Red",
+        "Yellow": "Yellow"
+    },
+    "Update": {
+        "EmptyChangelog": "No changelog found."
+    }
+}
