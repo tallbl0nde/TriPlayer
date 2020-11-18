@@ -6,7 +6,8 @@
 #include "Paths.hpp"
 #include "PlayQueue.hpp"
 #include "Service.hpp"
-#include "sources/MP3.hpp"
+#include "source/Factory.hpp"
+#include "source/MP3.hpp"
 #include "utils/FS.hpp"
 
 // Interval (in seconds) to test if DB file is accessible
@@ -61,8 +62,8 @@ void MainService::updateConfig() {
     this->combosUpdated = true;
 
     std::scoped_lock<std::shared_mutex> sMtx(this->sMutex);
-    MP3::setAccurateSeek(this->cfg->MP3AccurateSeek());
-    MP3::setEqualizer(this->cfg->MP3Equalizer());
+    Source::MP3::setAccurateSeek(this->cfg->MP3AccurateSeek());
+    Source::MP3::setEqualizer(this->cfg->MP3Equalizer());
 }
 
 Ipc::Result MainService::commandThread(Ipc::Request * request) {
@@ -734,8 +735,10 @@ void MainService::playbackThread() {
 
                 // Delete old source and prepare a new one
                 delete this->source;
-                this->source = new MP3(path);
-                this->audio->newSong(this->source->sampleRate(), this->source->channels());
+                this->source = Source::Factory::getSource(path);
+                if (this->source != nullptr) {
+                    this->audio->newSong(this->source->sampleRate(), this->source->channels());
+                }
             }
             this->songAction = SongAction::Nothing;
         }

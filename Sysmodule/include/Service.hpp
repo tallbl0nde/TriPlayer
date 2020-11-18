@@ -15,7 +15,9 @@ class Audio;
 class Config;
 class Database;
 class PlayQueue;
-class Source;
+namespace Source {
+    class Source;
+};
 
 // Class which manages all actions taken when receiving a command
 // Essentially encapsulates everything
@@ -67,7 +69,7 @@ class MainService {
         // Mutex for accessing sub-queue
         std::shared_mutex sqMutex;
         // Source currently playing
-        Source * source;
+        Source::Source * source;
 
         // Mutex for access combo strings
         std::shared_mutex cMutex;
