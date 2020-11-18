@@ -54,6 +54,7 @@ namespace Frame::Settings {
         this->addComment("Aether\nCopyright © 2020 tallbl0nde\nMIT License\nhttps://github.com/tallbl0nde/Aether");
         this->addComment("AVIR Image Resizing Algorithm\nCopyright © 2015-2020 Aleksey Vaneev\nMIT License\nhttps://github.com/avaneev/avir");
         this->addComment("Diff Template Library\nCopyright © 2015 cubicdaiya\nBSD License\nhttps://github.com/cubicdaiya/dtl");
+        this->addComment("dr_libs\nPublic Domain\nhttps://github.com/mackron/dr_libs");
         this->addComment("JSON for Modern C++\nCopyright © 2013-2020 Niels Lohmann\nMIT License\nhttps://github.com/nlohmann/json");
         this->addComment("libcURL\nCopyright © 1996-2020 Daniel Stenberg\nMIT/X Derivate License\nhttps://curl.haxx.se");
         this->addComment("libmpg123\nLGPL 2.1 License\nhttps://www.mpg123.de");
