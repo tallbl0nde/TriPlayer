@@ -33,7 +33,7 @@ namespace Screen {
 
         // Add heading
         Aether::Element * body = new Aether::Element(0, 0, 600);
-        Aether::Text * heading = new Aether::Text(50, 40, "Downloading...", headingFontSize);
+        Aether::Text * heading = new Aether::Text(50, 40, "Update.Downloading"_lang, headingFontSize);
         heading->setColour(this->app->theme()->FG());
         body->addElement(heading);
         body->setH(heading->h() + 50);
@@ -79,7 +79,7 @@ namespace Screen {
         this->createNewMsgbox();
 
         // Add OK callback
-        this->msgbox->addTopButton("OK", callback);
+        this->msgbox->addTopButton("Common.OK"_lang, callback);
         this->msgbox->setLineColour(this->app->theme()->muted2());
         this->msgbox->setTextColour(this->app->theme()->accent());
 
@@ -114,7 +114,7 @@ namespace Screen {
         list->addElement(heading);
         heading->setY(list->y());
         heading->setColour(this->app->theme()->FG());
-        heading->setString("Version " + meta.version.substr(1, meta.version.length() - 1) + " is available!");
+        heading->setString(Utils::regexReplace("Update.Available"_lang, meta.version.substr(1, meta.version.length() - 1)));
         list->addElement(new Aether::ListSeparator(30));
 
         // Changelog text block
@@ -126,7 +126,7 @@ namespace Screen {
         this->container->addElement(list);
 
         // Update button (positioned underneath changelog)
-        Aether::BorderButton * button = new Aether::BorderButton(this->container->x() + this->container->w()/2, list->y() + list->h(), 200, 60, 3, "Update", 24, [this]() {
+        Aether::BorderButton * button = new Aether::BorderButton(this->container->x() + this->container->w()/2, list->y() + list->h(), 200, 60, 3, "Update.Update"_lang, 24, [this]() {
             // Create message box
             this->nextProgress = 0.0;
             this->presentDownloading();
@@ -151,7 +151,7 @@ namespace Screen {
         this->container->addElement(button);
 
         // Cancel button (also positioned underneath, but next to update)
-        button = new Aether::BorderButton(this->container->x() + this->container->w()/2, button->y(), button->w(), button->h(), 3, "Cancel", 24, [this]() {
+        button = new Aether::BorderButton(this->container->x() + this->container->w()/2, button->y(), button->w(), button->h(), 3, "Common.Cancel"_lang, 24, [this]() {
             this->app->popScreen();
         });
         button->setX(button->x() + 30);
@@ -162,25 +162,25 @@ namespace Screen {
 
     void Update::showError() {
         // Create heading
-        Aether::Text * text = new Aether::Text(this->w()/2, this->container->y() + 170, "Unable to check for an update!", 24);
+        Aether::Text * text = new Aether::Text(this->w()/2, this->container->y() + 170, "Update.Error.Check1"_lang, 24);
         text->setColour(this->app->theme()->FG());
         text->setX(text->x() - text->w()/2);
         this->container->addElement(text);
 
         // Create subheading
-        text = new Aether::Text(this->w()/2, text->y() + 45, "Check your internet connection and/or try again later.", 20);
+        text = new Aether::Text(this->w()/2, text->y() + 45, "Update.Error.Check2"_lang, 20);
         text->setColour(this->app->theme()->muted());
         text->setX(text->x() - text->w()/2);
         this->container->addElement(text);
 
         // Finally append current version
-        text = new Aether::Text(this->w()/2, text->y() + text->h() + 10, "Version " VER_STRING, 18);
+        text = new Aether::Text(this->w()/2, text->y() + text->h() + 10, Utils::regexReplace("Update.Version"_lang, std::to_string(VER_STRING)), 18);
         text->setColour(this->app->theme()->muted());
         text->setX(text->x() - text->w()/2);
         this->container->addElement(text);
 
         // Add back button
-        Aether::BorderButton * button = new Aether::BorderButton(this->container->x() + this->container->w()/2 - 100, this->container->y() + this->container->h()*0.6, 200, 60, 3, "Back", 24, [this]() {
+        Aether::BorderButton * button = new Aether::BorderButton(this->container->x() + this->container->w()/2 - 100, this->container->y() + this->container->h()*0.6, 200, 60, 3, "Common.Back"_lang, 24, [this]() {
             this->app->popScreen();
         });
         button->setBorderColour(this->app->theme()->FG());
@@ -190,19 +190,19 @@ namespace Screen {
 
     void Update::showUpToDate() {
         // Create heading
-        Aether::Text * text = new Aether::Text(this->w()/2, this->container->y() + 170, "TriPlayer is up to date!", 24);
+        Aether::Text * text = new Aether::Text(this->w()/2, this->container->y() + 170, "Update.UpToDate"_lang, 24);
         text->setColour(this->app->theme()->FG());
         text->setX(text->x() - text->w()/2);
         this->container->addElement(text);
 
         // And append current version
-        text = new Aether::Text(this->w()/2, text->y() + text->h() + 10, "Version " VER_STRING, 18);
+        text = new Aether::Text(this->w()/2, text->y() + text->h() + 10, Utils::regexReplace("Update.Version"_lang, std::to_string(VER_STRING)), 18);
         text->setColour(this->app->theme()->muted());
         text->setX(text->x() - text->w()/2);
         this->container->addElement(text);
 
         // Add back button
-        Aether::BorderButton * button = new Aether::BorderButton(this->container->x() + this->container->w()/2 - 100, this->container->y() + this->container->h()*0.6, 200, 60, 3, "Back", 24, [this]() {
+        Aether::BorderButton * button = new Aether::BorderButton(this->container->x() + this->container->w()/2 - 100, this->container->y() + this->container->h()*0.6, 200, 60, 3, "Common.Back"_lang, 24, [this]() {
             this->app->popScreen();
         });
         button->setBorderColour(this->app->theme()->FG());
@@ -267,7 +267,7 @@ namespace Screen {
             if (this->operation == ThreadOperation::Download) {
                 // As the other thread deletes the file on an error, it obviously didn't succeed
                 if (!Utils::Fs::fileExists(Path::App::UpdateFile)) {
-                    this->presentInfo("Unable to download file", "Check your internet connection and/or try again later.", [this]() {
+                    this->presentInfo("Update.Error.Download1"_lang, "Update.Error.Download2"_lang, [this]() {
                         this->msgbox->close();
                     });
                     this->operation = ThreadOperation::None;
@@ -275,7 +275,7 @@ namespace Screen {
                 // Otherwise extract it
                 } else {
                     // Show message box
-                    this->presentInfo("Extracting update...");
+                    this->presentInfo("Update.Extracting"_lang);
 
                     // Start thread
                     this->operation = ThreadOperation::Extract;
@@ -291,14 +291,14 @@ namespace Screen {
             } else if (this->operation == ThreadOperation::Extract) {
                 // Once again if the file exists, it means an error occurred
                 if (Utils::Fs::fileExists(Path::App::UpdateFile)) {
-                    this->presentInfo("An unknown error occurred", "The update file couldn't be extracted, please try downloading it again!", [this]() {
+                    this->presentInfo("Update.Error.Extract1"_lang, "Update.Error.Extract2"_lang, [this]() {
                         Utils::Fs::deleteFile(Path::App::UpdateFile);
                         this->msgbox->close();
                     });
 
                 // Otherwise show message box confirming success
                 } else {
-                    this->presentInfo("Update installed!", "Both the sysmodule and this application will terminate.", [this]() {
+                    this->presentInfo("Update.Success1"_lang, "Update.Success2"_lang, [this]() {
                         this->msgbox->close();
                         this->app->sysmodule()->terminate();
                         this->app->exit(true);
@@ -315,7 +315,7 @@ namespace Screen {
         this->addElement(this->bg);
 
         // Heading
-        this->heading = new Aether::Text(60, 50, "Update TriPlayer", 50);
+        this->heading = new Aether::Text(60, 50, "Update.Heading"_lang, 50);
         this->heading->setColour(this->app->theme()->FG());
         this->addElement(this->heading);
 
@@ -332,7 +332,7 @@ namespace Screen {
 
         // Create initial "checking" message box
         this->msgbox = nullptr;
-        this->presentInfo("Checking GitHub for updates...");
+        this->presentInfo("Update.Checking"_lang);
 
         // Create updater object and start checking for update
         this->updater = new Updater();

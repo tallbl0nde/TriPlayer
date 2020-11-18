@@ -62,9 +62,12 @@
     "Common": {
         "AddToPlaylist": "Add to Playlist",
         "AddToQueue": "Add to Queue",
+        "Back": "Back",
         "Cancel": "Cancel",
         "ChangesSaved": "Your changes have been saved. You may need to restart the application for any changes to take complete effect.",
+        "ClearQueue": "This action will clear the current play queue. Do you wish to continue?",
         "DatabaseID": "Database ID",
+        "Delete": "Delete",
         "Error": {
             "AudioDB": "An unknown error occurred during downloading. This could be due to:\n- A poor internet connection\n- The server is overloaded\n- An issue with this application\n\nPlease try again later.",
             "BlankName": "You can't set a blank name. Nice try ;)",
@@ -76,10 +79,14 @@
         },
         "Exit": "Exit",
         "ExitPrompt": "Are you sure you want to exit?",
+        "GoToAlbum": "Go to Album",
         "GoToArtist": "Go to Artist",
         "Length": "Length",
         "OK": "OK",
+        "NotPlaying1": "Nothing playing!",
+        "NotPlaying2": "Play a song",
         "Play": "Play",
+        "Quit": "Quit",
         "RemoveImage": "Remove Image",
         "ReplaceAudioDB": "Replace from TheAudioDB",
         "ReplaceFile": "Replace from Audio File",
@@ -93,6 +100,125 @@
         "ViewArtists": "View Artists",
         "ViewInformation": "View Information"
     },
+    "Playlist": {
+        "AddToOtherPlaylist": "Add to Other Playlist",
+        "CountOne": "1 playlist",
+        "CountMany": "$[1] playlists",
+        "Create": "Create",
+        "CreatePlaylist": "Create Playlist",
+        "DeletePlaylist": "Delete Playlist",
+        "DeletePrompt": "Are you sure you want to delete this playlist? This action cannot be undone!",
+        "DeletePromptName": "Are you sure you want to delete the playlist '$[1]'? This action cannot be undone!",
+        "DetailsOne": "1 song | $[1]",
+        "DetailsMany": "$[1] songs | $[2]",
+        "Information": {
+            "Heading": "Playlist Information",
+            "Image": "Image",
+            "Name": "Name"
+        },
+        "NewPlaylist": "New Playlist",
+        "NotFound": "No playlists found, use the button above to create one!",
+        "NoSongs": "This playlist contains no songs!",
+        "Playlist": "Playlist",
+        "Playlists": "Playlists",
+        "RemoveFromPlaylist": "Remove from Playlist",
+        "Sort": {
+            "Heading": "Sort Songs by",
+            "HeadingAlt": "Sort Playlists by",
+            "AlbumAsc": "Album (ascending)",
+            "AlbumDsc": "Album (descending)",
+            "ArtistAsc": "Artist (ascending)",
+            "ArtistDsc": "Artist (descending)",
+            "LengthAsc": "Length (ascending)",
+            "LengthDsc": "Length (descending)",
+            "SongsAsc": "Songs (ascending)",
+            "SongsDsc": "Songs (descending)",
+            "TitleAsc": "Title (ascending)",
+            "TitleDsc": "Title (descending)",
+            "TitleAltAsc": "Name (ascending)",
+            "TitleAltDsc": "Name (descending)"
+        }
+    },
+    "Queue": {
+        "CountOne": "1 track remaining | $[1]",
+        "CountMany": "$[1] tracks remaining | $[2]",
+        "Empty": "Your Play Queue is empty!",
+        "Heading": "Play Queue",
+        "NextInQueue": "Next in Queue",
+        "NowPlaying": "Now Playing",
+        "RemoveFromQueue": "Remove from Queue",
+        "UpNext": "Up Next from: $[1]",
+        "UpNextBlank": "Up Next"
+    },
+    "Search": {
+        "Description": "Search for playlists, artists, albums or songs...",
+        "KeyboardError": "An unexpected error occurred showing the keyboard. If this persists, please restart the application.",
+        "NoResults": "No results found",
+        "ResultsEmpty": "Results for:",
+        "Results": "Results for: $[1]",
+        "Search": "Search",
+        "SearchError": "An error occurred searching the database. Please restart the application and try again.",
+        "Searching": "Searching..."
+    },
+    "Settings": {
+        "About": "About",
+        "Advanced": "Advanced",
+        "Appearance": "Appearance",
+        "Application": "Application",
+        "BackToLibrary": "Back to Library",
+        "General": "General",
+        "Metadata": "Metadata",
+        "Miscellaneous": "Miscellaneous",
+        "MP3": "MP3",
+        "Search": "Search",
+        "Settings": "Settings",
+        "Sysmodule": "Sysmodule"
+    },
+    "Song": {
+        "DetailsOne": "1 track | $[1]",
+        "DetailsMany": "$[1] tracks | $[2]",
+        "Information": {
+            "DiscNumber": "Disc #",
+            "Error": "One or more fields are blank, please ensure all fields are filled in!",
+            "FileLocation": "File Location",
+            "Heading": "Song Information",
+            "TrackNumber": "Track #"
+        },
+        "NotFound": "No songs found in /music!",
+        "Songs": "Songs",
+        "Sort": {
+            "Heading": "Sort Songs by",
+            "AlbumAsc": "Album (ascending)",
+            "AlbumDsc": "Album (descending)",
+            "ArtistAsc": "Artist (ascending)",
+            "ArtistDsc": "Artist (descending)",
+            "LengthAsc": "Length (ascending)",
+            "LengthDsc": "Length (descending)",
+            "TitleAsc": "Title (ascending)",
+            "TitleDsc": "Title (descending)"
+        },
+        "YourSongs": "Your Songs"
+    },
+    "Splash": {
+        "AlbumsProcessed": "$[1] albums processed",
+        "Error": {
+            "Connect1": "Unable to connect to sysmodule",
+            "Connect2": "Press 'Launch' to attempt to start it in the background",
+            "Unknown1": "An unexpected error occurred",
+            "Unknown2": "Check the log files for more information",
+            "Version1": "The sysmodule and application versions do not match",
+            "Version2": "Please ensure that all components of TriPlayer are up to date"
+        },
+        "Extracting": "Extracting album art...",
+        "FileOutOf": "File $[1] of $[2]",
+        "FileOutOfWithTime": "File $[1] of $[2] (~$[3] left)",
+        "Hint": "Please don't quit until the scan is complete!",
+        "Launch": "Launch",
+        "Preparing": "Preparing your library...",
+        "Scanning": "Scanning new files...",
+        "Updating": "Updating database...",
+        "Version": "Version $[1]"
+    },
     "Theme": {
         "Blue": "Blue",
         "Green": "Green",
@@ -103,6 +229,24 @@
         "Yellow": "Yellow"
     },
     "Update": {
-        "EmptyChangelog": "No changelog found."
+        "Available": "Version $[1] is available!",
+        "Checking": "Checking GitHub for updates...",
+        "Downloading": "Downloading...",
+        "Error": {
+            "Check1": "Unable to check for an update!",
+            "Check2": "Check your internet connection and/or try again later.",
+            "Download1": "Unable to download file",
+            "Download2": "Check your internet connection and/or try again later.",
+            "Extract1": "An unknown error occurred",
+            "Extract2": "The update file couldn't be extracted, please try downloading it again!"
+        },
+        "EmptyChangelog": "No changelog found.",
+        "Extracting": "Extracting update...",
+        "Heading": "Update TriPlayer",
+        "Success1": "Update installed!",
+        "Success2": "Both the sysmodule and this application will terminate.",
+        "Update": "Update",
+        "UpToDate": "TriPlayer is up to date!",
+        "Version": "Version $[1]"
     }
 }

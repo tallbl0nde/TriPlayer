@@ -33,9 +33,9 @@ namespace Frame {
         this->list->setH(this->list->h() + 20);
 
         // Now prepare this frame
-        this->heading->setString("Playlists");
+        this->heading->setString("Playlist.Playlists"_lang);
         this->emptyMsg = nullptr;
-        this->newButton = new Aether::FilledButton(this->x() + this->w() - 320, this->sort->y(), BUTTON_W, BUTTON_H, "New Playlist", BUTTON_F, [this]() {
+        this->newButton = new Aether::FilledButton(this->x() + this->w() - 320, this->sort->y(), BUTTON_W, BUTTON_H, "Playlist.NewPlaylist"_lang, BUTTON_F, [this]() {
             this->createNewPlaylistMenu();
         });
         this->newButton->setFillColour(this->app->theme()->accent());
@@ -49,11 +49,11 @@ namespace Frame {
         this->sort->setCallback([this]() {
             this->app->addOverlay(this->sortMenu);
         });
-        std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::TitleAsc, "Name (ascending)"},
-                                                      {Database::SortBy::TitleDsc, "Name (descending)"},
-                                                      {Database::SortBy::SongsAsc, "Songs (ascending)"},
-                                                      {Database::SortBy::SongsDsc, "Songs (descending)"}};
-        this->sortMenu = new CustomOvl::SortBy("Sort Playlists by", sort, [this](Database::SortBy s) {
+        std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::TitleAsc, "Playlist.Sort.TitleAltAsc"_lang},
+                                                      {Database::SortBy::TitleDsc, "Playlist.Sort.TitleAltDsc"_lang},
+                                                      {Database::SortBy::SongsAsc, "Playlist.Sort.SongsAsc"_lang},
+                                                      {Database::SortBy::SongsDsc, "Playlist.Sort.SongsDsc"_lang}};
+        this->sortMenu = new CustomOvl::SortBy("Playlist.HeadingAlt"_lang, sort, [this](Database::SortBy s) {
             this->refreshList(s);
         });
         this->sortMenu->setBackgroundColour(this->app->theme()->popupBG());
@@ -74,7 +74,7 @@ namespace Frame {
 
         // Set styling parameters
         l->setNameString(m.name);
-        l->setSongsString(std::to_string(m.songCount) + (m.songCount == 1 ? " song" : " songs"));
+        l->setSongsString((m.songCount == 1 ? "Common.Song"_lang : Utils::regexReplace("Common.Songs"_lang, std::to_string(m.songCount))));
         l->setLineColour(this->app->theme()->muted2());
         l->setMoreColour(this->app->theme()->muted());
         l->setTextColour(this->app->theme()->FG());
@@ -117,7 +117,7 @@ namespace Frame {
         // Show list if there are playlists
         if (m.size() > 0) {
             this->list->setHidden(false);
-            this->subHeading->setString(std::to_string(m.size()) + (m.size() == 1 ? " playlist" : " playlists"));
+            this->subHeading->setString(m.size() == 1 ? "Playlist.CountOne"_lang : Utils::regexReplace("Playlist.CountMany"_lang, std::to_string(m.size())));
 
             // Create list items for each playlist
             for (size_t i = 0; i < m.size(); i++) {
@@ -136,7 +136,7 @@ namespace Frame {
         } else {
             this->subHeading->setHidden(true);
             this->setFocussed(this->topContainer);
-            this->emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "No playlists found, use the button above to create one!", 24);
+            this->emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "Playlist.NotFound"_lang, 24);
             this->emptyMsg->setColour(this->app->theme()->FG());
             this->emptyMsg->setX(this->x() + (this->w() - this->emptyMsg->w())/2);
             this->addElement(this->emptyMsg);
@@ -146,11 +146,11 @@ namespace Frame {
     void Playlists::createDeletePlaylistMenu(const size_t pos) {
         delete this->msgbox;
         this->msgbox = new Aether::MessageBox();
-        this->msgbox->addLeftButton("Cancel", [this]() {
+        this->msgbox->addLeftButton("Common.Cancel"_lang, [this]() {
             // Do nothing; just close this overlay
             this->msgbox->close();
         });
-        this->msgbox->addRightButton("Delete", [this, pos]() {
+        this->msgbox->addRightButton("Common.Delete"_lang, [this, pos]() {
             // Delete and update list
             this->app->lockDatabase();
             bool ok = this->app->database()->removePlaylist(this->items[pos].meta.ID);
@@ -164,7 +164,7 @@ namespace Frame {
                 if (this->items.empty()) {
                     this->refreshList(this->sortType);
                 } else {
-                    this->subHeading->setString(std::to_string(this->items.size()) + (this->items.size() == 1 ? " playlist" : " playlists"));
+                    this->subHeading->setString(this->items.size() == 1 ? "Playlist.CountOne"_lang : Utils::regexReplace("Playlist.CountMany"_lang, std::to_string(this->items.size())));
                 }
             }
 
@@ -177,7 +177,7 @@ namespace Frame {
         this->msgbox->setTextColour(this->app->theme()->accent());
         Aether::Element * body = new Aether::Element(0, 0, 700);
         Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "", 24, 620);
-        tips->setString("Are you sure you want to delete the playlist '" + this->items[pos].meta.name + "'? This action cannot be undone!");
+        tips->setString(Utils::regexReplace("Playlist.DeletePromptName"_lang, this->items[pos].meta.name));
         tips->setColour(this->app->theme()->FG());
         body->addElement(tips);
         body->setH(tips->h() + 80);
@@ -195,8 +195,8 @@ namespace Frame {
             this->browser->setMutedTextColour(this->app->theme()->muted());
             this->browser->setRectangleColour(this->app->theme()->popupBG());
             this->browser->setTextColour(this->app->theme()->FG());
-            this->browser->setCancelText("Cancel");
-            this->browser->setHeadingText("Select an Image");
+            this->browser->setCancelText("Common.Cancel"_lang);
+            this->browser->setHeadingText("Common.SelectImage"_lang);
             this->browser->setExtensions(FILE_EXTENSIONS);
         }
 
@@ -218,14 +218,14 @@ namespace Frame {
         // Set playlist specific things
         this->menu->setImage(new Aether::Image(0, 0, this->items[pos].meta.imagePath.empty() ? "romfs:/misc/noplaylist.png" : this->items[pos].meta.imagePath));
         this->menu->setMainText(this->items[pos].meta.name);
-        std::string str = std::to_string(this->items[pos].meta.songCount) + (this->items[pos].meta.songCount == 1 ? " song" : " songs");
+        std::string str = (this->items[pos].meta.songCount == 1 ? "Common.Song" : Utils::regexReplace("Common.Songs"_lang, this->items[pos].meta.songCount));
         this->menu->setSubText(str);
 
         // Play
         CustomElm::MenuButton * b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/playsmall.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Play");
+        b->setText("Common.Play"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
             std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID, Database::SortBy::TitleAsc);
@@ -245,7 +245,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Add to Queue");
+        b->setText("Common.AddToQueue"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
             std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID, Database::SortBy::TitleAsc);
@@ -260,7 +260,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoplaylist.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Add to other Playlist");
+        b->setText("Playlist.AddToOtherPlaylist"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
             this->showAddToPlaylist([this, pos](PlaylistID i) {
@@ -298,7 +298,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/bin.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Delete Playlist");
+        b->setText("Playlist.DeletePlaylist"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
             this->createDeletePlaylistMenu(pos);
@@ -310,7 +310,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/info.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("View Information");
+        b->setText("Common.ViewInformation"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
             this->changeFrame(Type::PlaylistInfo, Action::Push, this->items[pos].meta.ID);
@@ -332,10 +332,10 @@ namespace Frame {
         // Create menu
         delete this->newMenu;
         this->newMenu = new CustomOvl::NewPlaylist();
-        this->newMenu->setHeading("Create Playlist");
-        this->newMenu->setNameString("Name");
-        this->newMenu->setOKString("Create");
-        this->newMenu->setCancelString("Cancel");
+        this->newMenu->setHeading("Playlist.CreatePlaylist"_lang);
+        this->newMenu->setNameString("Playlist.Information.Name"_lang);
+        this->newMenu->setOKString("Playlist.Create"_lang);
+        this->newMenu->setCancelString("Common.Cancel"_lang);
         this->newMenu->setAccentColour(this->app->theme()->accent());
         this->newMenu->setBackgroundColour(this->app->theme()->popupBG());
         this->newMenu->setHeadingColour(this->app->theme()->FG());
@@ -350,7 +350,7 @@ namespace Frame {
         this->newMenu->setOKCallback([this]() {
             // Don't permit blank name
             if (this->newData.name.empty()) {
-                this->createInfoOverlay("You can't have a blank name.");
+                this->createInfoOverlay("Common.Error.BlankName"_lang);
             } else {
                 this->savePlaylist();
                 this->newMenu->close();
@@ -363,7 +363,7 @@ namespace Frame {
     void Playlists::createInfoOverlay(const std::string & msg) {
         delete this->msgbox;
         this->msgbox = new Aether::MessageBox();
-        this->msgbox->addTopButton("OK", [this]() {
+        this->msgbox->addTopButton("Common.OK"_lang, [this]() {
             this->msgbox->close();
         });
         this->msgbox->setLineColour(this->app->theme()->muted2());
@@ -410,7 +410,7 @@ namespace Frame {
 
         // Otherwise show a message
         } else {
-            this->createInfoOverlay("Unable to write to the database, see the logs for more information!");
+            this->createInfoOverlay("Common.Error.DatabaseLocked"_lang);
         }
     }
 
@@ -427,7 +427,7 @@ namespace Frame {
 
                     // Show error if image wasn't created
                     if (tmpImage->texW() == 0 || tmpImage->texH() == 0) {
-                        this->createInfoOverlay("An error occurred reading the selected image. This may be due to a corrupted image or incorrect file extension.");
+                        this->createInfoOverlay("Common.Error.ReadImage"_lang);
                         delete tmpImage;
 
                     } else {
@@ -450,7 +450,7 @@ namespace Frame {
 
         // If there's a count difference then we need to remove the pushed playlist (as it was deleted)
         if (m.size() != this->items.size()) {
-            this->subHeading->setString(std::to_string(m.size()) + (m.size() == 1 ? " playlist" : " playlists"));
+            this->subHeading->setString(m.size() == 1 ? "Playlist.CountOne"_lang : Utils::regexReplace("Playlist.CountMany"_lang, std::to_string(m.size())));
             this->list->removeElement(this->items[this->pushedIdx].elm);
             this->items.erase(this->items.begin() + this->pushedIdx);
             return;

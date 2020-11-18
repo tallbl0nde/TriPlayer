@@ -93,10 +93,10 @@ namespace Screen {
     }
 
     void Splash::setErrorConnect() {
-        this->heading->setString("Unable to connect to sysmodule");
+        this->heading->setString("Splash.Error.Connect1"_lang);
         this->heading->setX(640 - this->heading->w()/2);
         this->heading->setHidden(false);
-        this->subheading->setString("Press 'Launch' to attempt to start it in the background");
+        this->subheading->setString("Splash.Error.Connect2"_lang);
         this->subheading->setX(640 - this->subheading->w()/2);
         this->subheading->setHidden(false);
         this->launch->setHidden(false);
@@ -108,10 +108,10 @@ namespace Screen {
 
     void Splash::setErrorVersion() {
         // Indicate wrong version
-        this->heading->setString("The sysmodule and application versions do not match");
+        this->heading->setString("Splash.Error.Version1"_lang);
         this->heading->setX(640 - this->heading->w()/2);
         this->heading->setHidden(false);
-        this->subheading->setString("Please ensure that all components of TriPlayer are up to date");
+        this->subheading->setString("Splash.Error.Version2"_lang);
         this->subheading->setX(640 - this->subheading->w()/2);
         this->subheading->setHidden(false);
         this->launch->setHidden(true);
@@ -165,7 +165,7 @@ namespace Screen {
     }
 
     void Splash::setScanFiles() {
-        this->heading->setString("Preparing your library...");
+        this->heading->setString("Splash.Preparing"_lang);
         this->heading->setX(640 - this->heading->w()/2);
         this->heading->setHidden(false);
         this->animation->setHidden(false);
@@ -179,10 +179,10 @@ namespace Screen {
 
     void Splash::setScanMetadata() {
         this->lastFile = 0;
-        this->heading->setString("Scanning new files...");
+        this->heading->setString("Splash.Scanning"_lang);
         this->heading->setX(640 - this->heading->w()/2);
         this->subheading->setHidden(false);
-        this->subheading->setString("File 0 of 0");
+        this->subheading->setString(Utils::regexReplace("Splash.FileOutOf", std::to_string(0), std::to_string(0)));
         this->subheading->setX(640 - this->subheading->w()/2);
         this->percent->setHidden(false);
         this->percent->setString("0%");
@@ -196,7 +196,7 @@ namespace Screen {
     }
 
     void Splash::setScanDatabase() {
-        this->heading->setString("Updating database...");
+        this->heading->setString("Splash.Updating"_lang);
         this->heading->setX(640 - this->heading->w()/2);
         this->subheading->setHidden(true);
         this->animation->setX(620);
@@ -208,10 +208,10 @@ namespace Screen {
 
     void Splash::setScanArt() {
         this->lastFile = 0;
-        this->heading->setString("Extracting album art...");
+        this->heading->setString("Splash.Extracting"_lang);
         this->heading->setX(640 - this->heading->w()/2);
         this->subheading->setHidden(false);
-        this->subheading->setString("0 albums processed");
+        this->subheading->setString(Utils::regexReplace("Splash.AlbumsProcessed"_lang, std::to_string(0)));
         this->subheading->setX(640 - this->subheading->w()/2);
         this->launch->setHidden(true);
         this->quit->setHidden(true);
@@ -219,10 +219,10 @@ namespace Screen {
 
     void Splash::setScanError() {
         this->heading->setHidden(false);
-        this->heading->setString("An unexpected error occurred");
+        this->heading->setString("Splash.Error.Unknown1"_lang);
         this->heading->setX(640 - this->heading->w()/2);
         this->subheading->setHidden(false);
-        this->subheading->setString("Check the log files for more information");
+        this->subheading->setString("Splash.Error.Unknown2"_lang);
         this->subheading->setX(640 - this->subheading->w()/2);
         this->animation->setHidden(true);
         this->progress->setHidden(true);
@@ -290,11 +290,11 @@ namespace Screen {
             size_t file = this->currentFile;
             size_t time = this->estRemaining;
             if (file != this->lastFile) {
-                std::string tmp = "File " + std::to_string(file) + " of " + std::to_string(this->totalFiles);
                 if (time > 0) {
-                    tmp += " (~" + Utils::secondsToHMS(time) + " left)";
+                    this->subheading->setString(Utils::regexReplace("Splash.FileOutOfWithTime", std::to_string(file), std::to_string(this->totalFiles), Utils::secondsToHMS(time)));
+                } else {
+                    this->subheading->setString(Utils::regexReplace("Splash.FileOutOf", std::to_string(file), std::to_string(this->totalFiles)));
                 }
-                this->subheading->setString(tmp);
                 this->subheading->setX(640 - this->subheading->w()/2);
                 this->progress->setValue(100 * (float)file/(this->totalFiles + 1));
                 this->percent->setString(Utils::truncateToDecimalPlace(std::to_string(this->progress->value()), 1) + "%");
@@ -305,7 +305,7 @@ namespace Screen {
         } else if (stage == ScanStage::Art) {
             size_t album = this->currentFile;
             if (album != this->lastFile) {
-                this->subheading->setString(std::to_string(album) + (album == 1 ? " album" : " albums") + " processed");
+                this->subheading->setString(Utils::regexReplace("Splash.AlbumsProcessed", std::to_string(album)));
                 this->subheading->setX(640 - this->subheading->w()/2);
             }
         }
@@ -319,7 +319,7 @@ namespace Screen {
         this->addElement(this->bg);
 
         // Add all other elements
-        this->version = new Aether::Text(560, 315, "Version " + std::string(VER_STRING), 26);
+        this->version = new Aether::Text(560, 315, Utils::regexReplace("Splash.Version"_lang, std::string(VER_STRING)), 26);
         this->version->setColour(this->app->theme()->FG());
         this->addElement(this->version);
 
@@ -350,12 +350,12 @@ namespace Screen {
         this->animation->setAnimateSpeed(50);
         this->addElement(this->animation);
 
-        this->hint = new Aether::Text(640, 685, "Please don't quit until the scan is complete!", 18);
+        this->hint = new Aether::Text(640, 685, "Splash.Hint"_lang, 18);
         this->hint->setX(640 - this->hint->w()/2);
         this->hint->setColour(this->app->theme()->muted());
         this->addElement(this->hint);
 
-        this->launch = new Aether::BorderButton(0, 610, 160, 60, 2, "Launch", 26, [this]() {
+        this->launch = new Aether::BorderButton(0, 610, 160, 60, 2, "Splash.Launch"_lang, 26, [this]() {
             this->app->sysmodule()->launch();
             std::this_thread::sleep_for(std::chrono::milliseconds(500));   // Wait for the sysmodule to launch
             this->app->sysmodule()->reconnect();
@@ -363,7 +363,7 @@ namespace Screen {
         });
         this->addElement(this->launch);
 
-        this->quit = new Aether::BorderButton(0, this->launch->y(), 160, 60, 2, "Quit", 26, [this]() {
+        this->quit = new Aether::BorderButton(0, this->launch->y(), 160, 60, 2, "Common.Quit"_lang, 26, [this]() {
             this->app->exit(true);
         });
         this->addElement(this->quit);

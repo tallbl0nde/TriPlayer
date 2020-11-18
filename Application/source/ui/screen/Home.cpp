@@ -79,7 +79,7 @@ namespace Screen {
         this->addToPlMenu = new CustomOvl::AddToPlaylist();
         this->addToPlMenu->setBackgroundColour(this->app->theme()->popupBG());
         this->addToPlMenu->setHeadingColour(this->app->theme()->FG());
-        this->addToPlMenu->setHeadingString("Add to Playlist");
+        this->addToPlMenu->setHeadingString("Common.AddToPlaylist"_lang);
         this->addToPlMenu->setLineColour(this->app->theme()->muted2());
         this->addToPlMenu->setChosenCallback([this, f](PlaylistID id) {
             this->app->lockDatabase();
@@ -97,7 +97,7 @@ namespace Screen {
         for (size_t i = 0; i < pls.size(); i++) {
             CustomElm::ListItem::Playlist * l = new CustomElm::ListItem::Playlist(pls[i].imagePath.empty() ? "romfs:/misc/noplaylist.png" : pls[i].imagePath);
             l->setNameString(pls[i].name);
-            std::string str = std::to_string(pls[i].songCount) + (pls[i].songCount == 1 ? " song" : " songs");
+            std::string str = (pls[i].songCount == 1 ? "Common.Song" : Utils::regexReplace("Common.Songs"_lang, std::to_string(pls[i].songCount)));
             l->setSongsString(str);
             l->setLineColour(this->app->theme()->muted2());
             l->setMoreColour(this->app->theme()->muted());
@@ -116,10 +116,10 @@ namespace Screen {
         this->confirmQueue = new Aether::MessageBox();
         this->confirmQueue->setLineColour(this->app->theme()->muted2());
         this->confirmQueue->setRectangleColour(this->app->theme()->popupBG());
-        this->confirmQueue->addLeftButton("Cancel", [this]() {
+        this->confirmQueue->addLeftButton("Common.Cancel"_lang, [this]() {
             this->confirmQueue->close();
         });
-        this->confirmQueue->addRightButton("OK", [this, str, ids, pos, rand]() {
+        this->confirmQueue->addRightButton("Common.OK"_lang, [this, str, ids, pos, rand]() {
             this->confirmQueue->close();
 
             // "Shuffle" locally first if requested
@@ -140,7 +140,7 @@ namespace Screen {
         });
         this->confirmQueue->setTextColour(this->app->theme()->accent());
         Aether::Element * body = new Aether::Element(0, 0, 700);
-        Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "This action will clear the current play queue. Do you wish to continue?", 24, 620);
+        Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "Common.ClearQueue"_lang, 24, 620);
         tips->setColour(this->app->theme()->FG());
         body->addElement(tips);
         body->setH(tips->h() + 80);
@@ -273,8 +273,8 @@ namespace Screen {
 
             // Use default text if an error occurs or the ID is negative
             if (!updated) {
-                this->player->setTrackName("Nothing playing!");
-                this->player->setTrackArtist("Play a song");
+                this->player->setTrackName("Common.NotPlaying1"_lang);
+                this->player->setTrackArtist("Common.NotPlaying2"_lang);
                 this->player->setDuration(0);
                 this->player->setAlbumCover(new Aether::Image(0, 0, Path::App::DefaultArtFile));
             }
@@ -466,7 +466,7 @@ namespace Screen {
         this->backIcon = new Aether::Image(this->backButton->x() + 30, 17, "romfs:/icons/back.png");
         this->backIcon->setColour(this->app->theme()->FG());
         this->backButton->addElement(this->backIcon);
-        this->backText = new Aether::Text(this->backIcon->x() + this->backIcon->w() + 20, 32, "Back", 26);
+        this->backText = new Aether::Text(this->backIcon->x() + this->backIcon->w() + 20, 32, "Common.Back"_lang, 26);
         this->backText->setY(this->backText->y() - this->backText->h()/2);
         this->backText->setColour(this->app->theme()->FG());
         this->backButton->addElement(this->backText);
@@ -478,7 +478,7 @@ namespace Screen {
 
         // Quit
         Aether::Element * quitButton = new Aether::Element(155, 0, 155, 65);
-        Aether::Text * quitText = new Aether::Text(quitButton->x() + 30, 32, "Quit", 26);
+        Aether::Text * quitText = new Aether::Text(quitButton->x() + 30, 32, "Common.Quit"_lang, 26);
         quitText->setY(quitText->y() - quitText->h()/2);
         quitText->setColour(this->app->theme()->FG());
         quitButton->addElement(quitText);
@@ -495,7 +495,7 @@ namespace Screen {
         // Navigation list
         this->sideSearch = new CustomElm::SideButton(10, 80, 290);
         this->sideSearch->setIcon(new Aether::Image(0, 0, "romfs:/icons/search.png"));
-        this->sideSearch->setText("Search");
+        this->sideSearch->setText("Search.Search"_lang);
         this->sideSearch->setActiveColour(this->app->theme()->accent());
         this->sideSearch->setInactiveColour(this->app->theme()->FG());
         this->sideSearch->setCallback([this](){
@@ -517,7 +517,7 @@ namespace Screen {
         this->sideContainer->addElement(this->sideSeparator);
         this->sidePlaylists = new CustomElm::SideButton(10, this->sideSeparator->y() + 10, 290);
         this->sidePlaylists->setIcon(new Aether::Image(0, 0, "romfs:/icons/playlist.png"));
-        this->sidePlaylists->setText("Playlists");
+        this->sidePlaylists->setText("Playlist.Playlists"_lang);
         this->sidePlaylists->setActiveColour(this->app->theme()->accent());
         this->sidePlaylists->setInactiveColour(this->app->theme()->FG());
         this->sidePlaylists->setCallback([this](){
@@ -526,7 +526,7 @@ namespace Screen {
         this->sideContainer->addElement(this->sidePlaylists);
         this->sideSongs = new CustomElm::SideButton(10, this->sidePlaylists->y() + 60, 290);
         this->sideSongs->setIcon(new Aether::Image(0, 0, "romfs:/icons/musicnote.png"));
-        this->sideSongs->setText("Songs");
+        this->sideSongs->setText("Song.Songs"_lang);
         this->sideSongs->setActiveColour(this->app->theme()->accent());
         this->sideSongs->setInactiveColour(this->app->theme()->FG());
         this->sideSongs->setCallback([this](){
@@ -535,7 +535,7 @@ namespace Screen {
         this->sideContainer->addElement(this->sideSongs);
         this->sideArtists = new CustomElm::SideButton(10, this->sideSongs->y() + 60, 290);
         this->sideArtists->setIcon(new Aether::Image(0, 0, "romfs:/icons/user.png"));
-        this->sideArtists->setText("Artists");
+        this->sideArtists->setText("Artist.Artists"_lang);
         this->sideArtists->setActiveColour(this->app->theme()->accent());
         this->sideArtists->setInactiveColour(this->app->theme()->FG());
         this->sideArtists->setCallback([this](){
@@ -544,7 +544,7 @@ namespace Screen {
         this->sideContainer->addElement(this->sideArtists);
         this->sideAlbums = new CustomElm::SideButton(10, this->sideArtists->y() + 60, 290);
         this->sideAlbums->setIcon(new Aether::Image(0, 0, "romfs:/icons/disc.png"));
-        this->sideAlbums->setText("Albums");
+        this->sideAlbums->setText("Album.Albums"_lang);
         this->sideAlbums->setActiveColour(this->app->theme()->accent());
         this->sideAlbums->setInactiveColour(this->app->theme()->FG());
         this->sideAlbums->setCallback([this](){
@@ -556,7 +556,7 @@ namespace Screen {
         this->sideContainer->addElement(this->sideSeparator2);
         this->sideQueue = new CustomElm::SideButton(10, this->sideSeparator2->y() + 10, 290);
         this->sideQueue->setIcon(new Aether::Image(0, 0, "romfs:/icons/queue.png"));
-        this->sideQueue->setText("Play Queue");
+        this->sideQueue->setText("Queue.Heading"_lang);
         this->sideQueue->setActiveColour(this->app->theme()->accent());
         this->sideQueue->setInactiveColour(this->app->theme()->FG());
         this->sideQueue->setCallback([this](){
@@ -578,7 +578,7 @@ namespace Screen {
         this->sideContainer->addElement(this->sideSeparator3);
         this->sideSettings = new CustomElm::SideButton(10, this->sideSeparator3->y() + 10, 290);
         this->sideSettings->setIcon(new Aether::Image(0, 0, "romfs:/icons/settings.png"));
-        this->sideSettings->setText("Settings");
+        this->sideSettings->setText("Settings.Settings"_lang);
         this->sideSettings->setActiveColour(this->app->theme()->accent());
         this->sideSettings->setInactiveColour(this->app->theme()->FG());
         this->sideSettings->setCallback([this](){

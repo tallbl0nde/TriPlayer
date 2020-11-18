@@ -30,7 +30,7 @@ namespace Frame {
         this->metadata = this->app->database()->getPlaylistMetadataForID(id);
         if (this->metadata.ID < 0) {
             // Helps show there was an error (should never appear)
-            this->heading->setString("Playlist");
+            this->heading->setString("Playlist.Playlist"_lang);
             this->msgbox = nullptr;
             this->playlistMenu = nullptr;
             this->songMenu = nullptr;
@@ -54,7 +54,7 @@ namespace Frame {
         }
 
         // Play and 'more' buttons
-        this->playButton = new Aether::FilledButton(this->heading->x(), this->heading->y() + this->heading->h() + 45, BUTTON_W, BUTTON_H, "Play", BUTTON_F, [this]() {
+        this->playButton = new Aether::FilledButton(this->heading->x(), this->heading->y() + this->heading->h() + 45, BUTTON_W, BUTTON_H, "Common.Play"_lang, BUTTON_F, [this]() {
             this->playPlaylist(std::numeric_limits<size_t>::max());
         });
         this->playButton->setFillColour(this->app->theme()->accent());
@@ -84,15 +84,15 @@ namespace Frame {
         this->sort->setCallback([this]() {
             this->app->addOverlay(this->sortMenu);
         });
-        std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::TitleAsc, "Title (ascending)"},
-                                                      {Database::SortBy::TitleDsc, "Title (descending)"},
-                                                      {Database::SortBy::ArtistAsc, "Artist (ascending)"},
-                                                      {Database::SortBy::ArtistDsc, "Artist (descending)"},
-                                                      {Database::SortBy::AlbumAsc, "Album (ascending)"},
-                                                      {Database::SortBy::AlbumDsc, "Album (descending)"},
-                                                      {Database::SortBy::LengthAsc, "Length (ascending)"},
-                                                      {Database::SortBy::LengthDsc, "Length (descending)"}};
-        this->sortMenu = new CustomOvl::SortBy("Sort Songs by", sort, [this](Database::SortBy s) {
+        std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::TitleAsc, "Playlist.Sort.TitleAsc"_lang},
+                                                      {Database::SortBy::TitleDsc, "Playlist.Sort.TitleDsc"_lang},
+                                                      {Database::SortBy::ArtistAsc, "Playlist.Sort.ArtistAsc"_lang},
+                                                      {Database::SortBy::ArtistDsc, "Playlist.Sort.ArtistDsc"_lang},
+                                                      {Database::SortBy::AlbumAsc, "Playlist.Sort.AlbumAsc"_lang},
+                                                      {Database::SortBy::AlbumDsc, "Playlist.Sort.AlbumDsc"_lang},
+                                                      {Database::SortBy::LengthAsc, "Playlist.Sort.LengthAsc"_lang},
+                                                      {Database::SortBy::LengthDsc, "Playlist.Sort.LengthDsc"_lang}};
+        this->sortMenu = new CustomOvl::SortBy("Playlist.Sort.heading"_lang, sort, [this](Database::SortBy s) {
             this->refreshList(s);
         });
         this->sortMenu->setBackgroundColour(this->app->theme()->popupBG());
@@ -122,15 +122,19 @@ namespace Frame {
         for (size_t i = 0; i < this->songs.size(); i++) {
             total += this->songs[i].song.duration;
         }
-        std::string str = std::to_string(this->songs.size()) + (this->songs.size() == 1 ? " song" : " songs");
-        str += " | " + Utils::secondsToHoursMins(total);
+        std::string str = Utils::secondsToHoursMins(total);
+        if (this->songs.size() == 1) {
+            str = Utils::regexReplace("Playlist.DetailsOne"_lang, str);
+        } else {
+            str = Utils::regexReplace("Playlist.DetailsMany"_lang, std::to_string(this->songs.size()), str)
+        }
         this->subHeading->setString(str);
         this->subHeading->setXY(this->heading->x() + 2, this->heading->y() + this->heading->h());
 
         this->removeElement(this->emptyMsg);
         this->emptyMsg = nullptr;
         if (this->songs.size() == 0) {
-            this->emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "This playlist contains no songs!", 24);
+            this->emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "Playlist.NoSongs"_lang, 24);
             this->emptyMsg->setColour(this->app->theme()->FG());
             this->emptyMsg->setX(this->x() + (this->w() - emptyMsg->w())/2);
             this->addElement(this->emptyMsg);
@@ -185,11 +189,11 @@ namespace Frame {
     void Playlist::createDeleteMenu() {
         delete this->msgbox;
         this->msgbox = new Aether::MessageBox();
-        this->msgbox->addLeftButton("Cancel", [this]() {
+        this->msgbox->addLeftButton("Common.Cancel"_lang, [this]() {
             // Do nothing; just close this overlay
             this->msgbox->close();
         });
-        this->msgbox->addRightButton("Delete", [this]() {
+        this->msgbox->addRightButton("Common.Delete"_lang, [this]() {
             this->app->lockDatabase();
             bool ok = this->app->database()->removePlaylist(this->metadata.ID);
             this->app->unlockDatabase();
@@ -205,7 +209,7 @@ namespace Frame {
         this->msgbox->setTextColour(this->app->theme()->accent());
         Aether::Element * body = new Aether::Element(0, 0, 700);
         Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "", 24, 620);
-        tips->setString("Are you sure you want to delete this playlist? This action cannot be undone!");
+        tips->setString("Playlist.DeletePrompt"_lang);
         tips->setColour(this->app->theme()->FG());
         body->addElement(tips);
         body->setH(tips->h() + 80);
@@ -224,7 +228,7 @@ namespace Frame {
             CustomElm::MenuButton * b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
             b->setIconColour(this->app->theme()->muted());
-            b->setText("Add to Queue");
+            b->setText("Common.AddToQueue"_lang);
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this]() {
                 for (size_t i = 0; i < this->songs.size(); i++) {
@@ -238,7 +242,7 @@ namespace Frame {
             b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoplaylist.png"));
             b->setIconColour(this->app->theme()->muted());
-            b->setText("Add to other Playlist");
+            b->setText("Common.AddToOtherPlaylist"_lang);
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this]() {
                 this->showAddToPlaylist([this](PlaylistID i) {
@@ -262,7 +266,7 @@ namespace Frame {
             b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/bin.png"));
             b->setIconColour(this->app->theme()->muted());
-            b->setText("Delete Playlist");
+            b->setText("Playlist.DeletePlaylist"_lang);
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this]() {
                 this->createDeleteMenu();
@@ -274,7 +278,7 @@ namespace Frame {
             b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/info.png"));
             b->setIconColour(this->app->theme()->muted());
-            b->setText("View Information");
+            b->setText("Common.ViewInformation"_lang);
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this]() {
                 this->changeFrame(Type::PlaylistInfo, Action::Push, this->metadata.ID);
@@ -310,7 +314,7 @@ namespace Frame {
         CustomElm::MenuButton * b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Add to Queue");
+        b->setText("Common.AddToQueue"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
             this->app->sysmodule()->sendAddToSubQueue(this->songs[pos].song.ID);
@@ -322,7 +326,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoplaylist.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Add to other Playlist");
+        b->setText("Playlist.AddToOtherPlaylist"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
             this->showAddToPlaylist([this, pos](PlaylistID i) {
@@ -343,7 +347,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/removefromplaylist.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Remove from Playlist");
+        b->setText("Playlist.RemoveFromPlaylist"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
             // Remove from database
@@ -367,7 +371,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/user.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Go to Artist");
+        b->setText("Common.GoToArtist"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
             ArtistID a = this->app->database()->getArtistIDForSong(this->songs[pos].song.ID);
@@ -383,7 +387,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/info.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("View Information");
+        b->setText("Common.ViewInformation"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
             this->changeFrame(Type::SongInfo, Action::Push, this->songs[pos].song.ID);

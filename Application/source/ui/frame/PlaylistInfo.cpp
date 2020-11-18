@@ -30,7 +30,7 @@ namespace Frame {
         this->metadata = this->app->database()->getPlaylistMetadataForID(id);
         if (this->metadata.ID < 0) {
             // Error message
-            Aether::Text * t = new Aether::Text(this->x() + this->w()/2, this->y() + this->h()/2, "An error occurred fetching the data. Please restart the app and try again.", 20);
+            Aether::Text * t = new Aether::Text(this->x() + this->w()/2, this->y() + this->h()/2, "Common.Error.Database"_lang, 20);
             t->setX(t->x() - t->w()/2);
             t->setY(t->y() - t->h()/2);
             t->setColour(this->app->theme()->FG());
@@ -39,16 +39,16 @@ namespace Frame {
         }
 
         // Create and position all elements next
-        this->heading->setString("Playlist Information");
+        this->heading->setString("Playlist.Information.Heading"_lang);
 
         // Name
-        Aether::Text * txt = new Aether::Text(this->heading->x(), this->heading->y() + this->heading->h() + 20, "Name", 30);
+        Aether::Text * txt = new Aether::Text(this->heading->x(), this->heading->y() + this->heading->h() + 20, "Playlist.Name"_lang, 30);
         txt->setColour(this->app->theme()->FG());
         this->bottomContainer->addElement(txt);
         this->name = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.62, 50);
         this->name->setBoxColour(this->app->theme()->muted2());
         this->name->setTextColour(this->app->theme()->FG());
-        this->name->setKeyboardHint("Name");
+        this->name->setKeyboardHint("Playlist.Name"_lang);
         this->name->setKeyboardLimit(50);
         this->name->setString(this->metadata.name);
         this->name->setKeyboardCallback([this]() {
@@ -65,7 +65,7 @@ namespace Frame {
         this->bottomContainer->addElement(this->name);
 
         // Database ID
-        txt = new Aether::Text(this->name->x() + this->name->w() + 50, txt->y(), "Database ID", 30);
+        txt = new Aether::Text(this->name->x() + this->name->w() + 50, txt->y(), "Common.DatabaseID"_lang, 30);
         txt->setColour(this->app->theme()->FG());
         this->bottomContainer->addElement(txt);
         CustomElm::TextBox * box = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.18, 50);
@@ -77,7 +77,7 @@ namespace Frame {
         this->bottomContainer->addElement(box);
 
         // Image heading
-        txt = new Aether::Text(this->heading->x(), box->y() + box->h() + 20, "Image", 30);
+        txt = new Aether::Text(this->heading->x(), box->y() + box->h() + 20, "Playlist.Information.Image"_lang, 30);
         txt->setColour(this->app->theme()->FG());
         this->bottomContainer->addElement(txt);
 
@@ -99,7 +99,7 @@ namespace Frame {
         Aether::BorderButton * button = new Aether::BorderButton(txt->x(), this->imagePath->y() + this->imagePath->h() + 20, this->w() * 0.3, 50, 2, "", 20, [this]() {
             this->createFileBrowser(FBType::Audio);
         });
-        button->setString("Replace from Audio File");
+        button->setString("Common.ReplaceFile"_lang);
         button->setBorderColour(this->app->theme()->FG());
         button->setTextColour(this->app->theme()->FG());
         this->bottomContainer->addElement(button);
@@ -108,7 +108,7 @@ namespace Frame {
         button = new Aether::BorderButton(button->x() + button->w() + this->w()*0.02, button->y(), this->w() * 0.3, 50, 2, "", 20, [this]() {
             this->createFileBrowser(FBType::Image);
         });
-        button->setString("Replace from SD Card");
+        button->setString("Common.ReplaceSD"_lang);
         button->setBorderColour(this->app->theme()->FG());
         button->setTextColour(this->app->theme()->FG());
         this->bottomContainer->addElement(button);
@@ -117,13 +117,13 @@ namespace Frame {
         button = new Aether::BorderButton(button->x() - this->w()*0.16, button->y() + button->h() + 20, this->w() * 0.3, 50, 2, "", 20, [this]() {
             this->removeImage();
         });
-        button->setString("Remove Image");
+        button->setString("Common.RemoveImage"_lang);
         button->setBorderColour(this->app->theme()->FG());
         button->setTextColour(this->app->theme()->FG());
         this->bottomContainer->addElement(button);
 
         // Save button
-        this->saveButton = new Aether::FilledButton(button->x() + button->w()/2 - 75, button->y() + button->h() + 25, 150, 50, "Save", 26, [this]() {
+        this->saveButton = new Aether::FilledButton(button->x() + button->w()/2 - 75, button->y() + button->h() + 25, 150, 50, "Common.Save"_lang, 26, [this]() {
             this->saveChanges();
         });
         this->saveButton->setFillColour(this->app->theme()->accent());
@@ -146,7 +146,7 @@ namespace Frame {
 
         // Now create new one
         this->msgbox = new Aether::MessageBox();
-        this->msgbox->addTopButton("OK", [this]() {
+        this->msgbox->addTopButton("Common.OK"_lang, [this]() {
             this->msgbox->close();
         });
         this->msgbox->setLineColour(this->app->theme()->muted2());
@@ -173,15 +173,15 @@ namespace Frame {
         this->browser->setMutedTextColour(this->app->theme()->muted());
         this->browser->setRectangleColour(this->app->theme()->popupBG());
         this->browser->setTextColour(this->app->theme()->FG());
-        this->browser->setCancelText("Cancel");
+        this->browser->setCancelText("Common.Cancel"_lang);
         switch (t) {
             case FBType::Audio:
-                this->browser->setHeadingText("Select an Audio file");
+                this->browser->setHeadingText("Common.SelectAudio"_lang);
                 this->browser->setExtensions(FILE_EXTENSIONS_AUD);
                 break;
 
             case FBType::Image:
-                this->browser->setHeadingText("Select an Image");
+                this->browser->setHeadingText("Common.SelectImage"_lang);
                 this->browser->setExtensions(FILE_EXTENSIONS_IMG);
                 break;
         }
@@ -196,7 +196,7 @@ namespace Frame {
     void PlaylistInfo::saveChanges() {
         // Don't permit blank name
         if (this->metadata.name.empty()) {
-            this->createInfoOverlay("You can't set a blank name. Nice try ;)");
+            this->createInfoOverlay("Common.Error.BlankName"_lang);
             return;
         }
 
@@ -242,7 +242,7 @@ namespace Frame {
         }
 
         // Show message box indicating result
-        this->createInfoOverlay((ok ? "Your changes have been saved. You may need to restart the application for any changes to take complete effect." : "Unable to update the database, see the logs for more information!"));
+        this->createInfoOverlay((ok ? "Common.ChangesSaved"_lang : "Common.Error.DatabaseLocked"_lang));
     }
 
     void PlaylistInfo::update(uint32_t dt) {
@@ -290,7 +290,7 @@ namespace Frame {
         // Extract image
         this->dlBuffer = Utils::MP3::getArtFromID3(path);
         if (this->dlBuffer.empty()) {
-            this->createInfoOverlay("No album art was found in the selected file.");
+            this->createInfoOverlay("Common.Error.NoArt"_lang);
             return;
         }
 
@@ -300,7 +300,7 @@ namespace Frame {
 
         // Show error if image wasn't created
         if (tmpImage->texW() == 0 || tmpImage->texH() == 0) {
-            this->createInfoOverlay("An error occurred processing the file. This may mean the file is corrupt or the stored album art is not supported.");
+            this->createInfoOverlay("Common.Error.CorruptArt"_lang);
             delete tmpImage;
 
         // Otherwise replace image
@@ -327,7 +327,7 @@ namespace Frame {
 
         // Show error if image wasn't created
         if (tmpImage->texW() == 0 || tmpImage->texH() == 0) {
-            this->createInfoOverlay("An error occurred reading the selected image. This may be due to a corrupted image or incorrect file extension.");
+            this->createInfoOverlay("Common.Error.ReadImage"_lang);
             delete tmpImage;
 
         // Otherwise replace image
