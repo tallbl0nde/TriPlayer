@@ -1,6 +1,7 @@
 #define DR_FLAC_IMPLEMENTATION
-#include <cstring>
 #include "decoders/dr_flac.h"
+
+#include <cstring>
 #include "Log.hpp"
 #include "source/FLAC.hpp"
 
@@ -23,7 +24,7 @@ namespace Source {
         // Get all required output data
         this->channels_ = this->flac->channels;
         this->sampleRate_ = this->flac->sampleRate;
-        this->totalSamples_ = this->flac->totalPCMFrameCount * this->channels_;
+        this->totalSamples_ = this->flac->totalPCMFrameCount;
 
         Log::writeInfo("[FLAC] File opened successfully");
     }
@@ -49,7 +50,7 @@ namespace Source {
             return;
         }
 
-        drflac_bool32 ok = drflac_seek_to_pcm_frame(this->flac, pos/this->channels_);
+        drflac_bool32 ok = drflac_seek_to_pcm_frame(this->flac, pos);
         if (ok != DRFLAC_TRUE) {
             Log::writeError("[FLAC] An error occurred attempting to seek to: " + std::to_string(pos));
         }
@@ -60,7 +61,7 @@ namespace Source {
             return 0;
         }
 
-        return (this->flac->currentPCMFrame * this->channels_);
+        return this->flac->currentPCMFrame;
     }
 
     FLAC::~FLAC() {
