@@ -1,10 +1,12 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/element/GridItem.hpp"
 #include "ui/element/listitem/Artist.hpp"
 #include "ui/element/ScrollableGrid.hpp"
 #include "ui/frame/Albums.hpp"
 #include "ui/overlay/SortBy.hpp"
+#include "utils/Utils.hpp"
 
 // Number of GridItems per row
 #define COLUMNS 3
@@ -97,7 +99,7 @@ namespace Frame {
                 });
                 this->grid->addElement(l);
             }
-            this->subHeading->setString((m.size() == 1 ? "Album.CountOne"_lang : Utils::regexReplace("Album.CountMany"_lang, std::to_string(m.size()))));
+            this->subHeading->setString((m.size() == 1 ? "Album.CountOne"_lang : Utils::substituteTokens("Album.CountMany"_lang, std::to_string(m.size()))));
 
         // Show message if no albums
         } else {

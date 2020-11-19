@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/element/listitem/Song.hpp"
 #include "ui/frame/Songs.hpp"
@@ -71,9 +72,9 @@ namespace Frame {
             // Set subheading
             std::string str;
             if (m.size() == 1) {
-                str = Utils::regexReplace("Song.DetailsOne"_lang, Utils::secondsToHoursMins(totalSecs));
+                str = Utils::substituteTokens("Song.DetailsOne"_lang, Utils::secondsToHoursMins(totalSecs));
             } else {
-                str = Utils::regexReplace("Song.DetailsCountMany"_lang, std::to_string(m.size()), Utils::secondsToHoursMins(totalSecs));
+                str = Utils::substituteTokens("Song.DetailsCountMany"_lang, std::to_string(m.size()), Utils::secondsToHoursMins(totalSecs));
             }
             this->subHeading->setString(str);
 

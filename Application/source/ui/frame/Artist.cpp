@@ -1,9 +1,11 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/element/GridItem.hpp"
 #include "ui/element/ScrollableGrid.hpp"
 #include "ui/frame/Artist.hpp"
 #include "ui/overlay/SortBy.hpp"
+#include "utils/Utils.hpp"
 
 // Play button dimensions
 #define BUTTON_F 26
@@ -53,13 +55,13 @@ namespace Frame {
             str = "Artist.DetailsOneOne"_lang;
 
         } else if (this->meta.albumCount == 1) {
-            str = Utils::regexReplace("Artist.DetailsOneMany"_lang, std::to_string(this->meta.songCount));
+            str = Utils::substituteTokens("Artist.DetailsOneMany"_lang, std::to_string(this->meta.songCount));
 
         } else if (this->meta.songCount == 1) {
-            str = Utils::regexReplace("Artist.DetailsManyOne"_lang, std::to_string(this->meta.albumCount));
+            str = Utils::substituteTokens("Artist.DetailsManyOne"_lang, std::to_string(this->meta.albumCount));
 
         } else {
-            str = Utils::regexReplace("Artist.DetailsManyMany"_lang, std::to_string(this->meta.albumCount), std::to_string(this->meta.songCount));
+            str = Utils::substituteTokens("Artist.DetailsManyMany"_lang, std::to_string(this->meta.albumCount), std::to_string(this->meta.songCount));
         }
         this->subHeading->setString(str);
         this->subHeading->setXY(this->heading->x() + 2, this->heading->y() + this->heading->h());
@@ -290,7 +292,7 @@ namespace Frame {
             for (size_t i = 0; i < md.size(); i++) {
                 CustomElm::GridItem * l = new CustomElm::GridItem(md[i].imagePath.empty() ? Path::App::DefaultArtFile : md[i].imagePath);
                 l->setMainString(md[i].name);
-                std::string str = (md[i].songCount == 1 ? "Common.Song" : Utils::replaceRegex("Common.Songs", std::to_string(md[i].songCount)));
+                std::string str = (md[i].songCount == 1 ? "Common.Song" : Utils::substituteTokens("Common.Songs", std::to_string(md[i].songCount)));
                 l->setSubString(str);
                 l->setDotsColour(this->app->theme()->muted());
                 l->setTextColour(this->app->theme()->FG());

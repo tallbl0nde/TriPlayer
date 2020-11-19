@@ -1,5 +1,7 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "ui/frame/settings/About.hpp"
+#include "utils/Utils.hpp"
 
 namespace Frame::Settings {
     About::About(Main::Application * a) : Frame(a) {
@@ -12,7 +14,7 @@ namespace Frame::Settings {
         this->list->addElement(new Aether::ListSeparator(50));
 
         // Version number
-        Aether::Text * text = new Aether::Text(0, 0, Utils::regexReplace("Update.Version"_lang, std::to_string(VER_STRING)), 24);
+        Aether::Text * text = new Aether::Text(0, 0, Utils::substituteTokens("Update.Version"_lang, VER_STRING), 24);
         text->setColour(this->app->theme()->FG());
         text->setXY(image->x() + 172, image->y() + 92);
         container->addElement(text);

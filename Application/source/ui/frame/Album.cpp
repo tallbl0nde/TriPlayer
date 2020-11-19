@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include <limits>
 #include "Paths.hpp"
 #include "ui/element/listitem/AlbumSong.hpp"

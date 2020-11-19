@@ -1,6 +1,7 @@
 #include <sstream>
 #include "Application.hpp"
 #include "dtl.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/element/listitem/Song.hpp"
 #include "ui/frame/Queue.hpp"
@@ -182,7 +183,7 @@ namespace Frame {
         }
 
         // Hide 'Up Next' heading if it's empty (note Aether only rerenders if the string changes)
-        this->upnextStr->setString(Utils::regexReplace("Queue.UpNext"_lang, playingFrom));
+        this->upnextStr->setString(Utils::substituteTokens("Queue.UpNext"_lang, playingFrom));
         if (queue.empty()) {
             this->upnext->setHidden(true);
         } else {
@@ -243,9 +244,9 @@ namespace Frame {
         unsigned int totalSecs = durationOfQueue(this->cachedQueue, this->songMeta) + durationOfQueue(this->cachedSubQueue, this->songMeta) + durationOfQueue(tmp, this->songMeta);
         unsigned int totalTracks = this->cachedQueue.size() + this->cachedSubQueue.size() + 1;  // Plus 1 for playing song
         if (totalTracks == 1) {
-            this->subHeading->setString(Utils::regexReplace("Queue.CountOne"_lang, Utils::secondsToHoursMins(totalSecs)));
+            this->subHeading->setString(Utils::substituteTokens("Queue.CountOne"_lang, Utils::secondsToHoursMins(totalSecs)));
         } else {
-            this->subHeading->setString(Utils::regexReplace("Queue.CountMany"_lang, totalTracks, Utils::secondsToHoursMins(totalSecs)));
+            this->subHeading->setString(Utils::substituteTokens("Queue.CountMany"_lang, std::to_string(totalTracks), Utils::secondsToHoursMins(totalSecs)));
         }
     }
 

@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include <limits>
 #include "Paths.hpp"
 #include "ui/element/listitem/Song.hpp"
@@ -124,9 +125,9 @@ namespace Frame {
         }
         std::string str = Utils::secondsToHoursMins(total);
         if (this->songs.size() == 1) {
-            str = Utils::regexReplace("Playlist.DetailsOne"_lang, str);
+            str = Utils::substituteTokens("Playlist.DetailsOne"_lang, str);
         } else {
-            str = Utils::regexReplace("Playlist.DetailsMany"_lang, std::to_string(this->songs.size()), str)
+            str = Utils::substituteTokens("Playlist.DetailsMany"_lang, std::to_string(this->songs.size()), str);
         }
         this->subHeading->setString(str);
         this->subHeading->setXY(this->heading->x() + 2, this->heading->y() + this->heading->h());

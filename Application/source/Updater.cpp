@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <fstream>
 #include "Log.hpp"
+#include "lang/Lang.hpp"
 #include "nlohmann/json.hpp"
 #include "Paths.hpp"
 #include "Updater.hpp"

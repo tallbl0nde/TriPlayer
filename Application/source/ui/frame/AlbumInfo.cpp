@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/frame/AlbumInfo.hpp"
 #include "utils/FS.hpp"
@@ -325,11 +326,11 @@ namespace Frame {
                         break;
 
                     case Metadata::DownloadResult::NotFound:
-                        this->createInfoOverlay(Utils::replaceRegex("Album.Information.DownloadNotFound"_lang, this->metadata.name));
+                        this->createInfoOverlay(Utils::substituteTokens("Album.Information.DownloadNotFound"_lang, this->metadata.name));
                         break;
 
                     case Metadata::DownloadResult::NoImage:
-                        this->createInfoOverlay(Utils::replaceRegex("Album.Information.DownloadNoImage"_lang, this->metadata.name));
+                        this->createInfoOverlay(Utils::substituteTokens("Album.Information.DownloadNoImage"_lang, this->metadata.name));
                         break;
 
                     case Metadata::DownloadResult::Success:

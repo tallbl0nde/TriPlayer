@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "ui/frame/Frame.hpp"
 
 // Size and position of all frames

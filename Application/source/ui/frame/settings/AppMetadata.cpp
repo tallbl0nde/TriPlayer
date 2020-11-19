@@ -1,10 +1,12 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/frame/settings/AppMetadata.hpp"
 #include "ui/overlay/ProgressBox.hpp"
 #include "utils/FS.hpp"
 #include "utils/Image.hpp"
 #include "utils/metadata/Metadata.hpp"
+#include "utils/Utils.hpp"
 
 namespace Frame::Settings {
     AppMetadata::AppMetadata(Main::Application * a) : Frame(a) {
@@ -49,7 +51,7 @@ namespace Frame::Settings {
     void AppMetadata::getAlbumImages() {
         // Create overlay
         this->ovlSearch->setHeadingText("Settings.AppMetadata.SearchAlbumImagesText"_lang);
-        this->ovlSearch->setSubheadingText(Utils::regexReplace("Settings.AppMetadata.DownloadProgress"_lang, "", "0", "0"));
+        this->ovlSearch->setSubheadingText(Utils::substituteTokens("Settings.AppMetadata.DownloadProgress"_lang, "", "0", "0"));
         this->ovlSearch->setValue(0.0);
         this->app->addOverlay(this->ovlSearch);
 
@@ -69,7 +71,7 @@ namespace Frame::Settings {
     void AppMetadata::getArtistImages() {
         // Create overlay
         this->ovlSearch->setHeadingText("Settings.AppMetadata.SearchArtistImagesText"_lang);
-        this->ovlSearch->setSubheadingText(Utils::regexReplace("Settings.AppMetadata.DownloadProgress"_lang, "", "0", "0"));
+        this->ovlSearch->setSubheadingText(Utils::substituteTokens("Settings.AppMetadata.DownloadProgress"_lang, "", "0", "0"));
         this->ovlSearch->setValue(0.0);
         this->app->addOverlay(this->ovlSearch);
 
@@ -197,7 +199,7 @@ namespace Frame::Settings {
                 std::unique_lock<std::mutex> mtx(this->searchMtx);
                 if (this->searchLast != this->searchCurrent) {
                     float per = this->searchCurrent/(float)this->searchMax;
-                    std::string str = Utils::regexReplace("Settings.AppMetadata.DownloadProgress"_lang, this->searchName, std::to_string(this->searchCurrent), std::to_string(this->searchMax));
+                    std::string str = Utils::substituteTokens("Settings.AppMetadata.DownloadProgress"_lang, this->searchName, std::to_string(this->searchCurrent), std::to_string(this->searchMax));
                     mtx.unlock();
                     this->ovlSearch->setSubheadingText(str);
                     this->ovlSearch->setValue(100.0 * per);

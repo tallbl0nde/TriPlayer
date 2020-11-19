@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/element/GridItem.hpp"
 #include "ui/element/HorizontalList.hpp"
@@ -36,7 +37,7 @@ namespace Frame {
         // Get input first
         keyboard.heading = "Search.Search"_lang;
         keyboard.ok = "Search.Search"_lang;
-        keyboard.subheading = "Search.Description"_lang;
+        keyboard.subHeading = "Search.Description"_lang;
         bool haveInput = Utils::NX::getUserInput(keyboard);
         if (!haveInput) {
             // Show error message if we couldn't launch the keyboard
@@ -59,7 +60,7 @@ namespace Frame {
 
     void Search::addEntries() {
         // Set heading and position
-        this->heading->setString(Utils::regexReplace("Search.Results"_lang, keyboard.buffer));
+        this->heading->setString(Utils::substituteTokens("Search.Results"_lang, keyboard.buffer));
         int maxW = (this->w() - (this->heading->x() - this->x())*2);
         if (this->heading->w() > maxW) {
             Aether::Text * tmp = new Aether::Text(this->heading->x() + maxW, this->heading->y(), "...", 46);
@@ -111,7 +112,7 @@ namespace Frame {
             std::string img = (this->playlists[i].imagePath.empty() ? "romfs:/misc/noplaylist.png" : this->playlists[i].imagePath);
             CustomElm::GridItem * l = new CustomElm::GridItem(img);
             l->setMainString(this->playlists[i].name);
-            l->setSubString(this->playlists[i].songCount == 1 ? "Common.Song"_lang : Utils::regexReplace("Common.Songs", std::to_string(this->playlists[i].songCount)));
+            l->setSubString(this->playlists[i].songCount == 1 ? "Common.Song"_lang : Utils::substituteTokens("Common.Songs", std::to_string(this->playlists[i].songCount)));
             l->setDotsColour(this->app->theme()->muted());
             l->setTextColour(this->app->theme()->FG());
             l->setMutedTextColour(this->app->theme()->muted());
@@ -155,13 +156,13 @@ namespace Frame {
                 str = "Artist.DetailsOneOne"_lang;
 
             } else if (this->artists[i].albumCount == 1) {
-                str = Utils::regexReplace("Artist.DetailsOneMany"_lang, std::to_string(this->artists[i].songCount));
+                str = Utils::substituteTokens("Artist.DetailsOneMany"_lang, std::to_string(this->artists[i].songCount));
 
             } else if (this->artists[i].songCount == 1) {
-                str = Utils::regexReplace("Artist.DetailsManyOne"_lang, std::to_string(this->artists[i].albumCount));
+                str = Utils::substituteTokens("Artist.DetailsManyOne"_lang, std::to_string(this->artists[i].albumCount));
 
             } else {
-                str = Utils::regexReplace("Artist.DetailsManyMany"_lang, std::to_string(this->artists[i].albumCount), std::to_string(this->artists[i].songCount));
+                str = Utils::substituteTokens("Artist.DetailsManyMany"_lang, std::to_string(this->artists[i].albumCount), std::to_string(this->artists[i].songCount));
             }
             l->setSubString(str);
             l->setDotsColour(this->app->theme()->muted());
@@ -338,7 +339,7 @@ namespace Frame {
         Metadata::Playlist m = this->app->database()->getPlaylistMetadataForID(id);
         this->menu->setImage(new Aether::Image(0, 0, m.imagePath.empty() ? "romfs:/misc/noplaylist.png" : m.imagePath));
         this->menu->setMainText(m.name);
-        std::string str = (m.songCount == 1 ? "Common.Song"_lang : Utils::regexReplace("Common.Songs"_lang, std::to_string(m.songCount)));
+        std::string str = (m.songCount == 1 ? "Common.Song"_lang : Utils::substituteTokens("Common.Songs"_lang, std::to_string(m.songCount)));
         this->menu->setSubText(str);
 
         // Play
@@ -425,13 +426,13 @@ namespace Frame {
             str = "Artist.DetailsOneOne"_lang;
 
         } else if (m.albumCount == 1) {
-            str = Utils::regexReplace("Artist.DetailsOneMany"_lang, std::to_string(m.songCount));
+            str = Utils::substituteTokens("Artist.DetailsOneMany"_lang, std::to_string(m.songCount));
 
         } else if (m.songCount == 1) {
-            str = Utils::regexReplace("Artist.DetailsManyOne"_lang, std::to_string(m.albumCount));
+            str = Utils::substituteTokens("Artist.DetailsManyOne"_lang, std::to_string(m.albumCount));
 
         } else {
-            str = Utils::regexReplace("Artist.DetailsManyMany"_lang, std::to_string(m.albumCount), std::to_string(m.songCount));
+            str = Utils::substituteTokens("Artist.DetailsManyMany"_lang, std::to_string(m.albumCount), std::to_string(m.songCount));
         }
         this->menu->setSubText(str);
 

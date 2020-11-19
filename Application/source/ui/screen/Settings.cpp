@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/frame/settings/About.hpp"
 #include "ui/frame/settings/AppAdvanced.hpp"

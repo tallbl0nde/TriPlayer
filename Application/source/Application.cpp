@@ -1,4 +1,6 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
+#include "lang/Language.hpp"
 #include "Paths.hpp"
 #include "ui/screen/Fullscreen.hpp"
 #include "ui/screen/Home.hpp"
@@ -52,6 +54,7 @@ namespace Main {
         this->exitPrompt = nullptr;
 
         // Setup screens
+        Utils::Lang::setLanguage(Language::English);
         this->screens[static_cast<int>(ScreenID::Fullscreen)] = new Screen::Fullscreen(this);
         this->screens[static_cast<int>(ScreenID::Home)] = new Screen::Home(this);
         this->screens[static_cast<int>(ScreenID::Settings)] = new Screen::Settings(this);

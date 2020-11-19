@@ -67,6 +67,7 @@
         "ChangesSaved": "Your changes have been saved. You may need to restart the application for any changes to take complete effect.",
         "ClearQueue": "This action will clear the current play queue. Do you wish to continue?",
         "DatabaseID": "Database ID",
+        "DefaultLanguage": "Default",
         "Delete": "Delete",
         "Error": {
             "AudioDB": "An unknown error occurred during downloading. This could be due to:\n- A poor internet connection\n- The server is overloaded\n- An issue with this application\n\nPlease try again later.",

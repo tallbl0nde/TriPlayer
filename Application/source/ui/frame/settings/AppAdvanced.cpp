@@ -1,5 +1,6 @@
 #include "Application.hpp"
 #include <filesystem>
+#include "lang/Lang.hpp"
 #include "ui/frame/settings/AppAdvanced.hpp"
 #include "utils/FS.hpp"
 

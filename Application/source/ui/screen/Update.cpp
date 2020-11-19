@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/screen/Update.hpp"
 #include "Updater.hpp"
@@ -114,7 +115,7 @@ namespace Screen {
         list->addElement(heading);
         heading->setY(list->y());
         heading->setColour(this->app->theme()->FG());
-        heading->setString(Utils::regexReplace("Update.Available"_lang, meta.version.substr(1, meta.version.length() - 1)));
+        heading->setString(Utils::substituteTokens("Update.Available"_lang, meta.version.substr(1, meta.version.length() - 1)));
         list->addElement(new Aether::ListSeparator(30));
 
         // Changelog text block
@@ -174,7 +175,7 @@ namespace Screen {
         this->container->addElement(text);
 
         // Finally append current version
-        text = new Aether::Text(this->w()/2, text->y() + text->h() + 10, Utils::regexReplace("Update.Version"_lang, std::to_string(VER_STRING)), 18);
+        text = new Aether::Text(this->w()/2, text->y() + text->h() + 10, Utils::substituteTokens("Update.Version"_lang, VER_STRING), 18);
         text->setColour(this->app->theme()->muted());
         text->setX(text->x() - text->w()/2);
         this->container->addElement(text);
@@ -196,7 +197,7 @@ namespace Screen {
         this->container->addElement(text);
 
         // And append current version
-        text = new Aether::Text(this->w()/2, text->y() + text->h() + 10, Utils::regexReplace("Update.Version"_lang, std::to_string(VER_STRING)), 18);
+        text = new Aether::Text(this->w()/2, text->y() + text->h() + 10, Utils::substituteTokens("Update.Version"_lang, VER_STRING), 18);
         text->setColour(this->app->theme()->muted());
         text->setX(text->x() - text->w()/2);
         this->container->addElement(text);

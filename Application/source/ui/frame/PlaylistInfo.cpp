@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/element/TextBox.hpp"
 #include "ui/frame/PlaylistInfo.hpp"

@@ -1,8 +1,10 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "ui/element/GridItem.hpp"
 #include "ui/element/ScrollableGrid.hpp"
 #include "ui/frame/Artists.hpp"
 #include "ui/overlay/SortBy.hpp"
+#include "utils/Utils.hpp"
 
 // Number of GridItems per row
 #define COLUMNS 3
@@ -62,13 +64,13 @@ namespace Frame {
                     str = "Artist.DetailsOneOne"_lang;
 
                 } else if (m[i].albumCount == 1) {
-                    str = Utils::regexReplace("Artist.DetailsOneMany"_lang, std::to_string(m[i].songCount));
+                    str = Utils::substituteTokens("Artist.DetailsOneMany"_lang, std::to_string(m[i].songCount));
 
                 } else if (m[i].songCount == 1) {
-                    str = Utils::regexReplace("Artist.DetailsManyOne"_lang, std::to_string(m[i].albumCount));
+                    str = Utils::substituteTokens("Artist.DetailsManyOne"_lang, std::to_string(m[i].albumCount));
 
                 } else {
-                    str = Utils::regexReplace("Artist.DetailsManyMany"_lang, std::to_string(m[i].albumCount), std::to_string(m[i].songCount));
+                    str = Utils::substituteTokens("Artist.DetailsManyMany"_lang, std::to_string(m[i].albumCount), std::to_string(m[i].songCount));
                 }
                 l->setSubString(str);
                 l->setDotsColour(this->app->theme()->muted());
@@ -83,7 +85,7 @@ namespace Frame {
                 });
                 this->grid->addElement(l);
             }
-            this->subHeading->setString(m.size() == 1 ? "Artist.CountOne"_lang : Utils::replaceRegex("Artist.CountMany"_lang, std::to_string(m.size())));
+            this->subHeading->setString(m.size() == 1 ? "Artist.CountOne"_lang : Utils::substituteTokens("Artist.CountMany"_lang, std::to_string(m.size())));
 
         // Show message if no artists
         } else {
@@ -115,17 +117,17 @@ namespace Frame {
         this->menu->setImage(new Aether::Image(0, 0, m.imagePath.empty() ? "romfs:/misc/noartist.png" : m.imagePath));
         this->menu->setMainText(m.name);
         std::string str;
-        if (m[i].albumCount == 1 && m[i].songCount == 1) {
+        if (m.albumCount == 1 && m.songCount == 1) {
             str = "Artist.DetailsOneOne"_lang;
 
-        } else if (m[i].albumCount == 1) {
-            str = Utils::regexReplace("Artist.DetailsOneMany"_lang, std::to_string(m[i].songCount));
+        } else if (m.albumCount == 1) {
+            str = Utils::substituteTokens("Artist.DetailsOneMany"_lang, std::to_string(m.songCount));
 
-        } else if (m[i].songCount == 1) {
-            str = Utils::regexReplace("Artist.DetailsManyOne"_lang, std::to_string(m[i].albumCount));
+        } else if (m.songCount == 1) {
+            str = Utils::substituteTokens("Artist.DetailsManyOne"_lang, std::to_string(m.albumCount));
 
         } else {
-            str = Utils::regexReplace("Artist.DetailsManyMany"_lang, std::to_string(m[i].albumCount), std::to_string(m[i].songCount));
+            str = Utils::substituteTokens("Artist.DetailsManyMany"_lang, std::to_string(m.albumCount), std::to_string(m.songCount));
         }
         this->menu->setSubText(str);
 

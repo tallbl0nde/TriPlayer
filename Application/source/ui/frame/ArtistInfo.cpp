@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/frame/ArtistInfo.hpp"
 #include "ui/element/TextBox.hpp"
@@ -182,7 +183,7 @@ namespace Frame {
         this->msgbox->setRectangleColour(this->app->theme()->popupBG());
         Aether::Element * body = new Aether::Element(0, 0, 700);
         Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "", 24, 620);
-        tips->setString(Utils::replaceRegex("Common.Searching"_lang, this->metadata.name));
+        tips->setString(Utils::substituteTokens("Common.Searching"_lang, this->metadata.name));
         tips->setColour(this->app->theme()->FG());
         body->addElement(tips);
         body->setH(tips->h() + 80);
@@ -308,11 +309,11 @@ namespace Frame {
                         break;
 
                     case Metadata::DownloadResult::NotFound:
-                        this->createInfoOverlay(Utils::replaceRegex("Artist.Information.DownloadNotFound"_lang, this->metadata.name));
+                        this->createInfoOverlay(Utils::substituteTokens("Artist.Information.DownloadNotFound"_lang, this->metadata.name));
                         break;
 
                     case Metadata::DownloadResult::NoImage:
-                        this->createInfoOverlay(Utils::replaceRegex("Artist.Information.DownloadNoImage"_lang, this->metadata.name));
+                        this->createInfoOverlay(Utils::substituteTokens("Artist.Information.DownloadNoImage"_lang, this->metadata.name));
                         break;
 
                     case Metadata::DownloadResult::Success:

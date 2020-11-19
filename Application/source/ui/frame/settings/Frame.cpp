@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "ui/frame/settings/Frame.hpp"
 #include "utils/NX.hpp"
 

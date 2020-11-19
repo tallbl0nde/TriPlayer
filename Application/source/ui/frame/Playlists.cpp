@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/element/listitem/Playlist.hpp"
 #include "ui/frame/Playlists.hpp"
@@ -74,7 +75,7 @@ namespace Frame {
 
         // Set styling parameters
         l->setNameString(m.name);
-        l->setSongsString((m.songCount == 1 ? "Common.Song"_lang : Utils::regexReplace("Common.Songs"_lang, std::to_string(m.songCount))));
+        l->setSongsString((m.songCount == 1 ? "Common.Song"_lang : Utils::substituteTokens("Common.Songs"_lang, std::to_string(m.songCount))));
         l->setLineColour(this->app->theme()->muted2());
         l->setMoreColour(this->app->theme()->muted());
         l->setTextColour(this->app->theme()->FG());
@@ -117,7 +118,7 @@ namespace Frame {
         // Show list if there are playlists
         if (m.size() > 0) {
             this->list->setHidden(false);
-            this->subHeading->setString(m.size() == 1 ? "Playlist.CountOne"_lang : Utils::regexReplace("Playlist.CountMany"_lang, std::to_string(m.size())));
+            this->subHeading->setString(m.size() == 1 ? "Playlist.CountOne"_lang : Utils::substituteTokens("Playlist.CountMany"_lang, std::to_string(m.size())));
 
             // Create list items for each playlist
             for (size_t i = 0; i < m.size(); i++) {
@@ -164,7 +165,7 @@ namespace Frame {
                 if (this->items.empty()) {
                     this->refreshList(this->sortType);
                 } else {
-                    this->subHeading->setString(this->items.size() == 1 ? "Playlist.CountOne"_lang : Utils::regexReplace("Playlist.CountMany"_lang, std::to_string(this->items.size())));
+                    this->subHeading->setString(this->items.size() == 1 ? "Playlist.CountOne"_lang : Utils::substituteTokens("Playlist.CountMany"_lang, std::to_string(this->items.size())));
                 }
             }
 
@@ -177,7 +178,7 @@ namespace Frame {
         this->msgbox->setTextColour(this->app->theme()->accent());
         Aether::Element * body = new Aether::Element(0, 0, 700);
         Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "", 24, 620);
-        tips->setString(Utils::regexReplace("Playlist.DeletePromptName"_lang, this->items[pos].meta.name));
+        tips->setString(Utils::substituteTokens("Playlist.DeletePromptName"_lang, this->items[pos].meta.name));
         tips->setColour(this->app->theme()->FG());
         body->addElement(tips);
         body->setH(tips->h() + 80);
@@ -218,7 +219,7 @@ namespace Frame {
         // Set playlist specific things
         this->menu->setImage(new Aether::Image(0, 0, this->items[pos].meta.imagePath.empty() ? "romfs:/misc/noplaylist.png" : this->items[pos].meta.imagePath));
         this->menu->setMainText(this->items[pos].meta.name);
-        std::string str = (this->items[pos].meta.songCount == 1 ? "Common.Song" : Utils::regexReplace("Common.Songs"_lang, this->items[pos].meta.songCount));
+        std::string str = (this->items[pos].meta.songCount == 1 ? "Common.Song" : Utils::substituteTokens("Common.Songs"_lang, std::to_string(this->items[pos].meta.songCount)));
         this->menu->setSubText(str);
 
         // Play
@@ -450,7 +451,7 @@ namespace Frame {
 
         // If there's a count difference then we need to remove the pushed playlist (as it was deleted)
         if (m.size() != this->items.size()) {
-            this->subHeading->setString(m.size() == 1 ? "Playlist.CountOne"_lang : Utils::regexReplace("Playlist.CountMany"_lang, std::to_string(m.size())));
+            this->subHeading->setString(m.size() == 1 ? "Playlist.CountOne"_lang : Utils::substituteTokens("Playlist.CountMany"_lang, std::to_string(m.size())));
             this->list->removeElement(this->items[this->pushedIdx].elm);
             this->items.erase(this->items.begin() + this->pushedIdx);
             return;

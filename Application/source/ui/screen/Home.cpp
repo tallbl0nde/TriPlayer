@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/frame/Album.hpp"
 #include "ui/frame/Albums.hpp"
@@ -15,6 +16,7 @@
 #include "ui/frame/SongInfo.hpp"
 #include "ui/screen/Home.hpp"
 #include "utils/Random.hpp"
+#include "utils/Utils.hpp"
 
 namespace Screen {
     Home::Home(Main::Application * a) : Screen(a) {
@@ -97,7 +99,7 @@ namespace Screen {
         for (size_t i = 0; i < pls.size(); i++) {
             CustomElm::ListItem::Playlist * l = new CustomElm::ListItem::Playlist(pls[i].imagePath.empty() ? "romfs:/misc/noplaylist.png" : pls[i].imagePath);
             l->setNameString(pls[i].name);
-            std::string str = (pls[i].songCount == 1 ? "Common.Song" : Utils::regexReplace("Common.Songs"_lang, std::to_string(pls[i].songCount)));
+            std::string str = (pls[i].songCount == 1 ? "Common.Song" : Utils::substituteTokens("Common.Songs"_lang, std::to_string(pls[i].songCount)));
             l->setSongsString(str);
             l->setLineColour(this->app->theme()->muted2());
             l->setMoreColour(this->app->theme()->muted());

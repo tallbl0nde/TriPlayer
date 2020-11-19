@@ -1,3 +1,4 @@
+#include "lang/Lang.hpp"
 #include <numbers>
 #include "ui/Theme.hpp"
 
