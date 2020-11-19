@@ -29,7 +29,7 @@ namespace Frame::Settings {
         Aether::ListOption * opt;
 
         // General::pause_on_sleep
-        this->addToggle("Pause when Entering Sleep", [cfg]() -> bool {
+        this->addToggle("Settings.SysGeneral.PauseOnSleep"_lang, [cfg]() -> bool {
             return cfg->sysPauseOnSleep();
         }, [this, cfg](bool b) {
             cfg->setSysPauseOnSleep(b);
@@ -37,17 +37,17 @@ namespace Frame::Settings {
         });
 
         // General::pause_on_unplug
-        this->addToggle("Pause when Headphones are Unplugged", [cfg]() -> bool {
+        this->addToggle("Settings.SysGeneral.PauseOnUnplug"_lang, [cfg]() -> bool {
             return cfg->sysPauseOnUnplug();
         }, [this, cfg](bool b) {
             cfg->setSysPauseOnUnplug(b);
             this->app->sysmodule()->sendReloadConfig();
         });
-        this->addComment("Pause playback when certain system events are received.");
+        this->addComment("Settings.SysGeneral.PauseText"_lang);
         this->list->addElement(new Aether::ListSeparator());
 
         // General::key_combo_enabled
-        this->addToggle("Adjust Playback with Button Combinations", [cfg]() -> bool {
+        this->addToggle("Settings.SysGeneral.AdjustPlayback"_lang, [cfg]() -> bool {
             return cfg->sysKeyComboEnabled();
         }, [this, cfg](bool b) {
             cfg->setSysKeyComboEnabled(b);
@@ -55,9 +55,9 @@ namespace Frame::Settings {
         });
 
         // General::key_combo_next
-        opt = new Aether::ListOption("Next Track", NX::comboToUnicodeString(cfg->sysKeyComboNext(), " + "), nullptr);
+        opt = new Aether::ListOption("Settings.SysGeneral.NextTrack"_lang, NX::comboToUnicodeString(cfg->sysKeyComboNext(), " + "), nullptr);
         opt->setCallback([this, cfg, opt]() {
-            this->showPickCombo("Combination for: Next Track", opt, [cfg]() -> std::vector<NX::Button> {
+            this->showPickCombo("Settings.SysGeneral.NextTrackCombination"_lang, opt, [cfg]() -> std::vector<NX::Button> {
                 return cfg->sysKeyComboNext();
             }, [cfg](const std::vector<NX::Button> & combo) -> bool {
                 return cfg->setSysKeyComboNext(combo);
@@ -67,9 +67,9 @@ namespace Frame::Settings {
         this->list->addElement(opt);
 
         // General::key_combo_play
-        opt = new Aether::ListOption("Play/Pause", NX::comboToUnicodeString(cfg->sysKeyComboPlay(), " + "), nullptr);
+        opt = new Aether::ListOption("Settings.SysGeneral.PlayPause"_lang, NX::comboToUnicodeString(cfg->sysKeyComboPlay(), " + "), nullptr);
         opt->setCallback([this, cfg, opt]() {
-            this->showPickCombo("Combination for: Play/Pause", opt, [cfg]() -> std::vector<NX::Button> {
+            this->showPickCombo("Settings.SysGeneral.PlayPauseCombination"_lang, opt, [cfg]() -> std::vector<NX::Button> {
                 return cfg->sysKeyComboPlay();
             }, [cfg](const std::vector<NX::Button> & combo) -> bool {
                 return cfg->setSysKeyComboPlay(combo);
@@ -79,9 +79,9 @@ namespace Frame::Settings {
         this->list->addElement(opt);
 
         // General::key_combo_prev
-        opt = new Aether::ListOption("Previous Track", NX::comboToUnicodeString(cfg->sysKeyComboPrev(), " + "), nullptr);
+        opt = new Aether::ListOption("Settings.SysGeneral.PreviousTrack"_lang, NX::comboToUnicodeString(cfg->sysKeyComboPrev(), " + "), nullptr);
         opt->setCallback([this, cfg, opt]() {
-            this->showPickCombo("Combination for: Previous Track", opt, [cfg]() -> std::vector<NX::Button> {
+            this->showPickCombo("Settings.SysGeneral.PrevTrackCombination"_lang, opt, [cfg]() -> std::vector<NX::Button> {
                 return cfg->sysKeyComboPrev();
             }, [cfg](const std::vector<NX::Button> & combo) -> bool {
                 return cfg->setSysKeyComboPrev(combo);
@@ -89,37 +89,37 @@ namespace Frame::Settings {
         });
         opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), this->app->theme()->accent());
         this->list->addElement(opt);
-        this->addComment("You can set a combination of up to four buttons which when pressed will send a command to TriPlayer (regardless of what the Switch is running). Note that order is irrelevant, you can press/set the buttons in any order.");
+        this->addComment("Settings.SysGeneral.AdjustPlaybackText"_lang);
         this->list->addElement(new Aether::ListSeparator());
 
         // General::log_level
-        opt = new Aether::ListOption("Logging Level", Log::levelToString(cfg->sysLogLevel()), nullptr);
+        opt = new Aether::ListOption("Settings.SysGeneral.LoggingLevel"_lang, Log::levelToString(cfg->sysLogLevel()), nullptr);
         opt->setCallback([this, opt]() {
             this->showLogLevelList(opt);
         });
         opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), this->app->theme()->accent());
         this->list->addElement(opt);
-        this->addComment("This only adjusts the sysmodule's log level, not the application's. Each level will log it and the levels below (e.g. Warning will log both Warning and Error messages). Info should only be used for debugging purposes, as it logs a LOT of information and slows down playback.");
+        this->addComment("Settings.SysGeneral.LoggingLevelText"_lang);
         this->list->addElement(new Aether::ListSeparator());
 
         // Restart sysmodule
-        this->addButton("Restart Sysmodule", [this]() {
+        this->addButton("Settings.SysGeneral.RestartSysmodule"_lang, [this]() {
             if (this->app->sysmodule()->terminate()) {
                 this->app->sysmodule()->launch();
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
                 this->app->sysmodule()->reconnect();
             }
         });
-        this->addComment("Restart the sysmodule and wait for it to reload.");
+        this->addComment("Settings.SysGeneral.RestartSysmoduleText"_lang);
 
         // Stop sysmodule
-        this->addButton("Stop Sysmodule", [this]() {
+        this->addButton("Settings.SysGeneral.StopSysmodule"_lang, [this]() {
             // Only close the app if it was actually successful
             if (this->app->sysmodule()->terminate()) {
                 this->app->exit(true);
             }
         });
-        this->addComment("Safely stop the sysmodule and close the application.");
+        this->addComment("Settings.SysGeneral.StopSysmoduleText"_lang);
 
         // Overlays
         this->ovlCombo = new CustomOvl::ComboPicker();
@@ -129,14 +129,14 @@ namespace Frame::Settings {
         this->ovlCombo->setLineColour(this->app->theme()->muted());
         this->ovlCombo->setMutedTextColour(this->app->theme()->muted());
         this->ovlCombo->setTextColour(this->app->theme()->FG());
-        this->ovlCombo->setBackLabel("Back");
-        this->ovlCombo->setOKLabel("OK");
-        this->ovlCombo->setRemoveLabel("Remove");
-        this->ovlCombo->setTipText("Activate a box, then press the button you wish to set.");
+        this->ovlCombo->setBackLabel("Common.Back"_lang);
+        this->ovlCombo->setOKLabel("Common.OK"_lang);
+        this->ovlCombo->setRemoveLabel("Common.Remove"_lang);
+        this->ovlCombo->setTipText("Settings.SysGeneral.ComboHint"_lang);
 
         this->ovlList = new Aether::PopupList("");
-        this->ovlList->setBackLabel("Back");
-        this->ovlList->setOKLabel("OK");
+        this->ovlList->setBackLabel("Common.Back"_lang);
+        this->ovlList->setOKLabel("Common.OK"_lang);
         this->ovlList->setBackgroundColour(this->app->theme()->popupBG());
         this->ovlList->setHighlightColour(this->app->theme()->accent());
         this->ovlList->setLineColour(this->app->theme()->muted());
@@ -145,7 +145,7 @@ namespace Frame::Settings {
     }
 
     void SysGeneral::showLogLevelList(Aether::ListOption * opt) {
-        this->ovlList->setTitleLabel("Logging Level");
+        this->ovlList->setTitleLabel("Settings.SysGeneral.LoggingLevel"_lang);
         this->ovlList->removeEntries();
 
         // Get log levels for creation

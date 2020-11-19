@@ -12,29 +12,29 @@ namespace Frame::Settings {
         Config * cfg = this->app->config();
 
         // Metadata::scan_on_launch
-        this->addToggle("Scan Library on Launch", [cfg]() -> bool {
+        this->addToggle("Settings.AppMetadata.ScanOnLaunch"_lang, [cfg]() -> bool {
             return cfg->scanOnLaunch();
         }, [cfg](bool b) {
             cfg->setScanOnLaunch(b);
         });
-        this->addComment("This should remain enabled unless you have a really large library that doesn't change and the initial scan takes too long. No support will be given if this option is disabled, as an out-of-date database will cause bad things to happen.");
+        this->addComment("Settings.AppMetadata.ScanOnLaunchText"_lang);
 
         // Scan now
-        this->addButton("Scan Now", [this]() {
+        this->addButton("Settings.AppMetadata.ScanNow"_lang, [this]() {
             this->app->popScreen();
             this->app->setScreen(Main::ScreenID::Splash);
         });
-        this->addComment("Immediately scan your library for changes.");
+        this->addComment("Settings.AppMetadata.ScanNowText"_lang);
         this->list->addElement(new Aether::ListSeparator());
 
         // Search for images
-        this->addButton("Search for Missing Album Images", [this]() {
+        this->addButton("Settings.AppMetadata.SearchAlbumImages"_lang, [this]() {
             this->getAlbumImages();
         });
-        this->addButton("Search for Missing Artist Images", [this]() {
+        this->addButton("Settings.AppMetadata.SearchArtistImages"_lang, [this]() {
             this->getArtistImages();
         });
-        this->addComment("Scrape TheAudioDB for images that are missing from your library. Depending on the size of your library, these could take a while. These processes cannot be cancelled once started.");
+        this->addComment("Settings.AppMetadata.SearchImagesText"_lang);
 
         // Create overlay
         this->ovlSearch = new CustomOvl::ProgressBox();
@@ -48,8 +48,8 @@ namespace Frame::Settings {
 
     void AppMetadata::getAlbumImages() {
         // Create overlay
-        this->ovlSearch->setHeadingText("Searching for Album Images...");
-        this->ovlSearch->setSubheadingText("(0 out of 0)");
+        this->ovlSearch->setHeadingText("Settings.AppMetadata.SearchAlbumImagesText"_lang);
+        this->ovlSearch->setSubheadingText(Utils::regexReplace("Settings.AppMetadata.DownloadProgress"_lang, "", "0", "0"));
         this->ovlSearch->setValue(0.0);
         this->app->addOverlay(this->ovlSearch);
 
@@ -68,8 +68,8 @@ namespace Frame::Settings {
 
     void AppMetadata::getArtistImages() {
         // Create overlay
-        this->ovlSearch->setHeadingText("Searching for Artist Images...");
-        this->ovlSearch->setSubheadingText("(0 out of 0)");
+        this->ovlSearch->setHeadingText("Settings.AppMetadata.SearchArtistImagesText"_lang);
+        this->ovlSearch->setSubheadingText(Utils::regexReplace("Settings.AppMetadata.DownloadProgress"_lang, "", "0", "0"));
         this->ovlSearch->setValue(0.0);
         this->app->addOverlay(this->ovlSearch);
 
@@ -197,7 +197,7 @@ namespace Frame::Settings {
                 std::unique_lock<std::mutex> mtx(this->searchMtx);
                 if (this->searchLast != this->searchCurrent) {
                     float per = this->searchCurrent/(float)this->searchMax;
-                    std::string str = this->searchName + " (" + std::to_string(this->searchCurrent) + " out of " + std::to_string(this->searchMax) + ")";
+                    std::string str = Utils::regexReplace("Settings.AppMetadata.DownloadProgress"_lang, this->searchName, std::to_string(this->searchCurrent), std::to_string(this->searchMax));
                     mtx.unlock();
                     this->ovlSearch->setSubheadingText(str);
                     this->ovlSearch->setValue(100.0 * per);

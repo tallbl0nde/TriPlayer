@@ -34,7 +34,7 @@ namespace Frame::Settings {
         bool b = get();
 
         // Create element and set appropriate text/colour based on above value
-        Aether::ListOption * opt = new Aether::ListOption(str, (b ? "Yes" : "No"), nullptr);
+        Aether::ListOption * opt = new Aether::ListOption(str, (b ? "Common.Yes"_lang : "Common.No"_lang), nullptr);
         opt->setCallback([this, opt, get, set]() {
             // Set opposite value
             bool b = get();
@@ -42,7 +42,7 @@ namespace Frame::Settings {
 
             // Update element to match new state
             b = get();
-            opt->setValue(b ? "Yes" : "No");
+            opt->setValue(b ? "Common.Yes"_lang : "Common.No"_lang);
             opt->setValueColour(b ? this->app->theme()->accent() : this->app->theme()->muted());
         });
         opt->setHintColour(this->app->theme()->FG());

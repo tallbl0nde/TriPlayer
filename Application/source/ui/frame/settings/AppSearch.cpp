@@ -8,10 +8,10 @@ namespace Frame::Settings {
         Aether::ListOption * opt;
 
         // Search::max_playlists
-        opt = new Aether::ListOption("Playlist Limit", std::to_string(cfg->searchMaxPlaylists()), nullptr);
+        opt = new Aether::ListOption("Settings.AppSearch.PlaylistLimit"_lang, std::to_string(cfg->searchMaxPlaylists()), nullptr);
         opt->setCallback([this, cfg, opt]() {
             int val = cfg->searchMaxPlaylists();
-            if (this->getNumberInput(val, "Playlist Limit", "", true)) {
+            if (this->getNumberInput(val, "Settings.AppSearch.PlaylistLimit"_lang, "", true)) {
                 val = (val < -1 ? -1 : val);
                 if (cfg->setSearchMaxPlaylists(val)) {
                     opt->setValue(std::to_string(val));
@@ -22,10 +22,10 @@ namespace Frame::Settings {
         this->list->addElement(opt);
 
         // Search::max_albums
-        opt = new Aether::ListOption("Album Limit", std::to_string(cfg->searchMaxAlbums()), nullptr);
+        opt = new Aether::ListOption("Settings.AppSearch.AlbumLimit"_lang, std::to_string(cfg->searchMaxAlbums()), nullptr);
         opt->setCallback([this, cfg, opt]() {
             int val = cfg->searchMaxAlbums();
-            if (this->getNumberInput(val, "Album Limit", "", true)) {
+            if (this->getNumberInput(val, "Settings.AppSearch.AlbumLimit"_lang, "", true)) {
                 val = (val < -1 ? -1 : val);
                 if (cfg->setSearchMaxAlbums(val)) {
                     opt->setValue(std::to_string(val));
@@ -36,10 +36,10 @@ namespace Frame::Settings {
         this->list->addElement(opt);
 
         // Search::max_artists
-        opt = new Aether::ListOption("Artist Limit", std::to_string(cfg->searchMaxArtists()), nullptr);
+        opt = new Aether::ListOption("Settings.AppSearch.ArtistLimit"_lang, std::to_string(cfg->searchMaxArtists()), nullptr);
         opt->setCallback([this, cfg, opt]() {
             int val = cfg->searchMaxArtists();
-            if (this->getNumberInput(val, "Artist Limit", "", true)) {
+            if (this->getNumberInput(val, "Settings.AppSearch.ArtistLimit"_lang, "", true)) {
                 val = (val < -1 ? -1 : val);
                 if (cfg->setSearchMaxArtists(val)) {
                     opt->setValue(std::to_string(val));
@@ -50,10 +50,10 @@ namespace Frame::Settings {
         this->list->addElement(opt);
 
         // Search::max_songs
-        opt = new Aether::ListOption("Song Limit", std::to_string(cfg->searchMaxSongs()), nullptr);
+        opt = new Aether::ListOption("Settings.AppSearch.SongLimit"_lang, std::to_string(cfg->searchMaxSongs()), nullptr);
         opt->setCallback([this, cfg, opt]() {
             int val = cfg->searchMaxSongs();
-            if (this->getNumberInput(val, "Song Limit", "", true)) {
+            if (this->getNumberInput(val, "Settings.AppSearch.SongLimit"_lang, "", true)) {
                 val = (val < -1 ? -1 : val);
                 if (cfg->setSearchMaxSongs(val)) {
                     opt->setValue(std::to_string(val));
@@ -64,7 +64,7 @@ namespace Frame::Settings {
         this->list->addElement(opt);
 
         // Comment
-        this->addComment("Limit the number of results returned for each search category. A negative number indicates no limit. Zero will hide the section completely from any search results.");
+        this->addComment("Settings.AppSearch.Comment"_lang);
         this->list->addElement(new Aether::ListSeparator());
     }
 };

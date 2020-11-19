@@ -12,43 +12,43 @@ namespace Frame::Settings {
         this->list->addElement(new Aether::ListSeparator(50));
 
         // Version number
-        Aether::Text * text = new Aether::Text(0, 0, "Version " + std::string(VER_STRING), 24);
+        Aether::Text * text = new Aether::Text(0, 0, Utils::regexReplace("Update.Version"_lang, std::to_string(VER_STRING)), 24);
         text->setColour(this->app->theme()->FG());
         text->setXY(image->x() + 172, image->y() + 92);
         container->addElement(text);
 
         // Copyright
-        text = new Aether::Text(0, 0, "Copyright © 2020 tallbl0nde", 20);
+        text = new Aether::Text(0, 0, "Settings.AppAbout.Copyright"_lang, 20);
         text->setXY(container->x() + (container->w() - text->w())/2, container->y() + container->h() - text->h());
         text->setColour(this->app->theme()->FG());
         container->addElement(text);
 
         // Check for Updates button
-        this->addButton("Check for Updates", [this]() {
+        this->addButton("Settings.AppAbout.CheckUpdates"_lang, [this]() {
             this->app->pushScreen();
             this->app->setScreen(Main::ScreenID::Update);
         });
         if (this->app->hasUpdate()) {
-            this->addComment("An update is available!");
+            this->addComment("Settings.AppAbout.UpdateAvailable"_lang);
         }
         this->list->addElement(new Aether::ListSeparator());
 
         // Support heading
         container = new Aether::Element(0, 0, 100, 30);
         this->list->addElement(container);
-        text = new Aether::Text(container->x() + 10, container->y(), "Support", 24);
+        text = new Aether::Text(container->x() + 10, container->y(), "Settings.AppAbout.Support"_lang, 24);
         text->setColour(this->app->theme()->FG());
         container->addElement(text);
-        this->addComment("If TriPlayer has helped you enjoy your music on your Switch, I would appreciate your support through Ko-fi: https://ko-fi.com/tallbl0nde");
+        this->addComment("Settings.AppAbout.SupportText"_lang);
         this->list->addElement(new Aether::ListSeparator());
 
         // License Heading
         container = new Aether::Element(0, 0, 100, 30);
         this->list->addElement(container);
-        text = new Aether::Text(container->x() + 10, container->y(), "Software Libraries", 24);
+        text = new Aether::Text(container->x() + 10, container->y(), "Settings.AppAbout.Libraries"_lang, 24);
         text->setColour(this->app->theme()->FG());
         container->addElement(text);
-        this->addComment("I would like to thank the contributors of the following open source libraries which are used within TriPlayer:");
+        this->addComment("Settings.AppAbout.LibrariesText"_lang);
 
         // Licenses
         this->addComment("Aether\nCopyright © 2020 tallbl0nde\nMIT License\nhttps://github.com/tallbl0nde/Aether");
