@@ -50,7 +50,7 @@ namespace Main {
         this->setHighlightAnimation(nullptr);
         this->display->setFadeIn();
         this->display->setFadeOut();
-        // this->display->setShowFPS(true);
+        this->display->setShowFPS(true);
         this->exitPrompt = nullptr;
 
         // Setup screens

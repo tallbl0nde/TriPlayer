@@ -1,4 +1,5 @@
 #include "Config.hpp"
+#include "lang/Language.hpp"
 #include "minIni.h"
 #include "utils/FS.hpp"
 #include "utils/Utils.hpp"
@@ -91,6 +92,17 @@ void Config::readConfig() {
 
     // Appearance::auto_player_palette
     this->autoPlayerPalette_ = this->ini->getbool("Appearance", "auto_player_palette");
+
+    // Appearance::language
+    str = this->ini->gets("Appearance", "language");
+    if (str.empty()) {
+        Log::writeError("[CONFIG] Failed to get (Appearance) language");
+    }
+    if (str == "English") {
+        this->language_ = Language::English;
+    } else {
+        this->language_ = Language::Default;
+    }
 
     // Appearance::show_touch_controls
     this->showTouchControls_ = this->ini->getbool("Appearance", "show_touch_controls");
@@ -316,6 +328,32 @@ bool Config::setAutoPlayerPalette(const bool b) {
         Log::writeError("[CONFIG] Failed to set (Appearance) auto_player_palette");
     } else {
         this->autoPlayerPalette_ = b;
+    }
+    return ok;
+}
+
+Language Config::language() {
+    return this->language_;
+}
+
+bool Config::setLanguage(const Language l) {
+    std::string str = "";
+    switch (l) {
+        case Language::Default:
+        default:
+            str = "Default";
+            break;
+
+        case Language::English:
+            str = "English";
+            break;
+    }
+
+    bool ok = this->ini->put("Appearance", "language", str);
+    if (!ok) {
+        Log::writeError("[CONFIG] Failed to set (Appearance) language");
+    } else {
+        this->language_ = l;
     }
     return ok;
 }

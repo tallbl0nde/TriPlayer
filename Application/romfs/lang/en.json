@@ -198,6 +198,8 @@
             "AccentColourText": "Change the accent used throughout the application.",
             "AutoPlayerPalette": "Automatic Player Palette",
             "AutoPlayerPaletteText": "Adjust the colour palette on the fullscreen player to match colours in the current song's album art. The default colour scheme will be used if this is disabled.",
+            "Language": "Language",
+            "LanguageText": "Set the application's language. Default will attempt to match your Switch's language. If your language isn't listed and you would like to translate the app, please make a Pull Request on GitHub.",
             "ShowTouchControls": "Show Touch Controls",
             "ShowTouchControlsText": "Show/hide the touch controls in the top left of the application. This is solely for appearance, you may consider disabling this if you mainly use the controller to navigate."
         },

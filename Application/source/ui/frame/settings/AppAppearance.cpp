@@ -1,5 +1,6 @@
 #include "Application.hpp"
 #include "lang/Lang.hpp"
+#include "lang/Language.hpp"
 #include "ui/frame/settings/AppAppearance.hpp"
 
 namespace Frame::Settings {
@@ -24,6 +25,16 @@ namespace Frame::Settings {
             cfg->setAutoPlayerPalette(b);
         });
         this->addComment("Settings.AppAppearance.AutoPlayerPaletteText"_lang);
+        this->list->addElement(new Aether::ListSeparator());
+
+        // Appearance::language
+        opt = new Aether::ListOption("Settings.AppAppearance.Language"_lang, Utils::Lang::languageToString(cfg->language()), nullptr);
+        opt->setCallback([this, opt]() {
+            this->showLanguageList(opt);
+        });
+        opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), this->app->theme()->accent());
+        this->list->addElement(opt);
+        this->addComment("Settings.AppAppearance.LanguageText"_lang);
         this->list->addElement(new Aether::ListSeparator());
 
         // Appearance::show_touch_controls
@@ -69,6 +80,30 @@ namespace Frame::Settings {
                 this->app->setHighlightAnimation(nullptr);
                 this->app->updateScreenTheme();
             }, current == col);
+        }
+
+        this->app->addOverlay(this->ovlList);
+    }
+
+    void AppAppearance::showLanguageList(Aether::ListOption * opt) {
+        this->ovlList->setTitleLabel("Settings.AppAppearance.Language"_lang);
+        this->ovlList->removeEntries();
+
+        // Get current language (for tick)
+        Language current = this->app->config()->language();
+
+        // Add entries
+        for (size_t i = 0; i < static_cast<int>(Language::Total); i++) {
+            Language l = static_cast<Language>(i);
+            std::string str = Utils::Lang::languageToString(l);
+            this->ovlList->addEntry(str, [this, opt, str, l]() {
+                // Update config
+                this->app->config()->setLanguage(l);
+
+                // Reset back to load state
+                this->app->popScreen();
+                this->app->setScreen(Main::ScreenID::Splash);
+            }, current == l);
         }
 
         this->app->addOverlay(this->ovlList);

@@ -10,8 +10,9 @@ namespace Frame::Settings {
             // PopupList overlay
             Aether::PopupList * ovlList;
 
-            // Helper to create list
+            // Helpers to create lists
             void showAccentColourList(Aether::ListOption *);
+            void showLanguageList(Aether::ListOption *);
 
         public:
             // Constructor creates all elements
