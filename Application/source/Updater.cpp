@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <fstream>
 #include "Log.hpp"
+#include "lang/Lang.hpp"
 #include "nlohmann/json.hpp"
 #include "Paths.hpp"
 #include "Updater.hpp"
@@ -13,7 +14,7 @@
 
 Updater::Updater() {
     this->downloadUrl = "";
-    this->meta.changelog = "No changelog found.";
+    this->meta.changelog = "Update.EmptyChangelog"_lang;
     this->meta.size = 0;
     this->meta.version = VER_STRING;
 

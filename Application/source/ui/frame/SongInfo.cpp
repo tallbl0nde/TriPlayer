@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/frame/SongInfo.hpp"
 #include "ui/element/TextBox.hpp"
@@ -21,7 +22,7 @@ namespace Frame {
         this->metadata = this->app->database()->getSongMetadataForID(id);
         if (this->metadata.ID < 0) {
             // Error message
-            Aether::Text * t = new Aether::Text(this->x() + this->w()/2, this->y() + this->h()/2, "An error occurred fetching the data. Please restart the app and try again.", 20);
+            Aether::Text * t = new Aether::Text(this->x() + this->w()/2, this->y() + this->h()/2, "Common.Error.Database"_lang, 20);
             t->setX(t->x() - t->w()/2);
             t->setY(t->y() - t->h()/2);
             t->setColour(this->app->theme()->FG());
@@ -30,16 +31,16 @@ namespace Frame {
         }
 
         // Create and position all elements next
-        this->heading->setString("Song Information");
+        this->heading->setString("Song.Information.Heading"_lang);
 
         // Title
-        Aether::Text * txt = new Aether::Text(this->heading->x(), this->heading->y() + this->heading->h() + 20, "Title", 30);
+        Aether::Text * txt = new Aether::Text(this->heading->x(), this->heading->y() + this->heading->h() + 20, "Common.Title"_lang, 30);
         txt->setColour(this->app->theme()->FG());
         this->bottomContainer->addElement(txt);
         this->title = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.62, 50);
         this->title->setBoxColour(this->app->theme()->muted2());
         this->title->setTextColour(this->app->theme()->FG());
-        this->title->setKeyboardHint("Title");
+        this->title->setKeyboardHint("Common.Title"_lang);
         this->title->setKeyboardLimit(100);
         this->title->setString(this->metadata.title);
         this->title->setKeyboardCallback([this]() {
@@ -56,7 +57,7 @@ namespace Frame {
         this->bottomContainer->addElement(this->title);
 
         // Database ID
-        txt = new Aether::Text(this->title->x() + this->title->w() + 50, txt->y(), "Database ID", 30);
+        txt = new Aether::Text(this->title->x() + this->title->w() + 50, txt->y(), "Common.DatabaseID"_lang, 30);
         txt->setColour(this->app->theme()->FG());
         this->bottomContainer->addElement(txt);
         CustomElm::TextBox * box = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.18, 50);
@@ -68,13 +69,13 @@ namespace Frame {
         this->bottomContainer->addElement(box);
 
         // Artist
-        txt = new Aether::Text(this->heading->x(), box->y() + box->h() + 15, "Artist", 30);
+        txt = new Aether::Text(this->heading->x(), box->y() + box->h() + 15, "Artist.Artist"_lang, 30);
         txt->setColour(this->app->theme()->FG());
         this->bottomContainer->addElement(txt);
         this->artist = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.62, 50);
         this->artist->setBoxColour(this->app->theme()->muted2());
         this->artist->setTextColour(this->app->theme()->FG());
-        this->artist->setKeyboardHint("Artist");
+        this->artist->setKeyboardHint("Artist.Artist"_lang);
         this->artist->setKeyboardLimit(100);
         this->artist->setString(this->metadata.artist);
         this->artist->setKeyboardCallback([this]() {
@@ -91,7 +92,7 @@ namespace Frame {
         this->bottomContainer->addElement(this->artist);
 
         // Track Number
-        txt = new Aether::Text(this->artist->x() + this->artist->w() + 50, txt->y(), "Track #", 30);
+        txt = new Aether::Text(this->artist->x() + this->artist->w() + 50, txt->y(), "Song.Information.TrackNumber"_lang, 30);
         txt->setColour(this->app->theme()->FG());
         this->bottomContainer->addElement(txt);
         this->trackNumber = new CustomElm::NumberBox(box->x(), this->artist->y(), box->w(), this->artist->h());
@@ -99,7 +100,7 @@ namespace Frame {
         this->trackNumber->setTextColour(this->app->theme()->FG());
         this->trackNumber->setValue(this->metadata.trackNumber);
         this->trackNumber->setNumpadAllowFloats(false);
-        this->trackNumber->setNumpadHint("Track #");
+        this->trackNumber->setNumpadHint("Song.Information.TrackNumber"_lang);
         this->trackNumber->setNumpadLimit(4);
         this->trackNumber->setNumpadNegative(false);
         this->trackNumber->setNumpadCallback([this]() {
@@ -108,13 +109,13 @@ namespace Frame {
         this->bottomContainer->addElement(this->trackNumber);
 
         // Album
-        txt = new Aether::Text(this->heading->x(), this->artist->y() + this->artist->h() + 15, "Album", 30);
+        txt = new Aether::Text(this->heading->x(), this->artist->y() + this->artist->h() + 15, "Album.Album"_lang, 30);
         txt->setColour(this->app->theme()->FG());
         this->bottomContainer->addElement(txt);
         this->album = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.62, 50);
         this->album->setBoxColour(this->app->theme()->muted2());
         this->album->setTextColour(this->app->theme()->FG());
-        this->album->setKeyboardHint("Album");
+        this->album->setKeyboardHint("Album.Album"_lang);
         this->album->setKeyboardLimit(100);
         this->album->setString(this->metadata.album);
         this->album->setKeyboardCallback([this]() {
@@ -131,7 +132,7 @@ namespace Frame {
         this->bottomContainer->addElement(this->album);
 
         // Disc Number
-        txt = new Aether::Text(this->album->x() + this->album->w() + 50, txt->y(), "Disc #", 30);
+        txt = new Aether::Text(this->album->x() + this->album->w() + 50, txt->y(), "Song.Information.DiscNumber"_lang, 30);
         txt->setColour(this->app->theme()->FG());
         this->bottomContainer->addElement(txt);
         this->discNumber = new CustomElm::NumberBox(this->trackNumber->x(), this->album->y(), this->trackNumber->w(), this->album->h());
@@ -139,7 +140,7 @@ namespace Frame {
         this->discNumber->setTextColour(this->app->theme()->FG());
         this->discNumber->setValue(this->metadata.discNumber);
         this->discNumber->setNumpadAllowFloats(false);
-        this->discNumber->setNumpadHint("Disc #");
+        this->discNumber->setNumpadHint("Song.Information.DiscNumber"_lang);
         this->discNumber->setNumpadLimit(4);
         this->discNumber->setNumpadNegative(false);
         this->discNumber->setNumpadCallback([this]() {
@@ -148,7 +149,7 @@ namespace Frame {
         this->bottomContainer->addElement(this->discNumber);
 
         // File path
-        txt = new Aether::Text(this->heading->x(), this->album->y() + this->album->h() + 15, "File Location", 30);
+        txt = new Aether::Text(this->heading->x(), this->album->y() + this->album->h() + 15, "Song.Information.FileLocation"_lang, 30);
         txt->setColour(this->app->theme()->FG());
         this->bottomContainer->addElement(txt);
         this->filePath = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.62, 50);
@@ -160,7 +161,7 @@ namespace Frame {
         this->bottomContainer->addElement(this->filePath);
 
         // Save button
-        this->saveButton = new Aether::FilledButton(this->discNumber->x(), this->filePath->y(), this->discNumber->w(), 50, "Save", 26, [this]() {
+        this->saveButton = new Aether::FilledButton(this->discNumber->x(), this->filePath->y(), this->discNumber->w(), 50, "Common.Save"_lang, 26, [this]() {
             this->saveChanges();
         });
         this->saveButton->setFillColour(this->app->theme()->accent());
@@ -173,7 +174,7 @@ namespace Frame {
     void SongInfo::createInfoOverlay(const std::string & msg) {
         delete this->msgbox;
         this->msgbox = new Aether::MessageBox();
-        this->msgbox->addTopButton("OK", [this]() {
+        this->msgbox->addTopButton("Common.OK"_lang, [this]() {
             this->msgbox->close();
         });
         this->msgbox->setLineColour(this->app->theme()->muted2());
@@ -193,7 +194,7 @@ namespace Frame {
     void SongInfo::saveChanges() {
         // Don't permit blank name
         if (this->metadata.title.empty() || this->metadata.artist.empty() || this->metadata.album.empty()) {
-            this->createInfoOverlay("One or more fields are blank, please ensure all fields are filled in!");
+            this->createInfoOverlay("Song.Information.Error"_lang);
             return;
         }
 
@@ -203,7 +204,7 @@ namespace Frame {
         this->app->unlockDatabase();
 
         // Show message box indicating result
-        this->createInfoOverlay((ok ? "Your changes have been saved. You may need to restart the application for any changes to take complete effect." : "Unable to update the database, see the logs for more information!"));
+        this->createInfoOverlay((ok ? "Common.ChangesSaved"_lang : "Common.Error.DatabaseLocked"_lang));
     }
 
     void SongInfo::updateColours() {

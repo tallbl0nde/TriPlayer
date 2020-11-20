@@ -1,6 +1,7 @@
 #include <sstream>
 #include "Application.hpp"
 #include "dtl.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/element/listitem/Song.hpp"
 #include "ui/frame/Queue.hpp"
@@ -42,7 +43,7 @@ namespace Frame {
 
         this->cachedSongID = -1;
         this->emptyMsg = nullptr;
-        this->heading->setString("Play Queue");
+        this->heading->setString("Queue.Heading"_lang);
         this->playingElm = nullptr;
         this->queue = nullptr;
         this->createList();
@@ -55,7 +56,7 @@ namespace Frame {
         this->list->setHidden(true);
         this->subHeading->setHidden(true);
         this->removeElement(this->emptyMsg);
-        this->emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "Your Play Queue is empty!", 24);
+        this->emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "Queue.Empty"_lang, 24);
         this->emptyMsg->setColour(this->app->theme()->FG());
         this->emptyMsg->setX(this->x() + (this->w() - this->emptyMsg->w())/2);
         this->addElement(this->emptyMsg);
@@ -67,7 +68,7 @@ namespace Frame {
 
         // Now Playing
         this->playing = new Aether::Element(0, 0, 100, 45);
-        Aether::Text * tmp = new Aether::Text(this->playing->x(), this->playing->y(), "Now Playing", 28);
+        Aether::Text * tmp = new Aether::Text(this->playing->x(), this->playing->y(), "Queue.NowPlaying"_lang, 28);
         tmp->setColour(this->app->theme()->FG());
         this->playing->addElement(tmp);
         this->list->addElement(this->playing);
@@ -77,7 +78,7 @@ namespace Frame {
 
         // Up Next
         this->upnext = new Aether::Element(0, 0, 100, 80);
-        this->upnextStr = new Aether::Text(this->upnext->x(), this->upnext->y(), "Up Next", 28);
+        this->upnextStr = new Aether::Text(this->upnext->x(), this->upnext->y(), "Queue.UpNextBlank"_lang, 28);
         this->upnextStr->setY(this->upnextStr->y() + (this->upnext->h() - this->upnextStr->h())/2 + 10);
         this->upnextStr->setColour(this->app->theme()->FG());
         this->upnext->addElement(this->upnextStr);
@@ -131,7 +132,7 @@ namespace Frame {
             this->queue = nullptr;
         } else if (!subQueue.empty() && this->queue == nullptr) {
             this->queue = new Aether::Element(0, 0, 100, 80);
-            Aether::Text * tmp = new Aether::Text(this->queue->x(), this->queue->y(), "Next in Queue", 28);
+            Aether::Text * tmp = new Aether::Text(this->queue->x(), this->queue->y(), "Queue.NextInQueue"_lang, 28);
             tmp->setY(tmp->y() + (this->queue->h() - tmp->h())/2 + 10);
             tmp->setColour(this->app->theme()->FG());
             this->queue->addElement(tmp);
@@ -182,7 +183,7 @@ namespace Frame {
         }
 
         // Hide 'Up Next' heading if it's empty (note Aether only rerenders if the string changes)
-        this->upnextStr->setString("Up Next from: " + playingFrom);
+        this->upnextStr->setString(Utils::substituteTokens("Queue.UpNext"_lang, playingFrom));
         if (queue.empty()) {
             this->upnext->setHidden(true);
         } else {
@@ -242,7 +243,11 @@ namespace Frame {
         std::vector<SongID> tmp = {this->cachedSongID};
         unsigned int totalSecs = durationOfQueue(this->cachedQueue, this->songMeta) + durationOfQueue(this->cachedSubQueue, this->songMeta) + durationOfQueue(tmp, this->songMeta);
         unsigned int totalTracks = this->cachedQueue.size() + this->cachedSubQueue.size() + 1;  // Plus 1 for playing song
-        this->subHeading->setString(std::to_string(totalTracks) + (totalTracks == 1 ? " track" : " tracks") + " remaining" + " | " + Utils::secondsToHoursMins(totalSecs));
+        if (totalTracks == 1) {
+            this->subHeading->setString(Utils::substituteTokens("Queue.CountOne"_lang, Utils::secondsToHoursMins(totalSecs)));
+        } else {
+            this->subHeading->setString(Utils::substituteTokens("Queue.CountMany"_lang, std::to_string(totalTracks), Utils::secondsToHoursMins(totalSecs)));
+        }
     }
 
     CustomElm::ListItem::Song * Queue::getListSong(size_t id, Section sec) {
@@ -336,7 +341,7 @@ namespace Frame {
             b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/removefromqueue.png"));
             b->setIconColour(this->app->theme()->muted());
-            b->setText("Remove from Queue");
+            b->setText("Queue.RemoveFromQueue"_lang);
             b->setTextColour(this->app->theme()->FG());
             if (sec == Section::Queue) {
                 b->setCallback([this, pos]() {
@@ -357,7 +362,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Add to Queue");
+        b->setText("Common.AddToQueue"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
             this->app->sysmodule()->sendAddToSubQueue(id);
@@ -369,7 +374,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoplaylist.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Add to Playlist");
+        b->setText("Common.AddToPlaylist"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
             this->showAddToPlaylist([this, id](PlaylistID i) {
@@ -386,7 +391,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/user.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Go to Artist");
+        b->setText("Common.GoToArtist"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
             ArtistID a = this->app->database()->getArtistIDForSong(id);
@@ -401,7 +406,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/disc.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Go to Album");
+        b->setText("Common.GoToAlbum"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
             AlbumID a = this->app->database()->getAlbumIDForSong(id);
@@ -417,7 +422,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/info.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("View Information");
+        b->setText("Common.ViewInformation"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
             this->changeFrame(Type::SongInfo, Action::Push, id);

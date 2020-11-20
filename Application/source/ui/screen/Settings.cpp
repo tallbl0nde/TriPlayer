@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/frame/settings/About.hpp"
 #include "ui/frame/settings/AppAdvanced.hpp"
@@ -144,7 +145,7 @@ namespace Screen {
 
         // Back
         this->buttonBack = new CustomElm::SideButton(0, 0, 100);
-        this->buttonBack->setText("Back to Library");
+        this->buttonBack->setText("Settings.BackToLibrary"_lang);
         this->buttonBack->setCallback([this]() {
             this->backCallback();
         });
@@ -154,9 +155,9 @@ namespace Screen {
         this->sidebarList->addElement(new Aether::ListSeparator(SIDEBAR_SEP));
 
         // Application (general)
-        this->addHeading("Application");
+        this->addHeading("Settings.Application"_lang);
         this->buttonAppGeneral = new CustomElm::SideButton(0, 0, 100);
-        this->buttonAppGeneral->setText("General");
+        this->buttonAppGeneral->setText("Settings.General"_lang);
         this->buttonAppGeneral->setCallback([this]() {
             this->setupNew();
             this->setupAppGeneral();
@@ -168,7 +169,7 @@ namespace Screen {
 
         // Application (appearance)
         this->buttonAppAppearance = new CustomElm::SideButton(0, 0, 100);
-        this->buttonAppAppearance->setText("Appearance");
+        this->buttonAppAppearance->setText("Settings.Appearance"_lang);
         this->buttonAppAppearance->setCallback([this]() {
             this->setupNew();
             this->setupAppAppearance();
@@ -180,7 +181,7 @@ namespace Screen {
 
         // Application (appearance)
         this->buttonAppMetadata = new CustomElm::SideButton(0, 0, 100);
-        this->buttonAppMetadata->setText("Metadata");
+        this->buttonAppMetadata->setText("Settings.Metadata"_lang);
         this->buttonAppMetadata->setCallback([this]() {
             this->setupNew();
             this->setupAppMetadata();
@@ -192,7 +193,7 @@ namespace Screen {
 
         // Application (search)
         this->buttonAppSearch = new CustomElm::SideButton(0, 0, 100);
-        this->buttonAppSearch->setText("Search");
+        this->buttonAppSearch->setText("Settings.Search"_lang);
         this->buttonAppSearch->setCallback([this]() {
             this->setupNew();
             this->setupAppSearch();
@@ -204,7 +205,7 @@ namespace Screen {
 
         // Application (advanced)
         this->buttonAppAdvanced = new CustomElm::SideButton(0, 0, 100);
-        this->buttonAppAdvanced->setText("Advanced");
+        this->buttonAppAdvanced->setText("Settings.Advanced"_lang);
         this->buttonAppAdvanced->setCallback([this]() {
             this->setupNew();
             this->setupAppAdvanced();
@@ -215,9 +216,9 @@ namespace Screen {
         this->sidebarList->addElement(new Aether::ListSeparator(SIDEBAR_SEP));
 
         // Sysmodule (general)
-        this->addHeading("Sysmodule");
+        this->addHeading("Settings.Sysmodule"_lang);
         this->buttonSysGeneral = new CustomElm::SideButton(0, 0, 100);
-        this->buttonSysGeneral->setText("General");
+        this->buttonSysGeneral->setText("Settings.General"_lang);
         this->buttonSysGeneral->setCallback([this]() {
             this->setupNew();
             this->setupSysGeneral();
@@ -229,7 +230,7 @@ namespace Screen {
 
         // Sysmodule (MP3)
         this->buttonSysMP3 = new CustomElm::SideButton(0, 0, 100);
-        this->buttonSysMP3->setText("MP3");
+        this->buttonSysMP3->setText("Settings.MP3"_lang);
         this->buttonSysMP3->setCallback([this]() {
             this->setupNew();
             this->setupSysMP3();
@@ -240,9 +241,9 @@ namespace Screen {
         this->sidebarList->addElement(new Aether::ListSeparator(SIDEBAR_SEP));
 
         // About
-        this->addHeading("Miscellaneous");
+        this->addHeading("Settings.Miscellaneous"_lang);
         this->buttonAbout = new CustomElm::SideButton(0, 0, 100);
-        this->buttonAbout->setText("About");
+        this->buttonAbout->setText("Settings.About"_lang);
         this->buttonAbout->setCallback([this]() {
             this->setupNew();
             this->setupAbout();

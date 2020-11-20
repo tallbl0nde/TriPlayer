@@ -1,8 +1,10 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+#include <regex>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 // General helper functions
@@ -29,6 +31,18 @@ namespace Utils {
 
     // Splits the given string into words (splits on space)
     std::vector<std::string> splitIntoWords(const std::string &);
+
+    // Base case for below
+    std::string substituteTokens(std::string, std::string);
+
+    // Substitute any tokens with the format $[x] with the provided arguments
+    extern size_t tokenIndex;
+    template<typename... Args>
+    std::string substituteTokens(std::string str, std::string token, Args... tokens) {
+        str = std::regex_replace(str, std::regex("\\$\\[" + std::to_string(tokenIndex) + "]"), token);
+        tokenIndex++;
+        return substituteTokens(str, tokens...);
+    }
 
     // Truncate string to given decimal places (don't use on strings without a decimal!)
     // Does nothing if outside of range or no decimal place

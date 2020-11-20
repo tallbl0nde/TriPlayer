@@ -3,12 +3,19 @@
 
 #include <string>
 
+// Forward declaration
+enum class Language;
+
 namespace Utils::NX {
     // Start required Switch services
     void startServices();
 
     // Stop any started services
     void stopServices();
+
+    // Get a language matching the system's
+    // Returns Default if no matching language found
+    Language getSystemLanguage();
 
     // Keyboard options
     struct Keyboard {

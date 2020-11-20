@@ -1,3 +1,4 @@
+#include "lang/Lang.hpp"
 #include <numbers>
 #include "ui/Theme.hpp"
 
@@ -5,31 +6,31 @@ std::string Theme::colourToString(const Colour c) {
     std::string str;
     switch (c) {
         case Theme::Colour::Red:
-            str = "Red";
+            str = "Theme.Red"_lang;
             break;
 
         case Theme::Colour::Orange:
-            str = "Orange";
+            str = "Theme.Orange"_lang;
             break;
 
         case Theme::Colour::Yellow:
-            str = "Yellow";
+            str = "Theme.Yellow"_lang;
             break;
 
         case Theme::Colour::Green:
-            str = "Green";
+            str = "Theme.Green"_lang;
             break;
 
         case Theme::Colour::Blue:
-            str = "Blue";
+            str = "Theme.Blue"_lang;
             break;
 
         case Theme::Colour::Purple:
-            str = "Purple";
+            str = "Theme.Purple"_lang;
             break;
 
         case Theme::Colour::Pink:
-            str = "Pink";
+            str = "Theme.Pink"_lang;
             break;
     }
     return str;
