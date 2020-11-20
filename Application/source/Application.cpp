@@ -54,7 +54,7 @@ namespace Main {
         this->exitPrompt = nullptr;
 
         // Setup screens
-        Utils::Lang::setLanguage(Language::English);
+        Utils::Lang::setLanguage(this->config_->language());
         this->screens[static_cast<int>(ScreenID::Fullscreen)] = new Screen::Fullscreen(this);
         this->screens[static_cast<int>(ScreenID::Home)] = new Screen::Home(this);
         this->screens[static_cast<int>(ScreenID::Settings)] = new Screen::Settings(this);

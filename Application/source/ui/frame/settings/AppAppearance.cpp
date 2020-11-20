@@ -99,6 +99,7 @@ namespace Frame::Settings {
             this->ovlList->addEntry(str, [this, opt, str, l]() {
                 // Update config
                 this->app->config()->setLanguage(l);
+                Utils::Lang::setLanguage(this->app->config()->language());
 
                 // Reset back to load state
                 this->app->popScreen();

@@ -1,3 +1,4 @@
+#include "lang/Language.hpp"
 #include "Log.hpp"
 #include <switch.h>
 #include "utils/NX.hpp"
@@ -15,6 +16,47 @@ namespace Utils::NX {
         pmshellExit();
         romfsExit();
         socketExit();
+    }
+
+    Language getSystemLanguage() {
+        // Read from settings
+        SetLanguage sl;
+        u64 l;
+        setInitialize();
+        setGetSystemLanguage(&l);
+        setMakeLanguage(l, &sl);
+        setExit();
+
+        // Return appropriate language enum
+        Language lang;
+        switch (sl) {
+            case SetLanguage_ENGB:
+            case SetLanguage_ENUS:
+                lang = Language::English;
+                break;
+
+            // No translations for these yet
+            case SetLanguage_FR:
+            case SetLanguage_FRCA:
+            case SetLanguage_DE:
+            case SetLanguage_ES:
+            case SetLanguage_IT:
+            case SetLanguage_NL:
+            case SetLanguage_PT:
+            case SetLanguage_JA:
+            case SetLanguage_RU:
+            case SetLanguage_ZHHANT:
+            case SetLanguage_ZHCN:
+            case SetLanguage_ZHHANS:
+            case SetLanguage_ZHTW:
+            case SetLanguage_KO:
+            case SetLanguage_ES419:
+            default:
+                lang = Language::Default;
+                break;
+        }
+
+        return lang;
     }
 
     bool getUserInput(Keyboard & k) {

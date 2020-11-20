@@ -4,6 +4,7 @@
 #include "nlohmann/json.hpp"
 #include <sstream>
 #include "utils/FS.hpp"
+#include "utils/NX.hpp"
 
 namespace Utils::Lang {
     // JSON object which reads and caches strings from file
@@ -40,7 +41,12 @@ namespace Utils::Lang {
     bool setLanguage(const Language l) {
         std::string path = "";
 
-        switch (l) {
+        Language lang;
+        if (l == Language::Default) {
+            lang = Utils::NX::getSystemLanguage();
+        }
+
+        switch (lang) {
             case Language::Default:
             case Language::English:
             default:
