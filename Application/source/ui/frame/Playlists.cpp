@@ -54,7 +54,7 @@ namespace Frame {
                                                       {Database::SortBy::TitleDsc, "Playlist.Sort.TitleAltDsc"_lang},
                                                       {Database::SortBy::SongsAsc, "Playlist.Sort.SongsAsc"_lang},
                                                       {Database::SortBy::SongsDsc, "Playlist.Sort.SongsDsc"_lang}};
-        this->sortMenu = new CustomOvl::SortBy("Playlist.HeadingAlt"_lang, sort, [this](Database::SortBy s) {
+        this->sortMenu = new CustomOvl::SortBy("Playlist.Sort.HeadingAlt"_lang, sort, [this](Database::SortBy s) {
             this->refreshList(s);
         });
         this->sortMenu->setBackgroundColour(this->app->theme()->popupBG());

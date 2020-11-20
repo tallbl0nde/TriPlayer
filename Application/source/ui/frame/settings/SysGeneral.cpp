@@ -80,7 +80,7 @@ namespace Frame::Settings {
         this->list->addElement(opt);
 
         // General::key_combo_prev
-        opt = new Aether::ListOption("Settings.SysGeneral.PreviousTrack"_lang, NX::comboToUnicodeString(cfg->sysKeyComboPrev(), " + "), nullptr);
+        opt = new Aether::ListOption("Settings.SysGeneral.PrevTrack"_lang, NX::comboToUnicodeString(cfg->sysKeyComboPrev(), " + "), nullptr);
         opt->setCallback([this, cfg, opt]() {
             this->showPickCombo("Settings.SysGeneral.PrevTrackCombination"_lang, opt, [cfg]() -> std::vector<NX::Button> {
                 return cfg->sysKeyComboPrev();

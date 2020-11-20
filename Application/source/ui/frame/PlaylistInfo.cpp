@@ -49,7 +49,7 @@ namespace Frame {
         this->name = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.62, 50);
         this->name->setBoxColour(this->app->theme()->muted2());
         this->name->setTextColour(this->app->theme()->FG());
-        this->name->setKeyboardHint("Playlist.Name"_lang);
+        this->name->setKeyboardHint("Playlist.Information.Name"_lang);
         this->name->setKeyboardLimit(50);
         this->name->setString(this->metadata.name);
         this->name->setKeyboardCallback([this]() {

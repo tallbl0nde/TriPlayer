@@ -15,24 +15,24 @@ namespace Frame::Settings {
         });
         opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), this->app->theme()->accent());
         this->list->addElement(opt);
-        this->addComment("Settings.AppAdvanced.AccentColourText"_lang);
+        this->addComment("Settings.AppAppearance.AccentColourText"_lang);
 
         // Appearance::auto_player_palette
-        this->addToggle("Settings.AppAdvanced.AutoPlayerPalette"_lang, [cfg]() -> bool {
+        this->addToggle("Settings.AppAppearance.AutoPlayerPalette"_lang, [cfg]() -> bool {
             return cfg->autoPlayerPalette();
         }, [cfg](bool b) {
             cfg->setAutoPlayerPalette(b);
         });
-        this->addComment("Settings.AppAdvanced.AutoPlayerPaletteText"_lang);
+        this->addComment("Settings.AppAppearance.AutoPlayerPaletteText"_lang);
         this->list->addElement(new Aether::ListSeparator());
 
         // Appearance::show_touch_controls
-        this->addToggle("Settings.AppAdvanced.ShowTouchControls"_lang, [cfg]() -> bool {
+        this->addToggle("Settings.AppAppearance.ShowTouchControls"_lang, [cfg]() -> bool {
             return cfg->showTouchControls();
         }, [cfg](bool b) {
             cfg->setShowTouchControls(b);
         });
-        this->addComment("Settings.AppAdvanced.ShowTouchControlsText"_lang);
+        this->addComment("Settings.AppAppearance.ShowTouchControlsText"_lang);
 
         // Overlays
         this->ovlList = new Aether::PopupList("");

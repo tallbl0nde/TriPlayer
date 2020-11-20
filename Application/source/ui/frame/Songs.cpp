@@ -74,7 +74,7 @@ namespace Frame {
             if (m.size() == 1) {
                 str = Utils::substituteTokens("Song.DetailsOne"_lang, Utils::secondsToHoursMins(totalSecs));
             } else {
-                str = Utils::substituteTokens("Song.DetailsCountMany"_lang, std::to_string(m.size()), Utils::secondsToHoursMins(totalSecs));
+                str = Utils::substituteTokens("Song.DetailsMany"_lang, std::to_string(m.size()), Utils::secondsToHoursMins(totalSecs));
             }
             this->subHeading->setString(str);
 

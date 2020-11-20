@@ -40,6 +40,7 @@ namespace Utils {
     template<typename... Args>
     std::string substituteTokens(std::string str, std::string token, Args... tokens) {
         str = std::regex_replace(str, std::regex("\\$\\[" + std::to_string(tokenIndex) + "]"), token);
+        tokenIndex++;
         return substituteTokens(str, tokens...);
     }
 

@@ -93,7 +93,7 @@ namespace Frame {
                                                       {Database::SortBy::AlbumDsc, "Playlist.Sort.AlbumDsc"_lang},
                                                       {Database::SortBy::LengthAsc, "Playlist.Sort.LengthAsc"_lang},
                                                       {Database::SortBy::LengthDsc, "Playlist.Sort.LengthDsc"_lang}};
-        this->sortMenu = new CustomOvl::SortBy("Playlist.Sort.heading"_lang, sort, [this](Database::SortBy s) {
+        this->sortMenu = new CustomOvl::SortBy("Playlist.Sort.Heading"_lang, sort, [this](Database::SortBy s) {
             this->refreshList(s);
         });
         this->sortMenu->setBackgroundColour(this->app->theme()->popupBG());
@@ -243,7 +243,7 @@ namespace Frame {
             b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoplaylist.png"));
             b->setIconColour(this->app->theme()->muted());
-            b->setText("Common.AddToOtherPlaylist"_lang);
+            b->setText("Playlist.AddToOtherPlaylist"_lang);
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this]() {
                 this->showAddToPlaylist([this](PlaylistID i) {

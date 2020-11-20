@@ -292,7 +292,7 @@ namespace Frame {
             for (size_t i = 0; i < md.size(); i++) {
                 CustomElm::GridItem * l = new CustomElm::GridItem(md[i].imagePath.empty() ? Path::App::DefaultArtFile : md[i].imagePath);
                 l->setMainString(md[i].name);
-                std::string str = (md[i].songCount == 1 ? "Common.Song" : Utils::substituteTokens("Common.Songs", std::to_string(md[i].songCount)));
+                std::string str = (md[i].songCount == 1 ? "Common.Song"_lang : Utils::substituteTokens("Common.Songs"_lang, std::to_string(md[i].songCount)));
                 l->setSubString(str);
                 l->setDotsColour(this->app->theme()->muted());
                 l->setTextColour(this->app->theme()->FG());

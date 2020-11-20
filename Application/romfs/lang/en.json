@@ -53,8 +53,8 @@
         "NotFound": "No albums found!",
         "Sort": {
             "Heading": "Sort Albums by",
-            "NameAsc": "Name (ascending)",
-            "NameDsc": "Name (descending)",
+            "AlbumAsc": "Name (ascending)",
+            "AlbumDsc": "Name (descending)",
             "ArtistAsc": "Artist (increasing)",
             "ArtistDsc": "Artist (decreasing)"
         }
@@ -62,6 +62,7 @@
     "Common": {
         "AddToPlaylist": "Add to Playlist",
         "AddToQueue": "Add to Queue",
+        "Apply": "Apply",
         "Back": "Back",
         "Cancel": "Cancel",
         "ChangesSaved": "Your changes have been saved. You may need to restart the application for any changes to take complete effect.",
@@ -94,6 +95,7 @@
         "ReplaceAudioDB": "Replace from TheAudioDB",
         "ReplaceFile": "Replace from Audio File",
         "ReplaceSD": "Replace from SD Card",
+        "Reset": "Reset",
         "Save": "Save",
         "SelectAudio": "Select an Audio File",
         "SelectImage": "Select an Image",

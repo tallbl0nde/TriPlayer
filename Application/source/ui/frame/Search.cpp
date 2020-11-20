@@ -112,7 +112,7 @@ namespace Frame {
             std::string img = (this->playlists[i].imagePath.empty() ? "romfs:/misc/noplaylist.png" : this->playlists[i].imagePath);
             CustomElm::GridItem * l = new CustomElm::GridItem(img);
             l->setMainString(this->playlists[i].name);
-            l->setSubString(this->playlists[i].songCount == 1 ? "Common.Song"_lang : Utils::substituteTokens("Common.Songs", std::to_string(this->playlists[i].songCount)));
+            l->setSubString(this->playlists[i].songCount == 1 ? "Common.Song"_lang : Utils::substituteTokens("Common.Songs"_lang, std::to_string(this->playlists[i].songCount)));
             l->setDotsColour(this->app->theme()->muted());
             l->setTextColour(this->app->theme()->FG());
             l->setMutedTextColour(this->app->theme()->muted());

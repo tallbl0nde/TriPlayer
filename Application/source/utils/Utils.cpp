@@ -170,8 +170,9 @@ namespace Utils {
 
     size_t tokenIndex = 1;
     std::string substituteTokens(std::string str, std::string token) {
+        str = std::regex_replace(str, std::regex("\\$\\[" + std::to_string(tokenIndex) + "]"), token);
         tokenIndex = 1;
-        return std::regex_replace(str, std::regex("\\$\\[1]"), token);
+        return str;
     }
 
     std::string truncateToDecimalPlace(std::string str, unsigned int p) {
