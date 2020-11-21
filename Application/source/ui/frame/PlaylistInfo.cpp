@@ -11,9 +11,9 @@
 
 // Default path for file browser
 #define FILE_BROWSER_ROOT "/"
-// Accepted image extensions
-static const std::vector<std::string> FILE_EXTENSIONS_AUD = {".mp3", ".MP3"};
-static const std::vector<std::string> FILE_EXTENSIONS_IMG = {".jpg", ".jpeg", ".jfif", ".png", ".JPG", ".JPEG", ".JFIF", ".PNG"};
+// Accepted image extensions (case insensitive)
+static const std::vector<std::string> FILE_EXTENSIONS_AUD = {".flac", ".mp3"};
+static const std::vector<std::string> FILE_EXTENSIONS_IMG = {".jpg", ".jpeg", ".jfif", ".png"};
 
 // This whole file/frame is a mess behind the scenes :P
 namespace Frame {
@@ -289,7 +289,11 @@ namespace Frame {
 
     void PlaylistInfo::updateImageFromTag(const std::string & path) {
         // Extract image
-        this->dlBuffer = Metadata::readArtFromFile(path, AudioFormat::MP3);
+        std::string tmp = Utils::toUppercase(Utils::Fs::getExtension(path));
+        if (tmp.length() > 1 && tmp[0] == '.') {
+            tmp.erase(0, 1);
+        }
+        this->dlBuffer = Metadata::readArtFromFile(path, audioFormatFromString(tmp));
         if (this->dlBuffer.empty()) {
             this->createInfoOverlay("Common.Error.NoArt"_lang);
             return;

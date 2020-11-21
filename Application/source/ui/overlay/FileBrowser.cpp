@@ -2,6 +2,7 @@
 #include "ui/element/listitem/File.hpp"
 #include "ui/overlay/FileBrowser.hpp"
 #include "utils/FS.hpp"
+#include "utils/Utils.hpp"
 
 // List padding
 #define PADDING 50
@@ -52,7 +53,7 @@ namespace CustomOvl {
 
             // Check if file extension is in list
             for (size_t i = 0; i < this->exts.size(); i++) {
-                if (Utils::Fs::getExtension(e.first) == this->exts[i]) {
+                if (Utils::toLowercase(Utils::Fs::getExtension(e.first)) == Utils::toLowercase(this->exts[i])) {
                     return false;
                 }
             }

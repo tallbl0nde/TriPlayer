@@ -35,6 +35,16 @@ namespace Frame::Settings {
         }
         this->list->addElement(new Aether::ListSeparator());
 
+        // Contributors heading
+        container = new Aether::Element(0, 0, 100, 30);
+        this->list->addElement(container);
+        text = new Aether::Text(container->x() + 10, container->y(), "Settings.AppAbout.Contributors"_lang, 24);
+        text->setColour(this->app->theme()->FG());
+        container->addElement(text);
+        this->addComment("Settings.AppAbout.ContributorsText"_lang);
+        this->addComment("einsteinx2: TagLib integration");
+        this->list->addElement(new Aether::ListSeparator());
+
         // Support heading
         container = new Aether::Element(0, 0, 100, 30);
         this->list->addElement(container);
@@ -66,6 +76,7 @@ namespace Frame::Settings {
         this->addComment("Splash\nCopyright © 2020 Google\nApache 2 License\nhttps://github.com/tallbl0nde/Splash");
         this->addComment("SQLite\nPublic Domain\nhttps://www.sqlite.org");
         this->addComment("SQLite-okapi-bm25\nCopyright © 2014 Radford Smith\nMIT License\nhttps://github.com/rads/sqlite-okapi-bm25");
+        this->addComment("TagLib\nLGPL 2.1 License\nhttps://github.com/taglib/taglib");
         this->addComment("zziplib\nCopyright © 2000-2020 Guido Draheim\nGPL 2 License\nhttps://github.com/gdraheim/zziplib");
     }
 }

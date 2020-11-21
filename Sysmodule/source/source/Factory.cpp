@@ -1,13 +1,13 @@
 #include <cctype>
-#include <filesystem>
 #include "source/Factory.hpp"
 #include "source/FLAC.hpp"
 #include "source/MP3.hpp"
+#include "utils/FS.hpp"
 
 namespace Source {
     Source * Factory::getSource(const std::string & path) {
         // Get extension
-        std::string ext = std::filesystem::path(path).extension();
+        std::string ext = Utils::Fs::getExtension(path);
         for (char & c : ext) {
             c = tolower(c);
         }

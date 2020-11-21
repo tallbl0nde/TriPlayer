@@ -330,7 +330,6 @@ LibraryScanner::Status LibraryScanner::processArt(std::atomic<size_t> & currentF
             if (hasImage[meta.album]) {
                 continue;
             }
-            Log::writeSuccess(meta.path);
             std::string path = this->parseAlbumArt(meta);
 
             // If the image was written to the SD Card update database
