@@ -30,11 +30,12 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	TriPlayer
 BUILD		:=	build
-INCLUDES	:=	include ../Common/include ../Common/libs/minIni/minIni/dev ../Common/libs/splash/splash/include libs/avir libs/dtl/dtl
+TL_INCLUDES :=	$(shell find libs/taglib/taglib -type d)
+INCLUDES	:=	include ../Common/include ../Common/libs/minIni/minIni/dev ../Common/libs/splash/splash/include libs/avir libs/dtl/dtl $(TL_INCLUDES)
 SOURCES		:=	source	../Common/source
 ROMFS		:=	romfs
-LIBS		:=  -lAether -lcurl -lminIni -lmpg123 -lnx -lSQLite `sdl2-config --libs` -lSDL2_ttf `freetype-config --libs` -lSDL2_gfx -lSDL2_image -lSplash -lpng -ljpeg -lwebp -lzzip
-LIBDIRS		:=	$(PORTLIBS) $(LIBNX) $(CURDIR)/libs/Aether $(CURDIR)/libs/json $(CURDIR)/../Common/libs/minIni $(CURDIR)/../Common/libs/SQLite $(CURDIR)/../Common/libs/splash
+LIBS		:=  -lAether -ltag -lcurl -lminIni -lmpg123 -lnx -lSQLite `sdl2-config --libs` -lSDL2_ttf `freetype-config --libs` -lSDL2_gfx -lSDL2_image -lSplash -lpng -ljpeg -lwebp -lzzip
+LIBDIRS		:=	$(PORTLIBS) $(LIBNX) $(CURDIR)/libs/Aether $(CURDIR)/libs/taglib $(CURDIR)/libs/json $(CURDIR)/../Common/libs/minIni $(CURDIR)/../Common/libs/SQLite $(CURDIR)/../Common/libs/splash
 
 #---------------------------------------------------------------------------------
 # Options for .nacp information
@@ -118,9 +119,15 @@ libs:
 ifeq ($(wildcard $(CURDIR)/libs/Aether/LICENSE),)
 	@$(error "'libs/Aether' missing: Please run 'git submodule update --init!")
 endif
+ifeq ($(wildcard $(CURDIR)/libs/taglib/README.md),)
+	@$(error "'libs/taglib' missing: Please run 'git submodule update --init!")
+endif
 	@echo --- Compiling Aether ---
 	@$(MAKE) -s -C $(CURDIR)/libs/Aether -f $(CURDIR)/libs/Aether/Makefile
 	@echo --- Aether Compiled! ---
+	@echo --- Compiling TagLib ---
+	@$(MAKE) -s -C $(CURDIR)/libs/taglib -f $(CURDIR)/libs/taglib.mk
+	@echo --- TagLib Compiled! ---
 
 #----------------------------------------------------------------------------------------------------------------------
 # 'clean-all' removes ALL build files
@@ -129,6 +136,9 @@ clean-all: clean
 	@echo --- Cleaning Aether ---
 	@$(MAKE) --silent -C $(CURDIR)/libs/Aether -f $(CURDIR)/libs/Aether/Makefile clean
 	@echo --- Aether Cleaned! ---
+	@echo --- Cleaning TagLib ---
+	@$(MAKE) --silent -C $(CURDIR)/libs/taglib -f $(CURDIR)/libs/taglib.mk clean
+	@echo --- TagLib Cleaned! ---
 
 #----------------------------------------------------------------------------------------------------------------------
 # 'clean' removes ALL app build files (but not libraries)
