@@ -183,6 +183,13 @@ namespace Utils {
         return str;
     }
 
+    std::string toUppercase(std::string str) {
+        for (char & c : str) {
+            c = toupper(c);
+        }
+        return str;
+    }
+
     std::string truncateToDecimalPlace(std::string str, unsigned int p) {
         size_t dec = str.find(".");
         if (dec == std::string::npos || p >= str.length() - dec) {

@@ -5,8 +5,7 @@
 #include "ui/element/TextBox.hpp"
 #include "ui/frame/Frame.hpp"
 #include "ui/overlay/FileBrowser.hpp"
-#include "utils/metadata/Metadata.hpp"
-#include "Types.hpp"
+#include "meta/Metadata.hpp"
 
 namespace Frame {
     class AlbumInfo : public Frame {
@@ -48,7 +47,7 @@ namespace Frame {
             // Functions to update frame based on type of image
             void removeImage();
             void updateImageFromDL();
-            void updateImageFromID3(const std::string &);
+            void updateImageFromTag(const std::string &);
             void updateImageFromPath(const std::string &);
 
             // Function which actually saves changes

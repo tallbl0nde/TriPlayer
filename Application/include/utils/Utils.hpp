@@ -47,6 +47,9 @@ namespace Utils {
     // Return string with all characters changed to lowercase
     std::string toLowercase(std::string);
 
+    // Return string with all characters changed to uppercase
+    std::string toUppercase(std::string);
+
     // Truncate string to given decimal places (don't use on strings without a decimal!)
     // Does nothing if outside of range or no decimal place
     std::string truncateToDecimalPlace(std::string, unsigned int);

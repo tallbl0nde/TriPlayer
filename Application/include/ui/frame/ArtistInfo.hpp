@@ -5,8 +5,7 @@
 #include "ui/element/TextBox.hpp"
 #include "ui/frame/Frame.hpp"
 #include "ui/overlay/FileBrowser.hpp"
-#include "utils/metadata/Metadata.hpp"
-#include "Types.hpp"
+#include "meta/Metadata.hpp"
 
 namespace Frame {
     class ArtistInfo : public Frame {

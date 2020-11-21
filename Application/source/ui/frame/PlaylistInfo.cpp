@@ -1,12 +1,12 @@
 #include "Application.hpp"
 #include "lang/Lang.hpp"
+#include "meta/Metadata.hpp"
 #include "Paths.hpp"
 #include "ui/element/TextBox.hpp"
 #include "ui/frame/PlaylistInfo.hpp"
 #include "ui/overlay/FileBrowser.hpp"
 #include "utils/FS.hpp"
 #include "utils/Image.hpp"
-#include "utils/MP3.hpp"
 #include "utils/Utils.hpp"
 
 // Default path for file browser
@@ -262,7 +262,7 @@ namespace Frame {
                 if (!path.empty()) {
                     switch (this->fileType) {
                         case FBType::Audio:
-                            this->updateImageFromID3(path);
+                            this->updateImageFromTag(path);
                             break;
 
                         case FBType::Image:
@@ -287,9 +287,9 @@ namespace Frame {
         this->imagePath->setString(Path::App::DefaultArtistFile);
     }
 
-    void PlaylistInfo::updateImageFromID3(const std::string & path) {
+    void PlaylistInfo::updateImageFromTag(const std::string & path) {
         // Extract image
-        this->dlBuffer = Utils::MP3::getArtFromID3(path);
+        this->dlBuffer = Metadata::readArtFromFile(path, AudioFormat::MP3);
         if (this->dlBuffer.empty()) {
             this->createInfoOverlay("Common.Error.NoArt"_lang);
             return;

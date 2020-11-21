@@ -2,6 +2,7 @@
 #define UTILS_METADATA_HPP
 
 #include <string>
+#include "Types.hpp"
 #include <vector>
 
 namespace Metadata {
@@ -20,6 +21,14 @@ namespace Metadata {
     // Searches for an artist image given the artist's name
     // Accepts name, buffer to fill with image, int to fill with ID
     DownloadResult downloadArtistImage(const std::string &, std::vector<unsigned char> &, int &);
+
+    // Extracts appropriate album art from the given file
+    // Returns an empty vector if no art is found
+    std::vector<unsigned char> readArtFromFile(const std::string &, const AudioFormat);
+
+    // Extracts metadata from the specified file
+    // Returned ID is -1 on success, -2 on success but not enough tags, -3 on fatal error
+    Song readFromFile(const std::string &, const AudioFormat);
 };
 
 #endif

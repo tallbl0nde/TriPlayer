@@ -9,7 +9,6 @@
 #include "ui/screen/Update.hpp"
 #include "Updater.hpp"
 #include "utils/Curl.hpp"
-#include "utils/MP3.hpp"
 #include "utils/NX.hpp"
 
 // Time in seconds to wait before checking for an update automatically

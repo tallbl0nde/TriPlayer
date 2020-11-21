@@ -3,11 +3,10 @@
 #include <future>
 #include "LibraryScanner.hpp"
 #include "Log.hpp"
+#include "meta/Metadata.hpp"
 #include "Paths.hpp"
-#include "utils/FLAC.hpp"
 #include "utils/FS.hpp"
 #include "utils/Image.hpp"
-#include "utils/MP3.hpp"
 #include "utils/NX.hpp"
 #include "utils/Timer.hpp"
 #include "utils/Utils.hpp"
@@ -30,19 +29,7 @@ LibraryScanner::LibraryScanner(const SyncDatabase & db, const std::string & path
 
 std::string LibraryScanner::parseAlbumArt(const Metadata::Song & meta) {
     // First attempt to extract image from file
-    std::vector<unsigned char> image;
-    switch (meta.format) {
-        case AudioFormat::FLAC:
-            image = Utils::FLAC::getArt(meta.path);
-            break;
-
-        case AudioFormat::MP3:
-            image = Utils::MP3::getArtFromID3(meta.path);
-            break;
-
-        default:
-            break;
-    }
+    std::vector<unsigned char> image = Metadata::readArtFromFile(meta.path, meta.format);
     if (image.empty()) {
         return "";
     }
@@ -72,21 +59,7 @@ std::string LibraryScanner::parseAlbumArt(const Metadata::Song & meta) {
 
 LibraryScanner::Status LibraryScanner::parseFileAdd(const FileTuple & file) {
     // Read tags and data from file
-    Metadata::Song meta;
-    meta.ID = -3;
-    switch (file.format) {
-        case AudioFormat::FLAC:
-            meta = Utils::FLAC::getInfo(file.path);
-            break;
-
-        case AudioFormat::MP3:
-            meta = Utils::MP3::getInfoFromID3(file.path);
-            break;
-
-        default:
-            break;
-    }
-
+    Metadata::Song meta = Metadata::readFromFile(file.path, file.format);
     if (meta.ID == -3) {
         Log::writeError("[SCAN] [ADD] Failed to parse file: " + file.path);
         return Status::ErrUnknown;
@@ -102,21 +75,7 @@ LibraryScanner::Status LibraryScanner::parseFileAdd(const FileTuple & file) {
 
 LibraryScanner::Status LibraryScanner::parseFileUpdate(const FileTuple & file) {
     // Read new tags and data from file
-    Metadata::Song newMeta;
-    newMeta.ID = -3;
-    switch (file.format) {
-        case AudioFormat::FLAC:
-            newMeta = Utils::FLAC::getInfo(file.path);
-            break;
-
-        case AudioFormat::MP3:
-            newMeta = Utils::MP3::getInfoFromID3(file.path);
-            break;
-
-        default:
-            break;
-    }
-
+    Metadata::Song newMeta = Metadata::readFromFile(file.path, file.format);
     if (newMeta.ID == -3) {
         Log::writeError("[SCAN] [UPDATE] Failed to parse file: " + file.path);
         return Status::ErrUnknown;
@@ -371,6 +330,7 @@ LibraryScanner::Status LibraryScanner::processArt(std::atomic<size_t> & currentF
             if (hasImage[meta.album]) {
                 continue;
             }
+            Log::writeSuccess(meta.path);
             std::string path = this->parseAlbumArt(meta);
 
             // If the image was written to the SD Card update database

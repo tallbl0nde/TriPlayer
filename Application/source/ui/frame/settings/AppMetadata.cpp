@@ -5,7 +5,7 @@
 #include "ui/overlay/ProgressBox.hpp"
 #include "utils/FS.hpp"
 #include "utils/Image.hpp"
-#include "utils/metadata/Metadata.hpp"
+#include "meta/Metadata.hpp"
 #include "utils/Utils.hpp"
 
 namespace Frame::Settings {
