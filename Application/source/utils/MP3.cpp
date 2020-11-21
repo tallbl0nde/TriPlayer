@@ -57,6 +57,7 @@ namespace Utils::MP3 {
     Metadata::Song getInfoFromID3(std::string path) {
         // Default info to return
         Metadata::Song m;
+        m.format = AudioFormat::MP3;
         m.ID = -3;
         m.title = std::filesystem::path(path).stem();      // Title defaults to file name
         m.artist = "Unknown Artist";                       // Artist defaults to unknown
@@ -93,7 +94,7 @@ namespace Utils::MP3 {
                     if (!discNumberList.isEmpty()) {
                         TagLib::String discNumber = discNumberList.front()->toString();
                         if (!discNumber.isEmpty()) {
-                            // NOTE: This correctly handles cases where the format is "1/2" rather than "1". 
+                            // NOTE: This correctly handles cases where the format is "1/2" rather than "1".
                             //       In both cases, it will return 1.
                             m.discNumber = discNumber.toInt();
                         }

@@ -10,7 +10,7 @@
 #include "utils/Utils.hpp"
 
 // Version of the database (database begins with zero from 'template', so this started at 1)
-#define DB_VERSION 6
+#define DB_VERSION 7
 // Maximum number of spellfixed words to allow per word (i.e. pick the top x words)
 #define SPELLFIX_LIMIT 6
 // Location of template file
@@ -159,6 +159,14 @@ bool Database::migrate() {
                     break;
                 }
                 Log::writeSuccess("[DB] Migrated to version 6");
+
+            case 6:
+                err = Migration::migrateTo7(this->db);
+                if (!err.empty()) {
+                    err = "Migration 7: " + err;
+                    break;
+                }
+                Log::writeSuccess("[DB] Migrated to version 7");
         }
     }
 
@@ -945,7 +953,7 @@ std::vector<Metadata::PlaylistSong> Database::getSongMetadataForPlaylist(Playlis
     }
 
     // Create a Metadata::Song for each entry given the playlist
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified, PlaylistSongs.rowid FROM PlaylistSongs JOIN Songs ON Songs.id = PlaylistSongs.song_id JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE PlaylistSongs.playlist_id = ? ORDER BY " + orderBy + ";");
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.format, Songs.modified, PlaylistSongs.rowid FROM PlaylistSongs JOIN Songs ON Songs.id = PlaylistSongs.song_id JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE PlaylistSongs.playlist_id = ? ORDER BY " + orderBy + ";");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
@@ -955,6 +963,7 @@ std::vector<Metadata::PlaylistSong> Database::getSongMetadataForPlaylist(Playlis
     while (ok && this->db->hasRow()) {
         Metadata::Song m;
         int tmp;
+        std::string tmpStr;
         ok = this->db->getInt(0, m.ID);
         ok = keepFalse(ok, this->db->getString(1, m.title));
         ok = keepFalse(ok, this->db->getString(2, m.artist));
@@ -969,9 +978,11 @@ std::vector<Metadata::PlaylistSong> Database::getSongMetadataForPlaylist(Playlis
         m.plays = tmp;
         ok = keepFalse(ok, this->db->getBool(8, m.favourite));
         ok = keepFalse(ok, this->db->getString(9, m.path));
-        ok = keepFalse(ok, this->db->getInt(10, tmp));
-        m.modified = tmp;
+        ok = keepFalse(ok, this->db->getString(10, tmpStr));
+        m.format = audioFormatFromString(tmpStr);
         ok = keepFalse(ok, this->db->getInt(11, tmp));
+        m.modified = tmp;
+        ok = keepFalse(ok, this->db->getInt(12, tmp));
 
         // Push back PlaylistSong struct if all successful
         if (ok) {
@@ -1049,15 +1060,16 @@ bool Database::addSong(Metadata::Song m) {
     }
 
     // Finally add song
-    ok = this->db->prepareQuery("INSERT INTO Songs (path, modified, artist_id, album_id, title, duration, track, disc) VALUES (?, ?, (SELECT id FROM Artists WHERE name = ?), (SELECT id FROM Albums WHERE name = ?), ?, ?, ?, ?);");
+    ok = this->db->prepareQuery("INSERT INTO Songs (path, format, modified, artist_id, album_id, title, duration, track, disc) VALUES (?, ?, (SELECT id FROM Artists WHERE name = ?), (SELECT id FROM Albums WHERE name = ?), ?, ?, ?, ?);");
     ok = keepFalse(ok, this->db->bindString(0, m.path));
-    ok = keepFalse(ok, this->db->bindInt(1, m.modified));
-    ok = keepFalse(ok, this->db->bindString(2, m.artist));
-    ok = keepFalse(ok, this->db->bindString(3, m.album));
-    ok = keepFalse(ok, this->db->bindString(4, m.title));
-    ok = keepFalse(ok, this->db->bindInt(5, m.duration));
-    ok = keepFalse(ok, this->db->bindInt(6, m.trackNumber));
-    ok = keepFalse(ok, this->db->bindInt(7, m.discNumber));
+    ok = keepFalse(ok, this->db->bindString(1, audioFormatToString(m.format)));
+    ok = keepFalse(ok, this->db->bindInt(2, m.modified));
+    ok = keepFalse(ok, this->db->bindString(3, m.artist));
+    ok = keepFalse(ok, this->db->bindString(4, m.album));
+    ok = keepFalse(ok, this->db->bindString(5, m.title));
+    ok = keepFalse(ok, this->db->bindInt(6, m.duration));
+    ok = keepFalse(ok, this->db->bindInt(7, m.trackNumber));
+    ok = keepFalse(ok, this->db->bindInt(8, m.discNumber));
     if (!ok) {
         this->setErrorMsg("[addSong] An error occurred while preparing the statement");
         return false;
@@ -1095,7 +1107,7 @@ bool Database::updateSong(Metadata::Song m) {
     }
 
     // Now update relevant fields
-    ok = this->db->prepareQuery("UPDATE Songs SET modified = ?, artist_id = (SELECT id FROM Artists WHERE name = ?), album_id = (SELECT id FROM Albums WHERE name = ?), title = ?, track = ?, disc = ?, duration = ?, plays = ?, favourite = ?, path = ? WHERE id = ?;");
+    ok = this->db->prepareQuery("UPDATE Songs SET modified = ?, artist_id = (SELECT id FROM Artists WHERE name = ?), album_id = (SELECT id FROM Albums WHERE name = ?), title = ?, track = ?, disc = ?, duration = ?, plays = ?, favourite = ?, path = ?, format = ? WHERE id = ?;");
     ok = keepFalse(ok, this->db->bindInt(0, m.modified));
     ok = keepFalse(ok, this->db->bindString(1, m.artist));
     ok = keepFalse(ok, this->db->bindString(2, m.album));
@@ -1106,7 +1118,8 @@ bool Database::updateSong(Metadata::Song m) {
     ok = keepFalse(ok, this->db->bindInt(7, m.plays));
     ok = keepFalse(ok, this->db->bindBool(8, m.favourite));
     ok = keepFalse(ok, this->db->bindString(9, m.path));
-    ok = keepFalse(ok, this->db->bindInt(10, m.ID));
+    ok = keepFalse(ok, this->db->bindString(10, audioFormatToString(m.format)));
+    ok = keepFalse(ok, this->db->bindInt(11, m.ID));
     if (!ok) {
         this->setErrorMsg("[updateSong] An error occurred while preparing the statement");
         return false;
@@ -1206,7 +1219,7 @@ std::vector<Metadata::Song> Database::getAllSongMetadata(Database::SortBy sort) 
     }
 
     // Create a Metadata::Song for each entry
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id ORDER BY " + orderBy + ";");
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.format, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id ORDER BY " + orderBy + ";");
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
         this->setErrorMsg("[getAllSongInfo] Unable to query for all songs");
@@ -1215,6 +1228,7 @@ std::vector<Metadata::Song> Database::getAllSongMetadata(Database::SortBy sort) 
     while (ok && this->db->hasRow()) {
         Metadata::Song m;
         int tmp;
+        std::string tmpStr;
         ok = this->db->getInt(0, m.ID);
         ok = keepFalse(ok, this->db->getString(1, m.title));
         ok = keepFalse(ok, this->db->getString(2, m.artist));
@@ -1229,7 +1243,9 @@ std::vector<Metadata::Song> Database::getAllSongMetadata(Database::SortBy sort) 
         m.plays = tmp;
         ok = keepFalse(ok, this->db->getBool(8, m.favourite));
         ok = keepFalse(ok, this->db->getString(9, m.path));
-        ok = keepFalse(ok, this->db->getInt(10, tmp));
+        ok = keepFalse(ok, this->db->getString(10, tmpStr));
+        m.format = audioFormatFromString(tmpStr);
+        ok = keepFalse(ok, this->db->getInt(11, tmp));
         m.modified = tmp;
 
         if (ok) {
@@ -1252,7 +1268,7 @@ std::vector<Metadata::Song> Database::getSongMetadataForAlbum(AlbumID id) {
 
     // Create a Metadata::Song for each entry given the album (sorted)
     // Note that 0's are treated as 9999's so they are at the end (yes this means it won't always be at the end but no album has 9999 discs or 9999 tracks)
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.album_id = ? ORDER BY CASE disc WHEN 0 THEN 9999 ELSE disc END, CASE track WHEN 0 THEN 9999 ELSE track END, title;");
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.format, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.album_id = ? ORDER BY CASE disc WHEN 0 THEN 9999 ELSE disc END, CASE track WHEN 0 THEN 9999 ELSE track END, title;");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
@@ -1262,6 +1278,7 @@ std::vector<Metadata::Song> Database::getSongMetadataForAlbum(AlbumID id) {
     while (ok && this->db->hasRow()) {
         Metadata::Song m;
         int tmp;
+        std::string tmpStr;
         ok = this->db->getInt(0, m.ID);
         ok = keepFalse(ok, this->db->getString(1, m.title));
         ok = keepFalse(ok, this->db->getString(2, m.artist));
@@ -1276,7 +1293,9 @@ std::vector<Metadata::Song> Database::getSongMetadataForAlbum(AlbumID id) {
         m.plays = tmp;
         ok = keepFalse(ok, this->db->getBool(8, m.favourite));
         ok = keepFalse(ok, this->db->getString(9, m.path));
-        ok = keepFalse(ok, this->db->getInt(10, tmp));
+        ok = keepFalse(ok, this->db->getString(10, tmpStr));
+        m.format = audioFormatFromString(tmpStr);
+        ok = keepFalse(ok, this->db->getInt(11, tmp));
         m.modified = tmp;
 
         if (ok) {
@@ -1298,7 +1317,7 @@ std::vector<Metadata::Song> Database::getSongMetadataForArtist(ArtistID id) {
     }
 
     // Create a Metadata::Song for each entry given the artist
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.artist_id = ? ORDER BY Songs.title;");
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.format, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.artist_id = ? ORDER BY Songs.title;");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
@@ -1308,6 +1327,7 @@ std::vector<Metadata::Song> Database::getSongMetadataForArtist(ArtistID id) {
     while (ok && this->db->hasRow()) {
         Metadata::Song m;
         int tmp;
+        std::string tmpStr;
         ok = this->db->getInt(0, m.ID);
         ok = keepFalse(ok, this->db->getString(1, m.title));
         ok = keepFalse(ok, this->db->getString(2, m.artist));
@@ -1322,7 +1342,9 @@ std::vector<Metadata::Song> Database::getSongMetadataForArtist(ArtistID id) {
         m.plays = tmp;
         ok = keepFalse(ok, this->db->getBool(8, m.favourite));
         ok = keepFalse(ok, this->db->getString(9, m.path));
-        ok = keepFalse(ok, this->db->getInt(10, tmp));
+        ok = keepFalse(ok, this->db->getString(10, tmpStr));
+        m.format = audioFormatFromString(tmpStr);
+        ok = keepFalse(ok, this->db->getInt(11, tmp));
         m.modified = tmp;
 
         if (ok) {
@@ -1345,7 +1367,7 @@ Metadata::Song Database::getSongMetadataForID(SongID id) {
     }
 
     // Query for song info
-    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.ID = ?;");
+    bool ok = this->db->prepareQuery("SELECT Songs.ID, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.format, Songs.modified FROM Songs JOIN Albums ON Albums.id = Songs.album_id JOIN Artists ON Artists.id = Songs.artist_id WHERE Songs.ID = ?;");
     ok = keepFalse(ok, this->db->bindInt(0, id));
     ok = keepFalse(ok, this->db->executeQuery());
     if (!ok) {
@@ -1353,6 +1375,7 @@ Metadata::Song Database::getSongMetadataForID(SongID id) {
         return m;
     }
     int tmp;
+    std::string tmpStr;
     ok = this->db->getInt(0, m.ID);
     ok = keepFalse(ok, this->db->getString(1, m.title));
     ok = keepFalse(ok, this->db->getString(2, m.artist));
@@ -1367,7 +1390,9 @@ Metadata::Song Database::getSongMetadataForID(SongID id) {
     m.plays = tmp;
     ok = keepFalse(ok, this->db->getBool(8, m.favourite));
     ok = keepFalse(ok, this->db->getString(9, m.path));
-    ok = keepFalse(ok, this->db->getInt(10, tmp));
+    ok = keepFalse(ok, this->db->getString(10, tmpStr));
+    m.format = audioFormatFromString(tmpStr);
+    ok = keepFalse(ok, this->db->getInt(11, tmp));
     m.modified = tmp;
 
     if (!ok) {
@@ -1749,7 +1774,7 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str, int limit) {
     // Iterate over each phrase and store results
     for (size_t i = 0; i < phrases.size(); i++) {
         // Create query and optionally append LIMIT
-        std::string query = "SELECT Songs.id, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.modified FROM Songs JOIN FtsSongs ON Songs.title = FtsSongs.title JOIN Artists ON artist_id = Artists.id JOIN Albums ON album_id = Albums.id WHERE FtsSongs MATCH ? ORDER BY okapi_bm25(matchinfo(FtsSongs, 'pcxnal'), 0) DESC, Songs.title";
+        std::string query = "SELECT Songs.id, Songs.title, Artists.name, Albums.name, Songs.track, Songs.disc, Songs.duration, Songs.plays, Songs.favourite, Songs.path, Songs.format, Songs.modified FROM Songs JOIN FtsSongs ON Songs.title = FtsSongs.title JOIN Artists ON artist_id = Artists.id JOIN Albums ON album_id = Albums.id WHERE FtsSongs MATCH ? ORDER BY okapi_bm25(matchinfo(FtsSongs, 'pcxnal'), 0) DESC, Songs.title";
         query += (limit >= 0 ? " LIMIT ?;" : ";");
         bool ok = this->db->prepareQuery(query);
         std::string str = phrases[i];
@@ -1765,6 +1790,7 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str, int limit) {
 
         // Iterate over returned rows
         int tmp;
+        std::string tmpStr;
         while (ok && this->db->hasRow()) {
             Metadata::Song m;
             ok = this->db->getInt(0, m.ID);
@@ -1791,7 +1817,9 @@ std::vector<Metadata::Song> Database::searchSongs(std::string str, int limit) {
             m.plays = tmp;
             ok = keepFalse(ok, this->db->getBool(8, m.favourite));
             ok = keepFalse(ok, this->db->getString(9, m.path));
-            ok = keepFalse(ok, this->db->getInt(10, tmp));
+            ok = keepFalse(ok, this->db->getString(10, tmpStr));
+            m.format = audioFormatFromString(tmpStr);
+            ok = keepFalse(ok, this->db->getInt(11, tmp));
             m.modified = tmp;
 
             if (ok) {

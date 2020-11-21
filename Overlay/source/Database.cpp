@@ -4,7 +4,7 @@
 #include "SQLite.hpp"
 
 // Version of the database (database begins with zero from 'template', so this started at 1)
-#define DB_VERSION 6
+#define DB_VERSION 7
 
 // Custom boolean 'operator' which instead of 'keeping' true, will 'keep' false
 bool keepFalse(const bool & a, const bool & b) {

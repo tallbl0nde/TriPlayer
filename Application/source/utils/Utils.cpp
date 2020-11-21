@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <ctime>
 #include "utils/Utils.hpp"
@@ -172,6 +173,13 @@ namespace Utils {
     std::string substituteTokens(std::string str, std::string token) {
         str = std::regex_replace(str, std::regex("\\$\\[" + std::to_string(tokenIndex) + "]"), token);
         tokenIndex = 1;
+        return str;
+    }
+
+    std::string toLowercase(std::string str) {
+        for (char & c : str) {
+            c = tolower(c);
+        }
         return str;
     }
 
