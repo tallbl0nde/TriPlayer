@@ -9,7 +9,7 @@ namespace Migration {
         }
 
         // As every entry is an .mp3 at this point, set this value to every row
-        ok = db->prepareAndExecuteQuery("UPDATE Songs SET audio_format = 'MP3';");
+        ok = db->prepareAndExecuteQuery("UPDATE Songs SET format = 'MP3';");
         if (!ok) {
             return "Unable to initialize all rows' format to 'MP3'";
         }

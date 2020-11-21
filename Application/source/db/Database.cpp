@@ -1060,7 +1060,7 @@ bool Database::addSong(Metadata::Song m) {
     }
 
     // Finally add song
-    ok = this->db->prepareQuery("INSERT INTO Songs (path, format, modified, artist_id, album_id, title, duration, track, disc) VALUES (?, ?, (SELECT id FROM Artists WHERE name = ?), (SELECT id FROM Albums WHERE name = ?), ?, ?, ?, ?);");
+    ok = this->db->prepareQuery("INSERT INTO Songs (path, format, modified, artist_id, album_id, title, duration, track, disc) VALUES (?, ?, ?, (SELECT id FROM Artists WHERE name = ?), (SELECT id FROM Albums WHERE name = ?), ?, ?, ?, ?);");
     ok = keepFalse(ok, this->db->bindString(0, m.path));
     ok = keepFalse(ok, this->db->bindString(1, audioFormatToString(m.format)));
     ok = keepFalse(ok, this->db->bindInt(2, m.modified));
