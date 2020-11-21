@@ -19,3 +19,6 @@
 [submodule "Common/libs/minIni/minIni"]
 	path = Common/libs/minIni/minIni
 	url = https://github.com/compuphase/minIni
+[submodule "Application/libs/taglib"]
+	path = Application/libs/taglib
+	url = https://github.com/taglib/taglib.git

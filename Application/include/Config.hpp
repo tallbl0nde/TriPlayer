@@ -7,6 +7,7 @@
 #include "utils/nx/Button.hpp"
 
 // Forward declarations as we only need the types here
+enum class Language;
 class minIni;
 
 // The config class interacts with the config file stored on
@@ -30,6 +31,7 @@ class Config {
 
         Theme::Colour accentColour_;
         bool autoPlayerPalette_;
+        Language language_;
         bool showTouchControls_;
 
         bool scanOnLaunch_;
@@ -82,6 +84,10 @@ class Config {
         // Accent colour
         Theme::Colour accentColour();
         bool setAccentColour(Theme::Colour);
+
+        // Language
+        Language language();
+        bool setLanguage(const Language);
 
         // Auto player palette
         bool autoPlayerPalette();

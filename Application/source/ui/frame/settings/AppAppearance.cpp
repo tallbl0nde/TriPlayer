@@ -1,4 +1,6 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
+#include "lang/Language.hpp"
 #include "ui/frame/settings/AppAppearance.hpp"
 
 namespace Frame::Settings {
@@ -8,35 +10,45 @@ namespace Frame::Settings {
         Aether::ListOption * opt;
 
         // Appearance::accent_colour
-        opt = new Aether::ListOption("Accent Colour", Theme::colourToString(cfg->accentColour()), nullptr);
+        opt = new Aether::ListOption("Settings.AppAppearance.AccentColour"_lang, Theme::colourToString(cfg->accentColour()), nullptr);
         opt->setCallback([this, opt]() {
             this->showAccentColourList(opt);
         });
         opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), this->app->theme()->accent());
         this->list->addElement(opt);
-        this->addComment("Change the accent used throughout the application.");
+        this->addComment("Settings.AppAppearance.AccentColourText"_lang);
 
         // Appearance::auto_player_palette
-        this->addToggle("Automatic Player Palette", [cfg]() -> bool {
+        this->addToggle("Settings.AppAppearance.AutoPlayerPalette"_lang, [cfg]() -> bool {
             return cfg->autoPlayerPalette();
         }, [cfg](bool b) {
             cfg->setAutoPlayerPalette(b);
         });
-        this->addComment("Adjust the colour palette on the fullscreen player to match colours in the current song's album art. The default colour scheme will be used if this is disabled.");
+        this->addComment("Settings.AppAppearance.AutoPlayerPaletteText"_lang);
+        this->list->addElement(new Aether::ListSeparator());
+
+        // Appearance::language
+        opt = new Aether::ListOption("Settings.AppAppearance.Language"_lang, Utils::Lang::languageToString(cfg->language()), nullptr);
+        opt->setCallback([this, opt]() {
+            this->showLanguageList(opt);
+        });
+        opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), this->app->theme()->accent());
+        this->list->addElement(opt);
+        this->addComment("Settings.AppAppearance.LanguageText"_lang);
         this->list->addElement(new Aether::ListSeparator());
 
         // Appearance::show_touch_controls
-        this->addToggle("Show Touch Controls", [cfg]() -> bool {
+        this->addToggle("Settings.AppAppearance.ShowTouchControls"_lang, [cfg]() -> bool {
             return cfg->showTouchControls();
         }, [cfg](bool b) {
             cfg->setShowTouchControls(b);
         });
-        this->addComment("Show/hide the touch controls in the top left of the application. This is solely for appearance, you may consider disabling this if you mainly use the controller to navigate.");
+        this->addComment("Settings.AppAppearance.ShowTouchControlsText"_lang);
 
         // Overlays
         this->ovlList = new Aether::PopupList("");
-        this->ovlList->setBackLabel("Back");
-        this->ovlList->setOKLabel("OK");
+        this->ovlList->setBackLabel("Common.Back"_lang);
+        this->ovlList->setOKLabel("Common.OK"_lang);
         this->ovlList->setBackgroundColour(this->app->theme()->popupBG());
         this->ovlList->setHighlightColour(this->app->theme()->accent());
         this->ovlList->setLineColour(this->app->theme()->muted());
@@ -45,7 +57,7 @@ namespace Frame::Settings {
     }
 
     void AppAppearance::showAccentColourList(Aether::ListOption * opt) {
-        this->ovlList->setTitleLabel("Accent Colour");
+        this->ovlList->setTitleLabel("Settings.AppAppearance.AccentColour"_lang);
         this->ovlList->removeEntries();
 
         // Get colours for creation
@@ -68,6 +80,31 @@ namespace Frame::Settings {
                 this->app->setHighlightAnimation(nullptr);
                 this->app->updateScreenTheme();
             }, current == col);
+        }
+
+        this->app->addOverlay(this->ovlList);
+    }
+
+    void AppAppearance::showLanguageList(Aether::ListOption * opt) {
+        this->ovlList->setTitleLabel("Settings.AppAppearance.Language"_lang);
+        this->ovlList->removeEntries();
+
+        // Get current language (for tick)
+        Language current = this->app->config()->language();
+
+        // Add entries
+        for (size_t i = 0; i < static_cast<int>(Language::Total); i++) {
+            Language l = static_cast<Language>(i);
+            std::string str = Utils::Lang::languageToString(l);
+            this->ovlList->addEntry(str, [this, opt, str, l]() {
+                // Update config
+                this->app->config()->setLanguage(l);
+                Utils::Lang::setLanguage(this->app->config()->language());
+
+                // Reset back to load state
+                this->app->popScreen();
+                this->app->setScreen(Main::ScreenID::Splash);
+            }, current == l);
         }
 
         this->app->addOverlay(this->ovlList);

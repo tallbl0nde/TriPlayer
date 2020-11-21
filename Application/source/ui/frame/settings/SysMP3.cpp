@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "ui/frame/settings/SysMP3.hpp"
 
 namespace Frame::Settings {
@@ -7,26 +8,26 @@ namespace Frame::Settings {
         Config * cfg = this->app->config();
 
         // MP3::accurate_seek
-        this->addToggle("Accurate Seek", [cfg]() -> bool {
+        this->addToggle("Settings.SysMP3.AccurateSeek"_lang, [cfg]() -> bool {
             return cfg->sysMP3AccurateSeek();
         }, [this, cfg](bool b) {
             cfg->setSysMP3AccurateSeek(b);
             this->app->sysmodule()->sendReloadConfig();
         });
-        this->addComment("This is recommended to be disabled as accurate seeking is quite slow. 'Fuzzy' seeking isn't 100% accurate but is good enough for most tracks.");
+        this->addComment("Settings.SysMP3.AccurateSeekText"_lang);
 
         // Equalizer
-        this->addButton("Equalizer", [this]() {
+        this->addButton("Settings.SysMP3.Equalizer"_lang, [this]() {
             this->showEqualizer();
         });
-        this->addComment("Note: There may be a slight delay before any changes take effect.");
+        this->addComment("Settings.SysMP3.EqualizerText"_lang);
 
         // Setup overlay
-        this->ovlEQ = new CustomOvl::Equalizer("Equalizer");
-        this->ovlEQ->setApplyLabel("Apply");
-        this->ovlEQ->setBackLabel("Back");
-        this->ovlEQ->setOKLabel("OK");
-        this->ovlEQ->setResetLabel("Reset");
+        this->ovlEQ = new CustomOvl::Equalizer("Settings.SysMP3.Equalizer"_lang);
+        this->ovlEQ->setApplyLabel("Common.Apply"_lang);
+        this->ovlEQ->setBackLabel("Common.Back"_lang);
+        this->ovlEQ->setOKLabel("Common.OK"_lang);
+        this->ovlEQ->setResetLabel("Common.Reset"_lang);
         this->ovlEQ->setBackgroundColour(this->app->theme()->popupBG());
         this->ovlEQ->setHeadingColour(this->app->theme()->FG());
         this->ovlEQ->setLineColour(this->app->theme()->muted());

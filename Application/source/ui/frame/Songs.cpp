@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/element/listitem/Song.hpp"
 #include "ui/frame/Songs.hpp"
@@ -8,19 +9,19 @@
 
 namespace Frame {
     Songs::Songs(Main::Application * a) : Frame(a) {
-        this->heading->setString("Songs");
+        this->heading->setString("Song.Songs"_lang);
         this->createList(Database::SortBy::TitleAsc);
 
         // Set up sort overlay
-        std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::TitleAsc, "Title (ascending)"},
-                                                      {Database::SortBy::TitleDsc, "Title (descending)"},
-                                                      {Database::SortBy::ArtistAsc, "Artist (ascending)"},
-                                                      {Database::SortBy::ArtistDsc, "Artist (descending)"},
-                                                      {Database::SortBy::AlbumAsc, "Album (ascending)"},
-                                                      {Database::SortBy::AlbumDsc, "Album (descending)"},
-                                                      {Database::SortBy::LengthAsc, "Length (ascending)"},
-                                                      {Database::SortBy::LengthDsc, "Length (descending)"}};
-        this->sortMenu = new CustomOvl::SortBy("Sort Songs by", sort, [this](Database::SortBy s) {
+        std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::TitleAsc, "Song.Sort.TitleAsc"_lang},
+                                                      {Database::SortBy::TitleDsc, "Song.Sort.TitleDsc"_lang},
+                                                      {Database::SortBy::ArtistAsc, "Song.Sort.ArtistAsc"_lang},
+                                                      {Database::SortBy::ArtistDsc, "Song.Sort.ArtistDsc"_lang},
+                                                      {Database::SortBy::AlbumAsc, "Song.Sort.AlbumAsc"_lang},
+                                                      {Database::SortBy::AlbumDsc, "Song.Sort.AlbumDsc"_lang},
+                                                      {Database::SortBy::LengthAsc, "Song.Sort.LengthAsc"_lang},
+                                                      {Database::SortBy::LengthDsc, "Song.Sort.LengthDsc"_lang}};
+        this->sortMenu = new CustomOvl::SortBy("Song.Sort.Heading"_lang, sort, [this](Database::SortBy s) {
             this->createList(s);
         });
         this->sortMenu->setBackgroundColour(this->app->theme()->popupBG());
@@ -55,7 +56,7 @@ namespace Frame {
                 l->setMoreColour(this->app->theme()->muted());
                 l->setTextColour(this->app->theme()->FG());
                 l->setCallback([this, i](){
-                    this->playNewQueue("Your Songs", this->songIDs, i, false);
+                    this->playNewQueue("Song.YourSongs"_lang, this->songIDs, i, false);
                 });
                 SongID id = m[i].ID;
                 l->setMoreCallback([this, id]() {
@@ -69,15 +70,19 @@ namespace Frame {
             }
 
             // Set subheading
-            std::string str = std::to_string(m.size()) + (m.size() == 1 ? " track" : " tracks");
-            str += " | " + Utils::secondsToHoursMins(totalSecs);
+            std::string str;
+            if (m.size() == 1) {
+                str = Utils::substituteTokens("Song.DetailsOne"_lang, Utils::secondsToHoursMins(totalSecs));
+            } else {
+                str = Utils::substituteTokens("Song.DetailsMany"_lang, std::to_string(m.size()), Utils::secondsToHoursMins(totalSecs));
+            }
             this->subHeading->setString(str);
 
         // Show message if no songs
         } else {
             this->list->setHidden(true);
             this->subHeading->setHidden(true);
-            Aether::Text * emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "No songs found in /music!", 24);
+            Aether::Text * emptyMsg = new Aether::Text(0, this->list->y() + this->list->h()*0.4, "Song.NotFound"_lang, 24);
             emptyMsg->setColour(this->app->theme()->FG());
             emptyMsg->setX(this->x() + (this->w() - emptyMsg->w())/2);
             this->addElement(emptyMsg);
@@ -105,7 +110,7 @@ namespace Frame {
         CustomElm::MenuButton * b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Add to Queue");
+        b->setText("Common.AddToQueue"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
             this->app->sysmodule()->sendAddToSubQueue(id);
@@ -117,7 +122,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoplaylist.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Add to Playlist");
+        b->setText("Common.AddToPlaylist"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
             this->showAddToPlaylist([this, id](PlaylistID i) {
@@ -134,7 +139,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/user.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Go to Artist");
+        b->setText("Common.GoToArtist"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
             ArtistID a = this->app->database()->getArtistIDForSong(id);
@@ -149,7 +154,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/disc.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Go to Album");
+        b->setText("Common.GoToAlbum"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
             AlbumID a = this->app->database()->getAlbumIDForSong(id);
@@ -165,7 +170,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/info.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("View Information");
+        b->setText("Common.ViewInformation"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
             this->changeFrame(Type::SongInfo, Action::Push, id);

@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "ui/frame/Frame.hpp"
 #include "ui/frame/settings/AppGeneral.hpp"
 #include "utils/NX.hpp"
@@ -8,19 +9,19 @@ static std::string frameToString(Frame::Type f) {
     std::string str = "?";
     switch (f) {
         case Frame::Type::Playlists:
-            str = "Playlists";
+            str = "Playlist.Playlists"_lang;
             break;
 
         case Frame::Type::Albums:
-            str = "Albums";
+            str = "Album.Albums"_lang;
             break;
 
         case Frame::Type::Artists:
-            str = "Artists";
+            str = "Artist.Artists"_lang;
             break;
 
         case Frame::Type::Songs:
-            str = "Songs";
+            str = "Song.Songs"_lang;
             break;
 
         default:
@@ -36,53 +37,53 @@ namespace Frame::Settings {
         Aether::ListOption * opt;
 
         // General::confirm_clear_queue
-        this->addToggle("Confirm Clearing Queue", [cfg]() -> bool {
+        this->addToggle("Settings.AppGeneral.ConfirmClearingQueue"_lang, [cfg]() -> bool {
             return cfg->confirmClearQueue();
         }, [cfg](bool b) {
             cfg->setConfirmClearQueue(b);
         });
-        this->addComment("Show a dialog to confirm any actions that will clear the current play queue.");
+        this->addComment("Settings.AppGeneral.ConfirmClearingQueueText"_lang);
 
         // General::confirm_exit
-        this->addToggle("Confirm Exit", [cfg]() -> bool {
+        this->addToggle("Settings.AppGeneral.ConfirmExit"_lang, [cfg]() -> bool {
             return cfg->confirmExit();
         }, [cfg](bool b) {
             cfg->setConfirmExit(b);
         });
-        this->addComment("Show a dialog to confirm you want to exit the app.");
+        this->addComment("Settings.AppGeneral.ConfirmExitText"_lang);
         this->list->addElement(new Aether::ListSeparator());
 
         // General::initial_frame
-        opt = new Aether::ListOption("Initial Section", frameToString(cfg->initialFrame()), nullptr);
+        opt = new Aether::ListOption("Settings.AppGeneral.InitialSection"_lang, frameToString(cfg->initialFrame()), nullptr);
         opt->setCallback([this, opt]() {
             this->showInitialFrameList(opt);
         });
         opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), this->app->theme()->accent());
         this->list->addElement(opt);
-        this->addComment("The section to show when the app is launched.");
+        this->addComment("Settings.AppGeneral.InitialSectionText"_lang);
 
         // General::skip_with_lr
-        this->addToggle("Skip with L/R", [cfg]() -> bool {
+        this->addToggle("Settings.AppGeneral.SkipWithLR"_lang, [cfg]() -> bool {
             return cfg->skipWithLR();
         }, [cfg](bool b) {
             cfg->setSkipWithLR(b);
         });
-        this->addComment("Use L/R to skip backwards/forwards in the queue. This is only functional within the application.");
+        this->addComment("Settings.AppGeneral.SkipWithLRText"_lang);
         this->list->addElement(new Aether::ListSeparator());
 
         // General::log_level
-        opt = new Aether::ListOption("Logging Level", Log::levelToString(cfg->logLevel()), nullptr);
+        opt = new Aether::ListOption("Settings.AppGeneral.LoggingLevel"_lang, Log::levelToString(cfg->logLevel()), nullptr);
         opt->setCallback([this, opt]() {
             this->showLogLevelList(opt);
         });
         opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), this->app->theme()->accent());
         this->list->addElement(opt);
-        this->addComment("This only adjusts the application's log level, not the sysmodule's. Each level will log it and the levels below (e.g. Warning will log both Warning and Error messages). Info should only be used for debugging purposes, as it logs a LOT of information and slows down the app.");
+        this->addComment("Settings.AppGeneral.LoggingLevelText"_lang);
 
         // Overlays
         this->ovlList = new Aether::PopupList("");
-        this->ovlList->setBackLabel("Back");
-        this->ovlList->setOKLabel("OK");
+        this->ovlList->setBackLabel("Common.Back"_lang);
+        this->ovlList->setOKLabel("Common.OK"_lang);
         this->ovlList->setBackgroundColour(this->app->theme()->popupBG());
         this->ovlList->setHighlightColour(this->app->theme()->accent());
         this->ovlList->setLineColour(this->app->theme()->muted());
@@ -91,7 +92,7 @@ namespace Frame::Settings {
     }
 
     void AppGeneral::showInitialFrameList(Aether::ListOption * opt) {
-        this->ovlList->setTitleLabel("Initial Frame");
+        this->ovlList->setTitleLabel("Settings.AppGeneral.InitialSection"_lang);
         this->ovlList->removeEntries();
 
         // Get frame types for creation
@@ -112,7 +113,7 @@ namespace Frame::Settings {
     }
 
     void AppGeneral::showLogLevelList(Aether::ListOption * opt) {
-        this->ovlList->setTitleLabel("Logging Level");
+        this->ovlList->setTitleLabel("Settings.AppGeneral.LoggingLevel"_lang);
         this->ovlList->removeEntries();
 
         // Get log levels for creation

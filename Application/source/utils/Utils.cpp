@@ -168,6 +168,13 @@ namespace Utils {
         return words;
     }
 
+    size_t tokenIndex = 1;
+    std::string substituteTokens(std::string str, std::string token) {
+        str = std::regex_replace(str, std::regex("\\$\\[" + std::to_string(tokenIndex) + "]"), token);
+        tokenIndex = 1;
+        return str;
+    }
+
     std::string truncateToDecimalPlace(std::string str, unsigned int p) {
         size_t dec = str.find(".");
         if (dec == std::string::npos || p >= str.length() - dec) {

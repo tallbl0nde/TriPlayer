@@ -1,9 +1,11 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include "Paths.hpp"
 #include "ui/element/GridItem.hpp"
 #include "ui/element/ScrollableGrid.hpp"
 #include "ui/frame/Artist.hpp"
 #include "ui/overlay/SortBy.hpp"
+#include "utils/Utils.hpp"
 
 // Play button dimensions
 #define BUTTON_F 26
@@ -26,7 +28,7 @@ namespace Frame {
         this->meta = this->app->database()->getArtistMetadataForID(id);
         if (this->meta.ID < 0) {
             // Helps show there was an error (should never appear)
-            this->heading->setString("Artist");
+            this->heading->setString("Artist.Artist"_lang);
             this->albumMenu = nullptr;
             this->artistMenu = nullptr;
             this->sortMenu = nullptr;
@@ -48,13 +50,24 @@ namespace Frame {
             this->heading->setW(maxW - tmp->w());
         }
 
-        std::string str = std::to_string(this->meta.albumCount) + (this->meta.albumCount == 1 ? " album" : " albums");
-        str += " | " + std::to_string(this->meta.songCount) + (this->meta.songCount == 1 ? " song" : " songs");
+        std::string str;
+        if (this->meta.albumCount == 1 && this->meta.songCount == 1) {
+            str = "Artist.DetailsOneOne"_lang;
+
+        } else if (this->meta.albumCount == 1) {
+            str = Utils::substituteTokens("Artist.DetailsOneMany"_lang, std::to_string(this->meta.songCount));
+
+        } else if (this->meta.songCount == 1) {
+            str = Utils::substituteTokens("Artist.DetailsManyOne"_lang, std::to_string(this->meta.albumCount));
+
+        } else {
+            str = Utils::substituteTokens("Artist.DetailsManyMany"_lang, std::to_string(this->meta.albumCount), std::to_string(this->meta.songCount));
+        }
         this->subHeading->setString(str);
         this->subHeading->setXY(this->heading->x() + 2, this->heading->y() + this->heading->h());
 
         // Play and 'more' buttons
-        this->playButton = new Aether::FilledButton(this->subHeading->x(), this->subHeading->y() + this->subHeading->h() + 20, BUTTON_W, BUTTON_H, "Play", BUTTON_F, [this]() {
+        this->playButton = new Aether::FilledButton(this->subHeading->x(), this->subHeading->y() + this->subHeading->h() + 20, BUTTON_W, BUTTON_H, "Common.Play"_lang, BUTTON_F, [this]() {
             std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForArtist(this->meta.ID);
             std::vector<SongID> ids;
             for (size_t i = 0; i < v.size(); i++) {
@@ -92,11 +105,11 @@ namespace Frame {
         this->sort->setCallback([this]() {
             this->app->addOverlay(this->sortMenu);
         });
-        std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::AlbumAsc, "Album (ascending)"},
-                                                      {Database::SortBy::AlbumDsc, "Album (descending)"},
-                                                      {Database::SortBy::SongsAsc, "Song Count (increasing)"},
-                                                      {Database::SortBy::SongsDsc, "Song Count (decreasing)"}};
-        this->sortMenu = new CustomOvl::SortBy("Sort Albums by", sort, [this](Database::SortBy s) {
+        std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::AlbumAsc, "Artist.Sort.AlbumAsc"_lang},
+                                                      {Database::SortBy::AlbumDsc, "Artist.Sort.AlbumDsc"_lang},
+                                                      {Database::SortBy::SongsAsc, "Artist.Sort.SongsAsc"_lang},
+                                                      {Database::SortBy::SongsDsc, "Artist.Sort.SongsDsc"_lang}};
+        this->sortMenu = new CustomOvl::SortBy("Album.Sort.Heading"_lang, sort, [this](Database::SortBy s) {
             this->createList(s);
         });
         this->sortMenu->setBackgroundColour(this->app->theme()->popupBG());
@@ -127,7 +140,7 @@ namespace Frame {
             CustomElm::MenuButton * b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
             b->setIconColour(this->app->theme()->muted());
-            b->setText("Add to Queue");
+            b->setText("Common.AddToQueue"_lang);
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this, id]() {
                 std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForArtist(id);
@@ -142,7 +155,7 @@ namespace Frame {
             b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoplaylist.png"));
             b->setIconColour(this->app->theme()->muted());
-            b->setText("Add to Playlist");
+            b->setText("Common.AddToPlaylist"_lang);
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this, id]() {
                 this->showAddToPlaylist([this, id](PlaylistID i) {
@@ -162,7 +175,7 @@ namespace Frame {
             b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/info.png"));
             b->setIconColour(this->app->theme()->muted());
-            b->setText("View Information");
+            b->setText("Common.ViewInformation"_lang);
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this, id]() {
                 this->changeFrame(Type::ArtistInfo, Action::Push, id);
@@ -202,7 +215,7 @@ namespace Frame {
         CustomElm::MenuButton * b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/playsmall.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Play Album");
+        b->setText("Artist.PlayAlbum"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, m]() {
             std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForAlbum(m.ID);
@@ -220,7 +233,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Add Album to Queue");
+        b->setText("Artist.AddAlbumToQueue"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
             std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForAlbum(id);
@@ -235,7 +248,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoplaylist.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Add Album to Playlist");
+        b->setText("Artist.AddAlbumToPlaylist"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
             this->showAddToPlaylist([this, id](PlaylistID i) {
@@ -255,7 +268,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/info.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("View Information");
+        b->setText("Common.ViewInformation"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, id]() {
             this->changeFrame(Type::AlbumInfo, Action::Push, id);
@@ -279,7 +292,7 @@ namespace Frame {
             for (size_t i = 0; i < md.size(); i++) {
                 CustomElm::GridItem * l = new CustomElm::GridItem(md[i].imagePath.empty() ? Path::App::DefaultArtFile : md[i].imagePath);
                 l->setMainString(md[i].name);
-                std::string str = std::to_string(md[i].songCount) + (md[i].songCount == 1 ? " song" : " songs");
+                std::string str = (md[i].songCount == 1 ? "Common.Song"_lang : Utils::substituteTokens("Common.Songs"_lang, std::to_string(md[i].songCount)));
                 l->setSubString(str);
                 l->setDotsColour(this->app->theme()->muted());
                 l->setTextColour(this->app->theme()->FG());

@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "lang/Lang.hpp"
 #include <limits>
 #include "Paths.hpp"
 #include "ui/element/listitem/AlbumSong.hpp"
@@ -34,7 +35,7 @@ namespace Frame {
         this->metadata = this->app->database()->getAlbumMetadataForID(id);
         if (this->metadata.ID < 0) {
             // Helps show there was an error (should never appear)
-            this->heading->setString("Album");
+            this->heading->setString("Frame.Album.Album"_lang);
             return;
         }
         this->oneArtist = (this->metadata.artist != "Various Artists");
@@ -57,13 +58,17 @@ namespace Frame {
             this->heading->setW(maxW - tmp->w());
         }
 
-        std::string str = this->metadata.artist;
-        str += " | " + std::to_string(this->metadata.songCount) + (this->metadata.songCount == 1 ? " song" : " songs");
+        std::string str;
+        if (this->metadata.songCount == 1) {
+            str = Utils::substituteTokens("Album.DetailsOne"_lang, this->metadata.artist);
+        } else {
+            str = Utils::substituteTokens("Album.DetailsMany"_lang, this->metadata.artist, std::to_string(this->metadata.songCount));
+        }
         this->subHeading->setString(str);
         this->subHeading->setXY(this->heading->x() + 2, this->heading->y() + this->heading->h());
 
         // Play and 'more' buttons
-        this->playButton = new Aether::FilledButton(this->subHeading->x(), this->subHeading->y() + this->subHeading->h() + 20, BUTTON_W, BUTTON_H, "Play", BUTTON_F, [this]() {
+        this->playButton = new Aether::FilledButton(this->subHeading->x(), this->subHeading->y() + this->subHeading->h() + 20, BUTTON_W, BUTTON_H, "Common.Play"_lang, BUTTON_F, [this]() {
             this->playAlbum(std::numeric_limits<size_t>::max());
         });
         this->playButton->setFillColour(this->app->theme()->accent());
@@ -101,7 +106,7 @@ namespace Frame {
                     } else {
                         // Otherwise add "Disc x"
                         Aether::Element * e = new Aether::Element(0, 0, 100, 70);
-                        Aether::Text * t = new Aether::Text(0, 0, "Disc " + std::to_string(this->songs[i].discNumber), 28);
+                        Aether::Text * t = new Aether::Text(0, 0, Utils::substituteTokens("Album.Disc"_lang, std::to_string(this->songs[i].discNumber)), 28);
                         t->setColour(this->app->theme()->FG());
                         t->setY(e->h() - t->h() - 10);
                         e->addElement(t);
@@ -190,7 +195,7 @@ namespace Frame {
             CustomElm::MenuButton * b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
             b->setIconColour(this->app->theme()->muted());
-            b->setText("Add to Queue");
+            b->setText("Common.AddToQueue"_lang);
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this]() {
                 std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForAlbum(this->metadata.ID);
@@ -205,7 +210,7 @@ namespace Frame {
             b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoplaylist.png"));
             b->setIconColour(this->app->theme()->muted());
-            b->setText("Add to Playlist");
+            b->setText("Common.AddToPlaylist"_lang);
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this]() {
                 this->showAddToPlaylist([this](PlaylistID i) {
@@ -227,7 +232,7 @@ namespace Frame {
             b->setIconColour(this->app->theme()->muted());
             b->setTextColour(this->app->theme()->FG());
             if (this->oneArtist) {
-                b->setText("Go to Artist");
+                b->setText("Common.GoToArtist"_lang);
                 b->setCallback([this]() {
                     ArtistID aID = this->app->database()->getArtistIDForName(this->metadata.artist);
                     this->changeFrame(Type::Artist, Action::Push, aID);
@@ -235,7 +240,7 @@ namespace Frame {
                 });
 
             } else {
-                b->setText("View Artists");
+                b->setText("Common.ViewArtists"_lang);
                 b->setCallback([this]() {
                     this->createArtistsList();
                     this->albumMenu->close();
@@ -248,7 +253,7 @@ namespace Frame {
             b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/info.png"));
             b->setIconColour(this->app->theme()->muted());
-            b->setText("View Information");
+            b->setText("Common.ViewInformation"_lang);
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this]() {
                 this->changeFrame(Type::AlbumInfo, Action::Push, this->metadata.ID);
