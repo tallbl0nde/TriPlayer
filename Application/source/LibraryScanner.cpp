@@ -11,10 +11,6 @@
 #include "utils/Timer.hpp"
 #include "utils/Utils.hpp"
 
-// Number of threads to use for scanning audio files
-// For my library 2 threads instead of one sped up scanning by ~5%
-#define SCAN_THREADS 2
-
 // Comparator for FilePairs returning true if the lhs is before the rhs
 // (this only comapres the path as we don't care about the modified time)
 bool LibraryScanner::FilePairComparator(const FilePair & lhs, const FilePair & rhs) {
@@ -193,20 +189,17 @@ LibraryScanner::Status LibraryScanner::processMetadata(std::atomic<size_t> & cur
     estRemaining = 0;
     currentFile = 1;
     totalFiles = this->addFiles.size() + this->updateFiles.size();
-
-    // We're going to use multiple threads to hopefully speed up the parsing
-    std::vector< std::future<Status> > threads;
+    Status status = Status::Ok;
 
     // Timer used to estimate remaining time
     Utils::Timer timer = Utils::Timer();
     timer.start();
 
-    // Parse files that need to be added/updated
+    // Parse files that need to be added first, then updated
     std::vector<FilePair> dummy;
-    Status status = Status::Ok;
+    std::vector<FilePair> & vec = dummy;
     for (size_t v = 0; v < 2; v++) {
-        // Pick vector based on 'v' (used to avoid repeating code)
-        std::vector<FilePair> & vec = dummy;
+        // Get reference to appropriate vector
         switch (v) {
             case 0:
                 vec = this->addFiles;
@@ -218,55 +211,22 @@ LibraryScanner::Status LibraryScanner::processMetadata(std::atomic<size_t> & cur
 
             default:
                 return Status::ErrUnknown;
+                break;
         }
 
-        // Now actually iterate over each entry
-        size_t nextIdx = 0;
-        do {
-            // First check if threads are done
-            size_t i = 0;
-            while (i < threads.size()) {
-                if (threads[i].wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-                    status = (status == Status::Ok ? threads[i].get() : status);
-                    threads.erase(threads.begin() + i);
+        // Iterate over each vector
+        for (size_t i = 0; i < vec.size(); i++) {
+            status = (v == 0 ? this->parseFileAdd(vec[i]) : this->parseFileUpdate(vec[i]));
 
-                    // Increment counter and adjust remaining time
-                    estRemaining = (timer.elapsedSeconds() / (double)currentFile) * (totalFiles - currentFile);
-                    currentFile++;
+            // Increment counter and adjust remaining time
+            estRemaining = (timer.elapsedSeconds() / (double)currentFile) * (totalFiles - currentFile);
+            currentFile++;
 
-                } else {
-                    i++;
-                }
+            // Return if an error occurred
+            if (status != Status::Ok) {
+                Log::writeError("[SCAN] Error occurred during metadata scan");
+                return status;
             }
-
-            // Then enqueue next file(s)
-            if (status == Status::Ok) {
-                while (threads.size() < SCAN_THREADS) {
-                    if (nextIdx >= vec.size()) {
-                        break;
-                    }
-
-                    FilePair f = vec[nextIdx];
-                    threads.emplace_back(std::async(std::launch::async, [this, f, v]() -> Status {
-                        return (v == 0 ? this->parseFileAdd(f) : this->parseFileUpdate(f));
-                    }));
-                    nextIdx++;
-                }
-
-                // Wait very briefly before checking again
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            }
-
-        } while (nextIdx < vec.size() && status == Status::Ok);
-
-        // Return if an error occurred
-        if (status != Status::Ok) {
-            Log::writeError("[SCAN] Error occurred during metadata scan");
-            while (!threads.empty()) {
-                threads[0].get();
-                threads.erase(threads.begin());
-            }
-            return status;
         }
     }
 

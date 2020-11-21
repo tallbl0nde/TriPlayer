@@ -183,7 +183,7 @@ namespace Screen {
         this->heading->setString("Splash.Scanning"_lang);
         this->heading->setX(640 - this->heading->w()/2);
         this->subheading->setHidden(false);
-        this->subheading->setString(Utils::substituteTokens("Splash.FileOutOf", std::to_string(0), std::to_string(0)));
+        this->subheading->setString(Utils::substituteTokens("Splash.FileOutOf"_lang, std::to_string(0), std::to_string(0)));
         this->subheading->setX(640 - this->subheading->w()/2);
         this->percent->setHidden(false);
         this->percent->setString("0%");
@@ -292,9 +292,9 @@ namespace Screen {
             size_t time = this->estRemaining;
             if (file != this->lastFile) {
                 if (time > 0) {
-                    this->subheading->setString(Utils::substituteTokens("Splash.FileOutOfWithTime", std::to_string(file), std::to_string(this->totalFiles), Utils::secondsToHMS(time)));
+                    this->subheading->setString(Utils::substituteTokens("Splash.FileOutOfWithTime"_lang, std::to_string(file), std::to_string(this->totalFiles), Utils::secondsToHMS(time)));
                 } else {
-                    this->subheading->setString(Utils::substituteTokens("Splash.FileOutOf", std::to_string(file), std::to_string(this->totalFiles)));
+                    this->subheading->setString(Utils::substituteTokens("Splash.FileOutOf"_lang, std::to_string(file), std::to_string(this->totalFiles)));
                 }
                 this->subheading->setX(640 - this->subheading->w()/2);
                 this->progress->setValue(100 * (float)file/(this->totalFiles + 1));
@@ -306,7 +306,7 @@ namespace Screen {
         } else if (stage == ScanStage::Art) {
             size_t album = this->currentFile;
             if (album != this->lastFile) {
-                this->subheading->setString(Utils::substituteTokens("Splash.AlbumsProcessed", std::to_string(album)));
+                this->subheading->setString(Utils::substituteTokens("Splash.AlbumsProcessed"_lang, std::to_string(album)));
                 this->subheading->setX(640 - this->subheading->w()/2);
             }
         }
