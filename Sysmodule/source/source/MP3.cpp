@@ -2,6 +2,7 @@
 #include "Log.hpp"
 #include <mpg123.h>
 #include "source/MP3.hpp"
+#include "Types.hpp"
 
 #ifdef USE_FILE_BUFFER
 #include "nx/File.hpp"
@@ -38,6 +39,7 @@ namespace Source {
 
         // Get format
         int encoding;
+        this->format_ = Format::Int16;
         result = mpg123_getformat(this->mpg, &this->sampleRate_, &this->channels_, &encoding);
         if (result != MPG123_OK) {
             MP3::logErrorMsg();

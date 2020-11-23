@@ -3,6 +3,9 @@
 
 #include <cstddef>
 
+// Forward declarations
+enum class Format;
+
 // A Source is an abstract class representing an audio source.
 // Codec specific class will inherit this an implement required behaviour.
 namespace Source {
@@ -11,6 +14,7 @@ namespace Source {
             // These must be set by children
             int channels_;
             bool done_;
+            Format format_;
             long sampleRate_;
             int totalSamples_;
             bool valid_;
@@ -34,6 +38,8 @@ namespace Source {
 
             // Return number of channels
             int channels();
+            // Return format of decoded samples
+            Format format();
             // Returns sample rate
             long sampleRate();
             // Returns total number of samples

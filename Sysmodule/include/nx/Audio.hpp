@@ -68,8 +68,8 @@ class Audio {
         size_t bufferSize();
 
         // Call to prepare the output device for a new song with the given info
-        // Takes sample rate and number of channels
-        void newSong(long, int);
+        // Takes sample rate, number of channels and sample format, returns whether successful
+        bool newSong(long, int, Format);
 
         // Resume playback if paused
         void resume();

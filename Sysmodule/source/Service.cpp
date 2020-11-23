@@ -708,6 +708,9 @@ void MainService::playbackThread() {
                         break;
                 }
 
+                // Reset action as it was handled
+                this->songAction = SongAction::Nothing;
+
                 // In order to read the file path we need to:
                 // - Lock the mutex and either:
                 // -> Wait until it is marked as unlocked OR
@@ -736,11 +739,20 @@ void MainService::playbackThread() {
                 // Delete old source and prepare a new one
                 delete this->source;
                 this->source = Source::Factory::getSource(path);
+
+                // Skip to next song if renderer didn't init successfully
                 if (this->source != nullptr) {
-                    this->audio->newSong(this->source->sampleRate(), this->source->channels());
+                    if (!this->audio->newSong(this->source->sampleRate(), this->source->channels(), this->source->format())) {
+                        delete this->source;
+                        this->source = nullptr;
+                        this->songAction = SongAction::Next;
+                    }
                 }
+
+            // Queues are empty: reset action
+            } else {
+                this->songAction = SongAction::Nothing;
             }
-            this->songAction = SongAction::Nothing;
         }
 
         // Don't need queues for a while

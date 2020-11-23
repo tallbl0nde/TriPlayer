@@ -4,6 +4,7 @@
 #include <cstring>
 #include "Log.hpp"
 #include "source/FLAC.hpp"
+#include "Types.hpp"
 
 // Inherit actual struct
 struct dr_flac : public drflac {};
@@ -26,6 +27,11 @@ namespace Source {
         this->sampleRate_ = this->flac->sampleRate;
         this->totalSamples_ = this->flac->totalPCMFrameCount;
 
+        // This is set to Int16 as libnx doesn't support anything else,
+        // but should it support other bit depths this class is ready for it!
+        this->format_ = Format::Int16;
+        // this->format_ = static_cast<Format>(this->flac->bitsPerSample/8);
+
         Log::writeInfo("[FLAC] File opened successfully");
     }
 
@@ -34,15 +40,33 @@ namespace Source {
             return 0;
         }
 
-        const size_t frames = sz/this->channels_/sizeof(int16_t);
+        // Call appropriate decode function based on bit depth of samples
+        // Sample size is rounded up to preserve quality (e.g. 24 bits -> 32 bits)
+        size_t decoded = 0;
         std::memset(buf, 0, sz);
-        size_t decoded = drflac_read_pcm_frames_s16(this->flac, frames, reinterpret_cast<int16_t *>(buf));
+        const size_t frames = sz/this->channels_/(static_cast<int>(this->format_));
+        switch (this->format_) {
+            case Format::Int8:
+            case Format::Int16:
+                decoded = drflac_read_pcm_frames_s16(this->flac, frames, reinterpret_cast<int16_t *>(buf));
+                break;
+
+            case Format::Int24:
+            case Format::Int32:
+                decoded = drflac_read_pcm_frames_s32(this->flac, frames, reinterpret_cast<int32_t *>(buf));
+                break;
+
+            // This actually shouldn't be called
+            case Format::Float:
+                decoded = drflac_read_pcm_frames_f32(this->flac, frames, reinterpret_cast<float *>(buf));
+                break;
+        }
         if (decoded == 0) {
             Log::writeInfo("[FLAC] Finished decoding file");
             this->done_ = true;
         }
 
-        return (decoded * this->channels_ * sizeof(int16_t));
+        return (decoded * this->channels_ * (static_cast<int>(this->format_)));
     }
 
     void FLAC::seek(size_t pos) {
