@@ -1,17 +1,17 @@
 #include "Application.hpp"
 #include "lang/Lang.hpp"
 #include "Paths.hpp"
+#include "meta/Metadata.hpp"
 #include "ui/frame/AlbumInfo.hpp"
 #include "utils/FS.hpp"
 #include "utils/Image.hpp"
-#include "utils/MP3.hpp"
 #include "utils/Utils.hpp"
 
 // Default path for file browser
 #define FILE_BROWSER_ROOT "/"
-// Accepted image extensions
-static const std::vector<std::string> FILE_EXTENSIONS_AUD = {".mp3", ".MP3"};
-static const std::vector<std::string> FILE_EXTENSIONS_IMG = {".jpg", ".jpeg", ".jfif", ".png", ".JPG", ".JPEG", ".JFIF", ".PNG"};
+// Accepted image extensions (case insensitive)
+static const std::vector<std::string> FILE_EXTENSIONS_AUD = {".flac", ".mp3"};
+static const std::vector<std::string> FILE_EXTENSIONS_IMG = {".jpg", ".jpeg", ".jfif", ".png"};
 
 // This whole file/frame is a mess behind the scenes :P
 namespace Frame {
@@ -349,7 +349,7 @@ namespace Frame {
                 if (!path.empty()) {
                     switch (this->fileType) {
                         case FBType::Audio:
-                            this->updateImageFromID3(path);
+                            this->updateImageFromTag(path);
                             break;
 
                         case FBType::Image:
@@ -387,9 +387,13 @@ namespace Frame {
         this->imagePath->setString(Path::App::AlbumImageFolder + std::to_string(this->metadata.tadbID) + ".png");
     }
 
-    void AlbumInfo::updateImageFromID3(const std::string & path) {
+    void AlbumInfo::updateImageFromTag(const std::string & path) {
         // Extract image
-        this->dlBuffer = Utils::MP3::getArtFromID3(path);
+        std::string tmp = Utils::toUppercase(Utils::Fs::getExtension(path));
+        if (tmp.length() > 1 && tmp[0] == '.') {
+            tmp.erase(0, 1);
+        }
+        this->dlBuffer = Metadata::readArtFromFile(path, audioFormatFromString(tmp));
         if (this->dlBuffer.empty()) {
             this->createInfoOverlay("Common.Error.NoArt"_lang);
             return;

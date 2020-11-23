@@ -1,14 +1,14 @@
 #include "nx/Audio.hpp"
 #include "nx/NX.hpp"
 #include "Service.hpp"
-#include "sources/MP3.hpp"
+#include "source/MP3.hpp"
 #include <switch.h>
 
 // Heap size:
-// DB: ~0.5MB
-// IPC: ~0.2MB
-// Queue: ~0.2MB
-// MP3: ~0.5MB
+// DB:      ~0.5MB
+// IPC:     ~0.2MB
+// Queue:   ~0.2MB
+// Sources: ~0.5MB
 #define INNER_HEAP_SIZE (size_t)(2 * 1024 * 1024)
 
 // It hangs if I don't use C... I wish I knew why!
@@ -41,12 +41,12 @@ void __appInit(void) {
     NX::startServices();
 
     // Prepare audio libraries
-    MP3::initLib();
+    Source::MP3::initLib();
 }
 
 void __appExit(void) {
     // Clean up audio libraries first
-    MP3::freeLib();
+    Source::MP3::freeLib();
 
     // Finally stop services
     NX::stopServices();

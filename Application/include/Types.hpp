@@ -6,6 +6,15 @@
 // All IDs are integers
 typedef int ArtistID, AlbumID, PlaylistID, PlaylistSongID, SongID;
 
+// Type of audio file (note that string helpers are case sensitive)
+enum class AudioFormat {
+    None,       // Indicates unset
+    FLAC,       // Audio stored as FLAC
+    MP3         // Audio stored as MP3
+};
+AudioFormat audioFormatFromString(const std::string &);
+std::string audioFormatToString(const AudioFormat);
+
 // Status of sysmodule playback
 enum class PlaybackStatus {
     Error,      // An error occurred getting status
@@ -66,6 +75,7 @@ namespace Metadata {
         unsigned int plays;         // Number of plays (not used)
         bool favourite;             // Is the track favourited? (not used)
         std::string path;           // Path of associated file
+        AudioFormat format;         // Audio format song is stored in
         unsigned int modified;      // Timestamp file was last modified
     };
 
@@ -73,7 +83,6 @@ namespace Metadata {
         PlaylistSongID ID;          // Unique ID for this song entry
         Song song;                  // Song struct seen above
     };
-
 };
 
 #endif

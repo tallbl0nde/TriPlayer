@@ -3,17 +3,23 @@
 #include <future>
 #include "LibraryScanner.hpp"
 #include "Log.hpp"
+#include "meta/Metadata.hpp"
 #include "Paths.hpp"
 #include "utils/FS.hpp"
 #include "utils/Image.hpp"
-#include "utils/MP3.hpp"
 #include "utils/NX.hpp"
 #include "utils/Timer.hpp"
 #include "utils/Utils.hpp"
 
-// Comparator for FilePairs returning true if the lhs is before the rhs
-// (this only comapres the path as we don't care about the modified time)
-bool LibraryScanner::FilePairComparator(const FilePair & lhs, const FilePair & rhs) {
+// List of accepted extensions (case insensitive, but these must be lowercase)
+static const std::vector< std::pair<std::string, AudioFormat> > allowedTypes = {
+    {".flac", AudioFormat::FLAC},
+    {".mp3" , AudioFormat::MP3}
+};
+
+// Comparator for FileTuples returning true if the lhs is before the rhs
+// (this only comapres the path as we don't care about the modified time or type)
+bool LibraryScanner::FileTupleComparator(const FileTuple & lhs, const FileTuple & rhs) {
     return lhs.path < rhs.path;
 }
 
@@ -21,9 +27,9 @@ LibraryScanner::LibraryScanner(const SyncDatabase & db, const std::string & path
 
 }
 
-std::string LibraryScanner::parseAlbumArt(const std::string & path) {
+std::string LibraryScanner::parseAlbumArt(const Metadata::Song & meta) {
     // First attempt to extract image from file
-    std::vector<unsigned char> image = Utils::MP3::getArtFromID3(path);
+    std::vector<unsigned char> image = Metadata::readArtFromFile(meta.path, meta.format);
     if (image.empty()) {
         return "";
     }
@@ -31,7 +37,7 @@ std::string LibraryScanner::parseAlbumArt(const std::string & path) {
     // If we extracted an image resize it
     bool resized = Utils::Image::resize(image, 400, 400);
     if (!resized) {
-        Log::writeError("[SCAN] [ART] Unable to resize image found in: " + path);
+        Log::writeError("[SCAN] [ART] Unable to resize image found in: " + meta.path);
         return "";
     }
 
@@ -40,6 +46,7 @@ std::string LibraryScanner::parseAlbumArt(const std::string & path) {
     do {
         filename = Utils::randomString(10);
     } while (Utils::Fs::fileExists(Path::App::AlbumImageFolder + filename + ".png"));
+
     filename = Path::App::AlbumImageFolder + filename + ".png";
     bool ok = Utils::Fs::writeFile(filename, image);
     if (!ok) {
@@ -50,9 +57,9 @@ std::string LibraryScanner::parseAlbumArt(const std::string & path) {
     return filename;
 }
 
-LibraryScanner::Status LibraryScanner::parseFileAdd(const FilePair & file) {
-    // Read tags and data from file (thread-safe)
-    Metadata::Song meta = Utils::MP3::getInfoFromID3(file.path);
+LibraryScanner::Status LibraryScanner::parseFileAdd(const FileTuple & file) {
+    // Read tags and data from file
+    Metadata::Song meta = Metadata::readFromFile(file.path, file.format);
     if (meta.ID == -3) {
         Log::writeError("[SCAN] [ADD] Failed to parse file: " + file.path);
         return Status::ErrUnknown;
@@ -66,9 +73,9 @@ LibraryScanner::Status LibraryScanner::parseFileAdd(const FilePair & file) {
     return Status::Ok;
 }
 
-LibraryScanner::Status LibraryScanner::parseFileUpdate(const FilePair & file) {
-    // Read new tags and data from file (thread-safe)
-    Metadata::Song newMeta = Utils::MP3::getInfoFromID3(file.path);
+LibraryScanner::Status LibraryScanner::parseFileUpdate(const FileTuple & file) {
+    // Read new tags and data from file
+    Metadata::Song newMeta = Metadata::readFromFile(file.path, file.format);
     if (newMeta.ID == -3) {
         Log::writeError("[SCAN] [UPDATE] Failed to parse file: " + file.path);
         return Status::ErrUnknown;
@@ -99,37 +106,51 @@ LibraryScanner::Status LibraryScanner::parseFileUpdate(const FilePair & file) {
 LibraryScanner::Status LibraryScanner::processFiles() {
     // First get all paths within folder along with modified timestamp
     Utils::NX::setLowFsPriority(true);
-    std::vector<FilePair> files;
+    std::vector<FileTuple> files;
 
     if (Utils::Fs::fileExists(this->searchPath)) {
         for (auto & entry: std::filesystem::recursive_directory_iterator(this->searchPath)) {
-            if (entry.path().extension() == ".mp3") {
-                // Why is this conversion so hard?
-                auto time = entry.last_write_time();
-                auto clock = std::chrono::file_clock::to_sys(time);
-                unsigned int timestamp = (unsigned int)std::chrono::system_clock::to_time_t(clock);
-
-                files.push_back(FilePair{entry.path().string(), timestamp});
+            // Check if file's extension is whitelisted
+            AudioFormat audioType = AudioFormat::None;
+            for (const std::pair<std::string, AudioFormat> & type : allowedTypes) {
+                if (Utils::toLowercase(entry.path().extension()) == type.first) {
+                    audioType = type.second;
+                    break;
+                }
             }
+
+            // Continue if not whitelisted
+            if (audioType == AudioFormat::None) {
+                continue;
+            }
+
+            // Otherwise get modified time and create FileTuple
+            // Why is this conversion so hard?
+            auto time = entry.last_write_time();
+            auto clock = std::chrono::file_clock::to_sys(time);
+            unsigned int timestamp = (unsigned int)std::chrono::system_clock::to_time_t(clock);
+
+            files.push_back(FileTuple{entry.path().string(), timestamp, audioType});
         }
     }
-    Log::writeInfo("[SCAN] Found " + std::to_string(files.size()) + " files");
 
     // Sort returned paths
-    std::sort(files.begin(), files.end(), FilePairComparator);
+    Log::writeInfo("[SCAN] Found " + std::to_string(files.size()) + " files");
+    std::sort(files.begin(), files.end(), FileTupleComparator);
 
     // Next get all paths and modified times from database
     // (the database returns paths in sorted order)
     bool dbOK;
-    std::vector<FilePair> dbFiles;
+    std::vector<FileTuple> dbFiles;
     std::vector< std::pair<std::string, unsigned int> > tmp = this->database->getAllSongFileInfo(dbOK);
     if (!dbOK) {
         Log::writeError("[SCAN] Couldn't read filesystem info from database");
         Utils::NX::setLowFsPriority(false);
         return Status::ErrDatabase;
     }
+
     for (size_t i = 0; i < tmp.size(); i++) {
-        dbFiles.push_back(FilePair{tmp[i].first, tmp[i].second});
+        dbFiles.push_back(FileTuple{tmp[i].first, tmp[i].second, AudioFormat::None});
     }
 
     // Use a thread to work out what files to add
@@ -137,7 +158,7 @@ LibraryScanner::Status LibraryScanner::processFiles() {
         // Check if each file has an entry in the database
         // If not, it needs to be added
         for (size_t i = 0; i < files.size(); i++) {
-            bool inDB = std::binary_search(dbFiles.begin(), dbFiles.end(), files[i], FilePairComparator);
+            bool inDB = std::binary_search(dbFiles.begin(), dbFiles.end(), files[i], FileTupleComparator);
             if (!inDB) {
                 this->addFiles.push_back(files[i]);
             }
@@ -149,7 +170,7 @@ LibraryScanner::Status LibraryScanner::processFiles() {
         // Check if each file is in the database
         // If it is and the DB's modified time is smaller, it needs to be updated
         for (size_t i = 0; i < files.size(); i++) {
-            std::vector<FilePair>::iterator it = std::lower_bound(dbFiles.begin(), dbFiles.end(), files[i], FilePairComparator);
+            std::vector<FileTuple>::iterator it = std::lower_bound(dbFiles.begin(), dbFiles.end(), files[i], FileTupleComparator);
             if (it != dbFiles.end() && (*it).path == files[i].path) {
                 if ((*it).modifiedTime < files[i].modifiedTime) {
                     this->updateFiles.push_back(files[i]);
@@ -160,7 +181,7 @@ LibraryScanner::Status LibraryScanner::processFiles() {
 
     // This thread is responsible for determining which files to remove
     for (size_t i = 0; i < dbFiles.size(); i++) {
-        bool onSD = std::binary_search(files.begin(), files.end(), dbFiles[i], FilePairComparator);
+        bool onSD = std::binary_search(files.begin(), files.end(), dbFiles[i], FileTupleComparator);
         if (!onSD) {
             this->removeFiles.push_back(dbFiles[i]);
         }
@@ -196,8 +217,8 @@ LibraryScanner::Status LibraryScanner::processMetadata(std::atomic<size_t> & cur
     timer.start();
 
     // Parse files that need to be added first, then updated
-    std::vector<FilePair> dummy;
-    std::vector<FilePair> & vec = dummy;
+    std::vector<FileTuple> dummy;
+    std::vector<FileTuple> & vec = dummy;
     for (size_t v = 0; v < 2; v++) {
         // Get reference to appropriate vector
         switch (v) {
@@ -309,7 +330,7 @@ LibraryScanner::Status LibraryScanner::processArt(std::atomic<size_t> & currentF
             if (hasImage[meta.album]) {
                 continue;
             }
-            std::string path = this->parseAlbumArt(meta.path);
+            std::string path = this->parseAlbumArt(meta);
 
             // If the image was written to the SD Card update database
             if (path.empty()) {

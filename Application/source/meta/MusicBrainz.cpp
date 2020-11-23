@@ -1,7 +1,7 @@
 #include "nlohmann/json.hpp"
 #include "Log.hpp"
 #include "utils/Curl.hpp"
-#include "utils/metadata/MusicBrainz.hpp"
+#include "meta/MusicBrainz.hpp"
 
 // URL forming API request
 #define API_REQUEST "http://musicbrainz.org/ws/2/artist/?fmt=json&query=artist:"

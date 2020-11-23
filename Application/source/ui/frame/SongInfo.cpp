@@ -160,6 +160,12 @@ namespace Frame {
         this->filePath->setTouchable(false);
         this->bottomContainer->addElement(this->filePath);
 
+        // Song format
+        txt = new Aether::Text(this->filePath->x() + this->filePath->w(), txt->y() + txt->h()/2, audioFormatToString(this->metadata.format), 20);
+        txt->setXY(txt->x() - txt->w() - 10, txt->y() - txt->h()/2);
+        txt->setColour(this->app->theme()->FG());
+        this->bottomContainer->addElement(txt);
+
         // Save button
         this->saveButton = new Aether::FilledButton(this->discNumber->x(), this->filePath->y(), this->discNumber->w(), 50, "Common.Save"_lang, 26, [this]() {
             this->saveChanges();

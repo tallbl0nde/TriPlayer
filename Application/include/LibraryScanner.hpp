@@ -22,11 +22,12 @@ class LibraryScanner {
 
     private:
         // File pair containing path and modified time
-        struct FilePair {
+        struct FileTuple {
             std::string path;           // File path
             unsigned int modifiedTime;  // Last modified timestamp
+            AudioFormat format;         // Audio format of file
         };
-        static bool FilePairComparator(const FilePair &, const FilePair &);
+        static bool FileTupleComparator(const FileTuple &, const FileTuple &);
 
         // Reference to Database object
         const SyncDatabase & database;
@@ -34,22 +35,22 @@ class LibraryScanner {
         const std::string searchPath;
 
         // Vectors of files to add to database
-        std::vector<FilePair> addFiles;
+        std::vector<FileTuple> addFiles;
         std::vector<Metadata::Song> addMeta;
         std::mutex addMutex;
 
         // Vectors of files to update within database
-        std::vector<FilePair> updateFiles;
+        std::vector<FileTuple> updateFiles;
         std::vector<Metadata::Song> updateMeta;
         std::mutex updateMutex;
 
         // Vector of files to remove
-        std::vector<FilePair> removeFiles;
+        std::vector<FileTuple> removeFiles;
 
         // Functions to actually process files on another thread
-        std::string parseAlbumArt(const std::string &);
-        Status parseFileAdd(const FilePair &);
-        Status parseFileUpdate(const FilePair &);
+        std::string parseAlbumArt(const Metadata::Song &);
+        Status parseFileAdd(const FileTuple &);
+        Status parseFileUpdate(const FileTuple &);
 
     public:
         // Constructor accepts Database object and path to search

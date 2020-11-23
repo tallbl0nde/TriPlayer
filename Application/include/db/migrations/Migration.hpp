@@ -8,5 +8,6 @@
 #include "db/migrations/4_AddPlaylistImage.hpp"
 #include "db/migrations/5_UpdateSearch.hpp"
 #include "db/migrations/6_RemoveImages.hpp"
+#include "db/migrations/7_AddAudioFormat.hpp"
 
 #endif

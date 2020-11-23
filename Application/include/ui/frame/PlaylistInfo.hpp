@@ -48,7 +48,7 @@ namespace Frame {
 
             // Functions to update frame based on type of image
             void removeImage();
-            void updateImageFromID3(const std::string &);
+            void updateImageFromTag(const std::string &);
             void updateImageFromPath(const std::string &);
 
             // Function which actually saves changes

@@ -104,7 +104,7 @@ void Audio::exit() {
     this->exit_ = true;
 }
 
-void Audio::newSong(long rate, int channels) {
+bool Audio::newSong(long rate, int channels, Format format) {
     this->stop();
     std::scoped_lock<std::mutex> mtx(this->mutex);
     this->sampleOffset = 0;
@@ -119,10 +119,11 @@ void Audio::newSong(long rate, int channels) {
     // Create voice matching rate and channels
     this->channels = channels;
     this->voice = 0;
-    bool b = audrvVoiceInit(&drv, this->voice, this->channels, PcmFormat_Int16, rate);
+    bool b = audrvVoiceInit(&drv, this->voice, this->channels, static_cast<PcmFormat>(format), rate);
     if (!b) {
         this->voice = -1;
         Log::writeError("[AUDIO] Failed to init a new voice!");
+
     } else {
         // Set volume levels
         audrvVoiceSetDestinationMix(&drv, this->voice, AUDREN_FINAL_MIX_ID);
@@ -139,12 +140,14 @@ void Audio::newSong(long rate, int channels) {
         }
         Log::writeInfo("[AUDIO] Created a new voice");
     }
-    Log::writeInfo("[AUDIO] Rate: " + std::to_string(rate) +  ", Channels: " + std::to_string(channels));
+
+    Log::writeInfo("[AUDIO] Rate: " + std::to_string(rate) +  ", Channels: " + std::to_string(channels) + ", Bit depth: " + std::to_string(static_cast<int>(format) * 8));
+    return b;
 }
 
 void Audio::addBuffer(uint8_t * buf, size_t sz) {
     // Ensure appropriate size and a buffer is available
-    if (sz > realSize || sz == 0 || !this->bufferAvailable()) {
+    if (sz > realSize || sz == 0 || !this->bufferAvailable() || this->voice < 0) {
         return;
     }
 
