@@ -1,5 +1,5 @@
-#ifndef UTILS_METADATA_AUDIODB_HPP
-#define UTILS_METADATA_AUDIODB_HPP
+#ifndef METADATA_AUDIODB_HPP
+#define METADATA_AUDIODB_HPP
 
 #include <string>
 #include <vector>

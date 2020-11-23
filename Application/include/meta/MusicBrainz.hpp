@@ -1,5 +1,5 @@
-#ifndef UTILS_METADATA_MUSICBRAINZ_HPP
-#define UTILS_METADATA_MUSICBRAINZ_HPP
+#ifndef METADATA_MUSICBRAINZ_HPP
+#define METADATA_MUSICBRAINZ_HPP
 
 #include <string>
 #include <vector>

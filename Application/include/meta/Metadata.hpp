@@ -1,5 +1,5 @@
-#ifndef UTILS_METADATA_HPP
-#define UTILS_METADATA_HPP
+#ifndef METADATA_METADATA_HPP
+#define METADATA_METADATA_HPP
 
 #include <string>
 #include "Types.hpp"
