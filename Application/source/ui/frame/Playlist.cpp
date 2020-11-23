@@ -1,6 +1,7 @@
 #include "Application.hpp"
 #include "lang/Lang.hpp"
 #include <limits>
+#include "meta/M3U.hpp"
 #include "Paths.hpp"
 #include "ui/element/listitem/Song.hpp"
 #include "ui/frame/Playlist.hpp"
@@ -105,6 +106,55 @@ namespace Frame {
         this->refreshList(Database::SortBy::TitleAsc);
         this->setFocused(this->topContainer);
         this->topContainer->setFocused(this->playButton);
+    }
+
+    void Playlist::exportPlaylist() {
+        // Get a list of all file paths and make relative to root music folder
+        Metadata::M3U::Playlist m3u;
+        m3u.name = this->metadata.name;
+        for (const Metadata::PlaylistSong & meta : this->songs) {
+            // I'm assuming it's always "/music/" here, so we remove the first 7 characters
+            if (meta.song.path.length() > 7) {
+                m3u.paths.push_back(meta.song.path.substr(7, meta.song.path.length() - 7));
+            }
+        }
+
+        // Write to file (we need to strip all non-supported FAT32 characters)
+        std::string safeName = Utils::removeUnicode(this->metadata.name);
+        size_t c = 0;
+        while (c < safeName.length()) {
+            char ch = safeName[c];
+            if (ch == '\\' || ch == '/' || ch == ':' || ch == '*' || ch == '"' || ch == '<' || ch == '>' || ch == '|') {
+                safeName.erase(c, 1);
+            } else {
+                c++;
+            }
+        }
+        safeName = "/music/" + safeName + ".m3u8";
+        bool ok = Metadata::M3U::writeFile(safeName, m3u);
+
+        // Display error/success message
+        delete this->msgbox;
+        this->msgbox = new Aether::MessageBox();
+        this->msgbox->addTopButton("Common.OK"_lang, [this]() {
+            this->msgbox->close();
+        });
+        this->msgbox->setLineColour(this->app->theme()->muted2());
+        this->msgbox->setRectangleColour(this->app->theme()->popupBG());
+        this->msgbox->setTextColour(this->app->theme()->accent());
+        Aether::Element * body = new Aether::Element(0, 0, 700);
+        Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "", 24, 620);
+        if (ok) {
+            tips->setString(Utils::substituteTokens("Playlist.ExportSuccess"_lang, safeName));
+        } else {
+            tips->setString("Playlist.ExportError"_lang);
+        }
+        tips->setColour(this->app->theme()->FG());
+        body->addElement(tips);
+        body->setH(tips->h() + 80);
+        this->msgbox->setBody(body);
+        this->msgbox->setBodySize(body->w(), body->h());
+        this->app->addOverlay(this->msgbox);
     }
 
     void Playlist::playPlaylist(size_t pos) {

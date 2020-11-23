@@ -20,6 +20,9 @@ namespace Utils {
     // Return a random alpha-numeric string with given length
     std::string randomString(size_t);
 
+    // Remove unicode characters from the given string
+    std::string removeUnicode(const std::string &);
+
     // Round the given double to the specified number of decimal places
     float roundToDecimalPlace(float, unsigned int);
 

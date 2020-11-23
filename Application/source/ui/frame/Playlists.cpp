@@ -1,5 +1,6 @@
 #include "Application.hpp"
 #include "lang/Lang.hpp"
+#include "meta/M3U.hpp"
 #include "Paths.hpp"
 #include "ui/element/listitem/Playlist.hpp"
 #include "ui/frame/Playlists.hpp"
@@ -295,6 +296,17 @@ namespace Frame {
         this->menu->addButton(b);
         this->menu->addSeparator(this->app->theme()->muted2());
 
+        // Export playlist
+        b = new CustomElm::MenuButton();
+        b->setIcon(new Aether::Image(0, 0, "romfs:/icons/export.png"));
+        b->setIconColour(this->app->theme()->muted());
+        b->setText("Playlist.ExportPlaylist"_lang);
+        b->setTextColour(this->app->theme()->FG());
+        b->setCallback([this, pos]() {
+            this->exportPlaylist(this->items[pos].meta);
+        });
+        this->menu->addButton(b);
+
         // Delete playlist
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/bin.png"));
@@ -379,6 +391,42 @@ namespace Frame {
         this->msgbox->setBody(body);
         this->msgbox->setBodySize(body->w(), body->h());
         this->app->addOverlay(this->msgbox);
+    }
+
+    void Playlists::exportPlaylist(const Metadata::Playlist & playlist) {
+        // Fetch all metadata for the playlist's songs
+        std::vector<Metadata::PlaylistSong> songs = this->app->database()->getSongMetadataForPlaylist(playlist.ID, Database::SortBy::TitleAsc);
+
+        // Get a list of all file paths and make relative to root music folder
+        Metadata::M3U::Playlist m3u;
+        m3u.name = playlist.name;
+        for (const Metadata::PlaylistSong & meta : songs) {
+            // I'm assuming it's always "/music/" here, so we remove the first 7 characters
+            if (meta.song.path.length() > 7) {
+                m3u.paths.push_back(meta.song.path.substr(7, meta.song.path.length() - 7));
+            }
+        }
+
+        // Write to file (we need to strip all non-supported FAT32 characters)
+        std::string safeName = Utils::removeUnicode(playlist.name);
+        size_t c = 0;
+        while (c < safeName.length()) {
+            char ch = safeName[c];
+            if (ch == '\\' || ch == '/' || ch == ':' || ch == '*' || ch == '"' || ch == '<' || ch == '>' || ch == '|') {
+                safeName.erase(c, 1);
+            } else {
+                c++;
+            }
+        }
+        safeName = "/music/" + safeName + ".m3u8";
+        bool ok = Metadata::M3U::writeFile(safeName, m3u);
+
+        // Display error/success message
+        if (ok) {
+            this->createInfoOverlay(Utils::substituteTokens("Playlist.ExportSuccess"_lang, safeName));
+        } else {
+            this->createInfoOverlay("Playlist.ExportError"_lang);
+        }
     }
 
     void Playlists::savePlaylist() {

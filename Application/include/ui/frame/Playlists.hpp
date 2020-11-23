@@ -57,6 +57,9 @@ namespace Frame {
             // Creates a ListItem::Playlist from the given metadata
             CustomElm::ListItem::Playlist * getListItem(const Metadata::Playlist &);
 
+            // Export the chosen playlist as a .m3u8
+            void exportPlaylist(const Metadata::Playlist &);
+
             // Reconstructs the entire list from scratch
             void refreshList(Database::SortBy);
 

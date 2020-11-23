@@ -65,6 +65,7 @@ namespace Metadata::M3U {
         // Open an output stream at the specified location
         std::ofstream stream(path, std::ios::trunc);
         if (!stream.good()) {
+            Log::writeError("[META] [M3U] Failed to create output file: " + path);
             return false;
         }
 
@@ -82,11 +83,13 @@ namespace Metadata::M3U {
         // Finally check if any errors occurred and if so delete the file
         stream.flush();
         if (!stream.good()) {
+            Log::writeError("[META] [M3U] An error occurred writing to the file");
             stream.close();
             Utils::Fs::deleteFile(path);
             return false;
         }
 
+        Log::writeSuccess("[META] [M3U] Wrote '" + playlist.name + " to disk");
         return true;
     }
 };

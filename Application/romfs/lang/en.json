@@ -117,6 +117,9 @@
         "DeletePromptName": "Are you sure you want to delete the playlist '$[1]'? This action cannot be undone!",
         "DetailsOne": "1 song | $[1]",
         "DetailsMany": "$[1] songs | $[2]",
+        "ExportError": "Unable to export playlist, see the log file for more info!",
+        "ExportPlaylist": "Export Playlist",
+        "ExportSuccess": "Playlist data exported to: $[1]",
         "Information": {
             "Heading": "Playlist Information",
             "Image": "Image",

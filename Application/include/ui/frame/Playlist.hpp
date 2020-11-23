@@ -46,6 +46,9 @@ namespace Frame {
             void createPlaylistMenu();
             void createSongMenu(size_t);
 
+            // Export the playlist as a .m3u8
+            void exportPlaylist();
+
             // Helper function to play playlist from position
             void playPlaylist(size_t);
 

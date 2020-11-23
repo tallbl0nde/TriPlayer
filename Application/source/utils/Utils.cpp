@@ -75,6 +75,16 @@ namespace Utils {
         return str;
     }
 
+    std::string removeUnicode(const std::string & str) {
+        std::string good;
+        for (char c : str) {
+            if (isprint(c)) {
+                good.push_back(c);
+            }
+        }
+        return good;
+    }
+
     float roundToDecimalPlace(float val, unsigned int p) {
         for (unsigned int i = 0; i < p; i++) {
             val *= 10.0;
