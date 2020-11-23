@@ -37,7 +37,7 @@ TARGET		:=	Tag
 BUILD		:=	build
 INCLUDES 	:=	$(shell find taglib -type d)
 INCLUDE		:=	-I3rdparty $(addprefix -I,$(INCLUDES))
-SOURCE		:=	taglib
+SOURCE		:=	taglib/taglib
 LIB			:=	lib
 OUTPUT		:=	$(LIB)/lib$(TARGET).a
 
@@ -57,7 +57,7 @@ LDFLAGS		:=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH)
 CFLAGS		:=	-g -Wall -O2 -ffunction-sections $(ARCH) $(INCLUDE)
 # CXXFLAGS	:=	$(CFLAGS) -fno-rtti -std=gnu++17 -fno-exceptions
 # NOTE: This library requires both RTTI and exceptions. It should be possible to
-#       to remove that requirement if needed, but for now I've just removed the 
+#       to remove that requirement if needed, but for now I've just removed the
 #       compiler flags to allow it to build.
 CXXFLAGS	:=	$(CFLAGS) -std=gnu++17
 
