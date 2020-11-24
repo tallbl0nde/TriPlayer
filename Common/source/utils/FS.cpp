@@ -43,6 +43,10 @@ namespace Utils::Fs {
         return std::filesystem::path(path).extension();
     }
 
+    std::string getStem(const std::string & path) {
+        return std::filesystem::path(path).stem();
+    }
+
     std::string getParentDirectory(const std::string & path) {
         return std::filesystem::path(path).parent_path();
     }

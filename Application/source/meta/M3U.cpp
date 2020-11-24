@@ -14,8 +14,9 @@ namespace Metadata::M3U {
 
         // Iterate over each line in the file
         for (std::string line; std::getline(stream, line);) {
-            // Trim any leading whitespace
+            // Trim any whitespace
             line.erase(0, line.find_first_not_of(" \t"));
+            line.erase(line.find_last_not_of(" \t\r\n") + 1);
 
             // Skip over any comments
             if (line.length() > 0 && line[0] == '#') {

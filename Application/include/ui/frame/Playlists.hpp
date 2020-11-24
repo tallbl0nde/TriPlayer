@@ -49,7 +49,7 @@ namespace Frame {
 
             // Helper function to prepare menus
             void createDeletePlaylistMenu(const size_t);
-            void createFileBrowser();
+            void createFileBrowser(const std::string &, const std::vector<std::string> &, const std::string &);
             void createMenu(size_t);
             void createNewPlaylistMenu();
             void createInfoOverlay(const std::string &);
@@ -59,6 +59,9 @@ namespace Frame {
 
             // Export the chosen playlist as a .m3u8
             void exportPlaylist(const Metadata::Playlist &);
+
+            // Import the given .m3u8
+            void importPlaylist(const std::string &);
 
             // Reconstructs the entire list from scratch
             void refreshList(Database::SortBy);

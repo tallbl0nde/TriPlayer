@@ -313,6 +313,17 @@ namespace Frame {
             this->playlistMenu->addButton(b);
             this->playlistMenu->addSeparator(this->app->theme()->muted2());
 
+            // Export playlist
+            b = new CustomElm::MenuButton();
+            b->setIcon(new Aether::Image(0, 0, "romfs:/icons/export.png"));
+            b->setIconColour(this->app->theme()->muted());
+            b->setText("Playlist.ExportPlaylist"_lang);
+            b->setTextColour(this->app->theme()->FG());
+            b->setCallback([this]() {
+                this->exportPlaylist();
+            });
+            this->playlistMenu->addButton(b);
+
             // Delete playlist
             b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/bin.png"));

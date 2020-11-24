@@ -1,7 +1,7 @@
-#include <filesystem>
 #include "Log.hpp"
 #include "meta/AudioDB.hpp"
 #include "meta/Metadata.hpp"
+#include "utils/FS.hpp"
 
 // Taglib headers
 #include <attachedpictureframe.h>
@@ -64,7 +64,7 @@ namespace Metadata {
     static void fillMissingValues(const std::string & path, Song & m) {
         // Default title to file name
         if (m.title.empty()) {
-            m.title = std::filesystem::path(path).stem();
+            m.title = Utils::Fs::getStem(path);
             m.ID = -2;
         }
 

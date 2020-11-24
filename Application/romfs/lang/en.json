@@ -120,6 +120,10 @@
         "ExportError": "Unable to export playlist, see the log file for more info!",
         "ExportPlaylist": "Export Playlist",
         "ExportSuccess": "Playlist data exported to: $[1]",
+        "ImportError": "The chosen playlist file couldn't be imported. It may be invalid or corrupt.",
+        "ImportPlaylist": "Import Playlist",
+        "ImportSuccess": "Playlist '$[1]' was imported with $[2] songs.",
+        "ImportSuccessSome": "Playlist '$[1]' was imported, however $[2] songs could not be found.",
         "Information": {
             "Heading": "Playlist Information",
             "Image": "Image",
@@ -131,6 +135,7 @@
         "Playlist": "Playlist",
         "Playlists": "Playlists",
         "RemoveFromPlaylist": "Remove from Playlist",
+        "SelectM3U": "Select a Playlist to Import",
         "Sort": {
             "Heading": "Sort Songs by",
             "HeadingAlt": "Sort Playlists by",

@@ -43,7 +43,7 @@ namespace Frame {
         this->heading->setString("Playlist.Information.Heading"_lang);
 
         // Name
-        Aether::Text * txt = new Aether::Text(this->heading->x(), this->heading->y() + this->heading->h() + 20, "Playlist.Name"_lang, 30);
+        Aether::Text * txt = new Aether::Text(this->heading->x(), this->heading->y() + this->heading->h() + 20, "Playlist.Information.Name"_lang, 30);
         txt->setColour(this->app->theme()->FG());
         this->bottomContainer->addElement(txt);
         this->name = new CustomElm::TextBox(txt->x(), txt->y() + txt->h() + 10, this->w() * 0.62, 50);

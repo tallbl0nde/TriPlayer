@@ -23,6 +23,8 @@ namespace Utils::Fs {
     std::vector< std::pair<std::string, bool> > getDirectoryContents(const std::string &);
     // Returns extension of path (empty if not a file or no extension)
     std::string getExtension(const std::string &);
+    // Returns stem of path
+    std::string getStem(const std::string &);
     // Returns parent directory
     std::string getParentDirectory(const std::string &);
 

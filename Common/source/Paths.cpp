@@ -22,6 +22,7 @@ namespace Path {
 
         const std::string DefaultArtFile = "romfs:/misc/noalbum.png";
         const std::string DefaultArtistFile = "romfs:/misc/noartist.png";
+        const std::string DefaultPlaylistFile = "romfs:/misc/noplaylist.png";
 
         const std::string AlbumImageFolder = Common::SwitchFolder + "images/album/";
         const std::string ArtistImageFolder = Common::SwitchFolder + "images/artist/";

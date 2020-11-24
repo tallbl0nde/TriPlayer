@@ -27,6 +27,7 @@ namespace Path {
 
         extern const std::string DefaultArtFile;
         extern const std::string DefaultArtistFile;
+        extern const std::string DefaultPlaylistFile;
 
         extern const std::string ArtistImageFolder;
         extern const std::string AlbumImageFolder;

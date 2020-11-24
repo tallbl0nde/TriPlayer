@@ -17,10 +17,12 @@
 #define BUTTON_W 250
 #define BUTTON_H 50
 
-// Default path for file browser
+// Default paths for file browser
+#define FILE_BROWSER_MUSIC "/music"
 #define FILE_BROWSER_ROOT "/"
-// Accepted image extensions
-static const std::vector<std::string> FILE_EXTENSIONS = {".jpg", ".jpeg", ".jfif", ".png", ".JPG", ".JPEG", ".JFIF", ".PNG"};
+// Accepted file extensions
+static const std::vector<std::string> FILE_EXTENSIONS_IMG = {".jpg", ".jpeg", ".jfif", ".png", ".JPG", ".JPEG", ".JFIF", ".PNG"};
+static const std::vector<std::string> FILE_EXTENSIONS_M3U = {".m3u", ".m3u8"};
 
 namespace Frame {
     Playlists::Playlists(Main::Application * a) : Frame(a) {
@@ -37,17 +39,29 @@ namespace Frame {
         // Now prepare this frame
         this->heading->setString("Playlist.Playlists"_lang);
         this->emptyMsg = nullptr;
-        this->newButton = new Aether::FilledButton(this->x() + this->w() - 320, this->sort->y(), BUTTON_W, BUTTON_H, "Playlist.NewPlaylist"_lang, BUTTON_F, [this]() {
+        this->newButton = new Aether::FilledButton(this->x() + this->w() - BUTTON_W - 70, this->sort->y(), BUTTON_W, BUTTON_H, "Playlist.NewPlaylist"_lang, BUTTON_F, [this]() {
             this->createNewPlaylistMenu();
         });
         this->newButton->setFillColour(this->app->theme()->accent());
         this->newButton->setTextColour(Aether::Colour{0, 0, 0, 255});
         this->topContainer->addElement(this->newButton);
+
+        Aether::BorderButton * btn = new Aether::BorderButton(this->newButton->x() - 70, this->newButton->y(), 50, 50, 2, "", BUTTON_F, [this]() {
+            this->createFileBrowser(FILE_BROWSER_MUSIC, FILE_EXTENSIONS_M3U, "Playlist.SelectM3U"_lang);
+        });
+        btn->setBorderColour(this->app->theme()->FG());
+        btn->setTextColour(this->app->theme()->FG());
+        Aether::Image * img = new Aether::Image(btn->x() + btn->w()/2, btn->y() + btn->h()/2, "romfs:/icons/import.png");
+        img->setXY(img->x() - img->w()/2, img->y() - img->h()/2);
+        img->setColour(this->app->theme()->FG());
+        btn->addElement(img);
+        this->topContainer->addElement(btn);
+
         this->setHasSelectable(true);
         this->refreshList(Database::SortBy::TitleAsc);
 
         // Move sort button and prepare menu
-        this->sort->setX(this->newButton->x() - 20 - this->sort->w());
+        this->sort->setX(btn->x() - 20 - this->sort->w());
         this->sort->setCallback([this]() {
             this->app->addOverlay(this->sortMenu);
         });
@@ -72,7 +86,7 @@ namespace Frame {
     }
 
     CustomElm::ListItem::Playlist * Playlists::getListItem(const Metadata::Playlist & m) {
-        CustomElm::ListItem::Playlist * l = new CustomElm::ListItem::Playlist(m.imagePath.empty() ? Path::App::DefaultArtFile : m.imagePath);
+        CustomElm::ListItem::Playlist * l = new CustomElm::ListItem::Playlist(m.imagePath.empty() ? Path::App::DefaultPlaylistFile : m.imagePath);
 
         // Set styling parameters
         l->setNameString(m.name);
@@ -188,24 +202,21 @@ namespace Frame {
         this->app->addOverlay(this->msgbox);
     }
 
-    void Playlists::createFileBrowser() {
-        // Create if doesn't exist
-        if (this->browser == nullptr) {
-            this->browser = new CustomOvl::FileBrowser(700, 600);
-            this->browser->setAccentColour(this->app->theme()->accent());
-            this->browser->setMutedLineColour(this->app->theme()->muted2());
-            this->browser->setMutedTextColour(this->app->theme()->muted());
-            this->browser->setRectangleColour(this->app->theme()->popupBG());
-            this->browser->setTextColour(this->app->theme()->FG());
-            this->browser->setCancelText("Common.Cancel"_lang);
-            this->browser->setHeadingText("Common.SelectImage"_lang);
-            this->browser->setExtensions(FILE_EXTENSIONS);
-        }
+    void Playlists::createFileBrowser(const std::string & path, const std::vector<std::string> & exts, const std::string & heading) {
+        delete this->browser;
+        this->browser = new CustomOvl::FileBrowser(700, 600);
+        this->browser->setAccentColour(this->app->theme()->accent());
+        this->browser->setMutedLineColour(this->app->theme()->muted2());
+        this->browser->setMutedTextColour(this->app->theme()->muted());
+        this->browser->setRectangleColour(this->app->theme()->popupBG());
+        this->browser->setTextColour(this->app->theme()->FG());
+        this->browser->setCancelText("Common.Cancel"_lang);
+        this->browser->setHeadingText(heading);
+        this->browser->setExtensions(exts);
 
         // Set path and show
         this->checkFB = true;
-        this->browser->resetFile();
-        this->browser->setPath(FILE_BROWSER_ROOT);
+        this->browser->setPath(path);
         this->app->addOverlay(this->browser);
     }
 
@@ -355,7 +366,7 @@ namespace Frame {
         this->newMenu->setTextBoxColour(this->app->theme()->muted2());
         this->newMenu->setTextColour(this->app->theme()->FG());
         this->newMenu->setImageCallback([this]() {
-            this->createFileBrowser();
+            this->createFileBrowser(FILE_BROWSER_ROOT, FILE_EXTENSIONS_IMG, "Common.SelectImage"_lang);
         });
         this->newMenu->setNameCallback([this](std::string name) {
             this->newData.name = name;
@@ -429,6 +440,85 @@ namespace Frame {
         }
     }
 
+    void Playlists::importPlaylist(const std::string & path) {
+        // Read file, ensuring we have at least one song
+        Metadata::M3U::Playlist playlist;
+        bool ok = Metadata::M3U::parseFile(path, playlist);
+        if (!ok || playlist.paths.empty()) {
+            this->createInfoOverlay("Playlist.ImportError"_lang);
+            return;
+        }
+
+        // Set default name if none found
+        if (playlist.name.empty()) {
+            playlist.name = Utils::Fs::getStem(path);
+        }
+
+        // Get the parent directory of the playlist file and append to ant relative paths
+        // (we need absolute paths for the database)
+        std::string parent = Utils::Fs::getParentDirectory(path) + "/";
+        for (std::string & path : playlist.paths) {
+            if (!path.empty() && path[0] != '/') {
+                path = parent + path;
+            }
+        }
+
+        // Now get an ID for each song path
+        size_t failed = 0;
+        std::vector<SongID> ids;
+        for (std::string & path : playlist.paths) {
+            // Check if file exists
+            if (!Utils::Fs::fileExists(path)) {
+                failed++;
+                continue;
+            }
+
+            // Get ID for path
+            SongID id = this->app->database()->getSongIDForPath(path);
+            if (id < 0) {
+                failed++;
+                continue;
+            }
+
+            ids.push_back(id);
+        }
+
+        // Finally create playlist and add songs
+        Metadata::Playlist meta;
+        meta.name = playlist.name;
+        this->app->lockDatabase();
+        ok = this->app->database()->addPlaylist(meta);
+        if (!ok) {
+            this->createInfoOverlay("Common.Error.DatabaseLocked"_lang);
+            this->app->unlockDatabase();
+            return;
+        }
+
+        std::vector<Metadata::Playlist> plists = this->app->database()->getAllPlaylistMetadata(Database::SortBy::SongsAsc);
+        for (const Metadata::Playlist & plist : plists) {
+            if (meta.name == plist.name) {
+                meta.ID = plist.ID;
+                break;
+            }
+        }
+
+        for (const SongID id : ids) {
+            ok = this->app->database()->addSongToPlaylist(meta.ID, id);
+            if (!ok) {
+                break;
+            }
+        }
+        this->app->unlockDatabase();
+
+        // Inform user of result
+        this->refreshList(this->sortType);
+        if (failed != 0 || !ok) {
+            this->createInfoOverlay(Utils::substituteTokens("Playlist.ImportSuccessSome"_lang, meta.name, std::to_string(failed)));
+        } else {
+            this->createInfoOverlay(Utils::substituteTokens("Playlist.ImportSuccess"_lang, meta.name, std::to_string(ids.size())));
+        }
+    }
+
     void Playlists::savePlaylist() {
         // Generate unique path (if you're really unlucky this could run indefinitely - but with 62^10 combinations we should be right :P)
         std::string src = this->newData.imagePath;
@@ -471,17 +561,32 @@ namespace Frame {
             if (this->browser->shouldClose()) {
                 std::string path = this->browser->chosenFile();
                 if (!path.empty()) {
-                    // Attempt to create new image
-                    Aether::Image * tmpImage = new Aether::Image(0, 0, path);
+                    // Check if .m3u
+                    bool isM3U = false;
+                    std::string tmp = Utils::Fs::getExtension(path);
+                    for (const std::string & ext : FILE_EXTENSIONS_M3U) {
+                        if (tmp == ext) {
+                            isM3U = true;
+                            break;
+                        }
+                    }
+                    if (isM3U) {
+                        this->importPlaylist(path);
 
-                    // Show error if image wasn't created
-                    if (tmpImage->texW() == 0 || tmpImage->texH() == 0) {
-                        this->createInfoOverlay("Common.Error.ReadImage"_lang);
-                        delete tmpImage;
-
+                    // Otherwise assume it's an image
                     } else {
-                        this->newData.imagePath = path;
-                        this->newMenu->setImage(tmpImage);
+                        // Attempt to create new image
+                        Aether::Image * tmpImage = new Aether::Image(0, 0, path);
+
+                        // Show error if image wasn't created
+                        if (tmpImage->texW() == 0 || tmpImage->texH() == 0) {
+                            this->createInfoOverlay("Common.Error.ReadImage"_lang);
+                            delete tmpImage;
+
+                        } else {
+                            this->newData.imagePath = path;
+                            this->newMenu->setImage(tmpImage);
+                        }
                     }
                 }
                 this->checkFB = false;
