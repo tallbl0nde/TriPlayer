@@ -10,6 +10,7 @@
 #include <id3v2tag.h>
 #include <mpegfile.h>
 #include <xiphcomment.h>
+#include <wavfile.h>
 
 namespace Metadata {
     DownloadResult downloadAlbumImage(const std::string & name, std::vector<unsigned char> & data, int & id) {
@@ -201,6 +202,27 @@ namespace Metadata {
         }
     }
 
+    // Parse metadata stored in a RIFF Info tag, only replacing empty values
+    static void parseRIFFInfoTag(TagLib::RIFF::Info::Tag * info, Song & m) {
+        if (m.title.empty() && !info->title().isEmpty()) {
+            m.title = info->title().to8Bit(true);
+        }
+
+        if (m.artist.empty() && !info->artist().isEmpty()) {
+            m.artist = info->artist().to8Bit(true);
+        }
+
+        if (m.album.empty() && !info->album().isEmpty()) {
+            m.album = info->album().to8Bit(true);
+        }
+
+        if (m.trackNumber < 0 && info->track() != 0) {
+            m.trackNumber = info->track();
+        }
+
+        // Note that RIFF Info chunks don't appear to store disc number
+    }
+
     // Parse metadata stored in a XiphComment, only replacing empty values
     static void parseXiphComment(TagLib::Ogg::XiphComment * xiph, Song & m) {
         if (m.title.empty() && !xiph->title().isEmpty()) {
@@ -298,6 +320,32 @@ namespace Metadata {
         return v;
     }
 
+    // Treats given file as WAV and extracts art
+    static std::vector<unsigned char> readArtFromWAV(const std::string & path) {
+        // Create empty vector to return
+        std::vector<unsigned char> v;
+
+        // Open the file
+        TagLib::RIFF::WAV::File file(path.c_str(), false);
+        if (!file.isValid()) {
+            Log::writeError("[META] [WAV] Unable to extract art from: " + path);
+            return v;
+        }
+
+        // Check ID3v2 tags as they're the only thing that can contain an image
+        if (file.hasID3v2Tag()) {
+            TagLib::ID3v2::Tag * tag = file.ID3v2Tag();
+            if (tag != nullptr) {
+                parseID3v2Art(tag, v);
+            }
+        }
+
+        if (v.empty()) {
+            Log::writeWarning("[META] [WAV] Couldn't find art in: " + path);
+        }
+        return v;
+    }
+
     std::vector<unsigned char> readArtFromFile(const std::string & path, const AudioFormat format) {
         // Call relevant function
         switch (format) {
@@ -308,6 +356,9 @@ namespace Metadata {
             case AudioFormat::MP3:
                 return readArtFromMP3(path);
                 break;
+
+            case AudioFormat::WAV:
+                return readArtFromWAV(path);
 
             default:
                 return std::vector<unsigned char>();
@@ -427,6 +478,57 @@ namespace Metadata {
         return m;
     }
 
+    // Treats given file as WAV and extracts relevant metadata
+    static Song readFromWAV(const std::string & path) {
+        // Initialize blank object first
+        Song m = getBlankMetadata();
+        m.format = AudioFormat::WAV;
+        m.path = path;
+
+        // Open the file
+        TagLib::RIFF::WAV::File file(path.c_str(), true, TagLib::AudioProperties::Accurate);
+        if (!file.isValid()) {
+            Log::writeError("[META] [WAV] Unable to process file: " + path);
+            m.ID = -3;
+            return m;
+        }
+
+        // Read duration
+        TagLib::RIFF::WAV::Properties * properties = file.audioProperties();
+        if (properties != nullptr) {
+            m.duration = static_cast<unsigned int>(properties->lengthInSeconds());
+        } else {
+            Log::writeWarning("[META] [WAV] Couldn't read duration of file: " + path);
+        }
+
+        // Check for RIFF metadata first
+        if (file.hasInfoTag()) {
+            TagLib::RIFF::Info::Tag * tag = file.InfoTag();
+            if (tag != nullptr) {
+                parseRIFFInfoTag(tag, m);
+            }
+
+        } else {
+            Log::writeInfo("[META] [WAV] No INFO tag found in: " + path);
+        }
+
+        // Then check ID3v2
+        if (file.hasID3v2Tag()) {
+            TagLib::ID3v2::Tag * tag = file.ID3v2Tag();
+            if (tag != nullptr) {
+                parseID3v2Tags(tag, m);
+            }
+
+        } else {
+            Log::writeInfo("[META] [WAV] No ID3v2 tags found in: " + path);
+        }
+
+        // Fill in missing values with default values (does nothing if all filled)
+        m.ID = -1;
+        fillMissingValues(path, m);
+        return m;
+    }
+
     Song readFromFile(const std::string & path, const AudioFormat format) {
         // Call relevant function
         switch (format) {
@@ -436,6 +538,10 @@ namespace Metadata {
 
             case AudioFormat::MP3:
                 return readFromMP3(path);
+                break;
+
+            case AudioFormat::WAV:
+                return readFromWAV(path);
                 break;
 
             default:
