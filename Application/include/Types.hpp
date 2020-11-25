@@ -10,7 +10,8 @@ typedef int ArtistID, AlbumID, PlaylistID, PlaylistSongID, SongID;
 enum class AudioFormat {
     None,       // Indicates unset
     FLAC,       // Audio stored as FLAC
-    MP3         // Audio stored as MP3
+    MP3,        // Audio stored as MP3
+    WAV,        // Audio stored as WAV
 };
 AudioFormat audioFormatFromString(const std::string &);
 std::string audioFormatToString(const AudioFormat);

@@ -14,7 +14,9 @@
 // List of accepted extensions (case insensitive, but these must be lowercase)
 static const std::vector< std::pair<std::string, AudioFormat> > allowedTypes = {
     {".flac", AudioFormat::FLAC},
-    {".mp3" , AudioFormat::MP3}
+    {".mp3" , AudioFormat::MP3},
+    {".wav",  AudioFormat::WAV},
+    {".wave", AudioFormat::WAV}
 };
 
 // Comparator for FileTuples returning true if the lhs is before the rhs

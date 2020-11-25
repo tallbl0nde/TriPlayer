@@ -6,6 +6,9 @@ AudioFormat audioFormatFromString(const std::string & str) {
 
     } else if (str == "MP3") {
         return AudioFormat::MP3;
+
+    } else if (str == "WAV") {
+        return AudioFormat::WAV;
     }
 
     // Return none by default
@@ -19,6 +22,9 @@ std::string audioFormatToString(const AudioFormat format) {
 
         case AudioFormat::MP3:
             return "MP3";
+
+        case AudioFormat::WAV:
+            return "WAV";
 
         default:
             return "None";

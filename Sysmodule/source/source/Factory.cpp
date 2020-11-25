@@ -2,6 +2,7 @@
 #include "source/Factory.hpp"
 #include "source/FLAC.hpp"
 #include "source/MP3.hpp"
+#include "source/WAV.hpp"
 #include "utils/FS.hpp"
 
 namespace Source {
@@ -18,6 +19,9 @@ namespace Source {
 
         } else if (ext == ".flac") {
             return new FLAC(path);
+
+        } else if (ext == ".wav" || ext == ".wave") {
+            return new WAV(path);
         }
 
         // No suitable class

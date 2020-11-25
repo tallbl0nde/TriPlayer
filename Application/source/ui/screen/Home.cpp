@@ -99,7 +99,7 @@ namespace Screen {
         for (size_t i = 0; i < pls.size(); i++) {
             CustomElm::ListItem::Playlist * l = new CustomElm::ListItem::Playlist(pls[i].imagePath.empty() ? "romfs:/misc/noplaylist.png" : pls[i].imagePath);
             l->setNameString(pls[i].name);
-            std::string str = (pls[i].songCount == 1 ? "Common.Song" : Utils::substituteTokens("Common.Songs"_lang, std::to_string(pls[i].songCount)));
+            std::string str = (pls[i].songCount == 1 ? "Common.Song"_lang : Utils::substituteTokens("Common.Songs"_lang, std::to_string(pls[i].songCount)));
             l->setSongsString(str);
             l->setLineColour(this->app->theme()->muted2());
             l->setMoreColour(this->app->theme()->muted());

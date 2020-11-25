@@ -231,7 +231,7 @@ namespace Frame {
         // Set playlist specific things
         this->menu->setImage(new Aether::Image(0, 0, this->items[pos].meta.imagePath.empty() ? "romfs:/misc/noplaylist.png" : this->items[pos].meta.imagePath));
         this->menu->setMainText(this->items[pos].meta.name);
-        std::string str = (this->items[pos].meta.songCount == 1 ? "Common.Song" : Utils::substituteTokens("Common.Songs"_lang, std::to_string(this->items[pos].meta.songCount)));
+        std::string str = (this->items[pos].meta.songCount == 1 ? "Common.Song"_lang : Utils::substituteTokens("Common.Songs"_lang, std::to_string(this->items[pos].meta.songCount)));
         this->menu->setSubText(str);
 
         // Play

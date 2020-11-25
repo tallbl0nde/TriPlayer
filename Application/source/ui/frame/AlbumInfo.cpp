@@ -10,7 +10,7 @@
 // Default path for file browser
 #define FILE_BROWSER_ROOT "/"
 // Accepted image extensions (case insensitive)
-static const std::vector<std::string> FILE_EXTENSIONS_AUD = {".flac", ".mp3"};
+static const std::vector<std::string> FILE_EXTENSIONS_AUD = {".flac", ".mp3", ".wav", ".wave"};
 static const std::vector<std::string> FILE_EXTENSIONS_IMG = {".jpg", ".jpeg", ".jfif", ".png"};
 
 // This whole file/frame is a mess behind the scenes :P
@@ -393,7 +393,7 @@ namespace Frame {
         if (tmp.length() > 1 && tmp[0] == '.') {
             tmp.erase(0, 1);
         }
-        this->dlBuffer = Metadata::readArtFromFile(path, audioFormatFromString(tmp));
+        this->dlBuffer = Metadata::readArtFromFile(path, audioFormatFromString(tmp == "WAVE" ? "WAV" : tmp));
         if (this->dlBuffer.empty()) {
             this->createInfoOverlay("Common.Error.NoArt"_lang);
             return;
