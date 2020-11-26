@@ -45,7 +45,12 @@ namespace Gui {
             Metadata meta;
             meta.id = -3;
             if (songID >= 0) {
-                meta = this->database->getMetadataForID(songID);
+                // Open a very brief connection to the database to fetch id
+                bool ok = this->database->openReadOnly();
+                if (ok) {
+                    meta = this->database->getMetadataForID(songID);
+                    this->database->close();
+                }
             }
             this->currentSongID = songID;
 

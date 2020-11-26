@@ -15,9 +15,10 @@ void TriOverlay::initServices() {
     // Attempt to connect to TriPlayer
     this->triInitialized = TriPlayer::initialize();
 
-    // Attempt to open connection to database
+    // Attempt to open connection to database to ensure it's working properly
     this->database = new Database();
     this->dbInitialized = this->database->openReadOnly();
+    this->database->close();
 }
 
 void TriOverlay::exitServices() {
