@@ -151,15 +151,15 @@ namespace Utils {
         return str;
     }
 
-    std::vector<std::string> splitIntoWords(const std::string & str) {
+    std::vector<std::string> splitIntoWords(const std::string & str, const char delim) {
         std::vector<std::string> words;
 
         // Iterate over each word
         std::string word = "";
         size_t pos = 0;
         while (pos < str.length()) {
-            // Append chars to word until a space is reached
-            if (str[pos] != ' ') {
+            // Append chars to word until the delimiter is reached
+            if (str[pos] != delim) {
                 word.append(1, str[pos]);
             } else {
                 // Don't add empty words (i.e. due to repeated spaces)

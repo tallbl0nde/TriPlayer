@@ -32,8 +32,8 @@ namespace Utils {
     // Format seconds in x hours, y minutes
     std::string secondsToHoursMins(unsigned int);
 
-    // Splits the given string into words (splits on space)
-    std::vector<std::string> splitIntoWords(const std::string &);
+    // Splits the given string into words (splits on provided delimiter)
+    std::vector<std::string> splitIntoWords(const std::string &, const char);
 
     // Base case for below
     std::string substituteTokens(std::string, std::string);

@@ -119,11 +119,14 @@ namespace Main {
     }
 
     void Application::pushScreen() {
+        this->screenIDs.push(this->screenID);
         this->display->pushScreen();
     }
 
     void Application::popScreen() {
         this->display->popScreen();
+        this->screenID = this->screenIDs.top();
+        this->screenIDs.pop();
     }
 
     void Application::dropScreen() {
@@ -198,8 +201,18 @@ namespace Main {
         // Mark that we're no longer playing media
         Utils::NX::setPlayingMedia(false);
 
-        // Delete screens
-        this->screens[static_cast<int>(this->screenID)]->onUnload();
+        // Unload all loaded screens
+        while (true) {
+            this->screens[static_cast<int>(this->screenID)]->onUnload();
+            if (this->screenIDs.empty()) {
+                break;
+            }
+
+            this->screenID = this->screenIDs.top();
+            this->screenIDs.pop();
+        }
+
+        // Finally delete
         for (Screen::Screen * s : this->screens) {
             delete s;
         }

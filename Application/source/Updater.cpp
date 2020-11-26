@@ -5,12 +5,85 @@
 #include "lang/Lang.hpp"
 #include "nlohmann/json.hpp"
 #include "Paths.hpp"
+#include <regex>
 #include "Updater.hpp"
 #include "utils/Curl.hpp"
 #include "utils/FS.hpp"
+#include "utils/Utils.hpp"
 
 // URL used to retrieve update data
 #define GITHUB_API_URL "https://api.github.com/repos/tallbl0nde/TriPlayer/releases/latest"
+
+// Helper returning if a string is a number
+static inline bool isNumber(const std::string & str) {
+    return std::regex_match(str, std::regex("[0-9]+"));
+}
+
+// Helper returning if the second version string is newer than the first
+// Expects strings of the format X.X.XY, where each X is a number and Y
+// is a letter (optional)
+static bool isNewer(const std::string & current, const std::string & available) {
+    // Sanity check for speed
+    if (current == available) {
+        return false;
+    }
+
+    // Split each string on each .
+    std::vector<std::string> currTokens = Utils::splitIntoWords(current, '.');
+    std::vector<std::string> availTokens = Utils::splitIntoWords(available, '.');
+
+    // Return false if either string doesn't have three tokens
+    if (currTokens.size() != 3 || availTokens.size() != 3) {
+        return false;
+    }
+
+    // Compare from left to right, stopping if the available number is larger
+    for (size_t i = 0; i < 2; i++) {
+        // Ensure we're comparing integers
+        if (currTokens[i].empty() || !isNumber(currTokens[i]) || availTokens[i].empty() || !isNumber(availTokens[i])) {
+            return false;
+        }
+
+        if (std::stoi(currTokens[i]) < std::stoi(availTokens[i])) {
+            return true;
+        }
+    }
+
+    // Check the third tokens to see if the last char is a letter
+    std::string & curTmp = currTokens[2];
+    std::string & avaTmp = availTokens[2];
+    if (curTmp.empty() || avaTmp.empty()) {
+        return false;
+    }
+
+    // Remove letters
+    char curLet = 'a';
+    char avaLet = 'a';
+    if (!isNumber(curTmp.substr(curTmp.length() - 1, 1))) {
+        curLet = curTmp[curTmp.length()-1];
+        curTmp = curTmp.substr(0, curTmp.length() - 1);
+    }
+    if (!isNumber(avaTmp.substr(avaTmp.length() - 1, 1))) {
+        avaLet = avaTmp[avaTmp.length()-1];
+        avaTmp = avaTmp.substr(0, avaTmp.length() - 1);
+    }
+
+    // Finally compare
+    if (curTmp.empty() || !isNumber(curTmp) || avaTmp.empty() || !isNumber(avaTmp)) {
+        return false;
+    }
+
+    if (std::stoi(curTmp) < std::stoi(avaTmp)) {
+        return true;
+    }
+
+    if (curLet < avaLet) {
+        return true;
+    }
+
+    // If we make it here then they're the same (but we shouldn't)
+    return false;
+}
 
 Updater::Updater() {
     this->downloadUrl = "";
@@ -35,7 +108,8 @@ bool Updater::availableUpdate() {
     }
 
     if (meta["version"] != nullptr) {
-        return (meta["version"].get<std::string>() != "v" VER_STRING);
+        std::string tmp = meta["version"].get<std::string>();
+        return isNewer(VER_STRING, tmp.substr(1, tmp.length() - 1));
     }
     Log::writeInfo("[UPDATE] [availableUpdate] Couldn't find 'version' field");
     return false;
@@ -88,9 +162,12 @@ bool Updater::checkForUpdate() {
     outfile << std::setw(4) << meta << std::endl;
 
     // Compare version to determine if it's an update or not
-    if (ok && this->meta.version != "v" VER_STRING) {
-        Log::writeSuccess("[UPDATE] [checkForUpdate] Update available: " + this->meta.version);
-        return true;
+    if (ok && meta["version"] != nullptr) {
+        std::string tmp = meta["version"].get<std::string>();
+        if (isNewer(VER_STRING, tmp.substr(1, tmp.length() - 1))) {
+            Log::writeSuccess("[UPDATE] [checkForUpdate] Update available: " + this->meta.version);
+            return true;
+        }
     }
 
     Log::writeInfo("[UPDATE] [checkForUpdate] No update available");

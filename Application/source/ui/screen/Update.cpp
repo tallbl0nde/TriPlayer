@@ -239,11 +239,10 @@ namespace Screen {
                     // If the metadata about the update has a size, it must have been successful
                     Updater::Meta meta = this->updater->getMetadata();
                     if (meta.size > 0) {
-                        // Up to date if strings match
-                        if (meta.version == "v" VER_STRING) {
-                            this->showUpToDate();
-                        } else {
+                        if (this->updater->availableUpdate()) {
                             this->showChangelog();
+                        } else {
+                            this->showUpToDate();
                         }
 
                     } else {

@@ -5,6 +5,7 @@
 #include "Config.hpp"
 #include "db/SyncDatabase.hpp"
 #include <future>
+#include <stack>
 #include "Sysmodule.hpp"
 #include "ui/Theme.hpp"
 
@@ -33,6 +34,7 @@ namespace Main {
             // Screens of the app
             ScreenID screenID;
             std::array<Screen::Screen *, 5> screens;
+            std::stack<ScreenID> screenIDs;
 
             // Overlay to show when prompting to exit
             Aether::MessageBox * exitPrompt;

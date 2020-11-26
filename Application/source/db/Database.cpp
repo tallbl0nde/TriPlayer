@@ -288,7 +288,7 @@ bool Database::setSearchUpdate(int val) {
 
 std::vector<std::string> Database::getSearchPhrases(const std::string & table, std::string & str) {
     // Split string into words
-    std::vector<std::string> words = Utils::splitIntoWords(str);
+    std::vector<std::string> words = Utils::splitIntoWords(str, ' ');
     str = "";
 
     // Get word suggestions for each word and store associated score
