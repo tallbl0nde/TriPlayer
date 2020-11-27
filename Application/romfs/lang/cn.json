@@ -205,15 +205,15 @@
             "InitialQueueSize": "播放列表曲目数量限制",
             "InitialQueueSizeText": "啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊",
             "MaximumSearchPhrases": "Maximum Search Phrases",
-            "MaximumSearchPhrasesText": "搜索时采用的“短语”的最大数量。短语是通过将查询中的词与你的图书馆中的词进行交换而产生的。较大的数量将导致 "更广泛"的搜索，这可能需要更长的时间。它的默认值是8，不能设置为0。",
+            "MaximumSearchPhrasesText": "搜索时采用的“短语”的最大数量。短语是通过将查询中的词与你的图书馆中的词进行交换而产生的。较大的数量将导致“更广泛”的搜索，这可能需要更长的时间。它的默认值是8，不能设置为0。",
             "MaximumSearchScore": "Maximum Search Score",
             "MaximumSearchScoreText": "The maximum 'score' a potential result can have to be considered relevant. A score is calculated by determining how similar the title, artist, etc. is to the search query. A larger number will result in more results that are less relevant, but also better results for misspelled words. This has a default value of 130, and cannot be smaller than 30.",
             "RemoveUnneededImages": "Remove Unneeded Images",
             "RemoveUnneededImagesText": "Remove any images within '/switch/TriPlayer/images' that are no longer needed. TriPlayer aims to keep this folder clean and up-to-date so this shouldn't remove any files under normal circumstances."
         },
         "AppAppearance": {
-            "AccentColour": "交互性颜色",
-            "AccentColourText": "更改整个应用程序中的交互性颜色。",
+            "AccentColour": "交互颜色",
+            "AccentColourText": "更改整个应用程序中的交互颜色。",
             "AutoPlayerPalette": "自动改变播放界面的颜色",
             "AutoPlayerPaletteText": "自动调整全屏播放界面的颜色，使其与当前歌曲的专辑封面颜色相匹配。如果禁用该功能，则将使用默认的配色方案。",
             "Language": "语言",
