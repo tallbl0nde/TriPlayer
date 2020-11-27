@@ -190,7 +190,7 @@
         "Apply": "적용",
         "AppAbout": {
             "CheckUpdates": "업데이트 확인",
-            "Contributors": "기여자",
+            "Contributors": "기여자들",
             "ContributorsText": "TriPlayer 개발에 기여한 다음 분들에게 큰 감사의 말씀을 전합니다:",
             "Copyright": "Copyright © 2020 tallbl0nde",
             "Libraries": "소프트웨어 라이브러리",
@@ -294,7 +294,7 @@
         "Information": {
             "DiscNumber": "디스크 #",
             "Error": "하나 이상의 필드가 비어 있습니다, 모든 필드가 채워져 있는지 확인해주세요!",
-            "FileLocation": "파이 위치",
+            "FileLocation": "파일 위치",
             "Heading": "노래 정보",
             "TrackNumber": "트랙 #"
         },
