@@ -83,6 +83,14 @@
         "ExitPrompt": "Are you sure you want to exit?",
         "GoToAlbum": "Go to Album",
         "GoToArtist": "Go to Artist",
+        "HoursMins": {
+            "0H1M": "1 minute",
+            "0HXM": "$[1] minutes",
+            "1H1M": "1 hour, 1 minute",
+            "1HXM": "1 hour, $[1] minutes",
+            "XH1M": "$[1] hours, 1 minute",
+            "XHXM": "$[1] hours, $[2] minutes"
+        },
         "Length": "Length",
         "OK": "OK",
         "No": "No",

@@ -2,6 +2,7 @@
 #include <cctype>
 #include <cmath>
 #include <ctime>
+#include "lang/Lang.hpp"
 #include "utils/Utils.hpp"
 
 namespace Utils {
@@ -123,32 +124,17 @@ namespace Utils {
     }
 
     std::string secondsToHoursMins(unsigned int sec) {
-        std::string str = "";
-
-        // Hours
+        // Get hours and minutes
         int h = sec/3600;
-        if (h != 0) {
-            str += std::to_string(h);
-        }
-        if (h == 1) {
-            str += " hour";
-        } else if (h != 0) {
-            str += " hours";
-        }
-
-        // Minutes
         int m = ((sec/60)%60);
-        if (h > 0) {
-            str += ", ";
-        }
-        str += std::to_string(m);
-        if (m == 1) {
-            str += " minute";
-        } else {
-            str += " minutes";
-        }
 
-        return str;
+        // Return appropriate string
+        std::string str = (h == 0 ? "0" : (h == 1 ? "1" : "X"));
+        str += "H";
+        str += (m == 1 ? "1" : "X");
+        str += "M";
+        str = "Common.HoursMins." + str;
+        return substituteTokens(Lang::string(str), std::to_string(h <= 1 ? m : h), std::to_string(m));
     }
 
     std::vector<std::string> splitIntoWords(const std::string & str, const char delim) {

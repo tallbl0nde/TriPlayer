@@ -287,7 +287,7 @@ namespace Frame {
         CustomElm::MenuButton * b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoqueue.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Add to Queue");
+        b->setText("Common.AddToQueue"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
             this->app->sysmodule()->sendAddToSubQueue(this->songs[pos].ID);
@@ -299,7 +299,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/addtoplaylist.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("Add to Playlist");
+        b->setText("Common.AddToPlaylist"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
             this->showAddToPlaylist([this, pos](PlaylistID i) {
@@ -317,7 +317,7 @@ namespace Frame {
             b = new CustomElm::MenuButton();
             b->setIcon(new Aether::Image(0, 0, "romfs:/icons/user.png"));
             b->setIconColour(this->app->theme()->muted());
-            b->setText("Go to Artist");
+            b->setText("Common.GoToArtist"_lang);
             b->setTextColour(this->app->theme()->FG());
             b->setCallback([this, pos]() {
                 ArtistID a = this->app->database()->getArtistIDForSong(this->songs[pos].ID);
@@ -334,7 +334,7 @@ namespace Frame {
         b = new CustomElm::MenuButton();
         b->setIcon(new Aether::Image(0, 0, "romfs:/icons/info.png"));
         b->setIconColour(this->app->theme()->muted());
-        b->setText("View Information");
+        b->setText("Common.ViewInformation"_lang);
         b->setTextColour(this->app->theme()->FG());
         b->setCallback([this, pos]() {
             this->changeFrame(Type::SongInfo, Action::Push, this->songs[pos].ID);
