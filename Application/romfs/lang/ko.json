@@ -277,7 +277,7 @@
             "PauseOnUnplug": "헤드폰 연결 해제 시 일시 중지",
             "PauseText": "특정 시스템 이벤트가 수신되면 재생을 일시 중지합니다.",
             "RestartSysmodule": "시스모듈 재시작",
-            "RestartSysmoduleText": "시스모듈을 재시작 하고 다시 로드될 때가지 기다려주세요.",
+            "RestartSysmoduleText": "시스모듈을 재시작하고 다시 로드될 때까지 기다려주세요.",
             "StopSysmodule": "시스모듈 중지",
             "StopSysmoduleText": "시스모듈을 안전하게 중지하고 어플리케이션을 종료합니다."
         },
