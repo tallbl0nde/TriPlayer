@@ -196,7 +196,7 @@
             "Libraries": "软件源码库",
             "LibrariesText": "我要感谢以下在TriPlayer中用到的开放源码库的贡献者们。",
             "Support": "捐赠",
-            "SupportText": "如果TriPlayer能让您在Switch上享受到音乐的乐趣，那我将很感谢您通过Ko-fi对我进行支持：https://ko-fi.com/tallbl0nde"。,
+            "SupportText": "如果TriPlayer能让您在Switch上享受到音乐的乐趣，那我将很感谢您通过Ko-fi对我进行支持：https://ko-fi.com/tallbl0nde",
             "UpdateAvailable": "有新版本！"
         },
         "AppAdvanced": {
@@ -205,7 +205,7 @@
             "InitialQueueSize": "播放列表曲目数量限制",
             "InitialQueueSizeText": "啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊",
             "MaximumSearchPhrases": "Maximum Search Phrases",
-            "MaximumSearchPhrasesText": "搜索时采用的“短语”的最大数量。短语是通过将查询中的词与你的图书馆中的词进行交换而产生的。较大的数量将导致 "更广泛 "的搜索，这可能需要更长的时间。它的默认值是8，不能设置为0。",
+            "MaximumSearchPhrasesText": "搜索时采用的“短语”的最大数量。短语是通过将查询中的词与你的图书馆中的词进行交换而产生的。较大的数量将导致 "更广泛"的搜索，这可能需要更长的时间。它的默认值是8，不能设置为0。",
             "MaximumSearchScore": "Maximum Search Score",
             "MaximumSearchScoreText": "The maximum 'score' a potential result can have to be considered relevant. A score is calculated by determining how similar the title, artist, etc. is to the search query. A larger number will result in more results that are less relevant, but also better results for misspelled words. This has a default value of 130, and cannot be smaller than 30.",
             "RemoveUnneededImages": "Remove Unneeded Images",
