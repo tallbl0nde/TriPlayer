@@ -205,7 +205,7 @@
             "InitialQueueSize": "播放列表曲数限制",
             "InitialQueueSizeText": "当从歌曲库、专辑库或其他地方播放音乐时，播放列表内最多能创建的歌曲数量。负数表示没有限制。",
             "MaximumSearchPhrases": "Maximum Search Phrases",
-            "MaximumSearchPhrasesText": "搜索时采用的“短语”的最大数量。短语是通过将搜索中的词与你的数据库中的词进行交换而产生的。较大的数量将导致 "更广泛"的搜索，这可能需要更长的时间。默认值为8，不能设为0。",
+            "MaximumSearchPhrasesText": "搜索时采用的“短语”的最大数量。短语是通过将搜索中的词与你的数据库中的词进行交换而产生的。较大的数量将导致“更广泛”的搜索，这可能需要更长的时间。默认值为8，不能设为0。",
             "MaximumSearchScore": "Maximum Search Score",
             "MaximumSearchScoreText": "搜索时的最大“匹配值”，“匹配值”默认值为130，不能小于30。",
             "RemoveUnneededImages": "删除无用图片文件",
