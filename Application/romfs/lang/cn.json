@@ -12,7 +12,7 @@
         "DetailsManyMany": "$[1]张专辑 | $[2]首歌",
         "Information": {
             "DownloadMessage": "将从TheAudioDB搜索并下载该歌手的图片。\n\n为了获得最好的结果：\n- 请确保专辑的名称准确无误\n- 请确保你的网络连接状态良好\n\n在下载图片的过程中，你将无法控制音乐的播放。",
-            "DownloadNotFound": "无法找到名为"$[1]"的歌手。请检查你的拼写是否正确或尝试手动设置图片。",
+            "DownloadNotFound": "无法找到名为'$[1]'的歌手。请检查你的拼写是否正确或尝试手动设置图片。",
             "DownloadNoImage": "在TheAudioDB上找到了名为“$[1]”的歌手，但是没有与之匹配的图片。",
             "Heading": "歌手信息",
             "Image": "图片",
@@ -196,7 +196,7 @@
             "Libraries": "软件源码库",
             "LibrariesText": "我要感谢以下在TriPlayer中用到的开放源码库的开发者们。",
             "Support": "捐赠",
-            "SupportText": "如果TriPlayer让你在Switch上享受到了音乐的乐趣，那你可以考虑通过Ko-fi来支持我：https://ko-fi.com/tallbl0nde 我对此会非常感激！"
+            "SupportText": "如果TriPlayer让你在Switch上享受到了音乐的乐趣，那么你可以考虑通过Ko-fi来支持我：https://ko-fi.com/tallbl0nde 我对此会非常感激！"
             "UpdateAvailable": "有新版本！"
         },
         "AppAdvanced": {
