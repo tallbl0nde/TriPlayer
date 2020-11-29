@@ -94,7 +94,7 @@
         "Length": "时长",
         "OK": "OK",
         "No": "否",
-        "NotPlaying1": "没有正在播放的内容",
+        "NotPlaying1": "暂无播放内容",
         "NotPlaying2": "放首歌来听听吧",
         "Play": "播放",
         "Quit": "退出",
@@ -169,15 +169,15 @@
         "NextInQueue": "下一首播放",
         "NowPlaying": "正在播放",
         "RemoveFromQueue": "从播放列表移除",
-        "UpNext": "列表来源： $[1]",
+        "UpNext": "列表来源：$[1]",
         "UpNextBlank": "Up Next"
     },
     "Search": {
         "Description": "从歌单、歌曲库、歌手库或专辑库进行搜索。",
-        "KeyboardError": "显示键盘时发生意外错误。如果这种情况持续存在，请重启应用。",
+        "KeyboardError": "弹出键盘时发生意外错误。如果这种情况持续存在，请重启应用。",
         "NoResults": "什么都没有找到",
-        "ResultsEmpty": " 的搜索结果",
-        "Results": "$[1]的搜索结果",
+        "ResultsEmpty": "“ ”的搜索结果",
+        "Results": "“$[1]”的搜索结果",
         "Search": "搜索",
         "SearchError": "搜索数据库时发生错误。请重启应用并重试一次。",
         "Searching": "正在搜索……"
@@ -190,24 +190,24 @@
         "Apply": "应用",
         "AppAbout": {
             "CheckUpdates": "检查更新",
-            "Contributors": "贡献者",
+            "Contributors": "贡献者们",
             "ContributorsText": "衷心感谢以下人员对TriPlayer开发作出的贡献。",
             "Copyright": "Copyright © 2020 tallbl0nde",
             "Libraries": "软件源码库",
-            "LibrariesText": "我要感谢以下在TriPlayer中用到的开放源码库的贡献者们。",
+            "LibrariesText": "我要感谢以下在TriPlayer中用到的开放源码库的开发者们。",
             "Support": "捐赠",
-            "SupportText": "如果TriPlayer能让您在Switch上享受到音乐的乐趣，那我将很感谢您通过Ko-fi对我进行支持：https://ko-fi.com/tallbl0nde",
+            "SupportText": "如果TriPlayer让你在Switch上享受到了音乐的乐趣，那你可以考虑通过Ko-fi来支持我：https://ko-fi.com/tallbl0nde 我对此会非常感激！"
             "UpdateAvailable": "有新版本！"
         },
         "AppAdvanced": {
-            "AutoLaunchSysmodule": "自动启动插件",
-            "AutoLaunchSysmoduleText": "在打开应用时，若后台插件没有运行则自动启动它。",
+            "AutoLaunchSysmodule": "自动启动后台模块",
+            "AutoLaunchSysmoduleText": "在打开应用时，若后台模块没有运行则自动启动它。",
             "InitialQueueSize": "播放列表曲数限制",
             "InitialQueueSizeText": "当从歌曲库、专辑库或其他地方播放音乐时，播放列表内最多能创建的歌曲数量。负数表示没有限制。",
-            "MaximumSearchPhrases": "Maximum Search Phrases",
+            "MaximumSearchPhrases": "最大搜索短语数",
             "MaximumSearchPhrasesText": "搜索时采用的“短语”的最大数量。短语是通过将搜索中的词与你的数据库中的词进行交换而产生的。较大的数量将导致“更广泛”的搜索，这可能需要更长的时间。默认值为8，不能设为0。",
-            "MaximumSearchScore": "Maximum Search Score",
-            "MaximumSearchScoreText": "搜索时的最大“匹配值”，“匹配值”默认值为130，不能小于30。",
+            "MaximumSearchScore": "最大搜索“相关值”",
+            "MaximumSearchScoreText": "搜索时采用的最大“相关值”。相关值是根据搜索关键词与数据库内的歌曲名、歌手名等内容的相关度来计算的。数值越大，搜索时得到的低相关度的结果越多，但相对的，在搜索关键词拼写错误时得到的搜索效果就越好。默认值为130，不能小于30。",
             "RemoveUnneededImages": "删除无用图片文件",
             "RemoveUnneededImagesText": "删除在“/switch/TriPlayer/images”目录下的无用图片文件。TriPlayer旨在让此文件夹的内容保持为最新、整洁的，因此在正常情况下应该不会删除任何文件。"
         },
@@ -228,8 +228,8 @@
             "ConfirmExitText": "当你想要退出软件时会有一个提示框来提醒你。",
             "InitialSection": "初始页面",
             "InitialSectionText": "应用启动时所显示的初始页面。",
-            "LoggingLevel": "程序的日志级别",
-            "LoggingLevelText": "该选项只用来调整应用程序的日志级别，跟后台插件的日志级别无关。每个级别都会记录它和它下面级别的信息（例如Warning级别会同时记录Warning和Error的信息）。Info应只用于调试目的，因为它记录了大量的信息并使应用程序运行变慢。",
+            "LoggingLevel": "应用程序的日志级别",
+            "LoggingLevelText": "该选项只用来调整应用程序的日志级别，跟后台模块的日志级别无关。每个级别都会记录它和它下面级别的信息（例如Warning级别会同时记录Warning和Error的信息）。Info应只用于调试目的，因为它记录了大量的信息并使应用程序运行变慢。",
             "SkipWithLR": "使用L/R切换上一首/下一首",
             "SkipWithLRText": "使用L/R来切换播放列表中的上一首/下一首。该功能只在应用程序中生效。"
         },
@@ -243,14 +243,14 @@
             "SearchAlbumImagesText": "正在搜索专辑封面……",
             "SearchArtistImages": "搜索缺失的歌手封面",
             "SearchArtistImagesText": "正在搜索歌手图片…….",
-            "SearchImagesText": "检索TheAudioDB，寻找你的数据库中缺失的图片。根据你数据库的大小，这个过程可能要花上一段时间。这些操作一旦开始就不能取消。"
+            "SearchImagesText": "检索TheAudioDB以搜索你数据库中缺失的图片。根据你数据库的大小，这个过程可能要花上一段时间。这些操作一旦开始就不能取消。"
         },
         "AppSearch": {
-            "AlbumLimit": "Album Limit",
-            "ArtistLimit": "Artist Limit",
-            "PlaylistLimit": "Playlist Limit",
-            "SongLimit": "Song Limit",
-            "Comment": "Limit the number of results returned for each search category. A negative number indicates no limit. Zero will hide the section completely from any search results."
+            "AlbumLimit": "专辑数量限制",
+            "ArtistLimit": "歌手数量限制",
+            "PlaylistLimit": "歌单数量限制",
+            "SongLimit": "歌曲数量限制",
+            "Comment": "在搜索时每个类别所能返回的搜索结果数量。设为负数表示没有限制，设为0则将从搜索结果中完全隐藏该部分。"
         },
         "BackToLibrary": "返回主界面",
         "General": "通用",
@@ -260,12 +260,12 @@
         "Reset": "重置",
         "Search": "搜索",
         "Settings": "设置",
-        "Sysmodule": "后台插件",
+        "Sysmodule": "后台模块",
         "SysGeneral": {
             "AdjustPlayback": "使用组合键来控制歌曲的播放",
             "AdjustPlaybackText": "你可以设置同时最多按下四个按键的组合键，当按下这些按键时，它们将向TriPlayer发送特定播放指令（无论Switch正在运行什么）。请注意，按键的顺序无关紧要，你可以以任何顺序按下/设置按键。",
-            "LoggingLevel": "插件的日志级别",
-            "LoggingLevelText": "该选项只用来调整后台插件的日志级别，跟应用程序的日志级别无关。每个级别都会记录它和它下面级别的信息（例如Warning级别会同时记录Warning和Error的信息）。Info应只用于调试目的，因为它记录了大量的信息并使后台播放变慢。",
+            "LoggingLevel": "后台模块的日志级别",
+            "LoggingLevelText": "该选项只用来调整后台模块的日志级别，跟应用程序的日志级别无关。每个级别都会记录它和它下面级别的信息（例如Warning级别会同时记录Warning和Error的信息）。Info应只用于调试目的，因为它记录了大量的信息并使后台播放变慢。",
             "NextTrack": "下一首",
             "NextTrackCombination": "下一首的组合键",
             "PlayPause": "播放/暂停",
@@ -275,10 +275,10 @@
             "PauseOnSleep": "当Switch休眠时自动暂停播放",
             "PauseOnUnplug": "当拔出耳机时自动暂停播放",
             "PauseText": "当接收到某些系统事件时暂停后台播放。",
-            "RestartSysmodule": "重启后台插件",
-            "RestartSysmoduleText": "重启后台插件并等待它重新加载。",
-            "StopSysmodule": "停止后台插件",
-            "StopSysmoduleText": "安全地停止后台插件并关闭应用程序。"
+            "RestartSysmodule": "重启后台模块",
+            "RestartSysmoduleText": "重启后台模块并等待它重新加载。",
+            "StopSysmodule": "停止后台模块",
+            "StopSysmoduleText": "安全地停止后台模块并关闭应用程序。"
         },
         "SysMP3": {
             "AccurateSeek": "Accurate Seek",
@@ -315,12 +315,12 @@
     "Splash": {
         "AlbumsProcessed": "已处理$[1]张专辑",
         "Error": {
-            "Connect1": "无法连接到后台插件",
+            "Connect1": "无法连接到后台模块",
             "Connect2": "点击“启动”来在后台启动它。",
             "Unknown1": "发生了一个意外的错误",
             "Unknown2": "请检查日志文件以获取更多信息",
-            "Version1": "后台插件跟应用程序的版本不匹配",
-            "Version2": "请确保你所有的Triplayer组件都是最新版"
+            "Version1": "后台模块跟应用程序的版本不匹配",
+            "Version2": "请确保你所有的Triplayer组件都已是最新版"
         },
         "Extracting": "正在提取专辑封面…….",
         "FileOutOf": "$[1]/$[2]个文件",
@@ -357,7 +357,7 @@
         "Extracting": "正在解压升级文件……",
         "Heading": "更新TriPlayer",
         "Success1": "更新完成！",
-        "Success2": "本应用程序跟后台插件将终止运行",
+        "Success2": "本应用程序跟后台模块将终止运行",
         "Update": "更新",
         "UpToDate": "TriPlayer已是最新版！",
         "Version": "版本 $[1]"
