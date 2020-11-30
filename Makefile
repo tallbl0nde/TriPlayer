@@ -34,6 +34,10 @@ all:
 	@touch sdcard/atmosphere/contents/4200000000000FFF/flags/boot2.flag
 	@cp Sysmodule/sys-triplayer.nsp sdcard/atmosphere/contents/4200000000000FFF/exefs.nsp
 
+	@mkdir -p sdcard/sxos/titles/4200000000000FFF/flags
+	@touch sdcard/sxos/titles/4200000000000FFF/flags/boot2.flag
+	@cp Sysmodule/sys-triplayer.nsp sdcard/sxos/titles/4200000000000FFF/exefs.nsp
+
 	@echo -e '\033[1m>> Done! Copy ./sdcard to the root of your SD Card :)\033[0m'
 
 clean:
