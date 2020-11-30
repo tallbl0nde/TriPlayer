@@ -31,6 +31,9 @@ namespace Utils::Lang {
             case Language::English:
                 return "English";
 
+            case Language::Japanese:
+                return "日本語";
+
             default:
                 break;
         }
@@ -41,12 +44,16 @@ namespace Utils::Lang {
     bool setLanguage(const Language l) {
         std::string path = "";
 
-        Language lang;
+        Language lang = l;
         if (l == Language::Default) {
             lang = Utils::NX::getSystemLanguage();
         }
 
         switch (lang) {
+            case Language::Japanese:
+                path = "romfs:/lang/jp.json";
+                break;
+
             case Language::Default:
             case Language::English:
             default:

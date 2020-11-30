@@ -4,7 +4,8 @@
 // Enum of supported languages
 enum class Language {
     Default,        // Attempt to match system language
-    English,        // English
+    English,
+    Japanese,
     Total           // Total number of languages
 };
 

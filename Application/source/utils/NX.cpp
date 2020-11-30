@@ -35,6 +35,10 @@ namespace Utils::NX {
                 lang = Language::English;
                 break;
 
+            case SetLanguage_JA:
+                lang = Language::Japanese;
+                break;
+
             // No translations for these yet
             case SetLanguage_FR:
             case SetLanguage_FRCA:
@@ -43,7 +47,6 @@ namespace Utils::NX {
             case SetLanguage_IT:
             case SetLanguage_NL:
             case SetLanguage_PT:
-            case SetLanguage_JA:
             case SetLanguage_RU:
             case SetLanguage_ZHHANT:
             case SetLanguage_ZHCN:
