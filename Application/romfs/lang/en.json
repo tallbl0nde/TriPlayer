@@ -16,7 +16,8 @@
             "DownloadNoImage": "'$[1]' was found on TheAudioDB but has no image associated with it.",
             "Heading": "Artist Information",
             "Image": "Image",
-            "Name": "Name"
+            "Name": "Name",
+            "Searching": "Searching for '$[1]' on TheAudioDB.com..."            
         },
         "NotFound": "No artists found!",
         "PlayAlbum": "Play Album",
