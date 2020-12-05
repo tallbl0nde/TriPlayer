@@ -104,6 +104,8 @@ void Config::readConfig() {
         this->language_ = Language::ChineseSimplified;
     } else if (str == "Japanese") {
         this->language_ = Language::Japanese;
+    } else if (str == "Korean") {
+        this->language_ = Language::Korean;
     } else {
         this->language_ = Language::Default;
     }
@@ -358,6 +360,10 @@ bool Config::setLanguage(const Language l) {
 
         case Language::Japanese:
             str = "Japanese";
+            break;
+
+        case Language::Korean:
+            str = "Korean";
             break;
     }
 
