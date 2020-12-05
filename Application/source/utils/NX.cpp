@@ -35,6 +35,11 @@ namespace Utils::NX {
                 lang = Language::English;
                 break;
 
+            case SetLanguage_ES:
+            case SetLanguage_ES419:
+                lang = Language::Spanish;
+                break;
+
             case SetLanguage_ZHCN:
             case SetLanguage_ZHHANS:
                 lang = Language::ChineseSimplified;
@@ -52,14 +57,12 @@ namespace Utils::NX {
             case SetLanguage_FR:
             case SetLanguage_FRCA:
             case SetLanguage_DE:
-            case SetLanguage_ES:
             case SetLanguage_IT:
             case SetLanguage_NL:
             case SetLanguage_PT:
             case SetLanguage_RU:
             case SetLanguage_ZHHANT:
             case SetLanguage_ZHTW:
-            case SetLanguage_ES419:
             default:
                 lang = Language::Default;
                 break;
