@@ -8,6 +8,7 @@
 
 namespace Utils::Lang {
     // JSON object which reads and caches strings from file
+    static nlohmann::json en = nullptr;
     static nlohmann::json j = nullptr;
 
     // Read in a file, returning whether successful
@@ -51,8 +52,13 @@ namespace Utils::Lang {
     }
 
     bool setLanguage(const Language l) {
-        std::string path = "";
+        // Also set the fallback language to English here on first set
+        if (en == nullptr) {
+            std::ifstream in("romfs:/lang/en.json");
+            en = nlohmann::json::parse(in);
+        }
 
+        std::string path = "";
         Language lang = l;
         if (l == Language::Default) {
             lang = Utils::NX::getSystemLanguage();
@@ -87,16 +93,29 @@ namespace Utils::Lang {
 
     std::string string(const std::string & key) {
         // First 'navigate' to nested object
+        bool haveString = false;
+        bool isFallback = false;
         nlohmann::json t = j;
-        std::istringstream ss(key);
-        std::string k;
-        while (std::getline(ss, k, '.') && t != nullptr) {
-            t = t[k];
-        }
+        while (!haveString) {
+            std::istringstream ss(key);
+            std::string k;
+            while (std::getline(ss, k, '.') && t != nullptr) {
+                t = t[k];
+            }
 
-        // If the string is not present return key
-        if (t == nullptr || !t.is_string()) {
-            return key;
+            // If the string is not present...
+            if (t == nullptr || !t.is_string()) {
+                // Check fallback json, otherwise return key
+                if (!isFallback) {
+                    t = en;
+                    isFallback = true;
+                } else {
+                    return key;
+                }
+
+            } else {
+                haveString = true;
+            }
         }
 
         return t.get<std::string>();

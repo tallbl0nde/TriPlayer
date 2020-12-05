@@ -42,7 +42,7 @@ namespace Frame::Settings {
         text->setColour(this->app->theme()->FG());
         container->addElement(text);
         this->addComment("Settings.AppAbout.ContributorsText"_lang);
-        this->addComment("einsteinx2: TagLib integration");
+        this->addComment("einsteinx2: TagLib integration\nHeartbeat-Heartbreak: Simplified Chinese translation\nRoutineFree: Korean translation\nWiiEJECT: Spanish translation\nyyoossk: Japanese translation");
         this->list->addElement(new Aether::ListSeparator());
 
         // Support heading
