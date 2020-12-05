@@ -34,6 +34,9 @@ namespace Utils::Lang {
             case Language::Japanese:
                 return "日本語";
 
+            case Language::ChineseSimplified:
+                return "简体中文";
+
             default:
                 break;
         }
@@ -52,6 +55,10 @@ namespace Utils::Lang {
         switch (lang) {
             case Language::Japanese:
                 path = "romfs:/lang/jp.json";
+                break;
+
+            case Language::ChineseSimplified:
+                path = "romfs:/lang/zh-Hans.json";
                 break;
 
             case Language::Default:

@@ -5,6 +5,7 @@
 enum class Language {
     Default,        // Attempt to match system language
     English,
+    ChineseSimplified,
     Japanese,
     Total           // Total number of languages
 };
