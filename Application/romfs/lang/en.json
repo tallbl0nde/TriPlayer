@@ -17,7 +17,7 @@
             "Heading": "Artist Information",
             "Image": "Image",
             "Name": "Name",
-            "Searching": "Searching for '$[1]' on TheAudioDB.com..."            
+            "Searching": "Searching for '$[1]' on TheAudioDB.com..."
         },
         "NotFound": "No artists found!",
         "PlayAlbum": "Play Album",

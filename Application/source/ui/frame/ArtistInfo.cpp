@@ -183,7 +183,7 @@ namespace Frame {
         this->msgbox->setRectangleColour(this->app->theme()->popupBG());
         Aether::Element * body = new Aether::Element(0, 0, 700);
         Aether::TextBlock * tips = new Aether::TextBlock(40, 40, "", 24, 620);
-        tips->setString(Utils::substituteTokens("Common.Searching"_lang, this->metadata.name));
+        tips->setString(Utils::substituteTokens("Artist.Information.Searching"_lang, this->metadata.name));
         tips->setColour(this->app->theme()->FG());
         body->addElement(tips);
         body->setH(tips->h() + 80);
