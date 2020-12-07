@@ -186,7 +186,7 @@
     "Settings": {
         "About": "알아보기",
         "Advanced": "고급",
-        "Appearance": "외형",
+        "Appearance": "화면표시",
         "Application": "애플리케이션",
         "Apply": "적용",
         "AppAbout": {
@@ -220,7 +220,7 @@
             "Language": "언어",
             "LanguageText": "애플리케이션의 언어를 설정합니다. 기본값은 스위치 기기의 언어와 일치하도록 설정됩니다. 당신의 언어가 목록에 없고 앱을 번역하시길 원한다면, GitHub에서 Pull Request 해주세요.",
             "ShowTouchControls": "터치 컨트롤 표시",
-            "ShowTouchControlsText": "애플리케이션 왼쪽 상단에 터치 컨트롤을 표시/비 표시합니다. 이것은 오로지 외형을 위한 것이며, 주로 컨트롤러를 사용하여 탐색할 경우 이 기능을 비활성화하셔도 됩니다."
+            "ShowTouchControlsText": "애플리케이션 왼쪽 상단에 터치 컨트롤을 표시/비 표시합니다. 이것은 오로지 화면표시를 위한 것이며, 주로 컨트롤러를 사용하여 탐색할 경우 이 기능을 비활성화하셔도 됩니다."
         },
         "AppGeneral": {
             "ConfirmClearingQueue": "대기열 지우기 확인",
