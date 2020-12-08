@@ -16,6 +16,9 @@ namespace CustomElm::ListItem {
             // Constructor sets up elements (takes path to image)
             Playlist(const std::string &);
 
+            // Scroll if needed
+            void update(uint32_t);
+
             // Set stuff
             void setNameString(const std::string &);
             void setSongsString(const std::string &);

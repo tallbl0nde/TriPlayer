@@ -7,15 +7,28 @@ namespace CustomElm {
         this->rect->setHidden(true);
         this->icon = nullptr;
         this->text = new Aether::Text(this->x() + 60, this->y() + this->h()/2, "", 26);
+        this->text->setScroll(false);
+        this->text->setScrollSpeed(60);
+        this->text->setScrollWaitTime(1000);
         this->addElement(this->text);
         this->isActive = false;
+    }
+
+    void SideButton::update(uint32_t dt) {
+        Element::update(dt);
+
+        if (this->highlighted() && !this->text->scroll()) {
+            this->text->setScroll(true);
+        } else if (!this->highlighted() && this->text->scroll()) {
+            this->text->setScroll(false);
+        }
     }
 
     void SideButton::positionElements() {
         this->text->setX(this->icon ? this->x() + 60 : this->x() + 20);
         this->text->setW(this->text->texW());
-        if (this->text->texW() > (this->x() + this->w()) - this->text->x()) {
-            this->text->setW((this->x() + this->w()) - this->text->x());
+        if (this->text->texW() > (this->x() + this->w()) - this->text->x() - 10) {
+            this->text->setW((this->x() + this->w()) - this->text->x() - 10);
         }
         this->text->setY(this->y() + (this->h() - this->text->h())/2);
     }

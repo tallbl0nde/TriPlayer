@@ -17,6 +17,9 @@ namespace CustomElm {
         public:
             MenuButton();
 
+            // Scroll text when highlighted
+            void update(uint32_t);
+
             // Set colours
             void setIconColour(Aether::Colour);
             void setTextColour(Aether::Colour);

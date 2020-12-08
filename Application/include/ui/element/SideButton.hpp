@@ -24,6 +24,8 @@ namespace CustomElm {
             // X, Y, W
             SideButton(int, int, int);
 
+            void update(uint32_t);
+
             // Set colours
             void setInactiveColour(Aether::Colour);
             void setActiveColour(Aether::Colour);

@@ -9,15 +9,28 @@ namespace CustomElm {
     MenuButton::MenuButton() : Element(0, 0, 100, HEIGHT) {
         this->icon = nullptr;
         this->text = new Aether::Text(this->x() + 55, this->y() + this->h()/2, "", 24);
+        this->text->setScroll(false);
+        this->text->setScrollSpeed(60);
+        this->text->setScrollWaitTime(1000);
         this->addElement(this->text);
     }
 
     void MenuButton::positionItems() {
-        int maxW = (this->x() + this->w()) - this->text->x();
-        if (this->text->w() > maxW) {
+        int maxW = (this->x() + this->w()) - this->text->x() - HEIGHT/4;
+        if (this->text->texW() > maxW) {
             this->text->setW(maxW);
         } else {
             this->text->setW(this->text->texW());
+        }
+    }
+
+    void MenuButton::update(uint32_t dt) {
+        Element::update(dt);
+
+        if (this->highlighted() && !this->text->scroll()) {
+            this->text->setScroll(true);
+        } else if (!this->highlighted() && this->text->scroll()) {
+            this->text->setScroll(false);
         }
     }
 

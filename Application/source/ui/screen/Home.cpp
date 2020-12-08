@@ -468,10 +468,17 @@ namespace Screen {
         this->backIcon = new Aether::Image(this->backButton->x() + 30, 17, "romfs:/icons/back.png");
         this->backIcon->setColour(this->app->theme()->FG());
         this->backButton->addElement(this->backIcon);
-        this->backText = new Aether::Text(this->backIcon->x() + this->backIcon->w() + 20, 32, "Common.Back"_lang, 26);
-        this->backText->setY(this->backText->y() - this->backText->h()/2);
+
+        int maxW = this->backButton->w() - 70 - this->backIcon->w();
+        this->backText = new Aether::Text(0, 0, "Common.Back"_lang, 26);
+        while (this->backText->texW() > maxW) {
+            // This renders the text each time but should be fine :P
+            this->backText->setFontSize(this->backText->fontSize()-2);
+        }
+        this->backText->setXY(this->backIcon->x() + this->backIcon->w() + 15 + (maxW - this->backText->w())/2, this->backButton->y() + (this->backButton->h() - this->backText->h())/2 - 1);
         this->backText->setColour(this->app->theme()->FG());
         this->backButton->addElement(this->backText);
+
         this->backButton->setCallback([this]() {
             this->backCallback();
         });
@@ -480,13 +487,21 @@ namespace Screen {
 
         // Quit
         Aether::Element * quitButton = new Aether::Element(155, 0, 155, 65);
-        Aether::Text * quitText = new Aether::Text(quitButton->x() + 30, 32, "Common.Quit"_lang, 26);
-        quitText->setY(quitText->y() - quitText->h()/2);
-        quitText->setColour(this->app->theme()->FG());
-        quitButton->addElement(quitText);
-        Aether::Image * quitIcon = new Aether::Image(quitText->x() + quitText->w() + 20, 22, "romfs:/icons/quit.png");
+        Aether::Image * quitIcon = new Aether::Image(quitButton->x() + quitButton->w() - 30, quitButton->y() + 22, "romfs:/icons/quit.png");
+        quitIcon->setX(quitIcon->x() - quitIcon->w());
         quitIcon->setColour(this->app->theme()->FG());
         quitButton->addElement(quitIcon);
+
+        maxW = quitButton->w() - 70 - quitIcon->w();
+        Aether::Text * quitText = new Aether::Text(0, 0, "Common.Quit"_lang, 26);
+        while (quitText->texW() > maxW) {
+            // This renders the text each time but should be fine :P
+            quitText->setFontSize(quitText->fontSize()-2);
+        }
+        quitText->setXY(quitButton->x() + 25 + (maxW - quitText->w())/2, quitButton->y() + (quitButton->h() - quitText->h())/2 - 1);
+        quitText->setColour(this->app->theme()->FG());
+        quitButton->addElement(quitText);
+
         quitButton->setCallback([this]() {
             this->app->exit(false);
         });
