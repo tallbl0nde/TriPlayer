@@ -6,6 +6,7 @@ enum class Language {
     Default,        // Attempt to match system language
     English,
     Spanish,
+    ChineseTraditional,
     ChineseSimplified,
     Japanese,
     Korean,

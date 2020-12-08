@@ -38,6 +38,9 @@ namespace Utils::Lang {
             case Language::Japanese:
                 return "日本語";
 
+            case Language::ChineseTraditional:
+                return "繁体中文";
+
             case Language::ChineseSimplified:
                 return "简体中文";
 
@@ -73,8 +76,12 @@ namespace Utils::Lang {
                 path = "romfs:/lang/jp.json";
                 break;
 
+            case Language::ChineseTraditional:
+                path = "romfs:/lang/zh-HANT.json";
+                break;
+
             case Language::ChineseSimplified:
-                path = "romfs:/lang/zh-Hans.json";
+                path = "romfs:/lang/zh-HANS.json";
                 break;
 
             case Language::Korean:

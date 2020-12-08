@@ -40,6 +40,11 @@ namespace Utils::NX {
                 lang = Language::Spanish;
                 break;
 
+            case SetLanguage_ZHHANT:
+            case SetLanguage_ZHTW:
+                lang = Language::ChineseTraditional;
+                break;
+
             case SetLanguage_ZHCN:
             case SetLanguage_ZHHANS:
                 lang = Language::ChineseSimplified;
@@ -61,8 +66,6 @@ namespace Utils::NX {
             case SetLanguage_NL:
             case SetLanguage_PT:
             case SetLanguage_RU:
-            case SetLanguage_ZHHANT:
-            case SetLanguage_ZHTW:
             default:
                 lang = Language::Default;
                 break;
