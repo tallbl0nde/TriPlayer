@@ -52,6 +52,10 @@ namespace Utils::Lang {
             default:
                 path = "romfs:/lang/en.json";
                 break;
+            case Language::English:
+            default:
+                path = "romfs:/lang/zh.json";
+                break;
         }
 
         return readFromFile(path);
