@@ -13,7 +13,7 @@
         "Information": {
             "DownloadMessage": "将通过 TheAudioDB 搜索和下载歌手的图片.\n\n为了效果最佳:\n- 请保证专辑的名称是正确的\n- 确保你有稳定的网络连接\n\n资料下载时你将暂时无法控制播放过程.",
             "DownloadNotFound": "无法找到名为 '$[1]' 的歌手. 请检查名字是否有误或者手动指定图片.
-	    "DownloadNoImage": "'$[1] 已经在 TheAudioDB 上找到，但是并没有其图片.",
+	    "DownloadNoImage": "'$[1]' 已经在 TheAudioDB 上找到，但是并没有其图片.",
             "Heading": "歌手信息",
             "Image": "照片",
             "Name": "名字"
