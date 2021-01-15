@@ -46,9 +46,17 @@ namespace Utils::NX {
             case SetLanguage_JA:
             case SetLanguage_RU:
             case SetLanguage_ZHHANT:
+                lang = Language::Chinese;
+                break;
             case SetLanguage_ZHCN:
+                lang = Language::Chinese;
+                break;
             case SetLanguage_ZHHANS:
+                lang = Language::Chinese;
+                break;
             case SetLanguage_ZHTW:
+                lang = Language::Chinese;
+                break;
             case SetLanguage_KO:
             case SetLanguage_ES419:
             default:
