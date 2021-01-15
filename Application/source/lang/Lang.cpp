@@ -30,7 +30,8 @@ namespace Utils::Lang {
 
             case Language::English:
                 return "English";
-
+            case Language::Chinese:
+                return "Chinese";
             default:
                 break;
         }
@@ -52,8 +53,7 @@ namespace Utils::Lang {
             default:
                 path = "romfs:/lang/en.json";
                 break;
-            case Language::English:
-            default:
+            case Language::Chinese:
                 path = "romfs:/lang/zh.json";
                 break;
         }
