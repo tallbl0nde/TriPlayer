@@ -100,6 +100,8 @@ void Config::readConfig() {
     }
     if (str == "English") {
         this->language_ = Language::English;
+    } else if (str == "Chinese") {
+        this->language_ = Language::Chinese;
     } else {
         this->language_ = Language::Default;
     }
@@ -346,6 +348,9 @@ bool Config::setLanguage(const Language l) {
 
         case Language::English:
             str = "English";
+            break;
+        case Language::Chinese:
+            str = "Chinese";
             break;
     }
 
