@@ -147,7 +147,7 @@ namespace Utils::NX {
             return;
         }
 
-        appletSetCpuBoostMode((enable ? ApmCpuBoostMode_Type1 : ApmCpuBoostMode_Disabled));
+        appletSetCpuBoostMode((enable ? ApmCpuBoostMode_FastLoad : ApmCpuBoostMode_Normal));
         boost = enable;
     }
 
