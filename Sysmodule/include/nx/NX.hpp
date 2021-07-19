@@ -27,6 +27,11 @@ namespace NX {
     };
 
     namespace Hid {
+        // Prepare hid for use
+        bool prepare();
+        // Cleanup hid after use
+        void cleanup();
+
         // Check if the provided combo is currently pressed (order irrelevant)
         bool comboPressed(const std::vector<Button> &);
     };

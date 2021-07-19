@@ -571,6 +571,12 @@ void MainService::gpioEventThread() {
 }
 
 void MainService::hidEventThread() {
+    // Prepare hid
+    if (!NX::Hid::prepare()) {
+        Log::writeWarning("[HID] Couldn't prepare session, control via button press will be unavailable");
+        return;
+    }
+
     // Vector of buttons forming a combination
     std::vector<NX::Button> comboNext;
     std::vector<NX::Button> comboPlay;
@@ -646,6 +652,9 @@ void MainService::hidEventThread() {
         // Pause briefly before checking again
         NX::Thread::sleepMilli(10);
     }
+
+    // Cleanup
+    NX::Hid::cleanup();
 }
 
 void MainService::ipcThread() {
