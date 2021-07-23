@@ -15,7 +15,7 @@ namespace TriPlayer {
         // Check if service exists
         SmServiceName name = smEncodeName("tri");
         uint8_t exists;
-        Result rc = serviceDispatchInOut(smGetServiceSession(), 65100, name, exists);
+        Result rc = tipcDispatchInOut(smGetServiceSessionTipc(), 65100, name, exists);
         if (!(R_SUCCEEDED(rc) && exists)) {
             return false;
         }
