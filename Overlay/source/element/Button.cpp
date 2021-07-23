@@ -97,7 +97,7 @@ namespace Element {
     }
 
     bool Button::onClick(u64 keys) {
-        if (keys & KEY_A) {
+        if (keys & HidNpadButton_A) {
             this->runCallback();
             return true;
         }

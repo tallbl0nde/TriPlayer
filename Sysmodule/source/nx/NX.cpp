@@ -228,10 +228,24 @@ namespace NX {
     };
 
     namespace Hid {
+        static PadState hidPad;                                     // Pad object
+        static bool hidPrepared = false;                            // Set true if prepared
+
+        bool prepare() {
+            padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+            padInitializeDefault(&hidPad);
+            hidPrepared = true;
+            return true;
+        }
+
+        void cleanup() {
+            // Don't need to clean up anything
+        }
+
         bool comboPressed(const std::vector<Button> & buttons) {
             // Scan input first
-            hidScanInput();
-            uint64_t pressed = hidKeysHeld(CONTROLLER_P1_AUTO);
+            padUpdate(&hidPad);
+            uint64_t pressed = padGetButtons(&hidPad);
 
             // Convert combo to same format
             uint64_t combo = 0;
@@ -245,7 +259,7 @@ namespace NX {
     };
 
     namespace Psc {
-        constexpr u16 pscDependencies[] = {PscPmModuleId_Audio};    // Our dependencies
+        constexpr u32 pscDependencies[] = {PscPmModuleId_Audio};    // Our dependencies
         constexpr PscPmModuleId pscModuleId = (PscPmModuleId)690;   // Our ID
         static PscPmModule pscModule;                               // Module to listen for events with
         static bool pscPrepared = false;                            // Set true if ready to handle event
@@ -266,7 +280,7 @@ namespace NX {
             }
 
             // Create module
-            Result rc = pscmGetPmModule(&pscModule, pscModuleId, pscDependencies, sizeof(pscDependencies)/sizeof(u16), true);
+            Result rc = pscmGetPmModule(&pscModule, pscModuleId, pscDependencies, sizeof(pscDependencies)/sizeof(u32), true);
             if (R_SUCCEEDED(rc)) {
                 pscPrepared = true;
                 return true;
