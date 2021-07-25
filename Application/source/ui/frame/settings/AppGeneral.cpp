@@ -55,7 +55,7 @@ namespace Frame::Settings {
 
         // General::initial_frame
         opt = new Aether::ListOption("Settings.AppGeneral.InitialSection"_lang, frameToString(cfg->initialFrame()), nullptr);
-        opt->setCallback([this, opt]() {
+        opt->onPress([this, opt]() {
             this->showInitialFrameList(opt);
         });
         opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), this->app->theme()->accent());
@@ -73,7 +73,7 @@ namespace Frame::Settings {
 
         // General::log_level
         opt = new Aether::ListOption("Settings.AppGeneral.LoggingLevel"_lang, Log::levelToString(cfg->logLevel()), nullptr);
-        opt->setCallback([this, opt]() {
+        opt->onPress([this, opt]() {
             this->showLogLevelList(opt);
         });
         opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), this->app->theme()->accent());

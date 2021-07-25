@@ -11,7 +11,7 @@ namespace Frame::Settings {
 
         // Appearance::accent_colour
         opt = new Aether::ListOption("Settings.AppAppearance.AccentColour"_lang, Theme::colourToString(cfg->accentColour()), nullptr);
-        opt->setCallback([this, opt]() {
+        opt->onPress([this, opt]() {
             this->showAccentColourList(opt);
         });
         opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), this->app->theme()->accent());
@@ -29,7 +29,7 @@ namespace Frame::Settings {
 
         // Appearance::language
         opt = new Aether::ListOption("Settings.AppAppearance.Language"_lang, Utils::Lang::languageToString(cfg->language()), nullptr);
-        opt->setCallback([this, opt]() {
+        opt->onPress([this, opt]() {
             this->showLanguageList(opt);
         });
         opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), this->app->theme()->accent());

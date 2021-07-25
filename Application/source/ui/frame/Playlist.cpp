@@ -83,7 +83,7 @@ namespace Frame {
         this->songMenu = nullptr;
 
         // Create sort menu
-        this->sort->setCallback([this]() {
+        this->sort->onPress([this]() {
             this->app->addOverlay(this->sortMenu);
         });
         std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::TitleAsc, "Playlist.Sort.TitleAsc"_lang},
@@ -213,7 +213,7 @@ namespace Frame {
                 l->setMoreColour(this->app->theme()->muted());
                 l->setTextColour(this->app->theme()->FG());
                 // Need to search for element as order is changed when a song is removed
-                l->setCallback([this, l](){
+                l->onPress([this, l](){
                     std::vector<CustomElm::ListItem::Song *>::iterator it = std::find(this->elms.begin(), this->elms.end(), l);
                     if (it != this->elms.end()) {
                         this->playPlaylist(std::distance(this->elms.begin(), it));
@@ -281,7 +281,7 @@ namespace Frame {
             b->setIconColour(this->app->theme()->muted());
             b->setText("Common.AddToQueue"_lang);
             b->setTextColour(this->app->theme()->FG());
-            b->setCallback([this]() {
+            b->onPress([this]() {
                 for (size_t i = 0; i < this->songs.size(); i++) {
                     this->app->sysmodule()->sendAddToSubQueue(this->songs[i].song.ID);
                 }
@@ -295,7 +295,7 @@ namespace Frame {
             b->setIconColour(this->app->theme()->muted());
             b->setText("Playlist.AddToOtherPlaylist"_lang);
             b->setTextColour(this->app->theme()->FG());
-            b->setCallback([this]() {
+            b->onPress([this]() {
                 this->showAddToPlaylist([this](PlaylistID i) {
                     if (i >= 0) {
                         for (size_t j = 0; j < this->songs.size(); j++) {
@@ -319,7 +319,7 @@ namespace Frame {
             b->setIconColour(this->app->theme()->muted());
             b->setText("Playlist.ExportPlaylist"_lang);
             b->setTextColour(this->app->theme()->FG());
-            b->setCallback([this]() {
+            b->onPress([this]() {
                 this->exportPlaylist();
             });
             this->playlistMenu->addButton(b);
@@ -330,7 +330,7 @@ namespace Frame {
             b->setIconColour(this->app->theme()->muted());
             b->setText("Playlist.DeletePlaylist"_lang);
             b->setTextColour(this->app->theme()->FG());
-            b->setCallback([this]() {
+            b->onPress([this]() {
                 this->createDeleteMenu();
             });
             this->playlistMenu->addButton(b);
@@ -342,7 +342,7 @@ namespace Frame {
             b->setIconColour(this->app->theme()->muted());
             b->setText("Common.ViewInformation"_lang);
             b->setTextColour(this->app->theme()->FG());
-            b->setCallback([this]() {
+            b->onPress([this]() {
                 this->changeFrame(Type::PlaylistInfo, Action::Push, this->metadata.ID);
                 this->playlistMenu->close();
             });
@@ -378,7 +378,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.AddToQueue"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, pos]() {
+        b->onPress([this, pos]() {
             this->app->sysmodule()->sendAddToSubQueue(this->songs[pos].song.ID);
             this->songMenu->close();
         });
@@ -390,7 +390,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Playlist.AddToOtherPlaylist"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, pos]() {
+        b->onPress([this, pos]() {
             this->showAddToPlaylist([this, pos](PlaylistID i) {
                 if (i >= 0) {
                     this->app->database()->addSongToPlaylist(i, this->songs[pos].song.ID);
@@ -411,7 +411,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Playlist.RemoveFromPlaylist"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, pos]() {
+        b->onPress([this, pos]() {
             // Remove from database
             this->app->lockDatabase();
             bool ok = this->app->database()->removeSongFromPlaylist(this->songs[pos].ID);
@@ -435,7 +435,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.GoToArtist"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, pos]() {
+        b->onPress([this, pos]() {
             ArtistID a = this->app->database()->getArtistIDForSong(this->songs[pos].song.ID);
             if (a >= 0) {
                 this->changeFrame(Type::Artist, Action::Push, a);
@@ -451,7 +451,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.ViewInformation"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, pos]() {
+        b->onPress([this, pos]() {
             this->changeFrame(Type::SongInfo, Action::Push, this->songs[pos].song.ID);
             this->songMenu->close();
         });

@@ -28,8 +28,8 @@ namespace Main {
     // and objects used through the app
     class Application {
         private:
-            // Display object used for rendering
-            Aether::Display * display;
+            // Aether window used for UI
+            Aether::Window * window;
 
             // Screens of the app
             ScreenID screenID;
@@ -63,7 +63,7 @@ namespace Main {
             // Constructor inits Aether, screens + other objects
             Application();
 
-            // Wrappers for display functions
+            // Wrappers for window functions
             void setHoldDelay(int);
             void setHighlightAnimation(std::function<Aether::Colour(uint32_t)>);
 
@@ -75,7 +75,6 @@ namespace Main {
             void setScreen(ScreenID);
             void pushScreen();
             void popScreen();
-            void dropScreen();
             void updateScreenTheme();
 
             // Helper functions for database
@@ -96,9 +95,9 @@ namespace Main {
             // Returns theme pointer
             Theme * theme();
 
-            // Handles display loop
+            // Handles window loop
             void run();
-            // Call to stop display loop (set true to force close)
+            // Call to stop window loop (set true to force close)
             void exit(const bool);
 
             // Destructor frees memory and quits Aether

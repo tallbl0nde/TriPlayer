@@ -68,7 +68,7 @@ namespace CustomOvl {
             }
             b->setText(sort[i].text);
             Entry entry = sort[i];
-            b->setCallback([this, entry]() {
+            b->onPress([this, entry]() {
                 this->close();
                 this->callback(entry.type);
             });

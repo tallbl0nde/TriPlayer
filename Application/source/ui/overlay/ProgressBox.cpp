@@ -51,7 +51,7 @@ namespace CustomOvl {
 
     void ProgressBox::setSubheadingText(const std::string & s) {
         this->subheading->setString(s);
-        if (this->subheading->texW() > this->bg->w() - 2*X_PADDING) {
+        if (this->subheading->textureWidth() > this->bg->w() - 2*X_PADDING) {
             this->subheading->setW(this->bg->w() - 2*X_PADDING);
         }
     }

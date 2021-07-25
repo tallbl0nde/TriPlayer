@@ -28,7 +28,7 @@ namespace Frame::Settings {
 
         // Advanced::set_queue_max
         opt = new Aether::ListOption("Settings.AppAdvanced.InitialQueueSize"_lang, std::to_string(cfg->setQueueMax()), nullptr);
-        opt->setCallback([this, cfg, opt]() {
+        opt->onPress([this, cfg, opt]() {
             int val = cfg->setQueueMax();
             if (this->getNumberInput(val, "Settings.AppAdvanced.InitialQueueSize"_lang, "", true)) {
                 val = (val < -1 ? -1 : (val > 65535 ? 65535 : val));
@@ -45,7 +45,7 @@ namespace Frame::Settings {
 
         // Advanced::search_max_phrases
         opt = new Aether::ListOption("Settings.AppAdvanced.MaximumSearchPhrases"_lang, std::to_string(cfg->searchMaxPhrases()), nullptr);
-        opt->setCallback([this, cfg, opt]() {
+        opt->onPress([this, cfg, opt]() {
             int val = cfg->searchMaxPhrases();
             if (this->getNumberInput(val, "Settings.AppAdvanced.MaximumSearchPhrases"_lang, "", false)) {
                 val = (val < 1 ? 1 : val);
@@ -61,7 +61,7 @@ namespace Frame::Settings {
 
         // Advanced::search_max_score
         opt = new Aether::ListOption("Settings.AppAdvanced.MaximumSearchScore"_lang, std::to_string(cfg->searchMaxScore()), nullptr);
-        opt->setCallback([this, cfg, opt]() {
+        opt->onPress([this, cfg, opt]() {
             int val = cfg->searchMaxScore();
             if (this->getNumberInput(val, "Settings.AppAdvanced.MaximumSearchScore"_lang, "", false)) {
                 val = (val < 30 ? 30 : val);

@@ -25,15 +25,11 @@ namespace CustomOvl {
         this->title->setY(this->title->y() - this->title->h()/2);
         this->addElement(this->title);
 
-        this->ctrl = new Aether::Controls();
-        this->ok = new Aether::ControlItem(Aether::Button::A, "OK");
-        this->ctrl->addItem(this->ok);
-        this->back = new Aether::ControlItem(Aether::Button::B, "Cancel");
-        this->ctrl->addItem(this->back);
-        this->apply = new Aether::ControlItem(Aether::Button::X, "Apply");
-        this->ctrl->addItem(this->apply);
-        this->reset = new Aether::ControlItem(Aether::Button::Y, "Reset");
-        this->ctrl->addItem(this->reset);
+        this->ctrl = new Aether::ControlBar();
+        this->ctrl->addControl(Aether::Button::A, "OK");
+        this->ctrl->addControl(Aether::Button::B, "Cancel");
+        this->ctrl->addControl(Aether::Button::X, "Apply");
+        this->ctrl->addControl(Aether::Button::Y, "Reset");
         this->addElement(this->ctrl);
 
         for (size_t i = 0; i < this->sliders.size(); i++) {
@@ -88,37 +84,19 @@ namespace CustomOvl {
     }
 
     void Equalizer::setApplyLabel(const std::string & s) {
-        this->ctrl->removeItem(this->apply);
-        this->ctrl->returnItem(this->reset);
-        this->apply = new Aether::ControlItem(Aether::Button::X, s);
-        this->ctrl->addItem(this->apply);
-        this->ctrl->addItem(this->reset);
+        this->ctrl->updateControl(Aether::Button::X, s);
     }
 
     void Equalizer::setBackLabel(const std::string & s) {
-        this->ctrl->removeItem(this->back);
-        this->ctrl->returnAllItems();
-        this->ctrl->addItem(this->ok);
-        this->back = new Aether::ControlItem(Aether::Button::B, s);
-        this->ctrl->addItem(this->back);
-        this->ctrl->addItem(this->apply);
-        this->ctrl->addItem(this->reset);
+        this->ctrl->updateControl(Aether::Button::B, s);
     }
 
     void Equalizer::setResetLabel(const std::string & s) {
-        this->ctrl->removeItem(this->reset);
-        this->reset = new Aether::ControlItem(Aether::Button::Y, s);
-        this->ctrl->addItem(this->reset);
+        this->ctrl->updateControl(Aether::Button::Y, s);
     }
 
     void Equalizer::setOKLabel(const std::string & s) {
-        this->ctrl->removeItem(this->ok);
-        this->ctrl->returnAllItems();
-        this->ok = new Aether::ControlItem(Aether::Button::A, s);
-        this->ctrl->addItem(this->ok);
-        this->ctrl->addItem(this->back);
-        this->ctrl->addItem(this->apply);
-        this->ctrl->addItem(this->reset);
+        this->ctrl->updateControl(Aether::Button::A, s);
     }
 
     void Equalizer::setBackgroundColour(const Aether::Colour & c) {
@@ -129,7 +107,7 @@ namespace CustomOvl {
         for (size_t i = 0; i < this->sliderIndexes.size(); i++) {
             this->sliderIndexes[i]->setColour(c);
         }
-        this->ctrl->setColour(c);
+        this->ctrl->setEnabledColour(c);
         this->title->setColour(c);
     }
 

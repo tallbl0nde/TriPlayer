@@ -9,17 +9,13 @@
 
 namespace CustomElm::ListItem {
     AlbumSong::AlbumSong() : More(HEIGHT) {
-        this->track = new Aether::Text(this->x(), this->y(), "", FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
-        this->watchTexture(this->track);
-        this->title = new Aether::Text(this->x(), this->y(), "", FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
-        this->watchTexture(this->title);
-        this->artist = new Aether::Text(this->x(), this->y(), "", FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
-        this->watchTexture(this->artist);
-        this->length = new Aether::Text(this->x(), this->y(), "", FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
-        this->watchTexture(this->length);
+        this->track = new Aether::Text(this->x(), this->y(), "", FONT_SIZE, Aether::Render::Wait);
+        this->title = new Aether::Text(this->x(), this->y(), "", FONT_SIZE, Aether::Render::Wait);
+        this->artist = new Aether::Text(this->x(), this->y(), "", FONT_SIZE, Aether::Render::Wait);
+        this->length = new Aether::Text(this->x(), this->y(), "", FONT_SIZE, Aether::Render::Wait);
     }
 
-    void AlbumSong::positionItems() {
+    void AlbumSong::positionElements() {
         this->track->setX(this->x() + 15);
         this->title->setX(this->x() + this->w() * 0.08);
         this->artist->setX(this->x() + this->w() * 0.6);
@@ -44,19 +40,27 @@ namespace CustomElm::ListItem {
     }
 
     void AlbumSong::setTrackString(std::string s) {
-        this->track->setString(s);
+        this->processText(this->track, [s]() -> Aether::Text * {
+            return new Aether::Text(0, 0, s, FONT_SIZE, Aether::Render::Wait);
+        });
     }
 
     void AlbumSong::setTitleString(std::string s) {
-        this->title->setString(s);
+        this->processText(this->title, [s]() -> Aether::Text * {
+            return new Aether::Text(0, 0, s, FONT_SIZE, Aether::Render::Wait);
+        });
     }
 
     void AlbumSong::setArtistString(std::string s) {
-        this->artist->setString(s);
+        this->processText(this->artist, [s]() -> Aether::Text * {
+            return new Aether::Text(0, 0, s, FONT_SIZE, Aether::Render::Wait);
+        });
     }
 
     void AlbumSong::setLengthString(std::string s) {
-        this->length->setString(s);
+        this->processText(this->length, [s]() -> Aether::Text * {
+            return new Aether::Text(0, 0, s, FONT_SIZE, Aether::Render::Wait);
+        });
     }
 
     void AlbumSong::setTextColour(Aether::Colour c) {

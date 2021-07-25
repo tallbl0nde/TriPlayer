@@ -23,7 +23,7 @@ namespace CustomElm {
         this->conf.showLine = false;
 
         // Set callback to open keyboard
-        this->setCallback([this]() {
+        this->onPress([this]() {
             this->openKeyboard();
         });
 
@@ -46,11 +46,11 @@ namespace CustomElm {
         // Position and cut off if too long
         this->text->setY(this->y() + (this->h() - this->text->h())/2);
         int wid = (this->rect->x() + this->rect->w()) - this->text->x() - PADDING;
-        if (this->text->texW() > wid) {
-            this->text->setMask(0, 0, wid, this->text->texH());
+        if (this->text->textureWidth() > wid) {
+            this->text->setMask(0, 0, wid, this->text->textureHeight());
             this->text->setW(wid);
         } else {
-            this->text->setMask(0, 0, this->text->texW(), this->text->texH());
+            this->text->setMask(0, 0, this->text->textureWidth(), this->text->textureHeight());
         }
     }
 
@@ -83,16 +83,16 @@ namespace CustomElm {
         return this->text->string();
     }
 
-    SDL_Texture * TextBox::renderHighlightBG() {
+    Aether::Drawable * TextBox::renderHighlightBG() {
         // No background
-        return nullptr;
+        return new Aether::Drawable();
     }
 
-    SDL_Texture * TextBox::renderHighlight() {
-        return SDLHelper::renderRoundRect(this->w() + 2*(this->hiSize), this->h() + 2*(this->hiSize), HI_CORNER_RAD, this->hiSize);
+    Aether::Drawable * TextBox::renderHighlight() {
+        return this->renderer->renderRoundRectTexture(this->w() + 2*(this->hiSize), this->h() + 2*(this->hiSize), HI_CORNER_RAD, this->hiSize);
     }
 
-    SDL_Texture * TextBox::renderSelection() {
-        return SDLHelper::renderFilledRoundRect(this->w(), this->h(), BOX_CORNER_RAD);
+    Aether::Drawable * TextBox::renderSelection() {
+        return this->renderer->renderFilledRoundRectTexture(this->w(), this->h(), BOX_CORNER_RAD);
     }
 };

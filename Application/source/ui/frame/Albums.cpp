@@ -28,7 +28,7 @@ namespace Frame {
         this->bottomContainer->addElement(this->grid);
 
         // Create sort menu
-        this->sort->setCallback([this]() {
+        this->sort->onPress([this]() {
             this->app->addOverlay(this->sortMenu);
         });
         std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::AlbumAsc, "Album.Sort.AlbumAsc"_lang},
@@ -65,7 +65,7 @@ namespace Frame {
             l->setLineColour(this->app->theme()->muted2());
             l->setTextColour(this->app->theme()->FG());
             ArtistID aID = m[i].ID;
-            l->setCallback([this, aID]() {
+            l->onPress([this, aID]() {
                 this->changeFrame(Type::Artist, Action::Push, aID);
                 this->artistsList->close();
             });
@@ -91,7 +91,7 @@ namespace Frame {
                 l->setTextColour(this->app->theme()->FG());
                 l->setMutedTextColour(this->app->theme()->muted());
                 AlbumID id = m[i].ID;
-                l->setCallback([this, id](){
+                l->onPress([this, id](){
                     this->changeFrame(Type::Album, Action::Push, id);
                 });
                 l->setMoreCallback([this, id]() {
@@ -139,7 +139,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.Play"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, m]() {
+        b->onPress([this, m]() {
             std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForAlbum(m.ID);
             std::vector<SongID> ids;
             for (size_t i = 0; i < v.size(); i++) {
@@ -157,7 +157,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.AddToQueue"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, id]() {
+        b->onPress([this, id]() {
             std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForAlbum(id);
             for (size_t i = 0; i < v.size(); i++) {
                 this->app->sysmodule()->sendAddToSubQueue(v[i].ID);
@@ -172,7 +172,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.AddToPlaylist"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, id]() {
+        b->onPress([this, id]() {
             this->showAddToPlaylist([this, id](PlaylistID i) {
                 if (i >= 0) {
                     std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForAlbum(id);
@@ -194,14 +194,14 @@ namespace Frame {
         if (m.artist != "Various Artists") {
             b->setText("Common.GoToArtist"_lang);
             ArtistID aID = this->app->database()->getArtistIDForName(m.artist);
-            b->setCallback([this, aID]() {
+            b->onPress([this, aID]() {
                 this->changeFrame(Type::Artist, Action::Push, aID);
                 this->albumMenu->close();
             });
 
         } else {
             b->setText("Common.ViewArtists"_lang);
-            b->setCallback([this, id]() {
+            b->onPress([this, id]() {
                 this->createArtistsList(id);
                 this->albumMenu->close();
             });
@@ -215,7 +215,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.ViewInformation"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, id]() {
+        b->onPress([this, id]() {
             this->changeFrame(Type::AlbumInfo, Action::Push, id);
             this->albumMenu->close();
         });

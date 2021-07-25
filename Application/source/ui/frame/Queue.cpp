@@ -273,11 +273,11 @@ namespace Frame {
 
         if (sec == Section::Playing) {
             // Do nothing if playing but allow to be selected
-            l->setCallback(nullptr);
+            l->onPress(nullptr);
 
         } else if (sec == Section::Queue) {
             // Set sub queue idx
-            l->setCallback([this, l](){
+            l->onPress([this, l](){
                 // Calculate distance since first song in queue
                 size_t num = std::distance(this->queueEls.begin(), std::find(this->queueEls.begin(), this->queueEls.end(), l));
 
@@ -287,7 +287,7 @@ namespace Frame {
 
         } else if (sec == Section::UpNext) {
             // Set up next idx
-            l->setCallback([this, l](){
+            l->onPress([this, l](){
                 // Calculate distance since start (find will always return within list)
                 size_t idx = std::distance(this->upnextEls.begin(), std::find(this->upnextEls.begin(), this->upnextEls.end(), l));
                 idx += this->app->sysmodule()->songIdx();
@@ -344,13 +344,13 @@ namespace Frame {
             b->setText("Queue.RemoveFromQueue"_lang);
             b->setTextColour(this->app->theme()->FG());
             if (sec == Section::Queue) {
-                b->setCallback([this, pos]() {
+                b->onPress([this, pos]() {
                     this->app->sysmodule()->sendRemoveFromSubQueue(pos);
                     this->menu->close();
                 });
 
             } else if (sec == Section::UpNext) {
-                b->setCallback([this, pos]() {
+                b->onPress([this, pos]() {
                     this->app->sysmodule()->sendRemoveFromQueue(pos);
                     this->menu->close();
                 });
@@ -364,7 +364,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.AddToQueue"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, id]() {
+        b->onPress([this, id]() {
             this->app->sysmodule()->sendAddToSubQueue(id);
             this->menu->close();
         });
@@ -376,7 +376,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.AddToPlaylist"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, id]() {
+        b->onPress([this, id]() {
             this->showAddToPlaylist([this, id](PlaylistID i) {
                 if (i >= 0) {
                     this->app->database()->addSongToPlaylist(i, id);
@@ -393,7 +393,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.GoToArtist"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, id]() {
+        b->onPress([this, id]() {
             ArtistID a = this->app->database()->getArtistIDForSong(id);
             if (a >= 0) {
                 this->changeFrame(Type::Artist, Action::Push, a);
@@ -408,7 +408,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.GoToAlbum"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, id]() {
+        b->onPress([this, id]() {
             AlbumID a = this->app->database()->getAlbumIDForSong(id);
             if (a >= 0) {
                 this->changeFrame(Type::Album, Action::Push, a);
@@ -424,7 +424,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.ViewInformation"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, id]() {
+        b->onPress([this, id]() {
             this->changeFrame(Type::SongInfo, Action::Push, id);
             this->menu->close();
         });

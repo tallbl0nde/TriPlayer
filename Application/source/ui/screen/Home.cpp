@@ -471,7 +471,8 @@ namespace Screen {
 
         int maxW = this->backButton->w() - 70 - this->backIcon->w();
         this->backText = new Aether::Text(0, 0, "Common.Back"_lang, 26);
-        while (this->backText->texW() > maxW) {
+        while (this->backText->textureWidth() > maxW) {
+            // TODO: Fix
             // This renders the text each time but should be fine :P
             this->backText->setFontSize(this->backText->fontSize()-2);
         }
@@ -479,7 +480,7 @@ namespace Screen {
         this->backText->setColour(this->app->theme()->FG());
         this->backButton->addElement(this->backText);
 
-        this->backButton->setCallback([this]() {
+        this->backButton->onPress([this]() {
             this->backCallback();
         });
         this->backButton->setSelectable(false);
@@ -494,7 +495,8 @@ namespace Screen {
 
         maxW = quitButton->w() - 70 - quitIcon->w();
         Aether::Text * quitText = new Aether::Text(0, 0, "Common.Quit"_lang, 26);
-        while (quitText->texW() > maxW) {
+        while (quitText->textureWidth() > maxW) {
+            // TODO: Fix
             // This renders the text each time but should be fine :P
             quitText->setFontSize(quitText->fontSize()-2);
         }
@@ -502,7 +504,7 @@ namespace Screen {
         quitText->setColour(this->app->theme()->FG());
         quitButton->addElement(quitText);
 
-        quitButton->setCallback([this]() {
+        quitButton->onPress([this]() {
             this->app->exit(false);
         });
         quitButton->setSelectable(false);
@@ -515,7 +517,7 @@ namespace Screen {
         this->sideSearch->setText("Search.Search"_lang);
         this->sideSearch->setActiveColour(this->app->theme()->accent());
         this->sideSearch->setInactiveColour(this->app->theme()->FG());
-        this->sideSearch->setCallback([this](){
+        this->sideSearch->onPress([this](){
             // If the current frame is search recreate it
             if (this->frameType == Frame::Type::Search) {
                 this->returnElement(this->playerDim);
@@ -537,7 +539,7 @@ namespace Screen {
         this->sidePlaylists->setText("Playlist.Playlists"_lang);
         this->sidePlaylists->setActiveColour(this->app->theme()->accent());
         this->sidePlaylists->setInactiveColour(this->app->theme()->FG());
-        this->sidePlaylists->setCallback([this](){
+        this->sidePlaylists->onPress([this](){
             this->changeFrame(Frame::Type::Playlists, Frame::Action::Reset);
         });
         this->sideContainer->addElement(this->sidePlaylists);
@@ -546,7 +548,7 @@ namespace Screen {
         this->sideSongs->setText("Song.Songs"_lang);
         this->sideSongs->setActiveColour(this->app->theme()->accent());
         this->sideSongs->setInactiveColour(this->app->theme()->FG());
-        this->sideSongs->setCallback([this](){
+        this->sideSongs->onPress([this](){
             this->changeFrame(Frame::Type::Songs, Frame::Action::Reset);
         });
         this->sideContainer->addElement(this->sideSongs);
@@ -555,7 +557,7 @@ namespace Screen {
         this->sideArtists->setText("Artist.Artists"_lang);
         this->sideArtists->setActiveColour(this->app->theme()->accent());
         this->sideArtists->setInactiveColour(this->app->theme()->FG());
-        this->sideArtists->setCallback([this](){
+        this->sideArtists->onPress([this](){
             this->changeFrame(Frame::Type::Artists, Frame::Action::Reset);
         });
         this->sideContainer->addElement(this->sideArtists);
@@ -564,7 +566,7 @@ namespace Screen {
         this->sideAlbums->setText("Album.Albums"_lang);
         this->sideAlbums->setActiveColour(this->app->theme()->accent());
         this->sideAlbums->setInactiveColour(this->app->theme()->FG());
-        this->sideAlbums->setCallback([this](){
+        this->sideAlbums->onPress([this](){
             this->changeFrame(Frame::Type::Albums, Frame::Action::Reset);
         });
         this->sideContainer->addElement(this->sideAlbums);
@@ -576,7 +578,7 @@ namespace Screen {
         this->sideQueue->setText("Queue.Heading"_lang);
         this->sideQueue->setActiveColour(this->app->theme()->accent());
         this->sideQueue->setInactiveColour(this->app->theme()->FG());
-        this->sideQueue->setCallback([this](){
+        this->sideQueue->onPress([this](){
             // If the current frame is queue recreate it
             if (this->frameType == Frame::Type::Queue) {
                 this->returnElement(this->playerDim);
@@ -598,7 +600,7 @@ namespace Screen {
         this->sideSettings->setText("Settings.Settings"_lang);
         this->sideSettings->setActiveColour(this->app->theme()->accent());
         this->sideSettings->setInactiveColour(this->app->theme()->FG());
-        this->sideSettings->setCallback([this](){
+        this->sideSettings->onPress([this](){
             this->app->pushScreen();
             this->app->setScreen(Main::ScreenID::Settings);
         });

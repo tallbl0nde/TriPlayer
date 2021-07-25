@@ -39,16 +39,22 @@ namespace Main {
         this->sysThread = std::async(std::launch::async, &Sysmodule::process, this->sysmodule_);
 
         // Create Aether instance
-        Aether::ThreadPool::setMaxThreads(8);
-        this->display = new Aether::Display();
-        this->display->setBackgroundColour(0, 0, 0);
-        this->display->setFont("romfs:/Quicksand.ttf");
-        this->display->setFontSpacing(0.9);
-        this->display->setHighlightColours(Aether::Colour{255, 255, 255, 0}, this->theme_->selected());
+        this->window = new Aether::Window("TriPlayer", 1280, 720, [](const std::string msg, const bool important) {
+            if (important) {
+                Log::writeError("[AETHER] " + msg);
+            } else {
+                Log::writeInfo("[AETHER] " + msg);
+            }
+        });
+        this->window->setBackgroundColour(Aether::Colour{0, 0, 0, 0});
+        this->window->setFont("romfs:/Quicksand.ttf");
+        this->window->setFontSpacing(0.9);
         this->setHighlightAnimation(nullptr);
-        this->display->setFadeIn();
-        this->display->setFadeOut();
-        // this->display->setShowFPS(true);
+        this->window->setHighlightBackground(Aether::Colour{255, 255, 255, 0});
+        this->window->setHighlightOverlay(this->theme_->selected());
+        this->window->setFadeIn(true);
+        this->window->setFadeOut(true);
+        this->window->showDebugInfo(true);
         this->exitPrompt = nullptr;
 
         // Setup screens
@@ -85,7 +91,7 @@ namespace Main {
             this->exitPrompt->close();
         });
         this->exitPrompt->addRightButton("Common.Exit"_lang, [this]() {
-            this->display->exit();
+            this->window->exit();
         });
         this->exitPrompt->setTextColour(this->theme_->accent());
         Aether::Element * body = new Aether::Element(0, 0, 700);
@@ -98,7 +104,7 @@ namespace Main {
     }
 
     void Application::setHoldDelay(int i) {
-        this->display->setHoldDelay(i);
+        this->window->setHoldDelay(i);
     }
 
     void Application::setHighlightAnimation(std::function<Aether::Colour(uint32_t)> f) {
@@ -106,31 +112,27 @@ namespace Main {
         if (f == nullptr) {
             f = this->theme_->highlightFunc();
         }
-        this->display->setHighlightAnimation(f);
+        this->window->setHighlightAnimation(f);
     }
 
     void Application::addOverlay(Aether::Overlay * o) {
-        this->display->addOverlay(o);
+        this->window->addOverlay(o);
     }
 
     void Application::setScreen(ScreenID s) {
         this->screenID = s;
-        this->display->setScreen(this->screens[static_cast<int>(s)]);
+        this->window->showScreen(this->screens[static_cast<int>(s)]);
     }
 
     void Application::pushScreen() {
         this->screenIDs.push(this->screenID);
-        this->display->pushScreen();
+        this->window->pushScreen();
     }
 
     void Application::popScreen() {
-        this->display->popScreen();
+        this->window->popScreen();
         this->screenID = this->screenIDs.top();
         this->screenIDs.pop();
-    }
-
-    void Application::dropScreen() {
-        this->display->dropScreen();
     }
 
     void Application::updateScreenTheme() {
@@ -177,7 +179,7 @@ namespace Main {
 
     void Application::run() {
         // Do main loop
-        while (this->display->loop()) {
+        while (this->window->loop()) {
         }
     }
 
@@ -190,7 +192,7 @@ namespace Main {
 
         // Otherwise just exit
         } else {
-            this->display->exit();
+            this->window->exit();
         }
     }
 
@@ -221,7 +223,7 @@ namespace Main {
         delete this->exitPrompt;
 
         // Cleanup Aether after screens are deleted
-        delete this->display;
+        delete this->window;
 
         // Disconnect from sysmodule
         this->sysmodule_->exit();

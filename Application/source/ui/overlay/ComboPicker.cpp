@@ -47,9 +47,10 @@ namespace CustomOvl {
         this->addElement(this->tip);
 
         // Initialize controls
-        this->ctrl = nullptr;
-        this->setBackLabel("");
-        this->setOKLabel("");
+        this->ctrl = new Aether::ControlBar();
+        this->ctrl->addControl(Aether::Button::A, "");
+        this->ctrl->addControl(Aether::Button::B, "");
+        this->addElement(this->ctrl);
 
         // Create pickers
         for (size_t i = 0; i < pickerCount; i++) {
@@ -115,20 +116,12 @@ namespace CustomOvl {
 
     void ComboPicker::setBackLabel(const std::string & s) {
         this->labelBack = s;
-        this->removeElement(this->ctrl);
-        this->ctrl = new Aether::Controls();
-        this->ctrl->addItem(new Aether::ControlItem(Aether::Button::A, this->ok->getString()));
-        this->ctrl->addItem(new Aether::ControlItem(Aether::Button::B, this->labelBack));
-        this->addElement(this->ctrl);
+        this->ctrl->updateControl(Aether::Button::B, s);
     }
 
     void ComboPicker::setOKLabel(const std::string & s) {
         this->ok->setString(s);
-        this->removeElement(this->ctrl);
-        this->ctrl = new Aether::Controls();
-        this->ctrl->addItem(new Aether::ControlItem(Aether::Button::A, this->ok->getString()));
-        this->ctrl->addItem(new Aether::ControlItem(Aether::Button::B, this->labelBack));
-        this->addElement(this->ctrl);
+        this->ctrl->updateControl(Aether::Button::A, s);
     }
 
     void ComboPicker::setRemoveLabel(const std::string & s) {
@@ -164,15 +157,14 @@ namespace CustomOvl {
 
     void ComboPicker::setTextColour(const Aether::Colour & c) {
         this->title->setColour(c);
-        this->ctrl->setColour(c);
+        this->ctrl->setEnabledColour(c);
         this->ok->setBorderColour(c);
         this->ok->setTextColour(c);
 
         Aether::Colour col = c;
-        col.r = c.r * 0.65;
-        col.g = c.g * 0.65;
-        col.b = c.b * 0.65;
-        col.r = c.r * 0.65;
+        col.setR(c.r() * 0.65);
+        col.setG(c.g() * 0.65);
+        col.setB(c.b() * 0.65);
         for (Picker & p : this->pickers) {
             p.remove->setBorderColour(col);
             p.remove->setTextColour(col);

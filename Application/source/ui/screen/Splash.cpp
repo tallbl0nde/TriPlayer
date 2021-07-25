@@ -371,7 +371,7 @@ namespace Screen {
 
         // Attempt to launch sysmodule if config option is set true
         if (this->app->sysmodule()->error() == Sysmodule::Error::NotConnected && this->app->config()->autoLaunchService()) {
-            this->launch->callback()();
+            this->launch->onPressFunc()();
             return;
         }
 

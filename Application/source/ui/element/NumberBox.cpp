@@ -24,7 +24,7 @@ namespace CustomElm {
         this->conf.allowDecimal = true;
 
         // Set callback to open keyboard
-        this->setCallback([this]() {
+        this->onPress([this]() {
             this->openNumpad();
         });
 
@@ -47,11 +47,11 @@ namespace CustomElm {
         // Position and cut off if too long
         this->text->setY(this->y() + (this->h() - this->text->h())/2);
         int wid = (this->rect->x() + this->rect->w()) - this->text->x() - PADDING;
-        if (this->text->texW() > wid) {
-            this->text->setMask(0, 0, wid, this->text->texH());
+        if (this->text->textureWidth() > wid) {
+            this->text->setMask(0, 0, wid, this->text->textureHeight());
             this->text->setW(wid);
         } else {
-            this->text->setMask(0, 0, this->text->texW(), this->text->texH());
+            this->text->setMask(0, 0, this->text->textureWidth(), this->text->textureHeight());
         }
     }
 
@@ -92,16 +92,16 @@ namespace CustomElm {
         return std::stoi(this->text->string());
     }
 
-    SDL_Texture * NumberBox::renderHighlightBG() {
+    Aether::Drawable * NumberBox::renderHighlightBG() {
         // No background
-        return nullptr;
+        return new Aether::Drawable();
     }
 
-    SDL_Texture * NumberBox::renderHighlight() {
-        return SDLHelper::renderRoundRect(this->w() + 2*(this->hiSize), this->h() + 2*(this->hiSize), HI_CORNER_RAD, this->hiSize);
+    Aether::Drawable * NumberBox::renderHighlight() {
+        return this->renderer->renderRoundRectTexture(this->w() + 2*(this->hiSize), this->h() + 2*(this->hiSize), HI_CORNER_RAD, this->hiSize);
     }
 
-    SDL_Texture * NumberBox::renderSelection() {
-        return SDLHelper::renderFilledRoundRect(this->w(), this->h(), BOX_CORNER_RAD);
+    Aether::Drawable * NumberBox::renderSelection() {
+        return this->renderer->renderFilledRoundRectTexture(this->w(), this->h(), BOX_CORNER_RAD);
     }
 };

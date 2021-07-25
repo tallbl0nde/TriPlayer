@@ -9,15 +9,17 @@
 
 namespace CustomElm::ListItem {
     Artist::Artist(const std::string & path) : Item(HEIGHT) {
-        this->image = new Aether::Image(0, 0, path, 1, 1, Aether::RenderType::Deferred);
-        this->watchTexture(this->image);
-        this->name = new Aether::Text(0, 0, "", FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
+        this->image = new Aether::Image(0, 0, path, Aether::Render::Wait);
+        this->addElement(this->image);
+        this->addTexture(this->image);
+        this->name = new Aether::Text(0, 0, "", FONT_SIZE, Aether::Render::Wait);
+        this->name->setScrollPause(500);
         this->name->setScrollSpeed(35);
-        this->name->setScrollWaitTime(500);
-        this->watchTexture(this->name);
+        this->addElement(this->name);
+        this->addTexture(this->name);
     }
 
-    void Artist::positionItems() {
+    void Artist::positionElements() {
         this->image->setXY(this->x() + PADDING, this->y() + PADDING);
         this->image->setWH(HEIGHT - 2*PADDING, HEIGHT - 2*PADDING);
         this->name->setX(this->image->x() + this->image->w() + 2*PADDING);
@@ -32,15 +34,17 @@ namespace CustomElm::ListItem {
         Item::update(dt);
 
         // Scroll if this element is selected
-        if (this->highlighted() && !this->name->scroll()) {
-            this->name->setScroll(true);
-        } else if (!this->highlighted() && this->name->scroll()) {
-            this->name->setScroll(false);
+        if (this->highlighted() && !this->name->canScroll()) {
+            this->name->setCanScroll(true);
+        } else if (!this->highlighted() && this->name->canScroll()) {
+            this->name->setCanScroll(false);
         }
     }
 
     void Artist::setName(const std::string & s) {
-        this->name->setString(s);
+        this->processText(this->name, [s]() -> Aether::Text * {
+            return new Aether::Text(0, 0, s, FONT_SIZE, Aether::Render::Wait);
+        });
     }
 
     void Artist::setTextColour(Aether::Colour c) {

@@ -4,33 +4,18 @@
 #include "Aether/Aether.hpp"
 
 namespace CustomElm::ListItem {
-    // Item extends a base Aether::Element in order to provide automatic 'deferring'
-    // functionality for items in a list. It does this by having a variable which
-    // keeps track of when all it's textures are rendered.
-    class Item : public Aether::Element {
+    // Item extends a base Aether::AsyncItem to show a line either side of
+    // the element.
+    class Item : public Aether::AsyncItem {
         private:
-            // Status of texture rendering
-            enum class Status {
-                Waiting,        // Not rendering and outside of threshold
-                InProgress,     // Rendering all children textures
-                Done            // Textures are visible and within threshold
-            };
-            Status renderStatus;
-
             // Static line texture used to separate all items (instead of having multiple)
-            static SDL_Texture * line;
-            Aether::Colour lineColour;
+            static Aether::Drawable * line;
 
-            // Vector of child textures to watch
-            std::vector<Aether::Texture *> textures;
-
-            // Children must implement this function which positions items
-            // once they have all finished rendering
-            virtual void positionItems() = 0;
+           // Note: positionElements() isn't defined by this class!
 
         protected:
-            // Mark a texture to be watched (also adds as child)
-            void watchTexture(Aether::Texture *);
+            // Helper to update text
+            void processText(Aether::Text * &, std::function<Aether::Text * ()>);
 
         public:
             // The constructor will create a line texture if one isn't present
@@ -38,16 +23,10 @@ namespace CustomElm::ListItem {
             Item(int = 100);
 
             // Set colour to tint line with
-            void setLineColour(Aether::Colour);
-
-            // Check and update texture rendering things
-            void update(uint32_t);
+            void setLineColour(const Aether::Colour &);
 
             // Render lines before children
             void render();
-
-            // Call positionItems on width change
-            void setW(int);
     };
 };
 

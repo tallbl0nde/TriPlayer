@@ -4,13 +4,7 @@
 #include "Aether/Aether.hpp"
 
 namespace CustomElm {
-    class GridItem : public Aether::Element {
-        enum RenderingStatus {
-            Waiting,        // Not rendering and no textures
-            InProgress,     // Rendering but no textures
-            Done            // Rendered and textures done
-        };
-
+    class GridItem : public Aether::AsyncItem {
         private:
             // Artist image
             Aether::Image * image;
@@ -24,11 +18,11 @@ namespace CustomElm {
             std::function<void()> moreCallback;
             bool callMore;
 
-            // Status of threaded elements
-            RenderingStatus isRendering;
-
             // Positions items after rendering
-            void positionItems();
+            void positionElements();
+
+            // Helper to update text elements
+            void processText(Aether::Text * &, std::function<Aether::Text * ()>);
 
         public:
             // Constructor sets up elements and takes path to image

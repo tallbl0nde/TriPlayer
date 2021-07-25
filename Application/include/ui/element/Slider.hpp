@@ -41,9 +41,9 @@ namespace CustomElm {
             void setBarH(int);
 
             // We only highlight around the knob!
-            SDL_Texture * renderHighlightBG();
-            SDL_Texture * renderHighlight();
-            SDL_Texture * renderSelection();
+            Aether::Drawable * renderHighlightBG();
+            Aether::Drawable * renderHighlight();
+            Aether::Drawable * renderSelection();
     };
 };
 

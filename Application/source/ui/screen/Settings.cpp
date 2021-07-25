@@ -146,7 +146,7 @@ namespace Screen {
         // Back
         this->buttonBack = new CustomElm::SideButton(0, 0, 100);
         this->buttonBack->setText("Settings.BackToLibrary"_lang);
-        this->buttonBack->setCallback([this]() {
+        this->buttonBack->onPress([this]() {
             this->backCallback();
         });
         this->buttonBack->setActiveColour(this->app->theme()->accent());
@@ -158,7 +158,7 @@ namespace Screen {
         this->addHeading("Settings.Application"_lang);
         this->buttonAppGeneral = new CustomElm::SideButton(0, 0, 100);
         this->buttonAppGeneral->setText("Settings.General"_lang);
-        this->buttonAppGeneral->setCallback([this]() {
+        this->buttonAppGeneral->onPress([this]() {
             this->setupNew();
             this->setupAppGeneral();
         });
@@ -170,7 +170,7 @@ namespace Screen {
         // Application (appearance)
         this->buttonAppAppearance = new CustomElm::SideButton(0, 0, 100);
         this->buttonAppAppearance->setText("Settings.Appearance"_lang);
-        this->buttonAppAppearance->setCallback([this]() {
+        this->buttonAppAppearance->onPress([this]() {
             this->setupNew();
             this->setupAppAppearance();
         });
@@ -182,7 +182,7 @@ namespace Screen {
         // Application (appearance)
         this->buttonAppMetadata = new CustomElm::SideButton(0, 0, 100);
         this->buttonAppMetadata->setText("Settings.Metadata"_lang);
-        this->buttonAppMetadata->setCallback([this]() {
+        this->buttonAppMetadata->onPress([this]() {
             this->setupNew();
             this->setupAppMetadata();
         });
@@ -194,7 +194,7 @@ namespace Screen {
         // Application (search)
         this->buttonAppSearch = new CustomElm::SideButton(0, 0, 100);
         this->buttonAppSearch->setText("Settings.Search"_lang);
-        this->buttonAppSearch->setCallback([this]() {
+        this->buttonAppSearch->onPress([this]() {
             this->setupNew();
             this->setupAppSearch();
         });
@@ -206,7 +206,7 @@ namespace Screen {
         // Application (advanced)
         this->buttonAppAdvanced = new CustomElm::SideButton(0, 0, 100);
         this->buttonAppAdvanced->setText("Settings.Advanced"_lang);
-        this->buttonAppAdvanced->setCallback([this]() {
+        this->buttonAppAdvanced->onPress([this]() {
             this->setupNew();
             this->setupAppAdvanced();
         });
@@ -219,7 +219,7 @@ namespace Screen {
         this->addHeading("Settings.Sysmodule"_lang);
         this->buttonSysGeneral = new CustomElm::SideButton(0, 0, 100);
         this->buttonSysGeneral->setText("Settings.General"_lang);
-        this->buttonSysGeneral->setCallback([this]() {
+        this->buttonSysGeneral->onPress([this]() {
             this->setupNew();
             this->setupSysGeneral();
         });
@@ -231,7 +231,7 @@ namespace Screen {
         // Sysmodule (MP3)
         this->buttonSysMP3 = new CustomElm::SideButton(0, 0, 100);
         this->buttonSysMP3->setText("Settings.MP3"_lang);
-        this->buttonSysMP3->setCallback([this]() {
+        this->buttonSysMP3->onPress([this]() {
             this->setupNew();
             this->setupSysMP3();
         });
@@ -244,7 +244,7 @@ namespace Screen {
         this->addHeading("Settings.Miscellaneous"_lang);
         this->buttonAbout = new CustomElm::SideButton(0, 0, 100);
         this->buttonAbout->setText("Settings.About"_lang);
-        this->buttonAbout->setCallback([this]() {
+        this->buttonAbout->onPress([this]() {
             this->setupNew();
             this->setupAbout();
         });

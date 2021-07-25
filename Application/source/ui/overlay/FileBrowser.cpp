@@ -99,7 +99,7 @@ namespace CustomOvl {
                     this->setFile(path);
                 });
             }
-            l->setIconColour(this->path->getColour());
+            l->setIconColour(this->path->colour());
             l->setTextColour(this->text);
             this->list->addElement(l);
         }

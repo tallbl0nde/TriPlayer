@@ -24,9 +24,9 @@ namespace CustomElm {
         this->albumCover->setWH(110, 110);
         this->addElement(this->albumCover);
         this->trackName = new Aether::Text(140, 625, "", 24);
-        this->trackName->setScroll(true);
+        this->trackName->setCanScroll(true);
+        this->trackName->setScrollPause(1200);
         this->trackName->setScrollSpeed(35);
-        this->trackName->setScrollWaitTime(1200);
         this->addElement(this->trackName);
         this->trackArtist = new Aether::Text(140, 660, "", 18);
         this->addElement(this->trackArtist);
@@ -60,10 +60,10 @@ namespace CustomElm {
         this->repeatContainer = new Aether::Container(760, 600, 100, 80);
         this->repeat = new Aether::Image(0, 0, "romfs:/icons/repeat.png");
         this->repeatC = new CustomElm::RoundButton(790 - BTN_MAIN_SIZE/2, 640 - BTN_MAIN_SIZE/2, BTN_MAIN_SIZE);
-        this->repeatC->setCallback([this]() {
-            Aether::Colour c1 = this->repeat->getColour();
+        this->repeatC->onPress([this]() {
+            Aether::Colour c1 = this->repeat->colour();
             Aether::Colour c2 = this->accent;
-            if (c1.r == c2.r && c1.g == c2.g && c1.b == c2.b && c1.a == c2.a) {
+            if (c1.r()== c2.r() && c1.g() == c2.g() && c1.b() == c2.b() && c1.a() == c2.a()) {
                 this->repeatFunc(RepeatMode::Off);
             } else {
                 this->repeatFunc(RepeatMode::One);
@@ -75,7 +75,7 @@ namespace CustomElm {
         this->repeatOneContainer = new Aether::Container(760, 600, 100, 80);
         this->repeatOne = new Aether::Image(0, 0, "romfs:/icons/repeatone.png");
         this->repeatOneC = new CustomElm::RoundButton(790 - BTN_MAIN_SIZE/2, 640 - BTN_MAIN_SIZE/2, BTN_MAIN_SIZE);
-        this->repeatOneC->setCallback([this]() {
+        this->repeatOneC->onPress([this]() {
             this->repeatFunc(RepeatMode::All);
         });
         this->repeatOneC->setImage(this->repeatOne);
@@ -282,23 +282,23 @@ namespace CustomElm {
     }
 
     void Player::setShuffleCallback(std::function<void()> f) {
-        this->shuffleC->setCallback(f);
+        this->shuffleC->onPress(f);
     }
 
     void Player::setPreviousCallback(std::function<void()> f) {
-        this->previousC->setCallback(f);
+        this->previousC->onPress(f);
     }
 
     void Player::setPauseCallback(std::function<void()> f) {
-        this->pauseC->setCallback(f);
+        this->pauseC->onPress(f);
     }
 
     void Player::setPlayCallback(std::function<void()> f) {
-        this->playC->setCallback(f);
+        this->playC->onPress(f);
     }
 
     void Player::setNextCallback(std::function<void()> f) {
-        this->nextC->setCallback(f);
+        this->nextC->onPress(f);
     }
 
     void Player::setRepeatCallback(std::function<void(RepeatMode)> f) {
@@ -306,29 +306,29 @@ namespace CustomElm {
     }
 
     void Player::setSeekCallback(std::function<void(float)> f) {
-        this->seekBar->setCallback([this, f]() {
+        this->seekBar->onPress([this, f]() {
             f(this->seekBar->value());
         });
     }
 
     void Player::setVolumeIconCallback(std::function<void(bool)> f) {
-        this->volumeIconC->setCallback([this, f]() {
+        this->volumeIconC->onPress([this, f]() {
             f(false);
         });
-        this->volumeIconMutedC->setCallback([this, f]() {
+        this->volumeIconMutedC->onPress([this, f]() {
             f(true);
         });
     }
 
     void Player::setVolumeCallback(std::function<void(float)> f) {
         this->volumeFunc = f;
-        this->volume->setCallback([this]() {
+        this->volume->onPress([this]() {
             this->volumeFunc(this->volume->value());
         });
     }
 
     void Player::setFullscreenCallback(std::function<void()> f) {
-        this->fullscreenC->setCallback(f);
+        this->fullscreenC->onPress(f);
     }
 
     void Player::update(uint32_t dt) {

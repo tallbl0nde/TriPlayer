@@ -10,41 +10,44 @@
 
 namespace CustomElm::ListItem {
     Playlist::Playlist(const std::string & img) : More(HEIGHT) {
-        this->image = new Aether::Image(this->x() + PADDING, this->y() + PADDING, img, 1, 1, Aether::RenderType::Deferred);
-        this->watchTexture(this->image);
-        this->name = new Aether::Text(this->x(), this->y(), "", NAME_FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
-        this->name->setScroll(false);
+        this->image = new Aether::Image(this->x() + PADDING, this->y() + PADDING, img, Aether::Render::Wait);
+        this->addElement(this->image);
+        this->addTexture(this->image);
+        this->name = new Aether::Text(this->x(), this->y(), "", NAME_FONT_SIZE, Aether::Render::Wait);
+        this->name->setCanScroll(false);
+        this->name->setScrollPause(1000);
         this->name->setScrollSpeed(60);
-        this->name->setScrollWaitTime(1000);
-        this->watchTexture(this->name);
-        this->songs = new Aether::Text(this->x(), this->y(), "", SONGS_FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
-        this->watchTexture(this->songs);
+        this->addElement(this->name);
+        this->addTexture(this->name);
+        this->songs = new Aether::Text(this->x(), this->y(), "", SONGS_FONT_SIZE, Aether::Render::Wait);
+        this->addElement(this->songs);
+        this->addTexture(this->songs);
     }
 
     void Playlist::update(uint32_t dt) {
         More::update(dt);
 
-        if (this->highlighted() && !this->name->scroll()) {
-            this->name->setScroll(true);
+        if (this->highlighted() && !this->name->canScroll()) {
+            this->name->setCanScroll(true);
 
-        } else if (!this->highlighted() && this->name->scroll()) {
-            this->name->setScroll(false);
+        } else if (!this->highlighted() && this->name->canScroll()) {
+            this->name->setCanScroll(false);
         }
     }
 
-    void Playlist::positionItems() {
+    void Playlist::positionElements() {
         this->image->setWH(HEIGHT - 2*PADDING, HEIGHT - 2*PADDING);
 
         this->name->setX(this->image->x() + this->image->w() + 2*PADDING);
         this->name->setY(this->y() + 0.38*HEIGHT - this->name->h()/2);
         int maxW = (this->x() + this->w()) - this->name->x() - PADDING;
-        if (this->more->getColour().a != 0) {
+        if (this->more->colour().a() != 0) {
             maxW -= (this->x() + this->w()) - this->more->x();
         }
-        if (this->name->texW() > maxW) {
+        if (this->name->textureWidth() > maxW) {
             this->name->setW(maxW);
         } else {
-            this->name->setW(this->name->texW());
+            this->name->setW(this->name->textureWidth());
         }
 
         this->songs->setX(this->name->x());
@@ -53,11 +56,15 @@ namespace CustomElm::ListItem {
     }
 
     void Playlist::setNameString(const std::string & s) {
-        this->name->setString(s);
+        this->processText(this->name, [s]() -> Aether::Text * {
+            return new Aether::Text(0, 0, s, NAME_FONT_SIZE, Aether::Render::Wait);
+        });
     }
 
     void Playlist::setSongsString(const std::string & s) {
-        this->songs->setString(s);
+        this->processText(this->songs, [s]() -> Aether::Text * {
+            return new Aether::Text(0, 0, s, SONGS_FONT_SIZE, Aether::Render::Wait);
+        });
     }
 
     void Playlist::setMutedTextColour(Aether::Colour c) {

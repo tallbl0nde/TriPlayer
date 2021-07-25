@@ -11,7 +11,7 @@ namespace CustomElm::ListItem {
             // Elements
             Aether::Image * icon;
             Aether::Text * name;
-            void positionItems();
+            void positionElements();
 
         public:
             // Constructor takes name, if directory and callback

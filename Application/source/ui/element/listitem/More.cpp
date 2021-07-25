@@ -6,8 +6,9 @@
 namespace CustomElm::ListItem {
     More::More(int h) : Item(h) {
         this->moreCallback = nullptr;
-        this->more = new Aether::Image(0, 0, "romfs:/icons/verticaldots.png", 1, 1, Aether::RenderType::Deferred);
-        this->watchTexture(this->more);
+        this->more = new Aether::Image(0, 0, "romfs:/icons/verticaldots.png", Aether::Render::Wait);
+        this->addElement(this->more);
+        this->addTexture(this->more);
         this->touchedMore = false;
     }
 

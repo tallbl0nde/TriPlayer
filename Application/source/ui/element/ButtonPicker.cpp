@@ -68,17 +68,17 @@ namespace CustomElm {
         }
     }
 
-    SDL_Texture * ButtonPicker::renderHighlight() {
+    Aether::Drawable * ButtonPicker::renderHighlight() {
         // Only render if not selected
         if (this->selected()) {
-            return nullptr;
+            return new Aether::Drawable();
         }
-        return SDLHelper::renderRoundRect(this->w() + 4, this->h() + 4, radius, this->hiSize);
+        return this->renderer->renderRoundRectTexture(this->w() + 4, this->h() + 4, radius, this->hiSize);
     }
 
-    SDL_Texture * ButtonPicker::renderSelection() {
+    Aether::Drawable * ButtonPicker::renderSelection() {
         // Hide selection
-        return nullptr;
+        return new Aether::Drawable();
     }
 
     Aether::Button ButtonPicker::selectedButton() {

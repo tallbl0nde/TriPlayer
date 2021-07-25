@@ -12,8 +12,7 @@ namespace CustomOvl {
             std::array<CustomElm::VSlider *, 32> sliders;
             std::array<Aether::Text *, 32> sliderIndexes;
 
-            Aether::ControlItem * reset, * apply, * back, * ok;
-            Aether::Controls * ctrl;      // Pointer to controls
+            Aether::ControlBar * ctrl;    // Pointer to controls
             Aether::List * list;          // Pointer to list
             Aether::Rectangle * rect;     // Pointer to main rectangle
             Aether::Rectangle * top;      // Pointer to top rectangle

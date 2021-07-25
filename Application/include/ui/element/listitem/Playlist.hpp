@@ -10,7 +10,7 @@ namespace CustomElm::ListItem {
             Aether::Image * image;
             Aether::Text * name;
             Aether::Text * songs;
-            void positionItems();
+            void positionElements();
 
         public:
             // Constructor sets up elements (takes path to image)

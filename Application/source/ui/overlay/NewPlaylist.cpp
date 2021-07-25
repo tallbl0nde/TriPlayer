@@ -77,7 +77,7 @@ namespace CustomOvl {
     }
 
     void NewPlaylist::setImage(Aether::Image * i) {
-        i->setCallback(this->image->callback());
+        i->onPress(this->image->onPressFunc());
         i->setXY(this->image->x(), this->image->y());
         i->setWH(this->image->w(), this->image->h());
         this->removeElement(this->image);
@@ -86,7 +86,7 @@ namespace CustomOvl {
     }
 
     void NewPlaylist::setImageCallback(std::function<void()> f) {
-        this->image->setCallback(f);
+        this->image->onPress(f);
     }
 
     void NewPlaylist::setNameCallback(std::function<void(std::string)> f) {
@@ -94,7 +94,7 @@ namespace CustomOvl {
     }
 
     void NewPlaylist::setOKCallback(std::function<void()> f) {
-        this->ok->setCallback(f);
+        this->ok->onPress(f);
     }
 
     void NewPlaylist::setCancelString(const std::string & s) {

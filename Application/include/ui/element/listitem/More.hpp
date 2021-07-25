@@ -11,6 +11,8 @@ namespace CustomElm::ListItem {
             std::function<void()> moreCallback;
             bool touchedMore;
 
+           // Note: positionElements() isn't defined by this class!
+
         protected:
             //'More' image (child should position it)
             Aether::Image * more;

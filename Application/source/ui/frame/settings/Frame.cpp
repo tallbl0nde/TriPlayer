@@ -36,7 +36,7 @@ namespace Frame::Settings {
 
         // Create element and set appropriate text/colour based on above value
         Aether::ListOption * opt = new Aether::ListOption(str, (b ? "Common.Yes"_lang : "Common.No"_lang), nullptr);
-        opt->setCallback([this, opt, get, set]() {
+        opt->onPress([this, opt, get, set]() {
             // Set opposite value
             bool b = get();
             set(!b);

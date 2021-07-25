@@ -57,7 +57,7 @@ namespace Frame::Settings {
 
         // General::key_combo_next
         opt = new Aether::ListOption("Settings.SysGeneral.NextTrack"_lang, NX::comboToUnicodeString(cfg->sysKeyComboNext(), " + "), nullptr);
-        opt->setCallback([this, cfg, opt]() {
+        opt->onPress([this, cfg, opt]() {
             this->showPickCombo("Settings.SysGeneral.NextTrackCombination"_lang, opt, [cfg]() -> std::vector<NX::Button> {
                 return cfg->sysKeyComboNext();
             }, [cfg](const std::vector<NX::Button> & combo) -> bool {
@@ -69,7 +69,7 @@ namespace Frame::Settings {
 
         // General::key_combo_play
         opt = new Aether::ListOption("Settings.SysGeneral.PlayPause"_lang, NX::comboToUnicodeString(cfg->sysKeyComboPlay(), " + "), nullptr);
-        opt->setCallback([this, cfg, opt]() {
+        opt->onPress([this, cfg, opt]() {
             this->showPickCombo("Settings.SysGeneral.PlayPauseCombination"_lang, opt, [cfg]() -> std::vector<NX::Button> {
                 return cfg->sysKeyComboPlay();
             }, [cfg](const std::vector<NX::Button> & combo) -> bool {
@@ -81,7 +81,7 @@ namespace Frame::Settings {
 
         // General::key_combo_prev
         opt = new Aether::ListOption("Settings.SysGeneral.PrevTrack"_lang, NX::comboToUnicodeString(cfg->sysKeyComboPrev(), " + "), nullptr);
-        opt->setCallback([this, cfg, opt]() {
+        opt->onPress([this, cfg, opt]() {
             this->showPickCombo("Settings.SysGeneral.PrevTrackCombination"_lang, opt, [cfg]() -> std::vector<NX::Button> {
                 return cfg->sysKeyComboPrev();
             }, [cfg](const std::vector<NX::Button> & combo) -> bool {
@@ -95,7 +95,7 @@ namespace Frame::Settings {
 
         // General::log_level
         opt = new Aether::ListOption("Settings.SysGeneral.LoggingLevel"_lang, Log::levelToString(cfg->sysLogLevel()), nullptr);
-        opt->setCallback([this, opt]() {
+        opt->onPress([this, opt]() {
             this->showLogLevelList(opt);
         });
         opt->setColours(this->app->theme()->muted2(), this->app->theme()->FG(), this->app->theme()->accent());

@@ -18,7 +18,7 @@ namespace CustomElm {
             int scrollVelocity;
             int scrollPos;
             int maxScrollPos;
-            SDL_Texture * scrollBar;
+            Aether::Drawable * scrollBar;
             Aether::Colour scrollBarColour;
             bool showScrollBar_;
             int touchY;

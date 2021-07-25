@@ -44,8 +44,8 @@ namespace CustomElm {
             }
             this->setSelected(false);
             moveHighlight(this);
-            if (this->callback() != nullptr) {
-                this->callback()();
+            if (this->onPressFunc() != nullptr) {
+                this->onPressFunc()();
             }
             b = true;
 
@@ -65,8 +65,8 @@ namespace CustomElm {
         } else if (e->type() == Aether::EventType::ButtonReleased) {
             if (e->button() == Aether::Button::A && this->selected()) {
                 this->setSelected(false);
-                if (this->callback() != nullptr) {
-                    this->callback()();
+                if (this->onPressFunc() != nullptr) {
+                    this->onPressFunc()();
                 }
                 b = true;
             }
@@ -89,18 +89,17 @@ namespace CustomElm {
         }
 
         // Render selected/held layer
-        int w, h;
         if (this->selected()) {
             this->renderSelectionTexture();
-            SDLHelper::getDimensions(this->selTex, &w, &h);
-            SDLHelper::drawTexture(this->selTex, this->selColour, this->knob->x() + (this->knob->xDiameter() - w)/2, this->knob->y() + (this->knob->yDiameter() - h)/2);
+            this->selTex->setColour(this->selColour);
+            this->selTex->render(this->knob->x() + (this->knob->xDiameter() - this->selTex->width())/2, this->knob->y() + (this->knob->yDiameter() - this->selTex->height())/2);
         }
 
         // Finally render highlight border if needed
         if (this->highlighted() && !this->isTouch) {
             this->renderHighlightTextures();
-            SDLHelper::getDimensions(this->hiBorderTex, &w, &h);
-            SDLHelper::drawTexture(this->hiBorderTex, this->hiBorderColour, this->knob->x() + ((int)this->knob->xDiameter() - w)/2, this->knob->y() + ((int)this->knob->yDiameter() - h)/2);
+            this->hiBorderTex->setColour(this->hiBorderColour);
+            this->hiBorderTex->render(this->knob->x() + ((int)this->knob->xDiameter() - this->hiBorderTex->width())/2, this->knob->y() + ((int)this->knob->yDiameter() - this->hiBorderTex->height())/2);
         }
     }
 
@@ -110,10 +109,10 @@ namespace CustomElm {
 
     void VSlider::setValue(float val) {
         this->value_ = (val < 0.0 ? 0.0 : (val > 100.0 ? 100.0 : val));
-        int h = this->barFg->texH() * (this->value_/100.0);
+        int h = this->barFg->textureHeight() * (this->value_/100.0);
         this->barFg->setY(this->barBg->y() + this->barBg->h() - h);
         this->barFg->setH(h);
-        this->barFg->setMask(0, this->barFg->texH() - h, this->barFg->texW(), h);
+        this->barFg->setMask(0, this->barFg->textureHeight() - h, this->barFg->textureWidth(), h);
         this->knob->setY(this->barBg->y() + this->barBg->h() - h - this->knob->yDiameter()/2);
     }
 
@@ -133,16 +132,16 @@ namespace CustomElm {
         this->knob->setColour(c);
     }
 
-    SDL_Texture * VSlider::renderHighlightBG() {
+    Aether::Drawable * VSlider::renderHighlightBG() {
         // No background needed
-        return nullptr;
+        return new Aether::Drawable();
     }
 
-    SDL_Texture * VSlider::renderHighlight() {
-        return SDLHelper::renderEllipse(this->knob->xDiameter()/2, this->knob->yDiameter()/2, this->hiSize);
+    Aether::Drawable * VSlider::renderHighlight() {
+        return this->renderer->renderEllipseTexture(this->knob->xDiameter()/2, this->knob->yDiameter()/2, this->hiSize);
     }
 
-    SDL_Texture * VSlider::renderSelection() {
-        return SDLHelper::renderFilledEllipse(this->knob->xDiameter()/2, this->knob->yDiameter()/2);
+    Aether::Drawable * VSlider::renderSelection() {
+        return this->renderer->renderFilledEllipseTexture(this->knob->xDiameter()/2, this->knob->yDiameter()/2);
     }
 };

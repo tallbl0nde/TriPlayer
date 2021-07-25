@@ -10,9 +10,9 @@ namespace CustomOvl {
         this->top = new Aether::Element(this->bg->x() + 20, this->bg->y() + this->nextY, this->bg->w() - 40, IMAGE_SIZE + 2*PADDING);
         this->image = nullptr;
         this->mainText = new Aether::Text(this->top->x() + IMAGE_SIZE + 2*PADDING, this->top->y() + 30, "", 24);
-        this->mainText->setScroll(true);
+        this->mainText->setCanScroll(true);
+        this->mainText->setScrollPause(1200);
         this->mainText->setScrollSpeed(35);
-        this->mainText->setScrollWaitTime(1200);
         this->top->addElement(this->mainText);
         this->subText = new Aether::Text(this->top->x() + IMAGE_SIZE + 2*PADDING, this->mainText->y() + 32, "", 18);
         this->top->addElement(this->subText);

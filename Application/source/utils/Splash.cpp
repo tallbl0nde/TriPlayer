@@ -4,42 +4,41 @@
 
 namespace Utils::Splash {
     Aether::Colour changeLightness(Aether::Colour old, int val) {
-        ::Splash::Colour col = ::Splash::Colour(old.a, old.r, old.g, old.b);
+        ::Splash::Colour col = ::Splash::Colour(old.a(), old.r(), old.g(), old.b());
         col = ::Splash::ColourUtils::changeColourLightness(col, val);
         return Aether::Colour{(uint8_t)col.r(), (uint8_t)col.g(), (uint8_t)col.b(), (uint8_t)col.a()};
     }
 
-    Palette getPaletteForSurface(SDL_Surface * surf) {
+    Palette getPaletteForDrawable(Aether::Drawable * drawable) {
         // Struct to return
         Palette palette;
         palette.invalid = true;
 
         // Check we actually have a surface
-        if (surf == nullptr) {
-            Log::writeError("[SPLASH] Attempted to get a palette for a null surface");
+        if (drawable == nullptr || drawable->type() == Aether::Drawable::Type::None) {
+            Log::writeError("[SPLASH] Attempted to get a palette for an invalid drawable");
             return palette;
         }
 
-        // First read pixels from the surface and convert to Splash::Colour
-        std::vector<::Splash::Colour> pixels;
-        SDL_LockSurface(surf);
-        size_t count = surf->w * surf->h;
-        for (size_t i = 0; i < count; i++) {
-            // Get RGB values
-            uint8_t r, g, b, a;
-            SDL_GetRGBA(*((uint32_t *)surf->pixels + i), surf->format, &r, &g, &b, &a);
-
-            // Create object and push onto vector
-            ::Splash::Colour colour = ::Splash::Colour(a, r, g, b);
-            pixels.push_back(colour);
+        // Get pixels from the drawable
+        Aether::ImageData imageData = drawable->getImageData();
+        std::vector<Aether::Colour> colours = imageData.toColourVector();
+        if (!imageData.valid() || colours.size() == 0) {
+            Log::writeError("[SPLASH] Attempted to get a palette for an invalid drawable");
+            return palette;
         }
-        SDL_UnlockSurface(surf);
+
+        // Convert to Splash::Colour
+        std::vector<::Splash::Colour> pixels;
+        for (const Aether::Colour & c : colours) {
+            pixels.push_back(::Splash::Colour(c.a(), c.r(), c.g(), c.b()));
+        }
 
         // Now create a Splash::Bitmap and fill with pixels
-        ::Splash::Bitmap image = ::Splash::Bitmap(surf->w, surf->h);
+        ::Splash::Bitmap image = ::Splash::Bitmap(drawable->width(), drawable->height());
         size_t amt = image.setPixels(pixels, 0, 0, image.getWidth(), image.getHeight());
         if (amt != pixels.size()) {
-            Log::writeWarning("[SPLASH] Not enough pixels were written to the bitmap - this may result in incorrect colours being picked (wrote: " + std::to_string(amt) + ", wanted: " + std::to_string(surf->w * surf->h) + ")");
+            Log::writeWarning("[SPLASH] Not enough pixels were written to the bitmap - this may result in incorrect colours being picked (wrote: " + std::to_string(amt) + ", wanted: " + std::to_string(drawable->width() * drawable->height()) + ")");
         }
         pixels.clear();
 
@@ -64,11 +63,10 @@ namespace Utils::Splash {
         amt = (amt < 0.0 ? 0.0 : amt);
         amt = (amt > 1.0 ? 1.0 : amt);
 
-        Aether::Colour mid;
-        mid.r = ((1.0 - amt) * start.r) + (amt * end.r);
-        mid.g = ((1.0 - amt) * start.g) + (amt * end.g);
-        mid.b = ((1.0 - amt) * start.b) + (amt * end.b);
-        mid.a = ((1.0 - amt) * start.a) + (amt * end.a);
-        return mid;
+        double r = ((1.0 - amt) * start.r()) + (amt * end.r());
+        double g = ((1.0 - amt) * start.g()) + (amt * end.g());
+        double b = ((1.0 - amt) * start.b()) + (amt * end.b());
+        double a = ((1.0 - amt) * start.a()) + (amt * end.a());
+        return Aether::Colour(r, g, b, a);
     }
 };

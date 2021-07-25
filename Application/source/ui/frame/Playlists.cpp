@@ -62,7 +62,7 @@ namespace Frame {
 
         // Move sort button and prepare menu
         this->sort->setX(btn->x() - 20 - this->sort->w());
-        this->sort->setCallback([this]() {
+        this->sort->onPress([this]() {
             this->app->addOverlay(this->sortMenu);
         });
         std::vector<CustomOvl::SortBy::Entry> sort = {{Database::SortBy::TitleAsc, "Playlist.Sort.TitleAltAsc"_lang},
@@ -97,7 +97,7 @@ namespace Frame {
         l->setMutedTextColour(this->app->theme()->muted());
 
         // Need to search for element in callbacks as order is changed when a playlist is removed
-        l->setCallback([this, l](){
+        l->onPress([this, l](){
             std::vector<Item>::iterator it = std::find_if(this->items.begin(), this->items.end(), [this, l](const Item e) {
                 return e.elm == l;
             });
@@ -240,7 +240,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.Play"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, pos]() {
+        b->onPress([this, pos]() {
             std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID, Database::SortBy::TitleAsc);
             if (v.size() > 0) {
                 std::vector<SongID> ids;
@@ -260,7 +260,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.AddToQueue"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, pos]() {
+        b->onPress([this, pos]() {
             std::vector<Metadata::PlaylistSong> v = this->app->database()->getSongMetadataForPlaylist(this->items[pos].meta.ID, Database::SortBy::TitleAsc);
             for (size_t i = 0; i < v.size(); i++) {
                 this->app->sysmodule()->sendAddToSubQueue(v[i].song.ID);
@@ -275,7 +275,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Playlist.AddToOtherPlaylist"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, pos]() {
+        b->onPress([this, pos]() {
             this->showAddToPlaylist([this, pos](PlaylistID i) {
                 if (i >= 0) {
                     // Get list of songs and add one-by-one to other playlist
@@ -313,7 +313,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Playlist.ExportPlaylist"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, pos]() {
+        b->onPress([this, pos]() {
             this->exportPlaylist(this->items[pos].meta);
         });
         this->menu->addButton(b);
@@ -324,7 +324,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Playlist.DeletePlaylist"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, pos]() {
+        b->onPress([this, pos]() {
             this->createDeletePlaylistMenu(pos);
         });
         this->menu->addButton(b);
@@ -336,7 +336,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.ViewInformation"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, pos]() {
+        b->onPress([this, pos]() {
             this->changeFrame(Type::PlaylistInfo, Action::Push, this->items[pos].meta.ID);
             this->menu->close();
         });
@@ -579,7 +579,7 @@ namespace Frame {
                         Aether::Image * tmpImage = new Aether::Image(0, 0, path);
 
                         // Show error if image wasn't created
-                        if (tmpImage->texW() == 0 || tmpImage->texH() == 0) {
+                        if (tmpImage->textureWidth() == 0 || tmpImage->textureHeight() == 0) {
                             this->createInfoOverlay("Common.Error.ReadImage"_lang);
                             delete tmpImage;
 

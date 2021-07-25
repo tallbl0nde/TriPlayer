@@ -26,7 +26,7 @@ namespace CustomElm {
         this->scrollVelocity = 0;
         this->scrollPos = 0;
         this->maxScrollPos = 0;
-        this->scrollBar = nullptr;
+        this->scrollBar = new Aether::Drawable();
         this->scrollBarColour = Aether::Colour{255, 255, 255, 255};
         this->showScrollBar_ = true;
         this->touchY = std::numeric_limits<int>::min();
@@ -106,8 +106,8 @@ namespace CustomElm {
         this->maxScrollPos -= this->h();
 
         // Delete scroll bar due to new height
-        SDLHelper::destroyTexture(this->scrollBar);
-        this->scrollBar = nullptr;
+        delete this->scrollBar;
+        this->scrollBar = new Aether::Drawable();
     }
 
     void ScrollableGrid::addElement(Aether::Element * e) {
@@ -217,12 +217,12 @@ namespace CustomElm {
         }
 
         // Recreate scroll bar texture if needed
-        if (this->scrollBar == nullptr) {
+        if (this->scrollBar->type() == Aether::Drawable::Type::None) {
             int size = (0.8*this->h()) * (this->h()/(double)(this->h() + this->maxScrollPos/3));
             if (size < MIN_SCROLLBAR_SIZE) {
                 size = MIN_SCROLLBAR_SIZE;
             }
-            this->scrollBar = SDLHelper::renderFilledRoundRect(SCROLLBAR_WIDTH, size, SCROLLBAR_WIDTH/2);
+            this->scrollBar = this->renderer->renderFilledRoundRectTexture(SCROLLBAR_WIDTH, size, SCROLLBAR_WIDTH/2);
         }
 
         // If focused element is not completely inside list scroll to it
@@ -240,16 +240,15 @@ namespace CustomElm {
 
     void ScrollableGrid::render() {
         // Set clip rectangle to match scrollable position + size
-        SDLHelper::setClip(this->x(), this->y(), this->x() + this->w(), this->y() + this->h());
+        this->renderer->setClipArea(this->x(), this->y(), this->x() + this->w(), this->y() + this->h());
         Container::render();
-        SDLHelper::resetClip();
+        this->renderer->resetClipArea();
 
         // Draw scroll bar
-        if (this->maxScrollPos != 0 && this->showScrollBar_ && this->scrollBar != nullptr) {
-            int w, h;
-            SDLHelper::getDimensions(this->scrollBar, &w, &h);
-            int yPos = this->y() + PADDING/2 + (((float)this->scrollPos / this->maxScrollPos) * (this->h() - h - PADDING));
-            SDLHelper::drawTexture(this->scrollBar, this->scrollBarColour, this->x() + this->w() - w, yPos);
+        if (this->maxScrollPos != 0 && this->showScrollBar_) {
+            this->scrollBar->setColour(this->scrollBarColour);
+            int yPos = this->y() + PADDING/2 + (((float)this->scrollPos / this->maxScrollPos) * (this->h() - this->scrollBar->height() - PADDING));
+            this->scrollBar->render(this->x() + this->w() - this->scrollBar->width(), yPos);
         }
     }
 
@@ -276,6 +275,6 @@ namespace CustomElm {
     }
 
     ScrollableGrid::~ScrollableGrid() {
-        SDLHelper::destroyTexture(this->scrollBar);
+        delete this->scrollBar;
     }
 };

@@ -34,15 +34,15 @@ namespace CustomElm {
         this->positionImage();
     }
 
-    SDL_Texture * RoundButton::renderHighlightBG() {
-        return SDLHelper::renderFilledEllipse(this->w()/2, this->h()/2);
+    Aether::Drawable * RoundButton::renderHighlightBG() {
+        return this->renderer->renderFilledEllipseTexture(this->w()/2, this->h()/2);
     }
 
-    SDL_Texture * RoundButton::renderHighlight() {
-        return SDLHelper::renderEllipse(this->w()/2, this->h()/2, this->hiSize);
+    Aether::Drawable  * RoundButton::renderHighlight() {
+        return this->renderer->renderEllipseTexture(this->w()/2, this->h()/2, this->hiSize);
     }
 
-    SDL_Texture * RoundButton::renderSelection() {
-        return SDLHelper::renderFilledEllipse(this->w()/2, this->h()/2);
+    Aether::Drawable  * RoundButton::renderSelection() {
+        return this->renderer->renderFilledEllipseTexture(this->w()/2, this->h()/2);
     }
 };

@@ -368,7 +368,7 @@ namespace Frame {
         tmpImage->setWH(this->w()*0.18, this->w()*0.18);
 
         // Show error if image wasn't created
-        if (tmpImage->texW() == 0 || tmpImage->texH() == 0) {
+        if (tmpImage->textureWidth() == 0 || tmpImage->textureHeight() == 0) {
             this->createInfoOverlay("Common.Error.ReadImage"_lang);
             delete tmpImage;
 

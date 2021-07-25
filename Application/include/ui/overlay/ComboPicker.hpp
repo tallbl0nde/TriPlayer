@@ -24,7 +24,7 @@ namespace CustomOvl {
             Aether::Text * title;
             Aether::Rectangle * topR;
             Aether::Rectangle * bottomR;
-            Aether::Controls * ctrl;
+            Aether::ControlBar * ctrl;
             Aether::Text * tip;
             Aether::BorderButton * ok;
 

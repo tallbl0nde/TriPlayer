@@ -24,8 +24,8 @@ namespace CustomElm {
             // Override to intercept button press and update containing button
             bool handleEvent(Aether::InputEvent *);
             void setSelected(bool);
-            SDL_Texture * renderHighlight();
-            SDL_Texture * renderSelection();
+            Aether::Drawable * renderHighlight();
+            Aether::Drawable * renderSelection();
 
             // Get the currently 'chosen' button
             Aether::Button selectedButton();

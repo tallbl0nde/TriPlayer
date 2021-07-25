@@ -10,7 +10,7 @@ namespace CustomElm::ListItem {
             // Elements
             Aether::Image * image;
             Aether::Text * name;
-            void positionItems();
+            void positionElements();
 
         public:
             // Constructor accepts path to image

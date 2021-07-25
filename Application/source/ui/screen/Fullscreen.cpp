@@ -36,13 +36,13 @@ namespace Screen {
         if (this->buttonMs < 0) {
             // Fade in
             double per = (this->buttonMs/(double)-FADE_IN_TIME);
-            colour.a = 255 - 255*per;
+            colour.setA(255 - 255*per);
 
         } else if (this->buttonMs > HI_TIMEOUT) {
             // Fade out
             int val = (this->buttonMs-HI_TIMEOUT > FADE_OUT_TIME ? FADE_OUT_TIME : this->buttonMs-HI_TIMEOUT);
             double per = (val/(double)FADE_OUT_TIME);
-            colour.a = 255 - 255*per;
+            colour.setA(255 - 255*per);
         }
 
         return colour;
@@ -75,10 +75,10 @@ namespace Screen {
 
         // Now create a surface and get colours (if needed)
         bool useDefault = !this->app->config()->autoPlayerPalette();
-        SDL_Surface * image = SDLHelper::renderImageS(path);
+        Aether::Drawable * image = this->renderer->renderImageSurface(path, 0, 0);
 
         if (!useDefault) {
-            Utils::Splash::Palette palette = Utils::Splash::getPaletteForSurface(image);
+            Utils::Splash::Palette palette = Utils::Splash::getPaletteForDrawable(image);
             if (!palette.invalid) {
                 // Set matching colours if valid
                 if (palette.bgLight) {
@@ -89,9 +89,9 @@ namespace Screen {
                     this->primary = palette.primary;
                     this->secondary = palette.secondary;
                     this->tertiary = Utils::Splash::changeLightness(this->secondary, -10);
-                    this->tertiary.a = 200;
+                    this->tertiary.setA(200);
                 }
-                palette.background.a = (palette.bgLight ? 150 : 255);
+                palette.background.setA(palette.bgLight ? 150 : 255);
                 this->targetBackground = palette.background;
             } else {
                 useDefault = true;
@@ -209,8 +209,8 @@ namespace Screen {
             size_t i = 0;
             while (i < this->oldAlbumArt.size()) {
                 // Check if we need to delete the image as it is transparent
-                Aether::Colour colour = this->oldAlbumArt[i]->getColour();
-                int alpha = colour.a;
+                Aether::Colour colour = this->oldAlbumArt[i]->colour();
+                int alpha = colour.a();
                 alpha -= (255 * (dt/(double)ANIM_TIME));
                 if (alpha <= 0) {
                     this->removeElement(this->oldAlbumArt[i]);
@@ -219,7 +219,7 @@ namespace Screen {
                 }
 
                 // Otherwise the image can still be seen and should continue fading
-                colour.a = static_cast<uint8_t>(alpha);
+                colour.setA(static_cast<uint8_t>(alpha));
                 this->oldAlbumArt[i]->setColour(colour);
                 i++;
             }
@@ -227,14 +227,14 @@ namespace Screen {
 
         // Fade in new image
         if (this->albumArt != nullptr) {
-            Aether::Colour colour = this->albumArt->getColour();
-            if (colour.a < 255) {
-                int alpha = colour.a;
+            Aether::Colour colour = this->albumArt->colour();
+            if (colour.a() < 255) {
+                int alpha = colour.a();
                 alpha += (255 * (dt/(double)ANIM_TIME));
                 if (alpha > 255) {
                     alpha = 255;
                 }
-                colour.a = static_cast<uint8_t>(alpha);
+                colour.setA(static_cast<uint8_t>(alpha));
                 this->albumArt->setColour(colour);
             }
         }
@@ -253,12 +253,12 @@ namespace Screen {
             Metadata::Song m = this->app->database()->getSongMetadataForID(id);
             if (m.ID != -1) {
                 this->title->setString(m.title);
-                if (this->title->texW() > MAX_TEXT_WIDTH) {
+                if (this->title->textureWidth() > MAX_TEXT_WIDTH) {
                     this->title->setW(MAX_TEXT_WIDTH);
                 }
                 this->title->setX(640 - this->title->w()/2);
                 this->artist->setString(m.artist);
-                if (this->artist->texW() > MAX_TEXT_WIDTH) {
+                if (this->artist->textureWidth() > MAX_TEXT_WIDTH) {
                     this->artist->setW(MAX_TEXT_WIDTH);
                 }
                 this->artist->setX(640 - this->artist->w()/2);
@@ -304,7 +304,7 @@ namespace Screen {
         // === PLAYING FROM ===
         this->note = new Aether::Image(40, 35, "romfs:/icons/musicnoteback.png");
         this->noteElement = new Aether::Element(this->note->x() - 15, this->note->y() - 15, this->note->w() + 30, this->note->h() + 30);
-        this->noteElement->setCallback([this]() {
+        this->noteElement->onPress([this]() {
             this->app->popScreen();
         });
         this->noteElement->setSelectable(false);
@@ -327,9 +327,9 @@ namespace Screen {
 
         // === METADATA ===
         this->title = new Aether::Text(0, 450, "", 36);
-        this->title->setScroll(true);
+        this->title->setCanScroll(true);
+        this->title->setScrollPause(1200);
         this->title->setScrollSpeed(35);
-        this->title->setScrollWaitTime(1200);
         this->addElement(this->title);
         this->artist = new Aether::Text(0, this->title->y() + 50, "", 24);
         this->addElement(this->artist);
@@ -340,7 +340,7 @@ namespace Screen {
         this->shuffle = new Aether::Image(0, 0, "romfs:/icons/shuffle.png");
         this->shuffleC = new CustomElm::RoundButton(480 - BTN_SIZE/2, 590 - BTN_SIZE/2, BTN_SIZE);
         this->shuffleC->setImage(this->shuffle);
-        this->shuffleC->setCallback([this]() {
+        this->shuffleC->onPress([this]() {
             this->app->sysmodule()->sendSetShuffle((this->app->sysmodule()->shuffleMode() == ShuffleMode::Off ? ShuffleMode::On : ShuffleMode::Off));
         });
         this->controls->addElement(this->shuffleC);
@@ -349,7 +349,7 @@ namespace Screen {
         this->previous = new Aether::Image(0, 0, "romfs:/icons/previous.png");
         this->previousC = new CustomElm::RoundButton(560 - BTN_SIZE/2, 590 - BTN_SIZE/2, BTN_SIZE);
         this->previousC->setImage(this->previous);
-        this->previousC->setCallback([this]() {
+        this->previousC->onPress([this]() {
             this->app->sysmodule()->sendPrevious();
         });
         this->controls->addElement(this->previousC);
@@ -359,14 +359,14 @@ namespace Screen {
         this->playC = new CustomElm::RoundButton(640 - BTN_SIZE/2, 590 - BTN_SIZE/2, BTN_SIZE);
         this->playC->setHidden(true);
         this->playC->setImage(this->play);
-        this->playC->setCallback([this]() {
+        this->playC->onPress([this]() {
             this->app->sysmodule()->sendResume();
         });
         this->controls->addElement(this->playC);
         this->pause = new Aether::Image(0, 0, "romfs:/icons/pausesmall.png");
         this->pauseC = new CustomElm::RoundButton(640 - BTN_SIZE/2, 590 - BTN_SIZE/2, BTN_SIZE);
         this->pauseC->setImage(this->pause);
-        this->pauseC->setCallback([this]() {
+        this->pauseC->onPress([this]() {
             this->app->sysmodule()->sendPause();
         });
         this->controls->addElement(this->pauseC);
@@ -376,7 +376,7 @@ namespace Screen {
         this->next = new Aether::Image(0, 0, "romfs:/icons/next.png");
         this->nextC = new CustomElm::RoundButton(720 - BTN_SIZE/2, 590 - BTN_SIZE/2, BTN_SIZE);
         this->nextC->setImage(this->next);
-        this->nextC->setCallback([this]() {
+        this->nextC->onPress([this]() {
             this->app->sysmodule()->sendNext();
         });
         this->controls->addElement(this->nextC);
@@ -386,7 +386,7 @@ namespace Screen {
         this->repeat = new Aether::Image(0, 0, "romfs:/icons/repeat.png");
         this->repeatC = new CustomElm::RoundButton(800 - BTN_SIZE/2, 590 - BTN_SIZE/2, BTN_SIZE);
         this->repeatC->setImage(this->repeat);
-        this->repeatC->setCallback([this]() {
+        this->repeatC->onPress([this]() {
             if (this->app->sysmodule()->repeatMode() == RepeatMode::All) {
                 this->app->sysmodule()->sendSetRepeat(RepeatMode::Off);
             } else {
@@ -398,7 +398,7 @@ namespace Screen {
         this->repeatOneContainer = new Aether::Container(770, 600, 100, 80);
         this->repeatOne = new Aether::Image(0, 0, "romfs:/icons/repeatone.png");
         this->repeatOneC = new CustomElm::RoundButton(800 - BTN_SIZE/2, 590 - BTN_SIZE/2, BTN_SIZE);
-        this->repeatOneC->setCallback([this]() {
+        this->repeatOneC->onPress([this]() {
             this->app->sysmodule()->sendSetRepeat(RepeatMode::All);
         });
         this->repeatOneC->setImage(this->repeatOne);
@@ -413,7 +413,7 @@ namespace Screen {
         this->addElement(this->position);
         this->seekBar = new CustomElm::Slider(490, 649, 300, 20, 8);
         this->seekBar->setNudge(1);
-        this->seekBar->setCallback([this]() {
+        this->seekBar->onPress([this]() {
             this->app->sysmodule()->sendSetPosition(this->seekBar->value());
         });
         this->addElement(this->seekBar);

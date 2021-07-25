@@ -11,7 +11,7 @@ namespace CustomElm::ListItem {
             Aether::Text * title;
             Aether::Text * artist;
             Aether::Text * length;
-            void positionItems();
+            void positionElements();
 
         public:
             // Constructor sets up elements

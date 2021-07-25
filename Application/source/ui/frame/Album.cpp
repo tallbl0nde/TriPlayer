@@ -130,7 +130,7 @@ namespace Frame {
                 l->setLineColour(this->app->theme()->muted2());
                 l->setMoreColour(this->app->theme()->muted());
                 l->setTextColour(this->app->theme()->FG());
-                l->setCallback([this, i]() {
+                l->onPress([this, i]() {
                     this->playAlbum(i);
                 });
                 l->setMoreCallback([this, i]() {
@@ -175,7 +175,7 @@ namespace Frame {
             l->setLineColour(this->app->theme()->muted2());
             l->setTextColour(this->app->theme()->FG());
             ArtistID aID = m[i].ID;
-            l->setCallback([this, aID]() {
+            l->onPress([this, aID]() {
                 this->changeFrame(Type::Artist, Action::Push, aID);
                 this->artistsList->close();
             });
@@ -197,7 +197,7 @@ namespace Frame {
             b->setIconColour(this->app->theme()->muted());
             b->setText("Common.AddToQueue"_lang);
             b->setTextColour(this->app->theme()->FG());
-            b->setCallback([this]() {
+            b->onPress([this]() {
                 std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForAlbum(this->metadata.ID);
                 for (size_t i = 0; i < v.size(); i++) {
                     this->app->sysmodule()->sendAddToSubQueue(v[i].ID);
@@ -212,7 +212,7 @@ namespace Frame {
             b->setIconColour(this->app->theme()->muted());
             b->setText("Common.AddToPlaylist"_lang);
             b->setTextColour(this->app->theme()->FG());
-            b->setCallback([this]() {
+            b->onPress([this]() {
                 this->showAddToPlaylist([this](PlaylistID i) {
                     if (i >= 0) {
                         std::vector<Metadata::Song> v = this->app->database()->getSongMetadataForAlbum(this->metadata.ID);
@@ -233,7 +233,7 @@ namespace Frame {
             b->setTextColour(this->app->theme()->FG());
             if (this->oneArtist) {
                 b->setText("Common.GoToArtist"_lang);
-                b->setCallback([this]() {
+                b->onPress([this]() {
                     ArtistID aID = this->app->database()->getArtistIDForName(this->metadata.artist);
                     this->changeFrame(Type::Artist, Action::Push, aID);
                     this->albumMenu->close();
@@ -241,7 +241,7 @@ namespace Frame {
 
             } else {
                 b->setText("Common.ViewArtists"_lang);
-                b->setCallback([this]() {
+                b->onPress([this]() {
                     this->createArtistsList();
                     this->albumMenu->close();
                 });
@@ -255,7 +255,7 @@ namespace Frame {
             b->setIconColour(this->app->theme()->muted());
             b->setText("Common.ViewInformation"_lang);
             b->setTextColour(this->app->theme()->FG());
-            b->setCallback([this]() {
+            b->onPress([this]() {
                 this->changeFrame(Type::AlbumInfo, Action::Push, this->metadata.ID);
                 this->albumMenu->close();
             });
@@ -289,7 +289,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.AddToQueue"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, pos]() {
+        b->onPress([this, pos]() {
             this->app->sysmodule()->sendAddToSubQueue(this->songs[pos].ID);
             this->songMenu->close();
         });
@@ -301,7 +301,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.AddToPlaylist"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, pos]() {
+        b->onPress([this, pos]() {
             this->showAddToPlaylist([this, pos](PlaylistID i) {
                 if (i >= 0) {
                     this->app->database()->addSongToPlaylist(i, this->songs[pos].ID);
@@ -319,7 +319,7 @@ namespace Frame {
             b->setIconColour(this->app->theme()->muted());
             b->setText("Common.GoToArtist"_lang);
             b->setTextColour(this->app->theme()->FG());
-            b->setCallback([this, pos]() {
+            b->onPress([this, pos]() {
                 ArtistID a = this->app->database()->getArtistIDForSong(this->songs[pos].ID);
                 if (a >= 0) {
                     this->changeFrame(Type::Artist, Action::Push, a);
@@ -336,7 +336,7 @@ namespace Frame {
         b->setIconColour(this->app->theme()->muted());
         b->setText("Common.ViewInformation"_lang);
         b->setTextColour(this->app->theme()->FG());
-        b->setCallback([this, pos]() {
+        b->onPress([this, pos]() {
             this->changeFrame(Type::SongInfo, Action::Push, this->songs[pos].ID);
             this->songMenu->close();
         });

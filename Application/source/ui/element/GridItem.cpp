@@ -1,40 +1,36 @@
 #include "ui/element/GridItem.hpp"
 
 // Font sizes
-#define MAIN_FONT_SIZE 18
-#define SUB_FONT_SIZE 24
+#define MAIN_FONT_SIZE 24
+#define SUB_FONT_SIZE 18
 // Dimensions
 #define IMAGE_SIZE 150
 #define WIDTH 250
 #define HEIGHT 230
-// Amount either side of screen to keep textures (in pixels)
-#define TEX_THRESHOLD 2000
 // Padding either side of name
 #define SIDE_PADDING 35
 
 namespace CustomElm {
-    GridItem::GridItem(std::string path) : Element(0, 0, WIDTH, HEIGHT) {
-        this->image = new Aether::Image(this->x(), this->y(), path, 1, 1, Aether::RenderType::Deferred);
+    GridItem::GridItem(std::string path) : AsyncItem() {
+        // Need to call base so our overridden method isn't called
+        AsyncItem::setW(WIDTH);
+        AsyncItem::setH(HEIGHT);
+
+        // Create elements
+        this->image = new Aether::Image(this->x(), this->y(), path, Aether::Render::Wait);
         this->addElement(this->image);
-        this->image->setHidden(true);
-        this->main = new Aether::Text(this->x(), this->y(), "", SUB_FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
-        this->main->setHidden(true);
-        this->main->setScrollSpeed(35);
-        this->main->setScrollWaitTime(500);
-        this->addElement(this->main);
-        this->sub = new Aether::Text(this->x(), this->y(), "", MAIN_FONT_SIZE, Aether::FontStyle::Regular, Aether::RenderType::Deferred);
-        this->sub->setHidden(true);
-        this->sub->setScrollSpeed(35);
-        this->sub->setScrollWaitTime(500);
-        this->addElement(this->sub);
-        this->dots = new Aether::Image(this->x(), this->y(), "romfs:/icons/verticaldots.png", 1, 1, Aether::RenderType::Deferred);
+        this->addTexture(this->image);
+
+        this->main = new Aether::Text(this->x(), this->y(), "", SUB_FONT_SIZE, Aether::Render::Wait);
+        this->sub = new Aether::Text(this->x(), this->y(), "", MAIN_FONT_SIZE, Aether::Render::Wait);
+
+        this->dots = new Aether::Image(this->x(), this->y(), "romfs:/icons/verticaldots.png", Aether::Render::Wait);
         this->addElement(this->dots);
-        this->dots->setHidden(true);
-        this->isRendering = Waiting;
+        this->addTexture(this->dots);
     }
 
     void GridItem::setInactive() {
-        Element::setInactive();
+        AsyncItem::setInactive();
         this->callMore = false;
     }
 
@@ -65,58 +61,34 @@ namespace CustomElm {
             }
         }
 
-        return Element::handleEvent(e);
+        return AsyncItem::handleEvent(e);
+    }
+
+    void GridItem::processText(Aether::Text * & text, std::function<Aether::Text * ()> getNew) {
+        // Remove original
+        this->removeTexture(text);
+        this->removeElement(text);
+
+        // Get (and assign) new text object
+        text = getNew();
+
+        // Don't add if empty string
+        if (!text->string().empty()) {
+            this->addElement(text);
+            this->addTexture(text);
+        }
     }
 
     void GridItem::update(uint32_t dt) {
-        Element::update(dt);
+        AsyncItem::update(dt);
 
         // Scroll if this element is selected
-        if (this->highlighted() && !this->main->scroll()) {
-            this->main->setScroll(true);
-            this->sub->setScroll(true);
-        } else if (!this->highlighted() && this->main->scroll()) {
-            this->main->setScroll(false);
-            this->sub->setScroll(false);
-        }
-
-        switch (this->isRendering) {
-            case Waiting:
-                // Waiting to render - check position and start if within threshold
-                if (this->x() > -TEX_THRESHOLD && this->x() + this->w() < 1280 + TEX_THRESHOLD && this->y() + this->h() > -TEX_THRESHOLD && this->y() < 720 + TEX_THRESHOLD) {
-                    this->image->startRendering();
-                    this->main->startRendering();
-                    this->sub->startRendering();
-                    this->dots->startRendering();
-                    this->isRendering = InProgress;
-                }
-                break;
-
-            case InProgress:
-                // Check if all are ready and if so move show and change to done
-                if (this->image->textureReady() && this->main->textureReady() && this->sub->textureReady() && this->dots->textureReady()) {
-                    this->positionItems();
-                    this->image->setHidden(false);
-                    this->main->setHidden(false);
-                    this->sub->setHidden(false);
-                    this->dots->setHidden(false);
-                    this->isRendering = Done;
-                }
-
-            case Done:
-                // Check if move outside of threshold and if so remove texture to save memory
-                if (this->x() < -TEX_THRESHOLD || this->x() + this->w() > 1280 + TEX_THRESHOLD || this->y() + this->h() < -TEX_THRESHOLD || this->y() > 720 + TEX_THRESHOLD) {
-                    this->image->destroyTexture();
-                    this->main->destroyTexture();
-                    this->sub->destroyTexture();
-                    this->dots->destroyTexture();
-                    this->image->setHidden(true);
-                    this->main->setHidden(true);
-                    this->sub->setHidden(true);
-                    this->dots->setHidden(true);
-                    this->isRendering = Waiting;
-                }
-                break;
+        if (this->highlighted() && !this->main->canScroll()) {
+            this->main->setCanScroll(true);
+            this->sub->setCanScroll(true);
+        } else if (!this->highlighted() && this->main->canScroll()) {
+            this->main->setCanScroll(false);
+            this->sub->setCanScroll(false);
         }
     }
 
@@ -125,11 +97,21 @@ namespace CustomElm {
     }
 
     void GridItem::setMainString(std::string s) {
-        this->main->setString(s);
+        this->processText(this->main, [this, s]() -> Aether::Text * {
+            Aether::Text * t = new Aether::Text(this->x(), this->y(), s, MAIN_FONT_SIZE, Aether::Render::Wait);
+            t->setScrollPause(500);
+            t->setScrollSpeed(35);
+            return t;
+        });
     }
 
     void GridItem::setSubString(std::string s) {
-        this->sub->setString(s);
+        this->processText(this->sub, [this, s]() -> Aether::Text * {
+            Aether::Text * t = new Aether::Text(this->x(), this->y(), s, SUB_FONT_SIZE, Aether::Render::Wait);
+            t->setScrollPause(500);
+            t->setScrollSpeed(35);
+            return t;
+        });
     }
 
     void GridItem::setDotsColour(Aether::Colour c) {
@@ -144,7 +126,7 @@ namespace CustomElm {
         this->sub->setColour(c);
     }
 
-    void GridItem::positionItems() {
+    void GridItem::positionElements() {
         this->image->setXY(this->x() + (this->w() - IMAGE_SIZE)/2, this->y() + 5);
         this->image->setWH(IMAGE_SIZE, IMAGE_SIZE);
 

@@ -19,7 +19,7 @@ namespace Utils::Splash {
     Aether::Colour changeLightness(Aether::Colour, int);
 
     // Returns the above struct filled with colours for the given image
-    Palette getPaletteForSurface(SDL_Surface *);
+    Palette getPaletteForDrawable(Aether::Drawable *);
 
     // Return a colour interpolated between the two provided colours at the given position (0 - 1)
     Aether::Colour interpolateColours(const Aether::Colour &, const Aether::Colour &, double);

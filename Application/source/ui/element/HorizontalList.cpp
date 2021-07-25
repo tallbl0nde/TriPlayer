@@ -233,13 +233,13 @@ namespace CustomElm {
 
     void HorizontalList::render() {
         // Set clip rectangle to match position + size
-        SDLHelper::setClip(this->x(), this->y(), this->x() + this->w(), this->y() + this->h());
+        this->renderer->setClipArea(this->x(), this->y(), this->x() + this->w(), this->y() + this->h());
 
         // Render children
         Container::render();
 
         // Remove clip rectangle
-        SDLHelper::resetClip();
+        this->renderer->resetClipArea();
     }
 
     void HorizontalList::setW(int w) {
