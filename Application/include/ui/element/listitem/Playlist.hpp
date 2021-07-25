@@ -7,6 +7,7 @@ namespace CustomElm::ListItem {
     class Playlist : public More {
         private:
             // Elements
+            bool showMore;
             Aether::Image * image;
             Aether::Text * name;
             Aether::Text * songs;
@@ -14,7 +15,7 @@ namespace CustomElm::ListItem {
 
         public:
             // Constructor sets up elements (takes path to image)
-            Playlist(const std::string &);
+            Playlist(const std::string &, const bool);
 
             // Scroll if needed
             void update(uint32_t);

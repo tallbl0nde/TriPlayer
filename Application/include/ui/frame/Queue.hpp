@@ -28,7 +28,7 @@ namespace Frame {
             Aether::Element * queue;
             std::list<CustomElm::ListItem::Song *> queueEls;
             Aether::Element * upnext;
-            Aether::Text * upnextStr;
+            Aether::TextBlock * upnextStr;
             std::list<CustomElm::ListItem::Song *> upnextEls;
 
             // Temporary vector of song metadata

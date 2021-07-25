@@ -86,7 +86,7 @@ namespace Frame {
     }
 
     CustomElm::ListItem::Playlist * Playlists::getListItem(const Metadata::Playlist & m) {
-        CustomElm::ListItem::Playlist * l = new CustomElm::ListItem::Playlist(m.imagePath.empty() ? Path::App::DefaultPlaylistFile : m.imagePath);
+        CustomElm::ListItem::Playlist * l = new CustomElm::ListItem::Playlist(m.imagePath.empty() ? Path::App::DefaultPlaylistFile : m.imagePath, true);
 
         // Set styling parameters
         l->setNameString(m.name);

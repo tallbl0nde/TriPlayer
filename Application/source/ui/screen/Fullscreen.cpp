@@ -1,6 +1,7 @@
 #include "Application.hpp"
 #include "Paths.hpp"
 #include "ui/screen/Fullscreen.hpp"
+#include "lang/Lang.hpp"
 #include "utils/Splash.hpp"
 #include "utils/Utils.hpp"
 
@@ -311,6 +312,9 @@ namespace Screen {
         this->noteElement->addElement(this->note);
         this->addElement(this->noteElement);
         std::string str = this->app->sysmodule()->playingFrom();
+        if (str.empty()) {
+            str = "Common.NotPlaying3"_lang;
+        }
         if (str.length() > 16) {
             str = str.substr(0, 16);
             str += "...";
@@ -326,12 +330,12 @@ namespace Screen {
         this->addElement(this->clock);
 
         // === METADATA ===
-        this->title = new Aether::Text(0, 450, "", 36);
+        this->title = new Aether::Text(0, 450, "Common.NotPlaying1"_lang, 36);
         this->title->setCanScroll(true);
         this->title->setScrollPause(1200);
         this->title->setScrollSpeed(35);
         this->addElement(this->title);
-        this->artist = new Aether::Text(0, this->title->y() + 50, "", 24);
+        this->artist = new Aether::Text(0, this->title->y() + 50, "Common.NotPlaying2"_lang, 24);
         this->addElement(this->artist);
 
         // === CONTROLS ===
@@ -434,6 +438,11 @@ namespace Screen {
         this->targetBackground = this->currentBackground;
         this->buttonMs = 0;
         this->playingID = -1;
+
+        // Start with no song
+        this->title->setX(640 - this->title->w()/2);
+        this->artist->setX(640 - this->artist->w()/2);
+        this->updateImage(Path::App::DefaultArtFile);
     }
 
     void Fullscreen::onUnload() {

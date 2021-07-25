@@ -9,19 +9,20 @@
 #define PADDING 12
 
 namespace CustomElm::ListItem {
-    Playlist::Playlist(const std::string & img) : More(HEIGHT) {
+    Playlist::Playlist(const std::string & img, const bool showMore) : More(HEIGHT) {
         this->image = new Aether::Image(this->x() + PADDING, this->y() + PADDING, img, Aether::Render::Wait);
         this->addElement(this->image);
         this->addTexture(this->image);
         this->name = new Aether::Text(this->x(), this->y(), "", NAME_FONT_SIZE, Aether::Render::Wait);
         this->name->setCanScroll(false);
         this->name->setScrollPause(1000);
-        this->name->setScrollSpeed(60);
+        this->name->setScrollSpeed(50);
         this->addElement(this->name);
         this->addTexture(this->name);
         this->songs = new Aether::Text(this->x(), this->y(), "", SONGS_FONT_SIZE, Aether::Render::Wait);
         this->addElement(this->songs);
         this->addTexture(this->songs);
+        this->showMore = showMore;
     }
 
     void Playlist::update(uint32_t dt) {
@@ -33,6 +34,10 @@ namespace CustomElm::ListItem {
         } else if (!this->highlighted() && this->name->canScroll()) {
             this->name->setCanScroll(false);
         }
+
+        if (!this->showMore) {
+            this->more->setHidden(true);
+        }
     }
 
     void Playlist::positionElements() {
@@ -40,10 +45,7 @@ namespace CustomElm::ListItem {
 
         this->name->setX(this->image->x() + this->image->w() + 2*PADDING);
         this->name->setY(this->y() + 0.38*HEIGHT - this->name->h()/2);
-        int maxW = (this->x() + this->w()) - this->name->x() - PADDING;
-        if (this->more->colour().a() != 0) {
-            maxW -= (this->x() + this->w()) - this->more->x();
-        }
+        int maxW = (this->x() + this->w()) - this->name->x() - (3*PADDING) - this->more->w();
         if (this->name->textureWidth() > maxW) {
             this->name->setW(maxW);
         } else {

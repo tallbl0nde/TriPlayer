@@ -54,7 +54,7 @@ namespace Main {
         this->window->setHighlightOverlay(this->theme_->selected());
         this->window->setFadeIn(true);
         this->window->setFadeOut(true);
-        this->window->showDebugInfo(true);
+        // this->window->showDebugInfo(true);
         this->exitPrompt = nullptr;
 
         // Setup screens

@@ -51,7 +51,7 @@ namespace CustomOvl {
 
     void AddToPlaylist::addPlaylist(CustomElm::ListItem::Playlist * l, PlaylistID id) {
         l->setMoreCallback([l]() {
-            l->onPressFunc();
+            l->onPressFunc()();
         });
         l->setMoreColour(Aether::Colour{0, 0, 0, 0});
         l->onPress([this, id]() {

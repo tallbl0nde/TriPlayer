@@ -78,7 +78,7 @@ namespace Frame {
 
         // Up Next
         this->upnext = new Aether::Element(0, 0, 100, 80);
-        this->upnextStr = new Aether::Text(this->upnext->x(), this->upnext->y(), "Queue.UpNextBlank"_lang, 28);
+        this->upnextStr = new Aether::TextBlock(this->upnext->x(), this->upnext->y(), "Queue.UpNextBlank"_lang, 28, this->list->w() * 0.9);
         this->upnextStr->setY(this->upnextStr->y() + (this->upnext->h() - this->upnextStr->h())/2 + 10);
         this->upnextStr->setColour(this->app->theme()->FG());
         this->upnext->addElement(this->upnextStr);
