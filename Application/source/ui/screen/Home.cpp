@@ -472,7 +472,6 @@ namespace Screen {
         int maxW = this->backButton->w() - 70 - this->backIcon->w();
         this->backText = new Aether::Text(0, 0, "Common.Back"_lang, 26);
         while (this->backText->textureWidth() > maxW) {
-            // TODO: Fix
             // This renders the text each time but should be fine :P
             this->backText->setFontSize(this->backText->fontSize()-2);
         }
@@ -496,7 +495,6 @@ namespace Screen {
         maxW = quitButton->w() - 70 - quitIcon->w();
         Aether::Text * quitText = new Aether::Text(0, 0, "Common.Quit"_lang, 26);
         while (quitText->textureWidth() > maxW) {
-            // TODO: Fix
             // This renders the text each time but should be fine :P
             quitText->setFontSize(quitText->fontSize()-2);
         }

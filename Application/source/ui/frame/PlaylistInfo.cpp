@@ -97,28 +97,25 @@ namespace Frame {
         this->bottomContainer->addElement(this->image);
 
         // Fetch image (id3 tags)
-        Aether::BorderButton * button = new Aether::BorderButton(txt->x(), this->imagePath->y() + this->imagePath->h() + 20, this->w() * 0.3, 50, 2, "", 20, [this]() {
+        Aether::BorderButton * button = new Aether::BorderButton(txt->x(), this->imagePath->y() + this->imagePath->h() + 20, this->w() * 0.3, 50, 2, "Common.ReplaceFile"_lang, 20, [this]() {
             this->createFileBrowser(FBType::Audio);
         });
-        button->setString("Common.ReplaceFile"_lang);
         button->setBorderColour(this->app->theme()->FG());
         button->setTextColour(this->app->theme()->FG());
         this->bottomContainer->addElement(button);
 
         // Fetch image (local image)
-        button = new Aether::BorderButton(button->x() + button->w() + this->w()*0.02, button->y(), this->w() * 0.3, 50, 2, "", 20, [this]() {
+        button = new Aether::BorderButton(button->x() + button->w() + this->w()*0.02, button->y(), this->w() * 0.3, 50, 2, "Common.ReplaceSD"_lang, 20, [this]() {
             this->createFileBrowser(FBType::Image);
         });
-        button->setString("Common.ReplaceSD"_lang);
         button->setBorderColour(this->app->theme()->FG());
         button->setTextColour(this->app->theme()->FG());
         this->bottomContainer->addElement(button);
 
         // Remove image
-        button = new Aether::BorderButton(button->x() - this->w()*0.16, button->y() + button->h() + 20, this->w() * 0.3, 50, 2, "", 20, [this]() {
+        button = new Aether::BorderButton(button->x() - this->w()*0.16, button->y() + button->h() + 20, this->w() * 0.3, 50, 2, "Common.RemoveImage"_lang, 20, [this]() {
             this->removeImage();
         });
-        button->setString("Common.RemoveImage"_lang);
         button->setBorderColour(this->app->theme()->FG());
         button->setTextColour(this->app->theme()->FG());
         this->bottomContainer->addElement(button);

@@ -95,29 +95,26 @@ namespace Frame {
 
         // Fetch image (local)
         Aether::Container * c = new Aether::Container(txt->x(), this->imagePath->y() + this->imagePath->h() + 20, this->w()*0.62, 50);
-        Aether::BorderButton * button = new Aether::BorderButton(c->x(), c->y(), this->w() * 0.3, 50, 2, "", 20, [this]() {
+        Aether::BorderButton * button = new Aether::BorderButton(c->x(), c->y(), this->w() * 0.3, 50, 2, "Common.ReplaceSD"_lang, 20, [this]() {
             this->createFileBrowser();
         });
-        button->setString("Common.ReplaceSD"_lang);
         button->setBorderColour(this->app->theme()->FG());
         button->setTextColour(this->app->theme()->FG());
         c->addElement(button);
 
         // Fetch image (TheAudioDB)
-        button = new Aether::BorderButton(button->x() + button->w() + this->w()*0.02, button->y(), this->w() * 0.3, 50, 2, "", 20, [this]() {
+        button = new Aether::BorderButton(button->x() + button->w() + this->w()*0.02, button->y(), this->w() * 0.3, 50, 2, "Common.ReplaceAudioDB"_lang, 20, [this]() {
             this->createAudioDBOverlay();
         });
-        button->setString("Common.ReplaceAudioDB"_lang);
         button->setBorderColour(this->app->theme()->FG());
         button->setTextColour(this->app->theme()->FG());
         c->addElement(button);
         this->bottomContainer->addElement(c);
 
         // Remove image
-        button = new Aether::BorderButton(txt->x() + this->w()*0.16, button->y() + button->h() + 20, this->w() * 0.3, 50, 2, "", 20, [this]() {
+        button = new Aether::BorderButton(txt->x() + this->w()*0.16, button->y() + button->h() + 20, this->w() * 0.3, 50, 2, "Common.RemoveImage"_lang, 20, [this]() {
             this->removeImage();
         });
-        button->setString("Common.RemoveImage"_lang);
         button->setBorderColour(this->app->theme()->FG());
         button->setTextColour(this->app->theme()->FG());
         this->bottomContainer->addElement(button);
