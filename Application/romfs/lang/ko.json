@@ -93,10 +93,11 @@
             "XHXM": "$[1] 시간, $[2] 분"
         },
         "Length": "길이",
-        "OK": "OK",
+        "OK": "확인",
         "No": "아니오",
         "NotPlaying1": "재생 중인 노래가 없습니다!",
         "NotPlaying2": "노래 재생하기",
+        "NotPlaying3": "재생하지 않음",
         "Play": "재생",
         "Quit": "종료",
         "Remove": "제거",
