@@ -39,7 +39,7 @@ namespace Utils::Lang {
                 return "日本語";
 
             case Language::ChineseTraditional:
-                return "繁体中文";
+                return "繁體中文";
 
             case Language::ChineseSimplified:
                 return "简体中文";
